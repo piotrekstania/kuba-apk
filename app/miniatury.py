@@ -43,9 +43,9 @@ def miniatura(plik: Path, obrot: int = 0) -> bytes:
             bufor = io.BytesIO()
             obraz.save(bufor, format="PNG", optimize=True)
             wynik = bufor.getvalue()
+            slad(f"miniatura gotowa: {plik.name} ({len(wynik) // 1024} kB)")
         finally:
             dokument.close()
-    slad(f"miniatura gotowa: {plik.name} ({len(wynik) // 1024} kB)")
     return wynik
 
 
