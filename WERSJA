@@ -1,2 +1,2 @@
-2026.07.31.38
-Naprawione: szablony z poprzedniej wersji nie otwierały się w Wordzie, więc nie powstawały też miniatury i PDF-y. Przy ujednolicaniu wyglądu dwa elementy trafiły w niewłaściwe miejsce w pliku — Word takiego dokumentu nie przyjmuje. Formatki są poprawione, wygląd bez zmian.
+2026.07.31.39
+Naprawione: spis treści dalej nie otwierał się w Wordzie — logo miało dopisany rozmiar w niewłaściwym miejscu pliku i zgubiony wymagany atrybut. Zmienione: czcionka na Calibri (jest na każdym Windowsie, a dokument tak samo łamie się na Linuksie), stopka bez wersalików, mniejsza i szara, ta sama na każdej stronie i w obu dokumentach. Numeracja stron usunięta.

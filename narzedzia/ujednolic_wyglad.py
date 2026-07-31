@@ -33,6 +33,7 @@ też na formatkach dołożonych później.
     python narzedzia/ujednolic_wyglad.py szablony/inny.docx
 """
 import argparse
+import copy
 import sys
 from pathlib import Path
 
@@ -40,12 +41,15 @@ import docx
 from docx.enum.text import WD_ALIGN_PARAGRAPH
 from docx.oxml import OxmlElement
 from docx.oxml.ns import qn
-from docx.shared import Emu, Mm, Pt
+from docx.shared import Emu, Mm, Pt, RGBColor
 
 sys.path.insert(0, str(Path(__file__).resolve().parent.parent))
 from app.config import SZABLONY  # noqa: E402
 
-KROJ = "Bahnschrift SemiBold"
+# Calibri jest na każdym Windowsie z Office'em, a na Linuksie zastępuje ją
+# metrycznie zgodne Carlito (pakiet fonts-crosextra-carlito) — ten sam dokument
+# łamie się więc tak samo po obu stronach.
+KROJ = "Calibri"
 
 TYTUL = Pt(14)
 NAGLOWEK = Pt(11)
@@ -63,6 +67,9 @@ ODSTEP_POD_TYTULEM = Pt(14)
 LOGO_SZEROKOSC = Mm(50)
 LOGO_OD_LEWEJ = Mm(5.8)
 LOGO_OD_GORY = Mm(4)
+
+STOPKA_ROZMIAR = Pt(8)
+STOPKA_KOLOR = RGBColor(0x6B, 0x6B, 0x6B)
 
 TABULATOR_WARTOSCI = Mm(50)     # kolumna wartości w blokach „Etykieta:  wartość”
 
@@ -186,6 +193,9 @@ PO_ROZSTRZELENIU = ("w", "kern", "position", "sz", "szCs", "highlight", "u", "ef
                     "eastAsianLayout", "specVanish", "oMath")
 PO_OBLEWANIU = ("docPr", "cNvGraphicFramePr", "graphic", "sizeRelH", "sizeRelV")
 
+# Te sposoby oblewania wymagają atrybutu `wrapText` — bez niego Word odrzuca plik.
+OBLEWANIE_Z_TEKSTEM = ("wrapSquare", "wrapTight", "wrapThrough")
+
 
 def _nazwa(element) -> str:
     return element.tag.split("}")[-1]
@@ -273,9 +283,14 @@ def _ustaw_logo(dokument) -> int:
 
             rozmiar.set("cx", str(nowa_szer))
             rozmiar.set("cy", str(nowa_wys))
-            for ext in kotwica.findall(".//" + qn("a:ext")):     # kopia w środku rysunku
-                ext.set("cx", str(nowa_szer))
-                ext.set("cy", str(nowa_wys))
+            # Rozmiar obrazka siedzi w <a:xfrm><a:ext>. UWAGA: <a:ext> z atrybutem
+            # `uri` to zupełnie co innego — element listy rozszerzeń, przypadkiem
+            # o tej samej nazwie. Dopisanie mu cx/cy daje plik, którego Word
+            # nie otworzy (a LibreOffice otworzy bez słowa).
+            for xfrm in kotwica.findall(".//" + qn("a:xfrm")):
+                for ext in xfrm.findall(qn("a:ext")):
+                    ext.set("cx", str(nowa_szer))
+                    ext.set("cy", str(nowa_wys))
 
             for os_, wartosc in ((qn("wp:positionH"), LOGO_OD_LEWEJ),
                                  (qn("wp:positionV"), LOGO_OD_GORY)):
@@ -292,12 +307,67 @@ def _ustaw_logo(dokument) -> int:
             zadany = _oblewanie(dokument, akapit)
             for stare in [e for e in kotwica if _nazwa(e).startswith("wrap")]:
                 kotwica.remove(stare)
-            _wstaw_przed(kotwica, OxmlElement(f"wp:{zadany}"), PO_OBLEWANIU)
+            nowe = OxmlElement(f"wp:{zadany}")
+            if zadany in OBLEWANIE_Z_TEKSTEM:      # atrybut wymagany przez schemat
+                nowe.set("wrapText", "bothSides")
+            _wstaw_przed(kotwica, nowe, PO_OBLEWANIU)
             zmienione += 1
     return zmienione
 
 
 # --- całość ----------------------------------------------------------------------
+
+def _stopka_biegi(akapit) -> None:
+    for bieg in akapit.runs:
+        bieg.font.name = KROJ
+        bieg.font.size = STOPKA_ROZMIAR
+        bieg.bold = False
+        bieg.font.color.rgb = STOPKA_KOLOR
+        rPr = bieg._element.get_or_add_rPr()
+        for caps in rPr.findall(qn("w:caps")):     # wersaliki bywają też na biegu
+            rPr.remove(caps)
+
+
+def _ujednolic_stopke(dokument) -> int:
+    """Jedna stopka: na każdej stronie, w każdym dokumencie, bez numeracji stron.
+
+    Numer strony siedział w zwykłej stopce (stopka pierwszej strony miała dane firmy).
+    Skoro obie mają wyglądać tak samo, zwykła dostaje kopię tej pierwszej — a pole
+    z numerem znika razem z jej dotychczasową zawartością.
+    """
+    for styl in dokument.styles:
+        if styl.style_id not in ("Stopka", "Footer"):
+            continue
+        rPr = styl.element.find(qn("w:rPr"))
+        if rPr is not None:
+            for caps in rPr.findall(qn("w:caps")):   # to od nich stopka krzyczała
+                rPr.remove(caps)
+        pPr = styl.element.find(qn("w:pPr"))
+        krawedzie = pPr.find(qn("w:pBdr")) if pPr is not None else None
+        if krawedzie is not None:
+            gora = krawedzie.find(qn("w:top"))
+            if gora is not None:                     # gruba kreska -> włos
+                gora.set(qn("w:sz"), "2")
+                gora.set(qn("w:color"), "BFBFBF")
+
+    zmienione = 0
+    for sekcja in dokument.sections:
+        zrodlo = [p for p in sekcja.first_page_footer.paragraphs if p.text.strip()]
+        if not zrodlo:
+            continue
+        for akapit in zrodlo:
+            _stopka_biegi(akapit)
+
+        # także stopka stron parzystych: nie jest teraz używana, ale trzymała
+        # pole z numerem strony i odezwałaby się przy pierwszej zmianie ustawień
+        for cel in (sekcja.footer, sekcja.even_page_footer):
+            for akapit in list(cel.paragraphs):
+                akapit._p.getparent().remove(akapit._p)
+            for akapit in zrodlo:
+                cel._element.append(copy.deepcopy(akapit._p))
+            zmienione += 1
+    return zmienione
+
 
 def _ujednolic_tabele(dokument) -> int:
     """Komórki tabel: ten sam krój i rozmiar, grubość zostaje.
@@ -333,6 +403,12 @@ def _sprawdz_kolejnosc(dokument) -> list[str]:
             if pozniejsze and nazwy.index(oblewanie) > nazwy.index(pozniejsze[0]):
                 zarzuty.append(f"<wp:{oblewanie}> stoi za <wp:{pozniejsze[0]}>")
 
+        for oblewanie in oblewania:
+            if oblewanie in OBLEWANIE_Z_TEKSTEM:
+                element = next(e for e in kotwica if _nazwa(e) == oblewanie)
+                if not any(k.endswith("wrapText") for k in element.attrib):
+                    zarzuty.append(f"<wp:{oblewanie}> bez wymaganego wrapText")
+
     for rPr in dokument.element.body.findall(".//{*}rPr"):
         nazwy = [_nazwa(e) for e in rPr]
         if "spacing" not in nazwy:
@@ -340,6 +416,12 @@ def _sprawdz_kolejnosc(dokument) -> list[str]:
         pozniejsze = [n for n in PO_ROZSTRZELENIU if n in nazwy]
         if pozniejsze and nazwy.index("spacing") > nazwy.index(pozniejsze[0]):
             zarzuty.append(f"<w:spacing> stoi za <w:{pozniejsze[0]}>")
+
+    # <a:ext> z atrybutem `uri` to element listy rozszerzeń, a nie rozmiar — cx/cy
+    # nie mają tam prawa być
+    for ext in dokument.element.body.findall(".//{*}ext"):
+        if ext.get("uri") and ("cx" in ext.attrib or "cy" in ext.attrib):
+            zarzuty.append("<a:ext uri=…> ma cx/cy, a to element rozszerzenia")
     return zarzuty
 
 
@@ -347,7 +429,7 @@ def ujednolic(plik: Path) -> dict[str, int]:
     dokument = docx.Document(plik)
     licznik = dict.fromkeys(
         ("tytul", "naglowek", "etykieta", "tresc", "podpis", "pusty",
-         "scalone", "wciecia", "tabulatory", "logo", "komorki"), 0)
+         "scalone", "wciecia", "tabulatory", "logo", "komorki", "stopka"), 0)
 
     # styl bazowy: cokolwiek dopiszesz później w Wordzie, wyjdzie w tym samym kroju
     normalny = dokument.styles["Normal"]
@@ -357,6 +439,7 @@ def ujednolic(plik: Path) -> dict[str, int]:
     licznik["scalone"] = _scal_ciagi(dokument)
     licznik["logo"] = _ustaw_logo(dokument)
     licznik["komorki"] = _ujednolic_tabele(dokument)
+    licznik["stopka"] = _ujednolic_stopke(dokument)
 
     akapity = dokument.paragraphs
     z_trescia = [p for p in akapity if p.text.strip()]

@@ -183,6 +183,13 @@ też brat. Interfejs w całości po polsku.
    (`_wstaw_przed` w `ujednolic_wyglad.py`), a poprawność sprawdzaj w kodzie
    (`_sprawdz_kolejnosc` odmawia zapisania pliku, który Word odrzuci). **Zielony PDF
    z LibreOffice'a nie jest dowodem, że plik jest poprawny.**
+12e. **`<a:ext>` to dwa różne elementy o tej samej nazwie.** W `<a:xfrm>` niesie rozmiar
+   obrazka (`cx`/`cy`), ale `<a:ext uri="…">` to pozycja listy rozszerzeń — dopisanie jej
+   `cx`/`cy` daje plik nie do otwarcia w Wordzie. `findall(".//a:ext")` łapie oba; trzeba
+   schodzić przez `a:xfrm`. Tak samo `<wp:wrapSquare>` **wymaga** atrybutu `wrapText` —
+   podmiana oblewania na „gołe” `OxmlElement("wp:wrapSquare")` gubi go po cichu.
+   Oba błędy trafiły tylko w spis treści (sprawozdanie ma `wrapTopAndBottom`, który
+   niczego nie wymaga), więc objaw wyglądał na „jeden plik zepsuty, drugi działa”.
 12b. **Word trzyma każdy tabulator w osobnym biegu tekstu.** `"\t\t" in akapit.text` bywa
    prawdą, choć żaden pojedynczy bieg nie zawiera dwóch tabulatorów — `bieg.text.replace`
    nic wtedy nie robi i „poprawka” cicho nie działa (a przy powtórzeniu dokłada kolejny
