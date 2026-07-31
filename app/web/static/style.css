@@ -131,6 +131,8 @@ button:hover { border-color: var(--akcent); color: var(--akcent); }
 .glowny:hover { background: var(--akcent-ciemny); color: #fff; }
 .wtorny { color: var(--szary); }
 .niebezpieczny { color: var(--zle); border-color: #f0c8c4; margin-top: 18px; }
+/* w pasku przycisków odstęp od góry rozjeżdża równanie z sąsiadami */
+.pasek .niebezpieczny { margin-top: 0; }
 .niebezpieczny:hover { background: var(--zle); color: #fff; border-color: var(--zle); }
 button.usun { padding: 2px 9px; line-height: 1.4; color: var(--szary); }
 button.usun:hover { color: var(--zle); border-color: var(--zle); }
