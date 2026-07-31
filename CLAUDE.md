@@ -104,11 +104,11 @@ starą wersję (autor się na to nadział).
 | `WERSJA` | 1. linia = numer porównywany z GitHubem, reszta = opis pokazywany bratu raz po aktualizacji |
 | `app/db.py` | SQLite: `dokumenty`, `liczniki`, `teryt_*` (`ustawienia` bez interfejsu) |
 | `app/teryt.py` | jednostki TERYT z GUS + obręby z ULDK; **tylko biblioteka standardowa** |
-| `app/operaty.py` | katalog operatu: zakładanie, `operat.json`, lista plików do sklejenia |
+| `app/operaty.py` | katalog operatu: zakładanie, `operat.json`, lista plików do sklejenia; nazwa pliku wynika z nazwy szablonu (`spis_tresci_wzor` → `spis_tresci.docx`) |
 | `app/miniatury.py` | podgląd pierwszej strony PDF-a (pypdfium2 + Pillow) |
 | `app/main.py` | trasy FastAPI, parsowanie formularza (w tym tabel) |
 | `app/web/templates/` | widoki; `blad.html` to strona każdego niezłapanego wyjątku, a `pomoc.html` instrukcja dla brata — aktualizuj ją razem z funkcjami |
-| `narzedzia/utworz_wzor_szablonu.py` | generuje przykładowy szablon operatu do testów |
+| `narzedzia/utworz_wzor_szablonu.py` | generuje przykładowy szablon spisu treści do testów |
 | `narzedzia/instalacja_testowa.py` | odtwarza instalację brata (zip z GitHuba, bez `.git`), opcja `--stara-wersja` wymusza aktualizację przy starcie |
 | `szablony/` | formatki Worda, wersjonowane w repo; aktualizacja je podmienia |
 | `wyniki/`, `dane/` | dane użytkownika, w `.gitignore` |
@@ -235,7 +235,7 @@ i skrypty jednorazowe.
 
 ## Co dalej — kolejka
 
-1. **Prawdziwe szablony brata.** `szablony/operat_wzor.docx` to atrapa wygenerowana skryptem.
+1. **Prawdziwe szablony brata.** `szablony/spis_tresci_wzor.docx` to atrapa wygenerowana skryptem.
    Gdy przyjdą jego formatki Worda — wstawić w nie tagi i dopisać pliki `.json`.
 2. **Wczytywanie wykazu współrzędnych z pliku** zamiast wklepywania/wklejania — brat pewnie
    eksportuje dane z programu geodezyjnego (C-Geo, WinKalk, Geonet). Trzeba zapytać o format

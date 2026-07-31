@@ -29,7 +29,8 @@ from . import pdf
 from .config import DANE, WYNIKI
 
 PLIK_OPISU = "operat.json"
-SPIS_TRESCI = "spis_tresci.docx"
+SPIS_TRESCI = "spis_tresci.docx"      # ten plik zawsze idzie pierwszy przy sklejaniu
+SUFIKS_WZORU = "_wzor"
 
 ROZSZERZENIA_PDF = {".pdf"}
 ROZSZERZENIA_WORD = {".docx", ".doc", ".rtf", ".odt"}
@@ -94,6 +95,18 @@ def zaloz(nr_operatu: str, nr_roboty: str, szablon: str,
         if znacznik:
             (katalog / znacznik).touch()          # pusty plik, żeby numer było widać w folderze
     return katalog, ostrzezenia
+
+
+def nazwa_dokumentu(id_szablonu: str) -> str:
+    """'spis_tresci_wzor' -> 'spis_tresci.docx'.
+
+    Każdy szablon robi w katalogu operatu swój plik, nazwany tak jak szablon.
+    Końcówkę „_wzor” obcinamy: to znak, że formatka jest do podmiany na własną,
+    a nie część nazwy dokumentu.
+    """
+    rdzen = (id_szablonu[:-len(SUFIKS_WZORU)] if id_szablonu.endswith(SUFIKS_WZORU)
+             else id_szablonu)
+    return nazwa_bezpieczna(rdzen or id_szablonu, zapas="dokument")[0] + ".docx"
 
 
 def opis(katalog: Path) -> dict[str, Any]:

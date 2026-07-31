@@ -1,4 +1,4 @@
-"""Tworzy przykładowy szablon operatu (szablony/operat_wzor.docx) wraz z opisem pól.
+"""Tworzy przykładowy szablon spisu treści (szablony/spis_tresci_wzor.docx) z opisem pól.
 
 To rusztowanie do podmiany: brat wkleja tu swoją formatkę Worda i przenosi do niej tagi
 {{ }}, zamiast wymyślać ich nazwy od zera. Uruchomienie:
@@ -111,14 +111,14 @@ def zbuduj() -> Path:
 
     akapit(dokument, "Położenie: {{ polozenie }}", 10, odstep_przed=60)
 
-    plik = SZABLONY / "operat_wzor.docx"
+    plik = SZABLONY / "spis_tresci_wzor.docx"
     dokument.save(plik)
     return plik
 
 
 OPIS_POL = {
-    "nazwa": "Operat techniczny (wzór testowy)",
-    "opis": "Dane roboty i położenie działki. Szkielet do podmiany na własną formatkę.",
+    "nazwa": "Spis treści operatu (wzór)",
+    "opis": "Strona tytułowa i spis treści. Szkielet do podmiany na własną formatkę.",
     "wzor_nazwy": "Operat_{nr_roboty}",
     "licznik": "operat",
     "pola": [

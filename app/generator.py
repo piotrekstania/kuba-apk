@@ -148,7 +148,7 @@ def generuj(szablon: Szablon, dane: dict[str, Any],
             numer or f"{nazwa_pliku(szablon, kontekst)}__{znacznik}",
             str(kontekst.get("nr_roboty", "")), szablon.id, dane)
 
-        plik = katalog / operaty.SPIS_TRESCI
+        plik = katalog / operaty.nazwa_dokumentu(szablon.id)
         dokument.save(plik)
     except Exception:
         # Numer musi być znany przed wypełnianiem, bo wchodzi do treści dokumentu.

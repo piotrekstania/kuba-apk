@@ -1,2 +1,2 @@
-2026.07.31.16
-Poprawione brzmienie dwóch pozycji spisu treści („Protokół ustalenia”, „Protokół wznowienia”). Lista w formularzu jest teraz czystsza — bez numerków i dopisków; numeracja zostaje tam, gdzie ma sens, czyli w gotowym dokumencie.
+2026.07.31.17
+Szablon nazywa się teraz spis_tresci_wzor.docx, bo wkrótce dojdą kolejne. Nazwa pliku w katalogu operatu wynika wprost z nazwy szablonu, więc każdy następny dokument trafi do własnego pliku, zamiast nadpisywać spis treści.

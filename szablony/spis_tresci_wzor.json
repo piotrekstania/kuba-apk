@@ -1,6 +1,6 @@
 {
-  "nazwa": "Operat techniczny (wzór testowy)",
-  "opis": "Dane roboty i położenie działki. Szkielet do podmiany na własną formatkę.",
+  "nazwa": "Spis treści operatu (wzór)",
+  "opis": "Strona tytułowa i spis treści. Szkielet do podmiany na własną formatkę.",
   "wzor_nazwy": "Operat_{nr_roboty}",
   "licznik": "operat",
   "pola": [
