@@ -45,14 +45,19 @@ WZORCE = BAZA / "szablony_wzorcowe"
 
 
 def _czytaj_wersje(tekst: str) -> tuple[str, str]:
-    """Pierwsza linia pliku WERSJA to numer, reszta to opis zmian dla użytkownika."""
-    linie = [linia.strip() for linia in tekst.strip().splitlines()]
-    return (linie[0] if linie else "?", " ".join(linie[1:]).strip())
+    """Pierwsza linia pliku WERSJA to numer, reszta to opis zmian dla użytkownika.
+
+    BOM ucinamy sami: Notatnik i PowerShell zapisują pliki z BOM-em, a niewidzialny
+    znak na początku numeru sprawiłby, że wersje nigdy nie są równe i program
+    pobierałby tę samą aktualizację przy każdym uruchomieniu.
+    """
+    linie = [linia.strip() for linia in tekst.lstrip("﻿").strip().splitlines()]
+    return (linie[0].lstrip("﻿") if linie else "?", " ".join(linie[1:]).strip())
 
 
 def wersja_lokalna() -> tuple[str, str]:
     try:
-        return _czytaj_wersje(PLIK_WERSJI.read_text(encoding="utf-8"))
+        return _czytaj_wersje(PLIK_WERSJI.read_text(encoding="utf-8-sig"))
     except OSError:
         return ("?", "")
 
@@ -61,7 +66,7 @@ def wersja_zdalna() -> tuple[str, str] | None:
     """None = nie udało się sprawdzić (brak internetu, GitHub nie odpowiada)."""
     try:
         with urllib.request.urlopen(URL_WERSJA, timeout=LIMIT_CZASU) as odpowiedz:
-            return _czytaj_wersje(odpowiedz.read().decode("utf-8"))
+            return _czytaj_wersje(odpowiedz.read().decode("utf-8-sig"))
     except (urllib.error.URLError, TimeoutError, OSError, UnicodeDecodeError):
         return None
 
