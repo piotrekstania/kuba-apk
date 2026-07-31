@@ -12,8 +12,9 @@ Z `--stara-wersja` podmienia numer w pliku WERSJA na starszy, żeby przy pierwsz
 uruchomieniu `start.bat` naprawdę wykonał aktualizację — łącznie z komunikatem
 „co nowego" na stronie głównej.
 
-Danych nie kasuje: jeśli w katalogu jest już `dane/`, `wyniki/` albo `szablony/`,
-zostają nietknięte — po to, żeby dało się sprawdzić, czy aktualizacja ich nie zjada.
+Danych nie kasuje: jeśli w katalogu jest już `dane/` albo `wyniki/`, zostają nietknięte —
+po to, żeby dało się sprawdzić, czy aktualizacja ich nie zjada. `szablony/` **są**
+podmieniane, bo jadą razem z kodem.
 """
 import argparse
 import shutil

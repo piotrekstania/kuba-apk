@@ -41,13 +41,16 @@ Program przy każdym uruchomieniu porównuje swój plik `WERSJA` z tym na GitHub
 (`piotrekstania/kuba-apk`, gałąź `main`). Jeśli tam jest nowszy, pobiera paczkę `.zip`
 i podmienia **wyłącznie kod**. Brak internetu = start po staremu, bez błędu.
 
-Nietykalne przy aktualizacji: `dane/` (historia, dane stałe, liczniki numeracji),
-`wyniki/` (gotowe dokumenty) i `szablony/` (formatki Worda ustawione przez użytkownika).
-Przed każdą podmianą leci kopia bazy i poprzedniego kodu do `dane/kopie/`.
+Nietykalne przy aktualizacji: `dane/` (historia, liczniki numeracji, pobrane dane TERYT)
+i `wyniki/` (gotowe dokumenty). Przed każdą podmianą leci kopia bazy i poprzedniej
+zawartości do `dane/kopie/`.
 
-Wzorce szablonów są w `szablony_wzorcowe/` i trafiają do `szablony/` tylko wtedy, gdy
-pliku o tej nazwie jeszcze tam nie ma — dzięki temu aktualizacja nigdy nie nadpisze
-cudzej pracy w Wordzie.
+**Szablony jadą razem z kodem.** Jest jeden katalog `szablony/`, wersjonowany w repozytorium
+i nadpisywany przy każdej aktualizacji — formatki Worda utrzymuje autor, nie użytkownik,
+więc poprawka w szablonie dociera do brata tak samo zwyczajnie jak poprawka w programie.
+Wcześniej był podział na `szablony_wzorcowe/` (wysyłane) i `szablony/` (jego, nietykalne);
+przy takim podziale zmieniony wzorzec nie docierał do użytkownika, dopóki nie skasował
+pliku ręcznie.
 
 **Wydanie nowej wersji = podbicie pliku `WERSJA` i `git push`.** Pierwsza linia to numer
 (porównywany), reszta to opis pokazywany użytkownikowi jednorazowo po aktualizacji.
@@ -78,11 +81,10 @@ sama się doprowadzi do porządku (po uprzednim zrobieniu kopii).
 
 | Katalog / plik | Do czego |
 | --- | --- |
-| `szablony/` | pliki `.docx` z tagami `{{ }}` — **to tu brat edytuje wygląd dokumentów**; nie jedzie w repo, aktualizacja go nie rusza |
-| `szablony_wzorcowe/` | wzorce wysyłane z programem; kopiują się do `szablony/` tylko gdy brakuje |
+| `szablony/` | pliki `.docx` z tagami `{{ }}` — wygląd dokumentów; **wersjonowane w repo**, aktualizacja je podmienia |
 | `szablony/*.json` | nieobowiązkowy opis pól: etykiety, typy, kolejność, grupy |
 | `wyniki/` | wygenerowane dokumenty i PDF-y |
-| `dane/operaty.sqlite3` | historia, dane stałe, liczniki numeracji |
+| `dane/operaty.sqlite3` | historia, liczniki numeracji, jednostki TERYT i obręby |
 | `app/szablony.py` | czyta szablon i buduje z niego formularz |
 | `app/generator.py` | wypełnia szablon danymi |
 | `app/pdf.py` | konwersja DOCX→PDF i łączenie PDF-ów |
@@ -97,9 +99,12 @@ jest w samej aplikacji, w zakładce „Jak edytować szablon”.
 
 ## Typy pól (plik `.json` obok szablonu)
 
-`text`, `textarea`, `date`, `number`, `select`, `checkbox`, `tabela`, `auto_numer`.
-Dodatkowo `"zrodlo": "ustawienia"` chowa pole z formularza i bierze wartość z zakładki
-„Dane stałe” (nazwisko, uprawnienia, dane firmy — wpisywane raz).
+`text`, `textarea`, `date`, `number`, `select`, `checkbox`, `tabela`, `auto_numer`,
+`teryt` (kaskada województwo → powiat → jednostka ewidencyjna → obręb; do dokumentu
+wchodzą nazwy i identyfikatory TERYT osobnymi znacznikami).
+
+Dane, które nie zmieniają się między robotami — nazwisko geodety, numer uprawnień,
+pieczątka firmy — wpisuje się na stałe w szablon Worda, a nie w program.
 
 ## Zrobienie pliku .exe (opcjonalnie)
 
@@ -115,4 +120,5 @@ więc celowo nie są pakowane do środka.
 
 ## Kopia zapasowa
 
-Wystarczy skopiować `szablony/` i `dane/`. Reszta odtwarza się sama.
+Wystarczy skopiować `dane/` — siedzi tam historia, numeracja i pobrane dane TERYT.
+Szablony i kod odtwarzają się z repozytorium.

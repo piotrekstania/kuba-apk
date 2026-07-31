@@ -48,7 +48,6 @@ def _pierwsze_pobranie_teryt() -> None:
 @asynccontextmanager
 async def cykl_zycia(_: FastAPI):
     db.init()
-    aktualizacja.uzupelnij_szablony()   # dokłada brakujące wzorce, istniejących nie rusza
     threading.Thread(target=_pierwsze_pobranie_teryt, daemon=True).start()
     yield
 

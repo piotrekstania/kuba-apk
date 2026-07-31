@@ -4,10 +4,10 @@ Brat uruchamia `start.bat`; ten przed startem serwera woła `python -m app.aktua
 Moduł porównuje plik `WERSJA` u siebie z tym na GitHubie i jeśli jest nowszy, pobiera
 paczkę .zip gałęzi `main` i podmienia **tylko kod**.
 
-Świętość, której nie wolno tknąć: `dane/` (baza z historią i numeracją), `wyniki/`
-(gotowe dokumenty) i `szablony/` (formatki Worda, które brat sam sobie ustawił).
-Wzorce szablonów jadą osobno, w `szablony_wzorcowe/`, i trafiają do `szablony/`
-wyłącznie wtedy, gdy takiego pliku jeszcze tam nie ma.
+Świętość, której nie wolno tknąć: `dane/` (baza z historią i numeracją) i `wyniki/`
+(gotowe dokumenty). **`szablony/` przyjeżdżają razem z programem i są nadpisywane** —
+formatki Worda utrzymuje autor w repozytorium, a nie użytkownik u siebie. Przed
+podmianą stara zawartość ląduje w `dane/kopie/`, więc jest z czego wrócić.
 
 Cały moduł stoi na bibliotece standardowej — musi działać także wtedy, gdy nowa wersja
 dokłada zależności, których w `.venv` jeszcze nie ma.
@@ -24,7 +24,7 @@ import zipfile
 from datetime import datetime
 from pathlib import Path
 
-from .config import BAZA, BAZA_DANYCH, DANE, SZABLONY
+from .config import BAZA, BAZA_DANYCH, DANE
 
 REPO = "piotrekstania/kuba-apk"
 GALAZ = "main"
@@ -41,13 +41,15 @@ PLIK_WERSJI = BAZA / "WERSJA"
 KOPIE = DANE / "kopie"
 ZNACZNIK_NOWOSCI = DANE / "co_nowego.txt"   # czyta go strona główna, żeby pokazać komunikat
 
-# Co podmieniamy przy aktualizacji — wyłącznie kod i wzorce.
+# Co podmieniamy przy aktualizacji: kod i szablony. `szablony` są na tej liście
+# celowo — jeden katalog, zawsze taki jak w repozytorium. Ta sama lista służy do
+# zrobienia kopii zapasowej przed aktualizacją, więc poprzednie szablony zawsze
+# lądują w `dane/kopie/`.
 AKTUALIZOWANE = [
-    "app", "narzedzia", "szablony_wzorcowe",
+    "app", "narzedzia", "szablony",
     "requirements.txt", "start.bat", "start.sh", "uruchom.py",
     "WERSJA", "README.md", "CLAUDE.md",
 ]
-WZORCE = BAZA / "szablony_wzorcowe"
 
 
 def _czytaj_wersje(tekst: str) -> tuple[str, str]:
@@ -117,19 +119,6 @@ def _pobierz_paczke(katalog: Path) -> Path:
     return podkatalogi[0]
 
 
-def uzupelnij_szablony() -> list[str]:
-    """Dokłada brakujące wzorce do szablony/. Istniejących plików nie rusza."""
-    if not WZORCE.is_dir():
-        return []
-    dodane = []
-    for wzorzec in WZORCE.iterdir():
-        cel = SZABLONY / wzorzec.name
-        if wzorzec.is_file() and not cel.exists():
-            shutil.copy2(wzorzec, cel)
-            dodane.append(wzorzec.name)
-    return dodane
-
-
 def zastosuj(nowy_kod: Path) -> None:
     for nazwa in AKTUALIZOWANE:
         zrodlo = nowy_kod / nazwa
@@ -143,7 +132,6 @@ def zastosuj(nowy_kod: Path) -> None:
                             ignore=shutil.ignore_patterns("__pycache__"))
         else:
             shutil.copy2(zrodlo, cel)
-    uzupelnij_szablony()
 
 
 def co_nowego() -> str | None:
@@ -168,7 +156,6 @@ def sprawdz_i_zaktualizuj() -> bool:
     # u użytkownika to rozpakowany .zip, więc katalogu `.git` tam nie ma.
     if kopia_robocza_gita() and os.environ.get("GENERATOR_WYMUS_AKTUALIZACJE") != "1":
         print("Katalog roboczy gita — pomijam aktualizację (tutaj obowiązuje `git pull`).")
-        uzupelnij_szablony()
         return False
 
     lokalna, _ = wersja_lokalna()
@@ -178,13 +165,11 @@ def sprawdz_i_zaktualizuj() -> bool:
         # i literówka w adresie repozytorium.
         print("Nie udało się sprawdzić aktualizacji (brak internetu albo GitHub "
               f"nie odpowiada) — program działa dalej w wersji {lokalna}.")
-        uzupelnij_szablony()
         return False
 
     numer, opis = zdalna
     if numer == lokalna:
         print(f"Wersja {lokalna} jest aktualna.")
-        uzupelnij_szablony()
         return False
 
     print(f"Jest nowsza wersja programu: {numer} (masz {lokalna}). Pobieram...")

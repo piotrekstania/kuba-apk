@@ -5,8 +5,13 @@
 <h1>Jak edytować szablon</h1>
 
 <p>Szablon to <strong>zwykły plik .docx</strong> leżący w katalogu <code>szablony/</code>.
-  Otwierasz go w Wordzie, formatujesz jak każdy dokument (czcionki, tabele, nagłówki, pieczątki),
-  a w miejscach zmiennych wpisujesz tagi. Program czyta te tagi i sam buduje formularz.</p>
+  Otwiera się go w Wordzie, formatuje jak każdy dokument (czcionki, tabele, nagłówki,
+  pieczątki), a w miejscach zmiennych wpisuje tagi. Program czyta te tagi i sam buduje
+  formularz — dopisanie <code>{{ '{{ nowe_pole }}' }}</code> w Wordzie robi nowe pole
+  na stronie, bez zmian w programie.</p>
+<p class="szary"><strong>Szablony utrzymuje brat</strong> i przychodzą razem z aktualizacją
+  (patrz <a href="#aktualizacje">niżej</a>). Ta strona opisuje, jak są zbudowane — przyda się,
+  gdy będziecie ustalać, co ma być w formularzu, a czego tam nie potrzeba.</p>
 
 <h2>Podstawowe tagi</h2>
 <table class="lista">
@@ -68,19 +73,21 @@
 <p>Program przy każdym uruchomieniu sprawdza, czy jest nowsza wersja, i jeśli jest —
   pobiera ją sam. Nie trzeba nic instalować ani niczego nadpisywać; po aktualizacji
   na stronie głównej pojawia się jednorazowa informacja, co doszło.</p>
-<p><strong>Twoje rzeczy zostają nietknięte.</strong> Aktualizacja podmienia wyłącznie sam
-  program. Nie rusza:</p>
+<p><strong>Twoja praca zostaje nietknięta.</strong> Aktualizacja nie rusza:</p>
 <table class="lista">
   <tr><th class="waski">Co</th><th>Gdzie siedzi</th></tr>
   <tr><td>historia dokumentów, numeracja, pobrane dane TERYT</td><td><code>dane/</code></td></tr>
   <tr><td>wygenerowane operaty i PDF-y</td><td><code>wyniki/</code></td></tr>
-  <tr><td><strong>Twoje szablony Worda</strong></td><td><code>szablony/</code></td></tr>
 </table>
-<p>Szablony są tu najważniejsze: jeśli poprawisz sobie <code>operat_wzor.docx</code> —
-  ustawisz pieczątkę, czcionki, układ — <strong>aktualizacja tego nie nadpisze</strong>.
-  Nowe wzorce dokładają się tylko wtedy, gdy pliku o takiej nazwie jeszcze nie masz.
-  Na wszelki wypadek przed każdą aktualizacją program odkłada kopię bazy i poprzedniej
-  wersji do <code>dane/kopie/</code>.</p>
+<p><strong>Szablony przyjeżdżają razem z programem</strong> i przy aktualizacji są
+  podmieniane na nowe. Nie ma dwóch kompletów — jest jeden katalog
+  <code>szablony/</code>, zawsze taki sam jak u brata. Dzięki temu poprawka w formatce
+  dociera do Ciebie tak samo zwyczajnie jak poprawka w programie: uruchamiasz
+  <code>start.bat</code> i już jest.</p>
+<p class="szary">Jeśli coś w szablonie ma wyglądać inaczej — powiedz bratu, on to poprawi
+  u siebie i przyjdzie z kolejną aktualizacją. Gdybyś zmienił plik <code>.docx</code>
+  samodzielnie, następna aktualizacja go nadpisze; poprzednia wersja zostaje wtedy
+  w <code>dane/kopie/</code> razem z kopią bazy.</p>
 <p class="szary">Gdy nie ma internetu (np. w terenie), program po prostu startuje w tej
   wersji, którą ma — sprawdzanie aktualizacji nigdy nie blokuje pracy.</p>
 
