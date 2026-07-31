@@ -28,7 +28,12 @@ from .config import BAZA, BAZA_DANYCH, DANE, SZABLONY
 
 REPO = "piotrekstania/kuba-apk"
 GALAZ = "main"
-URL_WERSJA = f"https://raw.githubusercontent.com/{REPO}/{GALAZ}/WERSJA"
+# Numer wersji czytamy z API, bo raw.githubusercontent serwuje plik z CDN-owego cache
+# i przez kilka minut po wydaniu twierdzi, że nowej wersji nie ma (sprawdzone: paczka .zip
+# miała już nowy kod, a raw nadal podawał stary numer). Raw zostaje jako zapas na wypadek
+# wyczerpania limitu zapytań API — 60/godz. na adres IP, a program pyta raz na uruchomienie.
+URL_WERSJA_API = f"https://api.github.com/repos/{REPO}/contents/WERSJA?ref={GALAZ}"
+URL_WERSJA_RAW = f"https://raw.githubusercontent.com/{REPO}/{GALAZ}/WERSJA"
 URL_PACZKA = f"https://github.com/{REPO}/archive/refs/heads/{GALAZ}.zip"
 LIMIT_CZASU = 10                       # s — offline nie może blokować startu programu
 
@@ -64,12 +69,22 @@ def wersja_lokalna() -> tuple[str, str]:
 
 
 def wersja_zdalna() -> tuple[str, str] | None:
-    """None = nie udało się sprawdzić (brak internetu, GitHub nie odpowiada)."""
-    try:
-        with urllib.request.urlopen(URL_WERSJA, timeout=LIMIT_CZASU) as odpowiedz:
-            return _czytaj_wersje(odpowiedz.read().decode("utf-8-sig"))
-    except (urllib.error.URLError, TimeoutError, OSError, UnicodeDecodeError):
-        return None
+    """None = nie udało się sprawdzić (brak internetu, GitHub nie odpowiada).
+
+    Pytamy po kolei: API (odpowiada od razu po wypchnięciu), potem raw (z cache).
+    """
+    for adres, naglowki in ((URL_WERSJA_API, {"Accept": "application/vnd.github.raw"}),
+                            (URL_WERSJA_RAW, {})):
+        try:
+            zadanie = urllib.request.Request(adres, headers=naglowki)
+            with urllib.request.urlopen(zadanie, timeout=LIMIT_CZASU) as odpowiedz:
+                tekst = odpowiedz.read().decode("utf-8-sig")
+        except (urllib.error.URLError, TimeoutError, OSError, UnicodeDecodeError):
+            continue
+        if tekst.lstrip().startswith("{"):
+            continue          # API oddało JSON zamiast treści pliku — nie zgadujemy, idziemy dalej
+        return _czytaj_wersje(tekst)
+    return None
 
 
 def _kopia_zapasowa(wersja: str) -> Path:

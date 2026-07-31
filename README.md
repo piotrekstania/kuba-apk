@@ -62,8 +62,11 @@ W **kopii roboczej gita aktualizator się nie uruchamia** (wykrywa katalog `.git
 python narzedzia/instalacja_testowa.py /sciezka/do/testu --stara-wersja
 ```
 
-`raw.githubusercontent.com` cache'uje pliki około pięciu minut, więc tuż po `push` program
-może jeszcze przez chwilę widzieć starą wersję. To nie awaria — wystarczy odczekać.
+Numer wersji program czyta z **API GitHuba**, bo `raw.githubusercontent.com` serwuje pliki
+z cache i po `push` przez kilka minut podaje jeszcze stary numer (zmierzone: 3,5 min, przy
+paczce `.zip`, która nowy kod miała od razu). Gdy API odmówi — limit to 60 zapytań na godzinę
+z jednego adresu IP, a program pyta raz na uruchomienie — zostaje ścieżka przez `raw`
+i wtedy znów trzeba chwilę odczekać.
 Numer wersji jest zwykłym tekstem, porównywanym na równość, więc format jest dowolny
 (`2026.07.31`, `2026.07.31.1`, `1.4` — co wygodniejsze).
 

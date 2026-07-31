@@ -128,7 +128,10 @@ też brat. Interfejs w całości po polsku.
 7. **Wydanie = podbicie `WERSJA` + push.** Sam commit nic bratu nie wyśle — porównywany
    jest wyłącznie pierwszy wiersz pliku `WERSJA`. To celowe: decydujesz, kiedy dostaje
    nową wersję. Odwrotna pułapka: podbicie `WERSJA` bez wypchnięcia reszty kodu wyśle
-   mu paczkę z gałęzi `main` w stanie, w jakim akurat jest.
+   mu paczkę z gałęzi `main` w stanie, w jakim akurat jest. Numer czytamy z API GitHuba,
+   bo `raw.githubusercontent` podawał go z cache jeszcze 3,5 minuty po pushu — paczka
+   `.zip` miała już wtedy nowy kod, więc program ogłaszał „wersja aktualna”, mając
+   nieaktualną. `raw` został jako zapas na wyczerpany limit API.
 8. **Aktualizator nie może importować niczego spoza stdlib.** Chodzi z `.venv`, w którym
    nowych zależności jeszcze nie ma — `start.bat` woła go *przed* `pip install`, właśnie
    po to, żeby nowa wersja mogła dokładać biblioteki.
