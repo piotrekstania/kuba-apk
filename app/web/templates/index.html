@@ -32,13 +32,12 @@
 {% if dokumenty %}
 <table class="lista">
   <tr><th class="waski">Nr operatu</th><th>Nr roboty</th>
-      <th>Szablon</th><th>Data</th><th></th></tr>
+      <th>Data</th><th></th></tr>
   {% for dokument in dokumenty %}
   <tr>
     <td><a href="/dokument/{{ dokument.id }}"><strong>{{ dokument.nr_operatu
         or dokument.katalog or '—' }}</strong></a></td>
     <td>{{ dokument.tytul or '—' }}</td>
-    <td class="szary">{{ dokument.szablon }}</td>
     <td class="szary">{{ dokument.utworzono.replace('T', ' ') }}</td>
     <td class="akcje">
       {% if dokument.katalog %}<a href="/scal/{{ dokument.katalog | urlencode }}">Złóż PDF</a>{% endif %}
