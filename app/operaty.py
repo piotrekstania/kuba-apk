@@ -67,9 +67,13 @@ def katalog_operatu(nr_operatu: str) -> Path:
     return WYNIKI / nazwa_katalogu(nr_operatu)
 
 
-def zaloz(nr_operatu: str, nr_roboty: str, szablon: str,
-          dane: dict[str, Any]) -> tuple[Path, list[str]]:
-    """Tworzy katalog operatu z opisem. Zwraca (katalog, ostrzeżenia dla użytkownika)."""
+def zaloz(nr_operatu: str, nr_roboty: str, szablon: str, dane: dict[str, Any],
+          poprzedni_numer_roboty: str = "") -> tuple[Path, list[str]]:
+    """Tworzy albo odświeża katalog operatu z opisem.
+
+    Zwraca (katalog, ostrzeżenia dla użytkownika). Wołane też przy poprawianiu operatu —
+    wtedy katalog już istnieje i tylko nadpisujemy `operat.json`.
+    """
     # Ukośnik w nazwie katalogu zamieniamy na kropkę po cichu — to norma, a nie usterka
     # warta straszenia użytkownika.
     ostrzezenia: list[str] = []
@@ -84,6 +88,16 @@ def zaloz(nr_operatu: str, nr_roboty: str, szablon: str,
         "utworzono": datetime.now().isoformat(timespec="seconds"),
         "dane": dane,
     }, ensure_ascii=False, indent=2), encoding="utf-8")
+
+    # Przy poprawianiu operatu numer roboty mógł się zmienić — stary pusty znacznik
+    # trzeba sprzątnąć, żeby w katalogu nie leżały dwa numery naraz.
+    if poprzedni_numer_roboty and poprzedni_numer_roboty != nr_roboty:
+        stary = katalog / nazwa_bezpieczna(poprzedni_numer_roboty, zapas="")[0]
+        # Kasujemy tylko wtedy, gdy plik jest pusty — czyli jest naszym znacznikiem.
+        # Sprawdzanie rozszerzenia nic tu nie daje: numer roboty ma kropki, więc
+        # „GK.6640.123.2026” wygląda dla Pythona jak plik z rozszerzeniem „.2026”.
+        if stary.name and stary.is_file() and stary.stat().st_size == 0:
+            stary.unlink(missing_ok=True)
 
     if nr_roboty:
         znacznik, podmieniono = nazwa_bezpieczna(nr_roboty, zapas="")

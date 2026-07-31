@@ -142,13 +142,23 @@ def _numer_operatu(szablon: Szablon, kontekst: dict[str, Any]) -> str:
     return ""
 
 
-def generuj(szablon: Szablon, dane: dict[str, Any],
-            ustawienia: dict[str, str]) -> tuple[Path, dict, list[str]]:
-    """Zakłada katalog operatu i wkłada do niego spis treści.
+def generuj(szablon: Szablon, dane: dict[str, Any], ustawienia: dict[str, str],
+            poprzedni: dict[str, Any] | None = None) -> tuple[Path, dict, list[str]]:
+    """Zakłada katalog operatu i wkłada do niego dokument główny.
+
+    `poprzedni` = opis operatu, który poprawiamy (z `operat.json`). Wtedy numer operatu
+    bierze się stamtąd, a nie z licznika, i wszystko ląduje w tym samym katalogu —
+    poprawianie dokumentu nie może zjadać kolejnych numerów.
 
     Zwraca (plik .docx, kontekst, ostrzeżenia do pokazania użytkownikowi).
     """
     rezerwacje: list[tuple[str, int, int]] = []
+    if poprzedni and poprzedni.get("nr_operatu"):
+        # Numer wpisujemy z góry — `auto_numer` po niego nie sięgnie, bo widzi wartość.
+        dane = dict(dane)
+        for pole in szablon.pola:
+            if pole.typ == "auto_numer":
+                dane.setdefault(pole.klucz, poprzedni["nr_operatu"])
     kontekst = przygotuj_kontekst(szablon, dane, ustawienia, rezerwacje)
     try:
         dokument = DocxTemplate(szablon.plik)
@@ -160,7 +170,8 @@ def generuj(szablon: Szablon, dane: dict[str, Any],
         znacznik = datetime.now().strftime("%Y%m%d-%H%M%S")
         katalog, ostrzezenia = operaty.zaloz(
             numer or f"{nazwa_pliku(szablon, kontekst)}__{znacznik}",
-            str(kontekst.get("nr_roboty", "")), szablon.id, dane)
+            str(kontekst.get("nr_roboty", "")), szablon.id, dane,
+            poprzedni_numer_roboty=str((poprzedni or {}).get("nr_roboty", "")))
 
         plik = katalog / operaty.nazwa_dokumentu(szablon.id)
         dokument.save(plik)

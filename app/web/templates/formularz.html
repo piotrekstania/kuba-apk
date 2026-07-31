@@ -4,9 +4,15 @@
 
 <h1>{{ szablon.nazwa }}</h1>
 {% if szablon.opis %}<p class="szary">{{ szablon.opis }}</p>{% endif %}
-{% if podglad_numeru %}<p class="szary">Numer nadany temu dokumentowi: <strong>{{ podglad_numeru }}</strong></p>{% endif %}
+{% if podglad_numeru %}
+<p class="szary">
+  {% if edytuj %}Poprawiasz operat <strong>{{ podglad_numeru }}</strong> — numer i katalog
+  zostają te same, pliki nadpiszą się nowymi.
+  {% else %}Numer nadany temu dokumentowi: <strong>{{ podglad_numeru }}</strong>{% endif %}
+</p>
+{% endif %}
 
-<form method="post" action="/generuj/{{ szablon.id }}">
+<form method="post" action="/generuj/{{ szablon.id }}{% if edytuj %}?edytuj={{ edytuj }}{% endif %}">
   {% for grupa, pola in szablon.grupy.items() %}
   <fieldset>
     <legend>{{ grupa }}</legend>
@@ -181,8 +187,8 @@
   {% endfor %}
 
   <div class="pasek">
-    <button type="submit" class="glowny">Generuj dokument</button>
-    <a href="/" class="wtorny">Anuluj</a>
+    <button type="submit" class="glowny">{{ 'Zapisz poprawki' if edytuj else 'Generuj dokument' }}</button>
+    <a href="{{ '/dokument/' ~ edytuj if edytuj else '/' }}" class="wtorny">Anuluj</a>
   </div>
 </form>
 

@@ -17,7 +17,8 @@
     <button class="wtorny" type="submit">Otwórz katalog</button>
   </form>
   {% if dokument.katalog %}<a class="glowny" href="/scal/{{ dokument.katalog | urlencode }}">Złóż PDF operatu</a>{% endif %}
-  <a class="wtorny" href="/nowy/{{ dokument.szablon }}?kopiuj={{ dokument.id }}">Popraw i wygeneruj ponownie</a>
+  <a class="wtorny" href="/nowy/{{ dokument.szablon }}?edytuj={{ dokument.id }}">Popraw ten operat</a>
+  <a class="wtorny" href="/nowy/{{ dokument.szablon }}?kopiuj={{ dokument.id }}">Powiel jako nowy</a>
 </div>
 
 <h2>Wpisane dane</h2>

@@ -55,6 +55,7 @@ class Szablon:
     opis: str = ""
     wzor_nazwy: str = "{id_szablonu}"
     licznik: str = ""           # nazwa licznika dla pola typu "auto_numer"
+    glowny: bool = False        # kafelek na stronie głównej; reszta tylko jako dodatek
     pola: list[Pole] = field(default_factory=list)
 
     @property
@@ -98,6 +99,7 @@ def wczytaj_szablon(plik: Path) -> Szablon:
         opis=meta.get("opis", ""),
         wzor_nazwy=meta.get("wzor_nazwy", plik.stem + "_{data_dokumentu}"),
         licznik=meta.get("licznik", ""),
+        glowny=bool(meta.get("glowny", False)),
     )
 
     opisane: dict[str, Pole] = {}

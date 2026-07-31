@@ -190,8 +190,14 @@ def odczytaj_dane(formularz, szablon: szablony.Szablon) -> dict[str, Any]:
 
 @app.get("/", response_class=HTMLResponse)
 def strona_glowna(request: Request):
+    # Kafelki tylko dla szablonów oznaczonych jako główne: reszta (sprawozdanie,
+    # protokoły) sama bez operatu nie istnieje, dokłada się ją checkboxem w formularzu.
+    # Gdy nikt nie jest oznaczony, pokazujemy wszystkie — inaczej po dodaniu pierwszego
+    # szablonu bez „glowny” strona byłaby pusta i nie wiadomo dlaczego.
+    wszystkie = szablony.lista_szablonow()
+    glowne = [s for s in wszystkie if s.glowny] or wszystkie
     return _widok(request, "index.html",
-                  szablony=szablony.lista_szablonow(),
+                  szablony=glowne,
                   dokumenty=db.dokumenty(limit=15),
                   co_nowego=aktualizacja.co_nowego())   # pokazuje się raz, po aktualizacji
 
@@ -231,7 +237,8 @@ def _inne_szablony(szablon: szablony.Szablon) -> list[dict[str, str]]:
 
 
 @app.get("/nowy/{identyfikator}", response_class=HTMLResponse)
-def formularz(request: Request, identyfikator: str, kopiuj: int | None = None):
+def formularz(request: Request, identyfikator: str, kopiuj: int | None = None,
+              edytuj: int | None = None):
     szablon, odpowiedz = _szablon_albo_blad(request, identyfikator)
     if odpowiedz is not None:
         return odpowiedz
@@ -244,25 +251,29 @@ def formularz(request: Request, identyfikator: str, kopiuj: int | None = None):
         wartosci[pole.klucz] = (date.today().isoformat()
                                 if pole.typ == "date" and pole.domyslnie == "dzisiaj"
                                 else pole.domyslnie)
-    if kopiuj:                                   # „zrób podobny jak poprzedni”
-        poprzedni = db.dokument(kopiuj)
-        if poprzedni:
-            wartosci.update(json.loads(poprzedni["dane_json"]))
+    # „Powiel” robi nowy operat z tymi samymi danymi, „Popraw” wraca do tego samego
+    zrodlo = db.dokument(edytuj or kopiuj) if (edytuj or kopiuj) else None
+    if zrodlo:
+        wartosci.update(json.loads(zrodlo["dane_json"]))
 
     podglad = None
     for pole in szablon.pola:
         if pole.typ == "auto_numer":
-            numer = db.podglad_numeru(szablon.licznik or szablon.id, date.today().year)
-            wzor = pole.domyslnie or "{numer}/{rok}"
-            podglad = wzor.format(numer=numer, numer3=f"{numer:03d}", rok=date.today().year)
+            if edytuj and zrodlo:
+                podglad = zrodlo["nr_operatu"] or zrodlo["katalog"]   # numer się nie zmienia
+            else:
+                numer = db.podglad_numeru(szablon.licznik or szablon.id, date.today().year)
+                wzor = pole.domyslnie or "{numer}/{rok}"
+                podglad = wzor.format(numer=numer, numer3=f"{numer:03d}",
+                                      rok=date.today().year)
 
     return _widok(request, "formularz.html", szablon=szablon, wartosci=wartosci,
                   podglad_numeru=podglad, dzisiaj=date.today().isoformat(),
-                  inne_szablony=_inne_szablony(szablon))
+                  edytuj=edytuj, inne_szablony=_inne_szablony(szablon))
 
 
 @app.post("/generuj/{identyfikator}")
-async def generuj(request: Request, identyfikator: str):
+async def generuj(request: Request, identyfikator: str, edytuj: int | None = None):
     szablon, odpowiedz = _szablon_albo_blad(request, identyfikator)
     if odpowiedz is not None:
         return odpowiedz
@@ -279,17 +290,24 @@ async def generuj(request: Request, identyfikator: str):
     if brakujace:
         return _widok(request, "formularz.html", szablon=szablon, wartosci=dane,
                       blad="Uzupełnij wymagane pola: " + ", ".join(brakujace),
-                      dzisiaj=date.today().isoformat(),
+                      dzisiaj=date.today().isoformat(), edytuj=edytuj,
                       inne_szablony=_inne_szablony(szablon))
 
+    poprawiany = db.dokument(edytuj) if edytuj else None
+    poprzedni_opis = None
+    if poprawiany:
+        katalog_poprzedni = operaty.katalog_po_nazwie(poprawiany["katalog"] or "")
+        poprzedni_opis = operaty.opis(katalog_poprzedni) if katalog_poprzedni else None
+
     try:
-        plik, kontekst, ostrzezenia = generator.generuj(szablon, dane, db.wczytaj_ustawienia())
+        plik, kontekst, ostrzezenia = generator.generuj(
+            szablon, dane, db.wczytaj_ustawienia(), poprzedni_opis)
     except Exception as blad:
         # Wracamy na formularz z kompletem wpisanych danych — utrata wykazu współrzędnych
         # przez literówkę w szablonie byłaby gorsza niż sam błąd.
         zapisz_blad(request, blad)
         return _widok(request, "formularz.html", szablon=szablon, wartosci=dane,
-                      inne_szablony=_inne_szablony(szablon),
+                      inne_szablony=_inne_szablony(szablon), edytuj=edytuj,
                       blad=f"Nie udało się wypełnić szablonu „{szablon.nazwa}”. Zwykle "
                            "znaczy to, że w pliku .docx jest literówka w znaczniku "
                            "{{ }} albo {% ... %}. Twoje dane zostały tutaj — popraw "
@@ -313,9 +331,13 @@ async def generuj(request: Request, identyfikator: str):
                 f"znaczniki w pliku {dodatkowy.plik.name}. Reszta operatu jest gotowa.")
 
     tytul = kontekst.get("nr_roboty") or katalog.name
-    dokument_id = db.zapisz_dokument(
-        szablon.id, str(tytul), f"{katalog.name}/{plik.name}", dane, katalog.name,
-        str(kontekst.get("nr_operatu") or katalog.name))
+    if poprawiany:
+        db.zaktualizuj_dokument(poprawiany["id"], str(tytul), dane)
+        dokument_id = poprawiany["id"]
+    else:
+        dokument_id = db.zapisz_dokument(
+            szablon.id, str(tytul), f"{katalog.name}/{plik.name}", dane, katalog.name,
+            str(kontekst.get("nr_operatu") or katalog.name))
     adres = f"/dokument/{dokument_id}"
     if ostrzezenia:
         adres += "?blad=" + quote(" ".join(ostrzezenia))

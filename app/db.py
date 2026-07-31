@@ -127,6 +127,13 @@ def zapisz_dokument(szablon: str, tytul: str, plik_docx: str, dane: dict[str, An
         return int(kursor.lastrowid)
 
 
+def zaktualizuj_dokument(dokument_id: int, tytul: str, dane: dict[str, Any]) -> None:
+    """Poprawiony operat zostaje tym samym wpisem — nie zakładamy nowego."""
+    with polacz() as con:
+        con.execute("UPDATE dokumenty SET tytul = ?, dane_json = ? WHERE id = ?",
+                    (tytul, json.dumps(dane, ensure_ascii=False), dokument_id))
+
+
 def ustaw_pdf(dokument_id: int, plik_pdf: str) -> None:
     with polacz() as con:
         con.execute("UPDATE dokumenty SET plik_pdf = ? WHERE id = ?", (plik_pdf, dokument_id))

@@ -1,6 +1,7 @@
 {
-  "nazwa": "Spis treści operatu (wzór)",
-  "opis": "Strona tytułowa i spis treści. Szkielet do podmiany na własną formatkę.",
+  "nazwa": "Operat",
+  "opis": "Strona tytułowa i spis treści. Pozostałe dokumenty dokładają się do niego.",
+  "glowny": true,
   "wzor_nazwy": "Operat_{nr_roboty}",
   "licznik": "operat",
   "pola": [

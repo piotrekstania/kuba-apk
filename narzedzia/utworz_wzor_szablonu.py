@@ -116,8 +116,9 @@ def zbuduj() -> Path:
 
 
 OPIS_POL = {
-    "nazwa": "Spis treści operatu (wzór)",
-    "opis": "Strona tytułowa i spis treści. Szkielet do podmiany na własną formatkę.",
+    "nazwa": "Operat",
+    "opis": "Strona tytułowa i spis treści. Pozostałe dokumenty dokładają się do niego.",
+    "glowny": True,
     "wzor_nazwy": "Operat_{nr_roboty}",
     "licznik": "operat",
     "pola": [
@@ -161,9 +162,23 @@ OPIS_POL = {
 
 
 if __name__ == "__main__":
-    plik = zbuduj()
-    opis = plik.with_suffix(".json")
-    opis.write_text(json.dumps(OPIS_POL, ensure_ascii=False, indent=2), encoding="utf-8")
-    print("Utworzono:")
-    print(" ", plik)
-    print(" ", opis)
+    import argparse
+
+    parser = argparse.ArgumentParser(description="Tworzy przykładowy szablon do testów.")
+    parser.add_argument("--nadpisz", action="store_true",
+                        help="nadpisz istniejący .docx (UWAGA: skasuje prawdziwą formatkę)")
+    argumenty = parser.parse_args()
+
+    docelowy = SZABLONY / "spis_tresci_wzor.docx"
+    # Domyślnie nie ruszamy istniejącego pliku: siedzi tam prawdziwa formatka brata,
+    # a atrapa z tego skryptu skasowałaby jego formatowanie bezpowrotnie.
+    if docelowy.exists() and not argumenty.nadpisz:
+        print(f"{docelowy} już istnieje — zostawiam bez zmian.")
+        print("Nadpisanie atrapą: --nadpisz")
+    else:
+        print("Utworzono:", zbuduj())
+
+    opis = docelowy.with_suffix(".json")
+    opis.write_text(json.dumps(OPIS_POL, ensure_ascii=False, indent=2) + "\n",
+                    encoding="utf-8")
+    print("Zapisano opis pól:", opis)
