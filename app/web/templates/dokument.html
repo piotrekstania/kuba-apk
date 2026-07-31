@@ -1,0 +1,34 @@
+{% extends "base.html" %}
+{% block tytul %}{{ dokument.tytul }}{% endblock %}
+{% block tresc %}
+
+<h1>{{ dokument.tytul }}</h1>
+<p class="szary">Szablon: {{ dokument.szablon }} · utworzono {{ dokument.utworzono.replace('T', ' ') }}</p>
+
+<div class="pasek">
+  <a class="glowny" href="/pobierz/{{ dokument.id }}/docx">Pobierz Word (.docx)</a>
+  <a class="glowny" href="/pobierz/{{ dokument.id }}/pdf">Pobierz PDF</a>
+  <a class="wtorny" href="/scal?dokument={{ dokument.id }}">Połącz z innym PDF-em</a>
+  <a class="wtorny" href="/nowy/{{ dokument.szablon }}?kopiuj={{ dokument.id }}">Popraw i wygeneruj ponownie</a>
+</div>
+
+<h2>Wpisane dane</h2>
+<table class="lista">
+  {% for klucz, wartosc in dane.items() %}
+  <tr>
+    <th class="waski">{{ klucz }}</th>
+    <td>
+      {% if wartosc is iterable and wartosc is not string %}
+        {{ wartosc | length }} wierszy
+      {% else %}{{ wartosc }}{% endif %}
+    </td>
+  </tr>
+  {% endfor %}
+</table>
+
+<form method="post" action="/dokument/{{ dokument.id }}/usun"
+      onsubmit="return confirm('Usunąć dokument i jego pliki?')">
+  <button class="niebezpieczny" type="submit">Usuń dokument</button>
+</form>
+
+{% endblock %}

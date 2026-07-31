@@ -1,0 +1,123 @@
+:root {
+  --tlo: #f5f6f8;
+  --panel: #ffffff;
+  --tekst: #1c2430;
+  --szary: #6b7683;
+  --linia: #dde1e7;
+  --akcent: #1f6feb;
+  --akcent-ciemny: #1a5cc4;
+  --zle: #b42318;
+  --ok: #1a7f45;
+}
+
+* { box-sizing: border-box; }
+
+body {
+  margin: 0;
+  font: 15px/1.55 "Segoe UI", system-ui, -apple-system, sans-serif;
+  color: var(--tekst);
+  background: var(--tlo);
+}
+
+header {
+  display: flex;
+  align-items: center;
+  gap: 24px;
+  padding: 12px 28px;
+  background: var(--panel);
+  border-bottom: 1px solid var(--linia);
+  position: sticky;
+  top: 0;
+  z-index: 5;
+}
+.logo { font-weight: 700; text-decoration: none; color: var(--tekst); font-size: 17px; }
+nav { display: flex; gap: 18px; }
+nav a { color: var(--szary); text-decoration: none; }
+nav a:hover { color: var(--akcent); }
+.konwerter { margin-left: auto; font-size: 12px; color: var(--szary); text-decoration: none;
+             border: 1px solid var(--linia); border-radius: 999px; padding: 3px 10px; }
+.konwerter.zle { color: var(--zle); border-color: #f2c3bf; background: #fdeceb; }
+.konwerter:hover { border-color: var(--akcent); }
+
+main { max-width: 1040px; margin: 0 auto; padding: 28px; }
+
+h1 { font-size: 24px; margin: 0 0 6px; }
+h2 { font-size: 17px; margin: 32px 0 10px; }
+p { margin: 6px 0; }
+.szary { color: var(--szary); }
+code { background: #eceff3; padding: 1px 5px; border-radius: 4px; font-size: 13px; }
+pre { background: var(--panel); border: 1px solid var(--linia); border-radius: 8px;
+      padding: 14px; overflow-x: auto; font-size: 13px; }
+
+.komunikat { background: #e8f2ff; border: 1px solid #b9d5fb; color: #14396e;
+             padding: 10px 14px; border-radius: 8px; margin-bottom: 18px; }
+.komunikat.zle { background: #fdeceb; border-color: #f4c4bf; color: var(--zle); }
+
+/* karty szablonów */
+.karty { display: grid; grid-template-columns: repeat(auto-fill, minmax(260px, 1fr)); gap: 14px; }
+.karta { display: flex; flex-direction: column; gap: 4px; padding: 16px;
+         background: var(--panel); border: 1px solid var(--linia); border-radius: 10px;
+         text-decoration: none; color: inherit; }
+.karta:hover { border-color: var(--akcent); box-shadow: 0 2px 8px rgba(31, 111, 235, .12); }
+.karta span { color: var(--szary); font-size: 13px; }
+.karta small { color: var(--szary); font-size: 12px; margin-top: 6px; }
+
+/* formularz */
+fieldset { background: var(--panel); border: 1px solid var(--linia); border-radius: 10px;
+           padding: 8px 18px 18px; margin: 0 0 18px; }
+legend { font-weight: 600; padding: 0 6px; }
+.siatka { display: grid; grid-template-columns: repeat(6, 1fr); gap: 14px; }
+.pole.pelna { grid-column: span 6; }
+.pole.polowa { grid-column: span 3; }
+.pole.trzecia { grid-column: span 2; }
+.pole label { display: block; font-size: 13px; font-weight: 600; margin-bottom: 4px; }
+.pole.przelacznik label { font-weight: 400; }
+.gwiazdka { color: var(--zle); }
+.podpowiedz { font-size: 12px; color: var(--szary); margin: 4px 0 0; }
+
+input, textarea, select {
+  width: 100%; padding: 8px 10px; font: inherit; color: inherit;
+  background: #fff; border: 1px solid var(--linia); border-radius: 6px;
+}
+input:focus, textarea:focus, select:focus { outline: 2px solid #bcd6fb; border-color: var(--akcent); }
+input[type="checkbox"] { width: auto; margin-right: 6px; }
+input.maly { width: 72px; }
+textarea { resize: vertical; }
+
+/* tabele danych */
+table.lista, table.wiersze { width: 100%; border-collapse: collapse; background: var(--panel);
+                             border: 1px solid var(--linia); border-radius: 8px; overflow: hidden; }
+table.lista th, table.lista td, table.wiersze th, table.wiersze td {
+  text-align: left; padding: 8px 10px; border-bottom: 1px solid var(--linia); font-size: 14px;
+}
+table.lista th { background: #f0f2f5; font-size: 13px; }
+table.wiersze th { background: #f0f2f5; font-size: 12px; color: var(--szary); }
+table.wiersze td { padding: 4px 6px; }
+th.waski { width: 220px; }
+.akcje a { margin-right: 10px; font-size: 13px; }
+.rzad-pliku { display: flex; gap: 8px; align-items: center; margin-bottom: 8px; }
+
+/* przyciski */
+button, .glowny, .wtorny {
+  font: inherit; padding: 9px 16px; border-radius: 7px; cursor: pointer;
+  border: 1px solid var(--linia); background: #fff; color: var(--tekst); text-decoration: none;
+  display: inline-block;
+}
+button:hover { border-color: var(--akcent); color: var(--akcent); }
+.glowny { background: var(--akcent); border-color: var(--akcent); color: #fff; font-weight: 600; }
+.glowny:hover { background: var(--akcent-ciemny); color: #fff; }
+.wtorny { color: var(--szary); }
+.niebezpieczny { color: var(--zle); border-color: #f0c8c4; margin-top: 18px; }
+.niebezpieczny:hover { background: var(--zle); color: #fff; border-color: var(--zle); }
+button.usun { padding: 2px 9px; line-height: 1.4; color: var(--szary); }
+button.usun:hover { color: var(--zle); border-color: var(--zle); }
+button.dodaj-wiersz, .wklej { margin-top: 8px; font-size: 13px; padding: 5px 12px; }
+.wklej { padding: 2px 8px; }
+
+.pasek { display: flex; gap: 10px; align-items: center; margin: 20px 0; flex-wrap: wrap; }
+
+@media (max-width: 720px) {
+  .siatka { grid-template-columns: 1fr; }
+  .pole.pelna, .pole.polowa, .pole.trzecia { grid-column: span 1; }
+  header { flex-wrap: wrap; gap: 12px; }
+}

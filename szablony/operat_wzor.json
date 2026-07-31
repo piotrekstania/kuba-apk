@@ -1,0 +1,232 @@
+{
+  "nazwa": "Operat techniczny (wzór testowy)",
+  "opis": "Strona tytułowa + sprawozdanie techniczne + wykaz współrzędnych. Do podmiany na własny szablon.",
+  "wzor_nazwy": "Operat_{nr_roboty}_{obreb}",
+  "licznik": "operat",
+  "pola": [
+    {
+      "klucz": "nr_roboty",
+      "etykieta": "Nr roboty / KERG",
+      "wymagane": true,
+      "grupa": "Robota",
+      "szerokosc": "trzecia"
+    },
+    {
+      "klucz": "nr_operatu",
+      "etykieta": "Nr operatu",
+      "typ": "auto_numer",
+      "domyslnie": "{numer3}/{rok}",
+      "grupa": "Robota",
+      "szerokosc": "trzecia"
+    },
+    {
+      "klucz": "data_dokumentu",
+      "etykieta": "Data dokumentu",
+      "typ": "date",
+      "domyslnie": "dzisiaj",
+      "grupa": "Robota",
+      "szerokosc": "trzecia"
+    },
+    {
+      "klucz": "cel_opracowania",
+      "etykieta": "Cel opracowania",
+      "typ": "select",
+      "grupa": "Robota",
+      "szerokosc": "polowa",
+      "opcje": [
+        "Mapa do celów projektowych",
+        "Mapa z projektem podziału nieruchomości",
+        "Wznowienie znaków granicznych / wyznaczenie punktów granicznych",
+        "Geodezyjna inwentaryzacja powykonawcza",
+        "Tyczenie obiektu budowlanego",
+        "Ustalenie przebiegu granic działek ewidencyjnych"
+      ]
+    },
+    {
+      "klucz": "osrodek",
+      "etykieta": "Ośrodek dokumentacji (PODGiK)",
+      "grupa": "Robota",
+      "szerokosc": "polowa"
+    },
+    {
+      "klucz": "data_zgloszenia",
+      "etykieta": "Data zgłoszenia pracy",
+      "typ": "date",
+      "grupa": "Robota",
+      "szerokosc": "trzecia"
+    },
+    {
+      "klucz": "powiat",
+      "etykieta": "Powiat",
+      "grupa": "Położenie",
+      "szerokosc": "trzecia"
+    },
+    {
+      "klucz": "gmina",
+      "etykieta": "Gmina",
+      "grupa": "Położenie",
+      "szerokosc": "trzecia"
+    },
+    {
+      "klucz": "obreb",
+      "etykieta": "Obręb",
+      "grupa": "Położenie",
+      "szerokosc": "trzecia"
+    },
+    {
+      "klucz": "dzialki",
+      "etykieta": "Numery działek",
+      "grupa": "Położenie",
+      "szerokosc": "polowa",
+      "podpowiedz": "np. 123/4, 123/5, 124"
+    },
+    {
+      "klucz": "miejscowosc",
+      "etykieta": "Miejscowość (nagłówek dokumentu)",
+      "grupa": "Położenie",
+      "szerokosc": "polowa"
+    },
+    {
+      "klucz": "zamawiajacy",
+      "etykieta": "Zamawiający",
+      "grupa": "Zamawiający",
+      "szerokosc": "polowa"
+    },
+    {
+      "klucz": "zamawiajacy_adres",
+      "etykieta": "Adres zamawiającego",
+      "grupa": "Zamawiający",
+      "szerokosc": "polowa"
+    },
+    {
+      "klucz": "zakres_opis",
+      "etykieta": "Opis zakresu prac",
+      "typ": "textarea",
+      "grupa": "Opis techniczny"
+    },
+    {
+      "klucz": "materialy",
+      "etykieta": "Materiały wykorzystane do opracowania",
+      "typ": "textarea",
+      "grupa": "Opis techniczny",
+      "podpowiedz": "np. mapa zasadnicza, operaty jednostkowe, dane osnowy"
+    },
+    {
+      "klucz": "metoda_pomiaru",
+      "etykieta": "Metoda pomiaru",
+      "typ": "select",
+      "grupa": "Opis techniczny",
+      "szerokosc": "trzecia",
+      "opcje": [
+        "GNSS RTK/RTN",
+        "biegunową",
+        "ortogonalną",
+        "mieszaną (GNSS + tachimetria)"
+      ]
+    },
+    {
+      "klucz": "uklad_wspolrzednych",
+      "etykieta": "Układ współrzędnych",
+      "typ": "select",
+      "grupa": "Opis techniczny",
+      "szerokosc": "trzecia",
+      "opcje": [
+        "PL-2000 strefa 5",
+        "PL-2000 strefa 6",
+        "PL-2000 strefa 7",
+        "PL-2000 strefa 8",
+        "PL-1992"
+      ]
+    },
+    {
+      "klucz": "uklad_wysokosciowy",
+      "etykieta": "Układ wysokościowy",
+      "typ": "select",
+      "grupa": "Opis techniczny",
+      "szerokosc": "trzecia",
+      "opcje": [
+        "PL-EVRF2007-NH",
+        "PL-KRON86-NH"
+      ]
+    },
+    {
+      "klucz": "sprzet",
+      "etykieta": "Sprzęt pomiarowy",
+      "grupa": "Opis techniczny",
+      "szerokosc": "polowa",
+      "podpowiedz": "model odbiornika / tachimetru i nr fabryczny"
+    },
+    {
+      "klucz": "data_prac_od",
+      "etykieta": "Prace polowe od",
+      "typ": "date",
+      "grupa": "Opis techniczny",
+      "szerokosc": "trzecia"
+    },
+    {
+      "klucz": "data_prac_do",
+      "etykieta": "Prace polowe do",
+      "typ": "date",
+      "grupa": "Opis techniczny",
+      "szerokosc": "trzecia"
+    },
+    {
+      "klucz": "punkty",
+      "etykieta": "Wykaz współrzędnych",
+      "typ": "tabela",
+      "grupa": "Wykaz współrzędnych",
+      "kolumny": [
+        {
+          "klucz": "numer",
+          "etykieta": "Nr punktu"
+        },
+        {
+          "klucz": "x",
+          "etykieta": "X [m]"
+        },
+        {
+          "klucz": "y",
+          "etykieta": "Y [m]"
+        },
+        {
+          "klucz": "h",
+          "etykieta": "H [m]"
+        },
+        {
+          "klucz": "uwagi",
+          "etykieta": "Uwagi"
+        }
+      ]
+    },
+    {
+      "klucz": "uwagi",
+      "etykieta": "Uwagi końcowe",
+      "typ": "textarea",
+      "grupa": "Uwagi"
+    },
+    {
+      "klucz": "geodeta_imie_nazwisko",
+      "zrodlo": "ustawienia"
+    },
+    {
+      "klucz": "uprawnienia_nr",
+      "zrodlo": "ustawienia"
+    },
+    {
+      "klucz": "firma_nazwa",
+      "zrodlo": "ustawienia"
+    },
+    {
+      "klucz": "firma_adres",
+      "zrodlo": "ustawienia"
+    },
+    {
+      "klucz": "firma_telefon",
+      "zrodlo": "ustawienia"
+    },
+    {
+      "klucz": "firma_email",
+      "zrodlo": "ustawienia"
+    }
+  ]
+}

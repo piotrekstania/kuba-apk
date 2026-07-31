@@ -1,0 +1,95 @@
+{% extends "base.html" %}
+{% block tytul %}Jak edytować szablon{% endblock %}
+{% block tresc %}
+
+<h1>Jak edytować szablon</h1>
+
+<p>Szablon to <strong>zwykły plik .docx</strong> leżący w katalogu <code>szablony/</code>.
+  Otwierasz go w Wordzie, formatujesz jak każdy dokument (czcionki, tabele, nagłówki, pieczątki),
+  a w miejscach zmiennych wpisujesz tagi. Program czyta te tagi i sam buduje formularz.</p>
+
+<h2>Podstawowe tagi</h2>
+<table class="lista">
+  <tr><th class="waski">Wpisujesz w Wordzie</th><th>Efekt</th></tr>
+  <tr><td><code>{{ '{{ nr_roboty }}' }}</code></td><td>pole tekstowe w formularzu, w dokumencie wstawi się wpisana wartość</td></tr>
+  <tr><td><code>{{ '{{ data_zlecenia }}' }}</code></td><td>to samo; jeśli w pliku .json ustawisz typ <code>date</code>, dostaniesz kalendarz i format 31.07.2026</td></tr>
+  <tr><td><code>{{ '{{ data_zlecenia_slownie }}' }}</code></td><td>ta sama data jako „31 lipca 2026 r.”</td></tr>
+  <tr><td><code>{{ '{{ data_dzisiaj }}' }}</code></td><td>dzisiejsza data, nic nie trzeba wpisywać</td></tr>
+</table>
+
+<h2>Powtarzające się wiersze tabeli</h2>
+<p>Tabela w Wordzie potrzebuje <strong>trzech</strong> wierszy: sterującego, z danymi i zamykającego.
+  Wiersz ze znacznikiem <code>{{ '{%tr' }}</code> znika przy generowaniu w całości — zostaje tylko
+  powielony wiersz środkowy.</p>
+<table class="lista">
+  <tr><th class="waski">Wiersz tabeli</th><th>Co wpisujesz</th></tr>
+  <tr><td>nagłówek</td><td>Nr punktu | X | Y | H | Uwagi</td></tr>
+  <tr><td>sterujący</td><td><code>{{ '{%tr for punkt in punkty %}' }}</code> (w pierwszej komórce, reszta pusta)</td></tr>
+  <tr><td>z danymi</td><td><code>{{ '{{ punkt.numer }}' }}</code> | <code>{{ '{{ punkt.x }}' }}</code> | <code>{{ '{{ punkt.y }}' }}</code> | …</td></tr>
+  <tr><td>zamykający</td><td><code>{{ '{%tr endfor %}' }}</code></td></tr>
+</table>
+<p>Nazwa po <code>for … in</code> (tu <code>punkty</code>) to nazwa pola typu <code>tabela</code>
+  w pliku .json. W formularzu pojawi się tabelka, do której można dopisywać wiersze
+  albo wkleić dane prosto z Excela.</p>
+
+<h2>Fragment tekstu tylko czasami</h2>
+<p>Tak samo jak wyżej: akapit ze znacznikiem <code>{{ '{%p' }}</code> znika w całości,
+  więc warunek i treść muszą być w <strong>osobnych akapitach</strong>:</p>
+<pre>{{ '{%p if uwagi %}' }}      ← osobny akapit
+6. Uwagi                 ← treść, która ma się pokazać warunkowo
+{{ '{{ uwagi }}' }}
+{{ '{%p endif %}' }}         ← osobny akapit</pre>
+<p>Gdy pole „uwagi” zostanie puste, cały ten fragment nie trafi do dokumentu —
+  bez pustych linii i osieroconych nagłówków.</p>
+<p class="szary">Jeśli warunek ma dotyczyć tylko kawałka zdania, użyj zwykłego
+  <code>{{ '{% if %}' }}</code> bez litery <code>p</code> — wtedy akapit zostaje,
+  znika sam tekst.</p>
+
+<h2>Opis pól — plik .json obok szablonu</h2>
+<p>Nieobowiązkowy. Jeśli obok <code>operat.docx</code> położysz <code>operat.json</code>,
+  możesz ustawić ładne etykiety, kolejność, grupy i typy pól. Bez niego wszystko i tak zadziała —
+  pola dostaną nazwy takie jak w szablonie.</p>
+<pre>{
+  "nazwa": "Operat techniczny",
+  "wzor_nazwy": "Operat_{nr_roboty}",
+  "pola": [
+    {"klucz": "nr_roboty", "etykieta": "Nr roboty (KERG)", "wymagane": true, "grupa": "Robota"},
+    {"klucz": "data_zlecenia", "etykieta": "Data zlecenia", "typ": "date", "domyslnie": "dzisiaj"},
+    {"klucz": "cel", "etykieta": "Cel opracowania", "typ": "select",
+     "opcje": ["Mapa do celów projektowych", "Podział nieruchomości"]},
+    {"klucz": "wykaz", "etykieta": "Wykaz punktów", "typ": "tabela",
+     "kolumny": [{"klucz": "numer", "etykieta": "Nr"},
+                 {"klucz": "x", "etykieta": "X"},
+                 {"klucz": "y", "etykieta": "Y"}]}
+  ]
+}</pre>
+
+<h2 id="pdf">Skąd się biorą PDF-y</h2>
+<p>Sam dokument Worda program składa samodzielnie. Do zrobienia z niego PDF-a potrzebny jest
+  jeden z dwóch silników — aplikacja wykrywa je sama i pokazuje w prawym górnym rogu, którego
+  aktualnie używa (teraz:
+  <strong>{{ {'word': 'Microsoft Word', 'libreoffice': 'LibreOffice', 'brak': 'żaden'}[konwerter] }}</strong>).</p>
+<table class="lista">
+  <tr><th class="waski">Silnik</th><th>Kiedy</th></tr>
+  <tr><td>Microsoft Word</td>
+      <td>gdy jest zainstalowany na tym komputerze — nic nie trzeba dokładać, PDF wygląda
+          dokładnie tak jak dokument w Wordzie</td></tr>
+  <tr><td>LibreOffice</td>
+      <td>gdy Worda nie ma; darmowy, wystarczy że jest zainstalowany —
+          <strong>nie trzeba w nim niczego otwierać ani robić go domyślnym programem</strong>,
+          pracuje w tle</td></tr>
+  <tr><td>wersja przenośna</td>
+      <td>katalog <code>libreoffice/</code> położony obok programu też zostanie znaleziony —
+          wtedy nie ma żadnej instalacji</td></tr>
+</table>
+<p class="szary">Bez żadnego z nich generowanie plików .docx działa normalnie; nie działa tylko
+  przycisk „Pobierz PDF" i łączenie dokumentów w jeden PDF.</p>
+
+<h2>Dostępne typy pól</h2>
+<p><code>text</code>, <code>textarea</code>, <code>date</code>, <code>number</code>,
+  <code>select</code>, <code>checkbox</code>, <code>tabela</code>,
+  <code>auto_numer</code> (kolejny numer nadawany automatycznie).
+  Dodatkowo <code>"zrodlo": "ustawienia"</code> chowa pole z formularza i bierze wartość
+  z zakładki <a href="/ustawienia">Dane stałe</a>.</p>
+
+{% endblock %}

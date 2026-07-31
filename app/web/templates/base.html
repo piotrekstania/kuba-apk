@@ -1,0 +1,31 @@
+<!doctype html>
+<html lang="pl">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>{% block tytul %}Generator operatów{% endblock %}</title>
+  <link rel="stylesheet" href="/static/style.css">
+</head>
+<body>
+<header>
+  <a class="logo" href="/">Generator operatów</a>
+  <nav>
+    <a href="/">Dokumenty</a>
+    <a href="/scal">Łączenie PDF</a>
+    <a href="/ustawienia">Dane stałe</a>
+    <a href="/pomoc">Jak edytować szablon</a>
+  </nav>
+  <a class="konwerter {{ 'ok' if konwerter != 'brak' else 'zle' }}" href="/pomoc#pdf"
+     title="Program używany do robienia PDF-ów">
+    PDF: {{ {'word': 'Microsoft Word', 'libreoffice': 'LibreOffice',
+             'brak': 'brak konwertera — kliknij'}[konwerter] }}
+  </a>
+</header>
+
+<main>
+  {% if blad %}<div class="komunikat zle">{{ blad }}</div>{% endif %}
+  {% if komunikat %}<div class="komunikat">{{ komunikat }}</div>{% endif %}
+  {% block tresc %}{% endblock %}
+</main>
+</body>
+</html>

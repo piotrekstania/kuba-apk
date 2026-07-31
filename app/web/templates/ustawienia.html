@@ -1,0 +1,52 @@
+{% extends "base.html" %}
+{% block tytul %}Dane stałe{% endblock %}
+{% block tresc %}
+
+<h1>Dane stałe</h1>
+<p class="szary">Te wartości są podstawiane do <em>każdego</em> dokumentu — nie trzeba ich wpisywać
+  za każdym razem. W szablonie Worda używasz ich tak samo jak zwykłych pól, np.
+  <code>{{ '{{ uprawnienia_nr }}' }}</code>.</p>
+
+{% if zapisano %}<div class="komunikat">Zapisano.</div>{% endif %}
+
+<form method="post" action="/ustawienia">
+  <table class="lista" id="tabela-ustawien">
+    <tr><th class="waski">Nazwa pola w szablonie</th><th>Wartość</th><th></th></tr>
+    {% for klucz, wartosc in ustawienia.items() %}
+    <tr>
+      <td><input name="klucz" value="{{ klucz }}"></td>
+      <td><input name="wartosc" value="{{ wartosc }}"></td>
+      <td><button type="button" class="usun">×</button></td>
+    </tr>
+    {% endfor %}
+    {% if not ustawienia %}
+    {% for propozycja in ['geodeta_imie_nazwisko', 'uprawnienia_nr', 'firma_nazwa',
+                          'firma_adres', 'firma_nip', 'firma_telefon', 'firma_email'] %}
+    <tr>
+      <td><input name="klucz" value="{{ propozycja }}"></td>
+      <td><input name="wartosc" value=""></td>
+      <td><button type="button" class="usun">×</button></td>
+    </tr>
+    {% endfor %}
+    {% endif %}
+  </table>
+
+  <div class="pasek">
+    <button type="button" id="dodaj">+ dodaj pole</button>
+    <button class="glowny" type="submit">Zapisz</button>
+  </div>
+</form>
+
+<script>
+const tabela = document.querySelector('#tabela-ustawien');
+document.getElementById('dodaj').addEventListener('click', () => {
+  const wiersz = tabela.insertRow(-1);
+  wiersz.innerHTML = `<td><input name="klucz"></td><td><input name="wartosc"></td>
+                      <td><button type="button" class="usun">×</button></td>`;
+});
+tabela.addEventListener('click', zdarzenie => {
+  if (zdarzenie.target.classList.contains('usun')) zdarzenie.target.closest('tr').remove();
+});
+</script>
+
+{% endblock %}

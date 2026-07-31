@@ -1,0 +1,137 @@
+"""Rejestr szablonów.
+
+Zasada działania: źródłem prawdy jest plik .docx. Formularz w przeglądarce
+powstaje z tagów Jinja znalezionych w szablonie, więc dodanie {{ nowe_pole }}
+w Wordzie automatycznie dokłada pole w aplikacji — bez ruszania kodu.
+
+Obok szablonu może (nie musi) leżeć plik .json o tej samej nazwie. Opisuje
+etykiety, typy pól, kolejność i grupy. Pola nieopisane trafiają na koniec
+formularza jako zwykłe pola tekstowe.
+"""
+from __future__ import annotations
+
+import json
+import re
+from dataclasses import dataclass, field
+from pathlib import Path
+from typing import Any
+
+from docxtpl import DocxTemplate
+
+from .config import SZABLONY
+
+TYPY_PROSTE = {"text", "textarea", "date", "number", "select", "checkbox"}
+
+
+@dataclass
+class Pole:
+    klucz: str
+    etykieta: str
+    typ: str = "text"
+    wymagane: bool = False
+    grupa: str = "Dane"
+    podpowiedz: str = ""
+    opcje: list[str] = field(default_factory=list)
+    kolumny: list[dict[str, str]] = field(default_factory=list)   # tylko dla typ="tabela"
+    domyslnie: str = ""
+    zrodlo: str = ""            # "ustawienia" = bierz z danych stałych, nie pokazuj w formularzu
+    szerokosc: str = "pelna"    # "pelna" | "polowa" | "trzecia"
+
+
+@dataclass
+class Szablon:
+    id: str                     # nazwa pliku bez rozszerzenia
+    plik: Path
+    nazwa: str
+    opis: str = ""
+    wzor_nazwy: str = "{id_szablonu}"
+    licznik: str = ""           # nazwa licznika dla pola typu "auto_numer"
+    pola: list[Pole] = field(default_factory=list)
+
+    @property
+    def grupy(self) -> dict[str, list[Pole]]:
+        wynik: dict[str, list[Pole]] = {}
+        for pole in self.pola:
+            if pole.zrodlo == "ustawienia":
+                continue
+            wynik.setdefault(pole.grupa, []).append(pole)
+        return wynik
+
+
+def _etykieta_z_klucza(klucz: str) -> str:
+    tekst = klucz.replace("_", " ").strip()
+    return tekst[:1].upper() + tekst[1:]
+
+
+def _zmienne_szablonu(plik: Path) -> list[str]:
+    """Nazwy zmiennych użytych w .docx, w kolejności wystąpienia w dokumencie."""
+    dokument = DocxTemplate(plik)
+    znalezione = dokument.get_undeclared_template_variables()
+    # get_undeclared_template_variables zwraca zbiór — porządkujemy wg pozycji w tekście
+    dokument.init_docx(reload=False)
+    tekst = dokument.get_xml()
+    def pozycja(nazwa: str) -> int:
+        trafienie = re.search(rf"\b{re.escape(nazwa)}\b", tekst)
+        return trafienie.start() if trafienie else 10**9
+    return sorted(znalezione, key=pozycja)
+
+
+def wczytaj_szablon(plik: Path) -> Szablon:
+    opis_json = plik.with_suffix(".json")
+    meta: dict[str, Any] = {}
+    if opis_json.exists():
+        meta = json.loads(opis_json.read_text(encoding="utf-8"))
+
+    szablon = Szablon(
+        id=plik.stem,
+        plik=plik,
+        nazwa=meta.get("nazwa", _etykieta_z_klucza(plik.stem)),
+        opis=meta.get("opis", ""),
+        wzor_nazwy=meta.get("wzor_nazwy", plik.stem + "_{data_dokumentu}"),
+        licznik=meta.get("licznik", ""),
+    )
+
+    opisane: dict[str, Pole] = {}
+    for surowe in meta.get("pola", []):
+        klucz = surowe["klucz"]
+        opisane[klucz] = Pole(
+            klucz=klucz,
+            etykieta=surowe.get("etykieta", _etykieta_z_klucza(klucz)),
+            typ=surowe.get("typ", "text"),
+            wymagane=bool(surowe.get("wymagane", False)),
+            grupa=surowe.get("grupa", "Dane"),
+            podpowiedz=surowe.get("podpowiedz", ""),
+            opcje=list(surowe.get("opcje", [])),
+            kolumny=list(surowe.get("kolumny", [])),
+            domyslnie=str(surowe.get("domyslnie", "")),
+            zrodlo=surowe.get("zrodlo", ""),
+            szerokosc=surowe.get("szerokosc", "pelna"),
+        )
+
+    # kolejność: najpierw pola opisane w .json, potem reszta wykryta w szablonie
+    szablon.pola = list(opisane.values())
+    znane = set(opisane)
+    for nazwa in _zmienne_szablonu(plik):
+        if nazwa not in znane:
+            szablon.pola.append(Pole(klucz=nazwa, etykieta=_etykieta_z_klucza(nazwa),
+                                     grupa="Pozostałe pola z szablonu"))
+    return szablon
+
+
+def lista_szablonow() -> list[Szablon]:
+    pliki = sorted(p for p in SZABLONY.glob("*.docx") if not p.name.startswith("~$"))
+    wynik = []
+    for plik in pliki:
+        try:
+            wynik.append(wczytaj_szablon(plik))
+        except Exception as blad:                      # uszkodzony plik nie może wywalić listy
+            wynik.append(Szablon(id=plik.stem, plik=plik,
+                                 nazwa=plik.stem, opis=f"⚠ Nie udało się wczytać: {blad}"))
+    return wynik
+
+
+def szablon_po_id(identyfikator: str) -> Szablon | None:
+    plik = SZABLONY / f"{identyfikator}.docx"
+    if not plik.exists():
+        return None
+    return wczytaj_szablon(plik)

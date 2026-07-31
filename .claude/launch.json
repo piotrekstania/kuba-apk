@@ -1,0 +1,17 @@
+{
+  "version": "0.0.1",
+  "configurations": [
+    {
+      "name": "generator-operatow",
+      "runtimeExecutable": ".venv/bin/python",
+      "runtimeArgs": ["uruchom.py"],
+      "port": 8000
+    },
+    {
+      "name": "generator-operatow-windows",
+      "runtimeExecutable": ".venv\\Scripts\\python.exe",
+      "runtimeArgs": ["uruchom.py"],
+      "port": 8000
+    }
+  ]
+}

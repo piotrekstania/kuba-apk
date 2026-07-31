@@ -1,0 +1,45 @@
+{% extends "base.html" %}
+{% block tresc %}
+
+<h1>Nowy dokument</h1>
+
+{% if szablony %}
+<div class="karty">
+  {% for szablon in szablony %}
+  <a class="karta" href="/nowy/{{ szablon.id }}">
+    <strong>{{ szablon.nazwa }}</strong>
+    <span>{{ szablon.opis }}</span>
+    <small>{{ szablon.pola | length }} pól · {{ szablon.plik.name }}</small>
+  </a>
+  {% endfor %}
+</div>
+{% else %}
+<div class="komunikat zle">
+  Katalog <code>szablony/</code> jest pusty. Wrzuć tam plik .docx z tagami
+  <code>{{ '{{ nazwa_pola }}' }}</code> — pojawi się tutaj automatycznie.
+  Zobacz <a href="/pomoc">instrukcję</a>.
+</div>
+{% endif %}
+
+<h2>Ostatnio wygenerowane</h2>
+{% if dokumenty %}
+<table class="lista">
+  <tr><th>Dokument</th><th>Szablon</th><th>Data</th><th></th></tr>
+  {% for dokument in dokumenty %}
+  <tr>
+    <td><a href="/dokument/{{ dokument.id }}">{{ dokument.tytul }}</a></td>
+    <td class="szary">{{ dokument.szablon }}</td>
+    <td class="szary">{{ dokument.utworzono.replace('T', ' ') }}</td>
+    <td class="akcje">
+      <a href="/pobierz/{{ dokument.id }}/docx">DOCX</a>
+      <a href="/pobierz/{{ dokument.id }}/pdf">PDF</a>
+      <a href="/nowy/{{ dokument.szablon }}?kopiuj={{ dokument.id }}">Powiel</a>
+    </td>
+  </tr>
+  {% endfor %}
+</table>
+{% else %}
+<p class="szary">Jeszcze nic tu nie ma.</p>
+{% endif %}
+
+{% endblock %}

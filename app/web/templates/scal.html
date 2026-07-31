@@ -1,0 +1,61 @@
+{% extends "base.html" %}
+{% block tytul %}Łączenie PDF{% endblock %}
+{% block tresc %}
+
+<h1>Łączenie PDF</h1>
+<p class="szary">Zaznacz wygenerowane dokumenty i/lub wgraj gotowe pliki (mapy, skany, załączniki).
+  Liczba w polu „kolejność” decyduje o tym, co idzie pierwsze.</p>
+
+<form method="post" action="/scal" enctype="multipart/form-data">
+
+  <fieldset>
+    <legend>Twoje dokumenty</legend>
+    <table class="lista">
+      <tr><th class="waski"></th><th class="waski">Kolejność</th><th>Dokument</th><th>Data</th></tr>
+      {% for dokument in dokumenty %}
+      <tr>
+        <td><input type="checkbox" name="dok__{{ dokument.id }}"
+                   {{ 'checked' if wybrany == dokument.id }}></td>
+        <td><input class="maly" type="number" name="kol__{{ dokument.id }}"
+                   value="{{ loop.index }}" step="1"></td>
+        <td>{{ dokument.tytul }}</td>
+        <td class="szary">{{ dokument.utworzono.replace('T', ' ') }}</td>
+      </tr>
+      {% endfor %}
+    </table>
+  </fieldset>
+
+  <fieldset>
+    <legend>Pliki z dysku (.pdf lub .docx)</legend>
+    <div id="wgrane"></div>
+    <button type="button" id="dodaj-plik">+ dodaj plik</button>
+  </fieldset>
+
+  <div class="pole polowa">
+    <label for="nazwa">Nazwa pliku wynikowego</label>
+    <input id="nazwa" name="nazwa_wynikowa" value="Operat_scalony">
+  </div>
+
+  <div class="pasek">
+    <button class="glowny" type="submit">Połącz i pobierz PDF</button>
+    <a class="wtorny" href="/">Wróć</a>
+  </div>
+</form>
+
+<script>
+const pojemnik = document.getElementById('wgrane');
+function dodajPole() {
+  const rzad = document.createElement('div');
+  rzad.className = 'rzad-pliku';
+  rzad.innerHTML = `
+    <input class="maly" type="number" name="kol_plik" value="${100 + pojemnik.children.length}" step="1" title="kolejność">
+    <input type="file" name="pliki" accept=".pdf,.docx">
+    <button type="button" class="usun">×</button>`;
+  rzad.querySelector('.usun').addEventListener('click', () => rzad.remove());
+  pojemnik.appendChild(rzad);
+}
+document.getElementById('dodaj-plik').addEventListener('click', dodajPole);
+dodajPole();
+</script>
+
+{% endblock %}

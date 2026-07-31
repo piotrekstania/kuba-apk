@@ -1,0 +1,153 @@
+{% extends "base.html" %}
+{% block tytul %}{{ szablon.nazwa }}{% endblock %}
+{% block tresc %}
+
+<h1>{{ szablon.nazwa }}</h1>
+{% if szablon.opis %}<p class="szary">{{ szablon.opis }}</p>{% endif %}
+{% if podglad_numeru %}<p class="szary">Numer nadany temu dokumentowi: <strong>{{ podglad_numeru }}</strong></p>{% endif %}
+
+<form method="post" action="/generuj/{{ szablon.id }}">
+  {% for grupa, pola in szablon.grupy.items() %}
+  <fieldset>
+    <legend>{{ grupa }}</legend>
+    <div class="siatka">
+      {% for pole in pola %}
+        {% set wartosc = wartosci.get(pole.klucz, '') %}
+
+        {% if pole.typ == 'tabela' %}
+        <div class="pole pelna tabela" data-nazwa="{{ pole.klucz }}">
+          <label>{{ pole.etykieta }}</label>
+          <table class="wiersze">
+            <thead><tr>
+              {% for kolumna in pole.kolumny %}<th data-klucz="{{ kolumna.klucz }}">{{ kolumna.etykieta }}</th>{% endfor %}
+              <th></th>
+            </tr></thead>
+            <tbody>
+              {% for wiersz in (wartosc if wartosc is iterable and wartosc is not string else []) %}
+              <tr>
+                {% for kolumna in pole.kolumny %}
+                <td><input name="tab__{{ pole.klucz }}__{{ loop.index0 }}__{{ kolumna.klucz }}"
+                           value="{{ wiersz.get(kolumna.klucz, '') }}"></td>
+                {% endfor %}
+                <td><button type="button" class="usun" title="Usuń wiersz">×</button></td>
+              </tr>
+              {% endfor %}
+            </tbody>
+          </table>
+          <button type="button" class="dodaj-wiersz">+ dodaj wiersz</button>
+          <p class="podpowiedz">Możesz też wkleić dane z Excela / pliku tekstowego —
+            <button type="button" class="wklej">wklej z schowka</button></p>
+        </div>
+
+        {% elif pole.typ == 'textarea' %}
+        <div class="pole {{ pole.szerokosc }}">
+          <label for="p_{{ pole.klucz }}">{{ pole.etykieta }}{% if pole.wymagane %} <span class="gwiazdka">*</span>{% endif %}</label>
+          <textarea id="p_{{ pole.klucz }}" name="pole__{{ pole.klucz }}" rows="5">{{ wartosc }}</textarea>
+          {% if pole.podpowiedz %}<p class="podpowiedz">{{ pole.podpowiedz }}</p>{% endif %}
+        </div>
+
+        {% elif pole.typ == 'select' %}
+        <div class="pole {{ pole.szerokosc }}">
+          <label for="p_{{ pole.klucz }}">{{ pole.etykieta }}</label>
+          <select id="p_{{ pole.klucz }}" name="pole__{{ pole.klucz }}">
+            {% for opcja in pole.opcje %}
+            <option value="{{ opcja }}" {{ 'selected' if opcja == wartosc }}>{{ opcja }}</option>
+            {% endfor %}
+          </select>
+        </div>
+
+        {% elif pole.typ == 'checkbox' %}
+        <div class="pole {{ pole.szerokosc }} przelacznik">
+          <label><input type="checkbox" name="pole__{{ pole.klucz }}" {{ 'checked' if wartosc }}>
+            {{ pole.etykieta }}</label>
+        </div>
+
+        {% elif pole.typ == 'auto_numer' %}
+        <div class="pole {{ pole.szerokosc }}">
+          <label for="p_{{ pole.klucz }}">{{ pole.etykieta }}</label>
+          <input id="p_{{ pole.klucz }}" name="pole__{{ pole.klucz }}" value="{{ wartosc }}"
+                 placeholder="{{ podglad_numeru or 'nadany automatycznie' }}">
+          <p class="podpowiedz">Zostaw puste, żeby program nadał kolejny numer.</p>
+        </div>
+
+        {% else %}
+        <div class="pole {{ pole.szerokosc }}">
+          <label for="p_{{ pole.klucz }}">{{ pole.etykieta }}{% if pole.wymagane %} <span class="gwiazdka">*</span>{% endif %}</label>
+          <input id="p_{{ pole.klucz }}" name="pole__{{ pole.klucz }}"
+                 type="{{ 'date' if pole.typ == 'date' else ('number' if pole.typ == 'number' else 'text') }}"
+                 {% if pole.typ == 'number' %}step="any"{% endif %}
+                 value="{{ wartosc }}">
+          {% if pole.podpowiedz %}<p class="podpowiedz">{{ pole.podpowiedz }}</p>{% endif %}
+        </div>
+        {% endif %}
+
+      {% endfor %}
+    </div>
+  </fieldset>
+  {% endfor %}
+
+  <div class="pasek">
+    <button type="submit" class="glowny">Generuj dokument</button>
+    <a href="/" class="wtorny">Anuluj</a>
+  </div>
+</form>
+
+<script>
+// Dokładanie i usuwanie wierszy w tabelach — numeracja pól idzie od nowa po każdej zmianie.
+function przenumeruj(blok) {
+  const nazwa = blok.dataset.nazwa;
+  blok.querySelectorAll('tbody tr').forEach((wiersz, indeks) => {
+    wiersz.querySelectorAll('input').forEach(pole => {
+      const kolumna = pole.name.split('__').pop();
+      pole.name = `tab__${nazwa}__${indeks}__${kolumna}`;
+    });
+  });
+}
+
+function dodajWiersz(blok, wartosci) {
+  const naglowki = blok.querySelectorAll('thead th');
+  const wzorzec = blok.querySelector('tbody tr');
+  const wiersz = document.createElement('tr');
+  const liczbaKolumn = naglowki.length - 1;
+  for (let i = 0; i < liczbaKolumn; i++) {
+    const komorka = document.createElement('td');
+    const pole = document.createElement('input');
+    const kolumna = wzorzec
+      ? wzorzec.querySelectorAll('input')[i].name.split('__').pop()
+      : blok.dataset['kol' + i];
+    pole.name = `tab__${blok.dataset.nazwa}__0__${kolumna}`;
+    if (wartosci && wartosci[i] !== undefined) pole.value = wartosci[i];
+    komorka.appendChild(pole);
+    wiersz.appendChild(komorka);
+  }
+  const komorkaAkcji = document.createElement('td');
+  komorkaAkcji.innerHTML = '<button type="button" class="usun" title="Usuń wiersz">×</button>';
+  wiersz.appendChild(komorkaAkcji);
+  blok.querySelector('tbody').appendChild(wiersz);
+  przenumeruj(blok);
+}
+
+document.querySelectorAll('.tabela').forEach(blok => {
+  // każda tabela startuje z jednym pustym wierszem, jeśli nie ma żadnego
+  const kolumny = [...blok.querySelectorAll('thead th')].slice(0, -1);
+  kolumny.forEach((th, i) => { blok.dataset['kol' + i] = th.dataset.klucz || th.textContent.trim(); });
+
+  blok.querySelector('.dodaj-wiersz').addEventListener('click', () => dodajWiersz(blok));
+  blok.addEventListener('click', zdarzenie => {
+    if (zdarzenie.target.classList.contains('usun')) {
+      zdarzenie.target.closest('tr').remove();
+      przenumeruj(blok);
+    }
+  });
+  blok.querySelector('.wklej').addEventListener('click', async () => {
+    const tekst = await navigator.clipboard.readText();
+    tekst.trim().split(/\r?\n/).forEach(linia => {
+      const komorki = linia.split(/\t|;|\s{2,}/).map(t => t.trim());
+      if (komorki.some(k => k)) dodajWiersz(blok, komorki);
+    });
+  });
+  if (!blok.querySelector('tbody tr')) dodajWiersz(blok);
+});
+</script>
+
+{% endblock %}
