@@ -1,2 +1,2 @@
-2026.07.31.34
-Przycisk „Usuń” został tylko na liście dokumentów — z zakładki „Złóż PDF” znika.
+2026.07.31.35
+Miniatury pokazują się teraz od razu. Program przerabia dokumenty na PDF zaraz po ich wygenerowaniu, w tle — więc zanim wejdziesz w „Złóż PDF”, wszystko jest już gotowe. Do tego cały komplet dokumentów idzie przez Worda za jednym uruchomieniem zamiast osobno dla każdego pliku, co skraca konwersję o dwie trzecie.

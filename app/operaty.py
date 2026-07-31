@@ -215,6 +215,23 @@ def jako_pdf(plik: Path) -> Path:
         return pdf.docx_na_pdf(plik, cel)
 
 
+def przygotuj_podglady(katalog: Path) -> int:
+    """Robi z góry PDF-y wszystkich dokumentów Worda w katalogu operatu.
+
+    Wołane w tle zaraz po wygenerowaniu dokumentów. Bez tego pierwsze wejście na stronę
+    składania czekało na konwersję każdego pliku po kolei — a to właśnie tam widać
+    miniatury. Teraz konwersja dzieje się, gdy brat i tak jeszcze klika po formularzu.
+    """
+    do_zrobienia = [(p, PODGLADY / katalog.name / (p.stem + ".pdf"))
+                    for p in pliki(katalog)
+                    if p.suffix.lower() in ROZSZERZENIA_WORD]
+    do_zrobienia = [(z, c) for z, c in do_zrobienia if not _aktualny(c, z)]
+    if not do_zrobienia:
+        return 0
+    with _BLOKADA_PODGLADU:
+        return len(pdf.docx_na_pdf_wsad(do_zrobienia))
+
+
 def usun_podglady(katalog: Path) -> None:
     import shutil
     shutil.rmtree(PODGLADY / katalog.name, ignore_errors=True)

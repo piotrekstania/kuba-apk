@@ -120,47 +120,52 @@ def _com():
         pythoncom.CoUninitialize()
 
 
-def _konwersja_wordem(zrodlo: Path, cel: Path) -> None:
-    """Otwiera dokument w niewidocznej instancji Worda i eksportuje do PDF."""
-    import win32com.client
+def _wordem_wsad(pary: list[tuple[Path, Path]]) -> None:
+    """Eksportuje kilka dokumentów w **jednej** sesji Worda.
 
-    zrodlo = zrodlo.resolve()
-    cel = cel.resolve()
-    cel.parent.mkdir(parents=True, exist_ok=True)
+    Najdroższe w konwersji jest uruchomienie Worda, nie sam dokument. Przy operacie
+    z czterema plikami osobne uruchomienia kosztowały cztery starty; tutaj jest jeden.
+    """
+    import win32com.client
 
     with _com():                      # szeregowanie robi już `docx_na_pdf`
         word = None
-        dokument = None
         try:
             # DispatchEx = własna instancja Worda; nie przejmujemy tej,
             # w której użytkownik ma właśnie otwarte swoje pliki.
-            slad(f"otwieram Worda dla {zrodlo.name}")
+            slad(f"otwieram Worda ({len(pary)} dok.)")
             word = win32com.client.DispatchEx("Word.Application")
             word.Visible = False
             word.DisplayAlerts = 0                       # wdAlertsNone
-            dokument = word.Documents.Open(
-                str(zrodlo), ReadOnly=True, AddToRecentFiles=False,
-                ConfirmConversions=False, Visible=False,
-            )
-            slad(f"eksportuję do PDF: {cel.name}")
-            dokument.ExportAsFixedFormat(
-                OutputFileName=str(cel),
-                ExportFormat=_WD_FORMAT_PDF,
-                OpenAfterExport=False,
-                OptimizeFor=_WD_JAKOSC_DRUK,
-                Range=_WD_CALY_DOKUMENT,
-                Item=_WD_TRESC_DOKUMENTU,
-                IncludeDocProps=True,
-                CreateBookmarks=_WD_ZAKLADKI_NAGLOWKI,
-                DocStructureTags=True,
-                BitmapMissingFonts=True,
-            )
-        finally:
-            if dokument is not None:
+
+            for zrodlo, cel in pary:
+                dokument = None
                 try:
-                    dokument.Close(_WD_NIE_ZAPISUJ)
-                except Exception:
-                    pass
+                    dokument = word.Documents.Open(
+                        str(zrodlo), ReadOnly=True, AddToRecentFiles=False,
+                        ConfirmConversions=False, Visible=False,
+                    )
+                    slad(f"eksportuję do PDF: {cel.name}")
+                    dokument.ExportAsFixedFormat(
+                        OutputFileName=str(cel),
+                        ExportFormat=_WD_FORMAT_PDF,
+                        OpenAfterExport=False,
+                        OptimizeFor=_WD_JAKOSC_DRUK,
+                        Range=_WD_CALY_DOKUMENT,
+                        Item=_WD_TRESC_DOKUMENTU,
+                        IncludeDocProps=True,
+                        CreateBookmarks=_WD_ZAKLADKI_NAGLOWKI,
+                        DocStructureTags=True,
+                        BitmapMissingFonts=True,
+                    )
+                finally:
+                    if dokument is not None:
+                        try:
+                            dokument.Close(_WD_NIE_ZAPISUJ)
+                        except Exception:
+                            pass
+                    dokument = None
+        finally:
             if word is not None:
                 try:
                     word.Quit(_WD_NIE_ZAPISUJ)
@@ -170,10 +175,47 @@ def _konwersja_wordem(zrodlo: Path, cel: Path) -> None:
             # wyjście z funkcji zwolniłoby je dopiero po `CoUninitialize`, a zwalnianie
             # interfejsu w wątku odłączonym już od COM-u potrafi wywalić cały proces
             # (naruszenie ochrony pamięci, bez żadnego wyjątku w Pythonie).
-            dokument = None
             word = None
             gc.collect()
-            slad(f"zamknięto Worda po {zrodlo.name}")
+            slad("zamknięto Worda")
+
+
+def _konwersja_wordem(zrodlo: Path, cel: Path) -> None:
+    _wordem_wsad([(zrodlo.resolve(), _przygotuj_cel(cel))])
+
+
+def _przygotuj_cel(cel: Path) -> Path:
+    cel = cel.resolve()
+    cel.parent.mkdir(parents=True, exist_ok=True)
+    return cel
+
+
+def _libreoffice_wsad(pary: list[tuple[Path, Path]]) -> None:
+    """To samo co wyżej, ale LibreOffice'em: jedno uruchomienie na komplet plików."""
+    soffice = sciezka_libreoffice()
+    if not soffice:
+        raise BrakKonwertera(
+            "Nie znaleziono ani Microsoft Word, ani LibreOffice. "
+            "Zainstaluj LibreOffice (darmowy), żeby generować PDF-y."
+        )
+    slad(f"LibreOffice startuje ({len(pary)} dok.)")
+    # Katalog roboczy wewnątrz projektu, a nie w /tmp: LibreOffice ze Snapa/Flatpaka
+    # ma własny, odizolowany /tmp i gotowe pliki byłyby dla nas niewidoczne.
+    with tempfile.TemporaryDirectory(dir=KATALOG_ROBOCZY) as tymczasowy:
+        wynik = subprocess.run(
+            [soffice, "--headless", "--norestore", "--nolockcheck",
+             f"-env:UserInstallation={PROFIL_LIBREOFFICE}",
+             "--convert-to", "pdf", "--outdir", tymczasowy] + [str(z) for z, _ in pary],
+            capture_output=True, text=True, timeout=300,
+        )
+        for zrodlo, cel in pary:
+            powstaly = Path(tymczasowy) / (zrodlo.stem + ".pdf")
+            if not powstaly.exists():
+                raise BrakKonwertera(
+                    f"LibreOffice nie utworzył PDF-a z {zrodlo.name}.\n"
+                    f"{wynik.stdout}\n{wynik.stderr}")
+            shutil.move(str(powstaly), _przygotuj_cel(cel))
+            slad(f"LibreOffice skończył: {cel.name}")
 
 
 def _konwersja_libreoffice(zrodlo: Path, cel: Path) -> None:
@@ -222,6 +264,36 @@ def docx_na_pdf(zrodlo: Path, cel: Path | None = None) -> Path:
     if not cel.exists():
         raise BrakKonwertera(f"Konwersja się nie powiodła — nie powstał plik {cel.name}.")
     return cel
+
+
+def docx_na_pdf_wsad(pary: list[tuple[Path, Path]]) -> list[Path]:
+    """Konwertuje komplet dokumentów w jednym uruchomieniu konwertera.
+
+    Zwraca listę tych, które się udały. Pojedyncza wywrotka nie przekreśla reszty:
+    to jest używane do przygotowania podglądów w tle, więc lepiej mieć trzy miniatury
+    z czterech niż żadnej.
+    """
+    if not pary:
+        return []
+    konwerter = dostepny_konwerter()
+    slad(f"wsad: {len(pary)} dok., konwerter: {konwerter}")
+    if konwerter == "brak":
+        raise BrakKonwertera("Nie znaleziono ani Microsoft Word, ani LibreOffice.")
+
+    with _BLOKADA_KONWERSJI:
+        try:
+            if konwerter == "word":
+                _wordem_wsad([(z.resolve(), _przygotuj_cel(c)) for z, c in pary])
+            else:
+                _libreoffice_wsad(pary)
+        except Exception as blad:
+            slad(f"wsad nie wyszedł ({blad}) — próbuję pojedynczo")
+            for zrodlo, cel in pary:
+                try:
+                    _konwertuj(zrodlo, cel, konwerter)
+                except Exception:
+                    pass
+    return [c for _, c in pary if c.exists()]
 
 
 def _konwertuj(zrodlo: Path, cel: Path, konwerter: str) -> None:

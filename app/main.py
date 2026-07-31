@@ -224,6 +224,17 @@ def _szablon_albo_blad(request: Request, identyfikator: str):
     return szablon, None
 
 
+def _przygotuj_podglady_po_cichu(katalog: Path) -> None:
+    """Konwersja z wyprzedzeniem — awaria tutaj nie może niczego popsuć.
+
+    Gdy się nie uda, miniatury zrobią się później, na żądanie, tak jak wcześniej.
+    """
+    try:
+        operaty.przygotuj_podglady(katalog)
+    except Exception:
+        pass
+
+
 def _listy_dokumentow(szablon: szablony.Szablon) -> dict[str, list[dict[str, str]]]:
     """Dla każdego pola typu `dokumenty` — które szablony ma pokazać.
 
@@ -350,6 +361,11 @@ async def generuj(request: Request, identyfikator: str, edytuj: int | None = Non
             ostrzezenia.append(
                 f"Nie udało się wygenerować dokumentu „{dodatkowy.nazwa}” — sprawdź "
                 f"znaczniki w pliku {dodatkowy.plik.name}. Reszta operatu jest gotowa.")
+
+    # Podglądy robimy w tle, zaraz po wygenerowaniu. Zanim brat przejdzie na stronę
+    # składania, PDF-y zwykle są już gotowe i miniatury pokazują się od razu.
+    threading.Thread(target=_przygotuj_podglady_po_cichu, args=(katalog,),
+                     daemon=True).start()
 
     tytul = kontekst.get("nr_roboty") or katalog.name
     if poprawiany:
