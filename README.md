@@ -32,8 +32,8 @@ górnym rogu, którego używa:
 2. **[LibreOffice](https://pl.libreoffice.org/)** — darmowy zapas na komputery bez Worda
    (a także na Linuksa/macOS); wykrywany też jako wersja przenośna w katalogu `libreoffice/`.
 
-Bez żadnego z nich generowanie .docx nadal działa, tylko przycisk „Pobierz PDF” zgłosi brak
-konwertera.
+Bez żadnego z nich generowanie .docx nadal działa; nie da się tylko złożyć operatu
+w jeden PDF ani zobaczyć miniatur plików Worda.
 
 ## Aktualizacje
 
@@ -99,8 +99,9 @@ jest w samej aplikacji, w zakładce „Jak edytować szablon”.
 
 ## Typy pól (plik `.json` obok szablonu)
 
-`text`, `textarea`, `date`, `number`, `select`, `checkbox`, `tabela`, `auto_numer`,
-`auto_numer` (wzorzec `{numer3}.{rok}` daje `001.2026` — kropka, nie ukośnik, bo tak samo nazywa się katalog operatu),
+`text`, `textarea`, `date`, `number`, `select`, `checkbox`, `tabela`,
+`auto_numer` (wzorzec `{numer3}.{rok}` daje `001.2026` — kropka, nie ukośnik, bo tak samo
+nazywa się katalog operatu),
 `teryt` (kaskada województwo → powiat → jednostka ewidencyjna → obręb; do dokumentu
 wchodzą nazwy i identyfikatory TERYT osobnymi znacznikami).
 
@@ -116,8 +117,9 @@ pieczątka firmy — wpisuje się na stałe w szablon Worda, a nie w program.
 .venv/bin/pyinstaller --name GeneratorOperatow --onefile --add-data "app/web:app/web" uruchom.py
 ```
 
-Katalogi `szablony/`, `wyniki/` i `dane/` zostają obok `.exe` — szablony mają być edytowalne,
-więc celowo nie są pakowane do środka.
+Katalogi `szablony/`, `wyniki/` i `dane/` zostają obok `.exe`. Przy pakowaniu pamiętaj
+o `--hidden-import win32com.client`, `--hidden-import pythoncom` (Word przez COM)
+oraz o tym, że `pypdfium2` wnosi własną bibliotekę binarną.
 
 ## Kopia zapasowa
 
