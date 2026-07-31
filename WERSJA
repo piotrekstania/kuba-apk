@@ -1,2 +1,2 @@
-2026.07.31.29
-Poprawki pod awarię przy miniaturach na Windowsie: konwersje do PDF idą teraz pojedynczo (strona składania pobierała kilka miniatur naraz i uruchamiała tyleż konwersji), a Word jest zwalniany zanim wątek odłączy się od COM-u. Doszło też narzedzia\diagnostyka.bat — uruchamia program tak, że wszystko ląduje w dane\konsola.log.
+2026.07.31.30
+Dalsze poprawki pod awarię przy miniaturach: renderowanie idzie teraz pojedynczo (silnik PDF nie znosi pracy w kilku wątkach naraz), a ten sam plik nie jest już konwertowany kilka razy równolegle — przy operacie z dwoma dokumentami Word uruchamiał się cztery razy zamiast dwóch.

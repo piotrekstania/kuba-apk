@@ -21,6 +21,7 @@ from __future__ import annotations
 
 import json
 import os
+import threading
 from datetime import datetime
 from pathlib import Path
 from typing import Any
@@ -42,6 +43,9 @@ ZNAKI_ZAKAZANE = r'<>:"/\|?*'
 # Pliki Worda z katalogu operatu zamieniamy na PDF poza katalogiem — inaczej powstały
 # PDF zostałby przy następnym sklejaniu policzony drugi raz, obok swojego .docx.
 PODGLADY = DANE / "podglad"
+
+# Pilnuje, żeby ten sam plik nie był konwertowany kilka razy naraz.
+_BLOKADA_PODGLADU = threading.Lock()
 
 
 def nazwa_bezpieczna(tekst: str, zapas: str = "operat") -> tuple[str, bool]:
@@ -183,6 +187,10 @@ def pliki(katalog: Path) -> list[Path]:
     return sorted(znalezione, key=lambda p: (p.name != SPIS_TRESCI, p.name.lower()))
 
 
+def _aktualny(cel: Path, zrodlo: Path) -> bool:
+    return cel.exists() and cel.stat().st_mtime >= zrodlo.stat().st_mtime
+
+
 def jako_pdf(plik: Path) -> Path:
     """PDF danego pliku — sam siebie dla .pdf, a dla Worda konwersja z pamięcią podręczną.
 
@@ -193,10 +201,18 @@ def jako_pdf(plik: Path) -> Path:
         return plik
 
     cel = PODGLADY / plik.parent.name / (plik.stem + ".pdf")
-    if cel.exists() and cel.stat().st_mtime >= plik.stat().st_mtime:
+    if _aktualny(cel, plik):
         return cel
-    cel.parent.mkdir(parents=True, exist_ok=True)
-    return pdf.docx_na_pdf(plik, cel)
+
+    with _BLOKADA_PODGLADU:
+        # Sprawdzamy drugi raz, już pod blokadą. Strona składania pobiera miniatury
+        # równolegle, więc bez tego kilka wątków widziało „brak w pamięci podręcznej”
+        # naraz i każdy uruchamiał własną konwersję tego samego pliku — czyli Worda
+        # tyle razy, ile było żądań.
+        if _aktualny(cel, plik):
+            return cel
+        cel.parent.mkdir(parents=True, exist_ok=True)
+        return pdf.docx_na_pdf(plik, cel)
 
 
 def usun_podglady(katalog: Path) -> None:
