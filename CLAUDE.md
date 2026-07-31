@@ -112,6 +112,7 @@ starą wersję (autor się na to nadział).
 | `app/main.py` | trasy FastAPI, parsowanie formularza (w tym tabel) |
 | `app/web/templates/` | widoki; `blad.html` to strona każdego niezłapanego wyjątku, a `pomoc.html` instrukcja dla brata — aktualizuj ją razem z funkcjami |
 | `narzedzia/utworz_wzor_szablonu.py` | generuje przykładowy szablon spisu treści do testów; nie nadpisze istniejącego bez `--nadpisz` |
+| `narzedzia/utworz_wzor_sprawozdania.py` | szkielet sprawozdania technicznego; też nie nadpisuje istniejącego bez `--nadpisz` |
 | `narzedzia/popraw_szablon.py` | **puść po każdej podmianie formatki od brata** — nakłada tabulator i wcięcie wiszące w spisie treści oraz przypina podpis do dołu strony |
 | `narzedzia/instalacja_testowa.py` | odtwarza instalację brata (zip z GitHuba, bez `.git`), opcja `--stara-wersja` wymusza aktualizację przy starcie |
 | `szablony/` | formatki Worda, wersjonowane w repo; aktualizacja je podmienia |

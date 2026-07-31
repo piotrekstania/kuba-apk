@@ -246,6 +246,8 @@ def formularz(request: Request, identyfikator: str, kopiuj: int | None = None,
     # wartości startowe; przy typie auto_numer "domyslnie" to wzorzec numeru, nie wartość
     wartosci: dict[str, Any] = {}
     for pole in szablon.pola:
+        if pole.domyslne:                    # lista wielokrotnego wyboru z zaznaczeniami na start
+            wartosci[pole.klucz] = list(pole.domyslne)
         if not pole.domyslnie or pole.typ == "auto_numer":
             continue
         wartosci[pole.klucz] = (date.today().isoformat()

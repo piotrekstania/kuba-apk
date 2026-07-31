@@ -41,6 +41,8 @@ class Pole:
     podpowiedz: str = ""
     opcje: list[str] = field(default_factory=list)
     zawsze: list[str] = field(default_factory=list)   # pozycje zaznaczone na stałe
+    domyslne: list[str] = field(default_factory=list)  # zaznaczone na start, ale odklikywalne
+    widoczne_gdy: str = ""      # klucz pola typu checkbox — pokaż tylko, gdy zaznaczone
     kolumny: list[dict[str, str]] = field(default_factory=list)   # tylko dla typ="tabela"
     domyslnie: str = ""
     zrodlo: str = ""            # "ustawienia" = bierz z danych stałych, nie pokazuj w formularzu
@@ -114,6 +116,8 @@ def wczytaj_szablon(plik: Path) -> Szablon:
             podpowiedz=surowe.get("podpowiedz", ""),
             opcje=list(surowe.get("opcje", [])),
             zawsze=list(surowe.get("zawsze", [])),
+            domyslne=list(surowe.get("domyslne", [])),
+            widoczne_gdy=surowe.get("widoczne_gdy", ""),
             kolumny=list(surowe.get("kolumny", [])),
             domyslnie=str(surowe.get("domyslnie", "")),
             zrodlo=surowe.get("zrodlo", ""),

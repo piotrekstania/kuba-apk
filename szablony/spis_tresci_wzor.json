@@ -98,6 +98,37 @@
       "podpowiedz": "Do dokumentu trafią tylko zaznaczone pozycje, w tej kolejności."
     },
     {
+      "klucz": "opis_przebiegu_jest",
+      "etykieta": "Opis przebiegu",
+      "typ": "checkbox",
+      "grupa": "Sprawozdanie techniczne",
+      "podpowiedz": "Zaznacz, żeby opisać przebieg prac. Bez zaznaczenia w sprawozdaniu wyjdzie „brak”."
+    },
+    {
+      "klucz": "opis_przebiegu",
+      "etykieta": "Przebieg wykonanych prac",
+      "typ": "textarea",
+      "grupa": "Sprawozdanie techniczne",
+      "widoczne_gdy": "opis_przebiegu_jest"
+    },
+    {
+      "klucz": "bazy",
+      "etykieta": "Zmiany w bazach danych",
+      "typ": "wybor_wielokrotny",
+      "grupa": "Sprawozdanie techniczne",
+      "opcje": [
+        "BDOT500",
+        "GESUT",
+        "EGiB"
+      ],
+      "domyslne": [
+        "BDOT500",
+        "GESUT",
+        "EGiB"
+      ],
+      "podpowiedz": "Wejdą do sprawozdania po przecinku. Odznaczenie wszystkich daje „brak”."
+    },
+    {
       "klucz": "dokumenty",
       "etykieta": "Wygeneruj też te dokumenty",
       "typ": "dokumenty",

@@ -151,6 +151,21 @@ OPIS_POL = {
          "opcje": SPIS_TRESCI, "zawsze": SPIS_ZAWSZE,
          "podpowiedz": "Do dokumentu trafią tylko zaznaczone pozycje, w tej kolejności."},
 
+        # --- pola używane przez sprawozdanie techniczne -------------------------
+        {"klucz": "opis_przebiegu_jest", "etykieta": "Opis przebiegu",
+         "typ": "checkbox", "grupa": "Sprawozdanie techniczne",
+         "podpowiedz": "Zaznacz, żeby opisać przebieg prac. Bez zaznaczenia "
+                       "w sprawozdaniu wyjdzie „brak”."},
+        {"klucz": "opis_przebiegu", "etykieta": "Przebieg wykonanych prac",
+         "typ": "textarea", "grupa": "Sprawozdanie techniczne",
+         "widoczne_gdy": "opis_przebiegu_jest"},
+        {"klucz": "bazy", "etykieta": "Zmiany w bazach danych",
+         "typ": "wybor_wielokrotny", "grupa": "Sprawozdanie techniczne",
+         "opcje": ["BDOT500", "GESUT", "EGiB"],
+         "domyslne": ["BDOT500", "GESUT", "EGiB"],
+         "podpowiedz": "Wejdą do sprawozdania po przecinku. Odznaczenie wszystkich "
+                       "daje „brak”."},
+
         # Lista bierze się z plików w katalogu szablony/, nie stąd — nowy szablon
         # dokłada pozycję sam. Karta znika, gdy innych szablonów nie ma.
         {"klucz": "dokumenty", "etykieta": "Wygeneruj też te dokumenty",

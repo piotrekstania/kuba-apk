@@ -117,10 +117,29 @@
 <p class="szary">Bez żadnego z nich generowanie plików .docx działa normalnie; nie działa tylko
   przycisk „Pobierz PDF" i łączenie dokumentów w jeden PDF.</p>
 
+<h2 id="warunkowe">Pola pokazywane tylko czasami</h2>
+<p>Pole może się pojawiać dopiero po zaznaczeniu innego. W pliku .json wskazujesz,
+  od którego przełącznika zależy:</p>
+<pre>{"klucz": "opis_przebiegu_jest", "etykieta": "Opis przebiegu", "typ": "checkbox"},
+{"klucz": "opis_przebiegu", "etykieta": "Przebieg prac", "typ": "textarea",
+ "widoczne_gdy": "opis_przebiegu_jest"}</pre>
+<p>W szablonie Worda rozstrzygasz to warunkiem. Pamiętaj: akapit ze znacznikiem
+  <code>{{ '{%p' }}</code> znika w całości, więc warunek, treść i zamknięcie muszą być
+  w <strong>osobnych akapitach</strong>:</p>
+<pre>{{ '{%p if opis_przebiegu_jest %}' }}
+Wykonano: {{ '{{ opis_przebiegu }}' }}
+{{ '{%p else %}' }}
+Wykonano: brak
+{{ '{%p endif %}' }}</pre>
+
 <h2 id="spis">Listy wielokrotnego wyboru (np. spis treści)</h2>
 <p>Pole typu <code>wybor_wielokrotny</code> daje w formularzu listę do odhaczenia,
   a do dokumentu wpuszcza <strong>tylko zaznaczone pozycje</strong>. Pozycje wpisane
-  w <code>"zawsze"</code> są zaznaczone na stałe — widać je, ale nie da się ich odznaczyć.</p>
+  w <code>"zawsze"</code> są zaznaczone na stałe — widać je, ale nie da się ich odznaczyć.
+  Pozycje w <code>"domyslne"</code> są zaznaczone na start, ale można je odkliknąć.</p>
+<p>Gdy pozycje mają wyjść jednym ciągiem po przecinku, użyj w Wordzie filtra
+  <code>join</code>: <code>{{ '{{ bazy | join(\', \') }}' }}</code> da
+  <em>BDOT500, GESUT, EGiB</em>.</p>
 <pre>{"klucz": "spis_tresci", "etykieta": "Co wchodzi do operatu",
  "typ": "wybor_wielokrotny", "grupa": "Spis treści",
  "opcje": ["Spis treści", "Sprawozdanie techniczne", "Mapa porównania z terenem"],
