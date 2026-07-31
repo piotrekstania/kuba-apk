@@ -33,7 +33,9 @@
     {% for pozycja in pozycje %}
     <div class="kafelek" draggable="true" data-nazwa="{{ pozycja.nazwa }}">
       <div class="kafelek-podglad">
-        <img loading="lazy" alt="{{ pozycja.nazwa }}"
+        {# bez loading="lazy": kafelki są treścią tej strony, a odkładanie ich do momentu
+           przewinięcia odkładałoby też konwersję dokumentu Worda — czyli to, co trwa #}
+        <img alt="{{ pozycja.nazwa }}"
              src="/miniatura/{{ katalog | urlencode }}/{{ pozycja.nazwa | urlencode }}">
       </div>
       <p class="kafelek-nazwa" title="{{ pozycja.nazwa }}">{{ pozycja.nazwa }}</p>
@@ -64,6 +66,19 @@
 {% endif %}
 
 <script>
+// Miniatura dokumentu Worda wymaga przerobienia go na PDF. Zwykle jest to zrobione
+// z wyprzedzeniem, ale gdy wejdziesz tu od razu po zapisaniu, konwersja może jeszcze
+// trwać. Wtedy zamiast pustego kafelka próbujemy jeszcze raz — bez odświeżania strony.
+document.querySelectorAll('.kafelek-podglad img').forEach(obrazek => {
+  let prob = 0;
+  obrazek.addEventListener('error', () => {
+    if (++prob > 4) return;
+    setTimeout(() => {
+      obrazek.src = obrazek.src.split('?')[0] + '?próba=' + prob;
+    }, 1500 * prob);
+  });
+});
+
 const siatka = document.getElementById('kafelki');
 let ciagniety = null;
 

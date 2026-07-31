@@ -140,6 +140,12 @@ def _wordem_wsad(pary: list[tuple[Path, Path]]) -> None:
 
             for zrodlo, cel in pary:
                 dokument = None
+                # Word pisze PDF prosto do wskazanego pliku, kawałek po kawałku.
+                # Gdyby to był plik docelowy, ktoś czytający go w tym momencie
+                # (miniatura!) dostałby urwany dokument — istniejący i ze świeżą datą,
+                # więc uznany za gotowy. Piszemy obok i podmieniamy jednym ruchem;
+                # `os.replace` jest na Windowsie niepodzielne w obrębie jednego dysku.
+                roboczy = cel.with_name(cel.name + ".czesciowy")
                 try:
                     dokument = word.Documents.Open(
                         str(zrodlo), ReadOnly=True, AddToRecentFiles=False,
@@ -147,7 +153,7 @@ def _wordem_wsad(pary: list[tuple[Path, Path]]) -> None:
                     )
                     slad(f"eksportuję do PDF: {cel.name}")
                     dokument.ExportAsFixedFormat(
-                        OutputFileName=str(cel),
+                        OutputFileName=str(roboczy),
                         ExportFormat=_WD_FORMAT_PDF,
                         OpenAfterExport=False,
                         OptimizeFor=_WD_JAKOSC_DRUK,
@@ -158,6 +164,7 @@ def _wordem_wsad(pary: list[tuple[Path, Path]]) -> None:
                         DocStructureTags=True,
                         BitmapMissingFonts=True,
                     )
+                    os.replace(roboczy, cel)
                 finally:
                     if dokument is not None:
                         try:
@@ -165,6 +172,7 @@ def _wordem_wsad(pary: list[tuple[Path, Path]]) -> None:
                         except Exception:
                             pass
                     dokument = None
+                    roboczy.unlink(missing_ok=True)   # po nieudanym eksporcie
         finally:
             if word is not None:
                 try:
@@ -182,6 +190,19 @@ def _wordem_wsad(pary: list[tuple[Path, Path]]) -> None:
 
 def _konwersja_wordem(zrodlo: Path, cel: Path) -> None:
     _wordem_wsad([(zrodlo.resolve(), _przygotuj_cel(cel))])
+
+
+def _wstaw_gotowy(zrodlo: Path, cel: Path) -> None:
+    """Wstawia gotowy plik na miejsce docelowe jednym ruchem.
+
+    Nigdy nie kopiujemy „w locie” do pliku, o który ktoś może w tej chwili zapytać —
+    połowicznie zapisany PDF wygląda dla programu na gotowy (istnieje, ma świeżą datę),
+    a przy czytaniu wywala się dopiero na treści.
+    """
+    try:
+        os.replace(zrodlo, cel)                    # ten sam dysk: niepodzielne
+    except OSError:
+        shutil.move(str(zrodlo), cel)              # inny dysk: nie da się inaczej
 
 
 def _przygotuj_cel(cel: Path) -> Path:
@@ -214,7 +235,7 @@ def _libreoffice_wsad(pary: list[tuple[Path, Path]]) -> None:
                 raise BrakKonwertera(
                     f"LibreOffice nie utworzył PDF-a z {zrodlo.name}.\n"
                     f"{wynik.stdout}\n{wynik.stderr}")
-            shutil.move(str(powstaly), _przygotuj_cel(cel))
+            _wstaw_gotowy(powstaly, _przygotuj_cel(cel))
             slad(f"LibreOffice skończył: {cel.name}")
 
 
@@ -242,8 +263,7 @@ def _konwersja_libreoffice(zrodlo: Path, cel: Path) -> None:
         if not powstaly.exists():
             raise BrakKonwertera(
                 f"LibreOffice nie utworzył PDF-a.\n{wynik.stdout}\n{wynik.stderr}")
-        cel.parent.mkdir(parents=True, exist_ok=True)
-        shutil.move(str(powstaly), cel)
+        _wstaw_gotowy(powstaly, _przygotuj_cel(cel))
         slad(f"LibreOffice skończył: {cel.name}")
 
 
