@@ -117,6 +117,7 @@ starą wersję (autor się na to nadział).
 | `narzedzia/utworz_wzor_szablonu.py` | generuje przykładowy szablon spisu treści do testów; nie nadpisze istniejącego bez `--nadpisz` |
 | `narzedzia/utworz_wzor_sprawozdania.py` | szkielet sprawozdania technicznego; też nie nadpisuje istniejącego bez `--nadpisz` |
 | `narzedzia/utworz_wzory_wykazow.py` | szkielety obu wykazów zmian danych ewidencyjnych |
+| `narzedzia/ujednolic_wyglad.py` | **puść po każdej podmianie formatki**, przed `popraw_szablon.py` — jeden krój, jedno logo, jedna hierarchia we wszystkich dokumentach operatu; nie rusza treści ani czerwieni numeru roboty |
 | `narzedzia/popraw_szablon.py` | **puść po każdej podmianie formatki od brata** — nakłada tabulator i wcięcie wiszące w spisie treści oraz przypina podpis do dołu strony |
 | `narzedzia/instalacja_testowa.py` | odtwarza instalację brata (zip z GitHuba, bez `.git`), opcja `--stara-wersja` wymusza aktualizację przy starcie |
 | `szablony/` | formatki Worda, wersjonowane w repo; aktualizacja je podmienia |
@@ -172,6 +173,14 @@ też brat. Interfejs w całości po polsku.
    zawinięta pozycja chowa się pod numerem), a podpis — ramki `w:framePr` z
    `vAnchor="margin" yAlign="bottom"`, żeby stał na dole strony niezależnie od długości
    spisu. Skrypt jest odporny na powtórzenie.
+12b. **Word trzyma każdy tabulator w osobnym biegu tekstu.** `"\t\t" in akapit.text` bywa
+   prawdą, choć żaden pojedynczy bieg nie zawiera dwóch tabulatorów — `bieg.text.replace`
+   nic wtedy nie robi i „poprawka” cicho nie działa (a przy powtórzeniu dokłada kolejny
+   przystanek). Nadmiarowe tabulatory trzeba usuwać, idąc przez cały akapit i pamiętając
+   ostatni znak z poprzedniego biegu; tak robi `narzedzia/ujednolic_wyglad.py`.
+12c. **Pusty akapit nie zawsze jest odstępem.** Ten z ramką `w:framePr` to podkładka
+   podnosząca przypięty podpis (patrz `popraw_szablon.py`); zmiana jego rozmiaru przesuwa
+   podpis na stronie. Przy hurtowym formatowaniu akapity w ramce trzeba pomijać.
 13a. **Puste pole z formularza to nie brak pola.** Przeglądarka wysyła każdy `<input>`,
    także pusty, więc `dane.setdefault(klucz, ...)` nic nie zrobi — klucz *jest*, tylko
    z pustym napisem. Kosztowało to numerację: poprawianie operatu brało kolejny numer

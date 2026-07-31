@@ -1,2 +1,2 @@
-2026.07.31.36
-Naprawione: wejście w „Złóż PDF” zaraz po zapisaniu operatu pokazywało puste kafelki, dopóki nie odświeżyło się strony. Word zapisywał PDF prosto do pliku docelowego, więc miniatura potrafiła trafić na dokument w połowie zapisany. Teraz plik pojawia się na miejscu dopiero gotowy, a gdyby miniatura mimo wszystko nie zdążyła, strona sama spróbuje ponownie.
+2026.07.31.37
+Zmienione: spis treści i sprawozdanie techniczne wyglądają teraz jak jeden komplet — to samo logo w tym samym miejscu i rozmiarze, jeden krój pisma, ta sama hierarchia nagłówków, bez podkreśleń. Numer roboty zostaje czerwony. W sprawozdaniu poprawione wcięcia: druga linijka zdania nie wraca już na margines, a opis złożony z kilku urwanych linijek czyta się jak zwykły akapit.
