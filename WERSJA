@@ -1,2 +1,2 @@
-2026.07.31.13
-Karta „Robota” ma teraz właściwe pola: numer roboty i numer operatu (oba wymagane), datę zgłoszenia i datę zakończenia pracy geodezyjnej wybierane z kalendarza oraz listę rodzajów prac zgodną z formularzem zgłoszenia. Położenie działki przeniosło się do własnej karty.
+2026.07.31.14
+Numer operatu wrócił do postaci 001/2026, a katalog nazywa się 001.2026 — ukośnika w nazwie folderu być nie może. W karcie „Robota” doszło pole I.Z.P.G, a numery i daty ułożyły się po trzy i po dwa w rzędzie. Pod położeniem działki jest nowe wymagane pole „Nr działki”.

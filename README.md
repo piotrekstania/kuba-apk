@@ -100,8 +100,8 @@ jest w samej aplikacji, w zakładce „Jak edytować szablon”.
 ## Typy pól (plik `.json` obok szablonu)
 
 `text`, `textarea`, `date`, `number`, `select`, `checkbox`, `tabela`,
-`auto_numer` (wzorzec `{numer3}.{rok}` daje `001.2026` — kropka, nie ukośnik, bo tak samo
-nazywa się katalog operatu),
+`auto_numer` (wzorzec `{numer3}/{rok}` daje `001/2026`; katalog operatu nazywa się
+wtedy `001.2026`, bo ukośnika w nazwie folderu być nie może),
 `teryt` (kaskada województwo → powiat → jednostka ewidencyjna → obręb; do dokumentu
 wchodzą nazwy i identyfikatory TERYT osobnymi znacznikami).
 

@@ -68,6 +68,7 @@ def zbuduj() -> Path:
     akapit(dokument, "Nr roboty: {{ nr_roboty }}", 12, pogrubienie=True,
            wyrownanie=SRODEK, odstep_przed=36)
     akapit(dokument, "Nr operatu: {{ nr_operatu }}", 12, wyrownanie=SRODEK)
+    akapit(dokument, "I.Z.P.G: {{ izpg }}", 12, wyrownanie=SRODEK)
 
     akapit(dokument, "Województwo: {{ polozenie_wojewodztwo }}    "
                      "Powiat: {{ polozenie_powiat }}", 12, wyrownanie=SRODEK, odstep_przed=24)
@@ -75,6 +76,7 @@ def zbuduj() -> Path:
            12, wyrownanie=SRODEK)
     akapit(dokument, "Obręb: {{ polozenie_obreb_numer }} {{ polozenie_obreb }} "
                      "({{ polozenie_obreb_teryt }})", 12, wyrownanie=SRODEK)
+    akapit(dokument, "Działki nr: {{ nr_dzialki }}", 12, pogrubienie=True, wyrownanie=SRODEK)
 
     akapit(dokument, "Zgłoszenie pracy geodezyjnej: {{ data_zgloszenia }}", 11,
            wyrownanie=SRODEK, odstep_przed=36)
@@ -98,13 +100,16 @@ OPIS_POL = {
         {"klucz": "nr_roboty", "etykieta": "Nr roboty", "wymagane": True,
          "grupa": "Robota", "szerokosc": "trzecia"},
         {"klucz": "nr_operatu", "etykieta": "Nr operatu", "typ": "auto_numer",
-         "wymagane": True, "domyslnie": "{numer3}.{rok}",
+         "wymagane": True, "domyslnie": "{numer3}/{rok}",
+         "grupa": "Robota", "szerokosc": "trzecia"},
+        {"klucz": "izpg", "etykieta": "I.Z.P.G", "wymagane": True,
          "grupa": "Robota", "szerokosc": "trzecia"},
 
+        # obie daty w jednym rzędzie: „polowa” to trzy z sześciu kolumn siatki
         {"klucz": "data_zgloszenia", "etykieta": "Data zgłoszenia pracy geodezyjnej",
-         "typ": "date", "wymagane": True, "grupa": "Robota", "szerokosc": "trzecia"},
+         "typ": "date", "wymagane": True, "grupa": "Robota", "szerokosc": "polowa"},
         {"klucz": "data_zakonczenia", "etykieta": "Data zakończenia pracy geodezyjnej",
-         "typ": "date", "wymagane": True, "grupa": "Robota", "szerokosc": "trzecia"},
+         "typ": "date", "wymagane": True, "grupa": "Robota", "szerokosc": "polowa"},
 
         {"klucz": "rodzaj_pracy", "etykieta": "Rodzaj pracy", "typ": "select",
          "grupa": "Robota", "szerokosc": "pelna", "opcje": RODZAJE_PRACY},
@@ -113,6 +118,9 @@ OPIS_POL = {
          "wymagane": True, "grupa": "Położenie",
          "podpowiedz": "Wybierz z list — do dokumentu trafiają i nazwy, "
                        "i identyfikatory TERYT."},
+        {"klucz": "nr_dzialki", "etykieta": "Nr działki", "wymagane": True,
+         "grupa": "Położenie", "szerokosc": "polowa",
+         "podpowiedz": "np. 123/4 albo kilka po przecinku: 123/4, 123/5, 124"},
     ],
 }
 

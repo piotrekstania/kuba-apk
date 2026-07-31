@@ -16,7 +16,14 @@
       "etykieta": "Nr operatu",
       "typ": "auto_numer",
       "wymagane": true,
-      "domyslnie": "{numer3}.{rok}",
+      "domyslnie": "{numer3}/{rok}",
+      "grupa": "Robota",
+      "szerokosc": "trzecia"
+    },
+    {
+      "klucz": "izpg",
+      "etykieta": "I.Z.P.G",
+      "wymagane": true,
       "grupa": "Robota",
       "szerokosc": "trzecia"
     },
@@ -26,7 +33,7 @@
       "typ": "date",
       "wymagane": true,
       "grupa": "Robota",
-      "szerokosc": "trzecia"
+      "szerokosc": "polowa"
     },
     {
       "klucz": "data_zakonczenia",
@@ -34,7 +41,7 @@
       "typ": "date",
       "wymagane": true,
       "grupa": "Robota",
-      "szerokosc": "trzecia"
+      "szerokosc": "polowa"
     },
     {
       "klucz": "rodzaj_pracy",
@@ -61,6 +68,14 @@
       "wymagane": true,
       "grupa": "Położenie",
       "podpowiedz": "Wybierz z list — do dokumentu trafiają i nazwy, i identyfikatory TERYT."
+    },
+    {
+      "klucz": "nr_dzialki",
+      "etykieta": "Nr działki",
+      "wymagane": true,
+      "grupa": "Położenie",
+      "szerokosc": "polowa",
+      "podpowiedz": "np. 123/4 albo kilka po przecinku: 123/4, 123/5, 124"
     }
   ]
 }

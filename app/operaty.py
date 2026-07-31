@@ -52,17 +52,27 @@ def nazwa_bezpieczna(tekst: str, zapas: str = "operat") -> tuple[str, bool]:
 
 # --- zakładanie i opis -------------------------------------------------------
 
+def nazwa_katalogu(nr_operatu: str) -> str:
+    """'001/2026' -> '001.2026'.
+
+    Numer operatu zostaje z ukośnikiem — tak wygląda w dokumencie i tak go czyta ośrodek.
+    Katalog dostaje w tym miejscu kropkę, bo Windows ukośnika w nazwie folderu nie przyjmie,
+    a myślnik czytało się gorzej niż kropka.
+    """
+    return nazwa_bezpieczna(nr_operatu.replace("/", "."))[0]
+
+
 def katalog_operatu(nr_operatu: str) -> Path:
-    return WYNIKI / nazwa_bezpieczna(nr_operatu)[0]
+    return WYNIKI / nazwa_katalogu(nr_operatu)
 
 
 def zaloz(nr_operatu: str, nr_roboty: str, szablon: str,
           dane: dict[str, Any]) -> tuple[Path, list[str]]:
     """Tworzy katalog operatu z opisem. Zwraca (katalog, ostrzeżenia dla użytkownika)."""
-    # Numer operatu ma zwykle postać 001/2026, więc ukośnik w nazwie katalogu zamieniamy
-    # na myślnik po cichu — to norma, a nie usterka warta straszenia użytkownika.
+    # Ukośnik w nazwie katalogu zamieniamy na kropkę po cichu — to norma, a nie usterka
+    # warta straszenia użytkownika.
     ostrzezenia: list[str] = []
-    nazwa = nazwa_bezpieczna(nr_operatu)[0]
+    nazwa = nazwa_katalogu(nr_operatu)
     katalog = WYNIKI / nazwa
     katalog.mkdir(parents=True, exist_ok=True)
 
