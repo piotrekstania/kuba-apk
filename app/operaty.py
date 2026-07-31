@@ -20,6 +20,7 @@ W katalogu leżą dwa pliki opisujące robotę:
 from __future__ import annotations
 
 import json
+import os
 import re
 from datetime import datetime
 from pathlib import Path
@@ -170,3 +171,21 @@ def usun_podglady(katalog: Path) -> None:
 def numer_z_nazwy(nazwa: str) -> str:
     """'001-2026' -> '001/2026' na potrzeby wyświetlania, gdy nie ma opisu."""
     return re.sub(r"^(\d+)-(\d{4})$", r"\1/\2", nazwa)
+
+
+def otworz_w_systemie(sciezka: Path) -> None:
+    """Otwiera katalog w Eksploratorze (albo odpowiedniku na Linuksie/macOS).
+
+    Program chodzi na komputerze użytkownika, więc „serwer” i „biurko” to ta sama
+    maszyna — okno otworzy się tam, gdzie siedzi brat. Nie czekamy na zamknięcie
+    okna, więc `Popen` bez `wait()`.
+    """
+    import subprocess
+    import sys
+
+    if sys.platform == "win32":
+        os.startfile(sciezka)                                    # noqa: S606 (tylko Windows)
+    elif sys.platform == "darwin":
+        subprocess.Popen(["open", str(sciezka)])
+    else:
+        subprocess.Popen(["xdg-open", str(sciezka)])

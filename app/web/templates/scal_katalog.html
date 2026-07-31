@@ -6,6 +6,23 @@
 <p class="szary">Katalog <code>wyniki\{{ katalog }}</code>{% if opis.nr_roboty %} ·
   nr roboty <strong>{{ opis.nr_roboty }}</strong>{% endif %}</p>
 
+<div class="pasek">
+  <form method="post" action="/scal/{{ katalog | urlencode }}/otworz-katalog">
+    <button class="wtorny" type="submit">Otwórz katalog</button>
+  </form>
+  {% if wynik_gotowy %}
+  <a class="wtorny" href="/scal/{{ katalog | urlencode }}/wynik" target="_blank">
+    Otwórz złożony PDF</a>
+  {% endif %}
+</div>
+
+{% if zlozono %}
+<div class="komunikat gotowe">
+  <strong>Złożone.</strong> Plik <code>{{ wynik }}</code> leży w katalogu operatu.
+  <a class="glowny" href="/scal/{{ katalog | urlencode }}/wynik" target="_blank">Otwórz PDF</a>
+</div>
+{% endif %}
+
 {% if pozycje %}
 <p>Przeciągnij kafelki myszą, żeby ustawić kolejność. Plik, który przyszedł bokiem,
   obróć strzałkami — obrót zapisze się w gotowym PDF-ie. Kafelek wyłączony krzyżykiem
@@ -35,8 +52,9 @@
     <button class="glowny" type="submit">Złóż PDF: {{ wynik }}</button>
     <a class="wtorny" href="/scal">Wróć do listy</a>
   </div>
-  <p class="podpowiedz">Gotowy plik trafi do katalogu operatu pod nazwą
-    <code>{{ wynik }}</code> — dokładnie taką, jakiej wymagają przepisy.</p>
+  <p class="podpowiedz">Gotowy plik zapisuje się w katalogu operatu pod nazwą
+    <code>{{ wynik }}</code> — dokładnie taką, jakiej wymagają przepisy. Ta strona zostaje,
+    więc możesz poprawić kolejność i złożyć jeszcze raz.</p>
 </form>
 {% else %}
 <p>W tym katalogu nie ma jeszcze nic do sklejenia. Włóż do

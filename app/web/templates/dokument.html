@@ -13,8 +13,9 @@
 {% endif %}
 
 <div class="pasek">
-  <a class="glowny" href="/pobierz/{{ dokument.id }}/docx">Pobierz Word (.docx)</a>
-  <a class="glowny" href="/pobierz/{{ dokument.id }}/pdf">Pobierz PDF</a>
+  <form method="post" action="/dokument/{{ dokument.id }}/otworz-katalog">
+    <button class="wtorny" type="submit">Otwórz katalog</button>
+  </form>
   {% if dokument.katalog %}<a class="glowny" href="/scal/{{ dokument.katalog | urlencode }}">Złóż PDF operatu</a>{% endif %}
   <a class="wtorny" href="/nowy/{{ dokument.szablon }}?kopiuj={{ dokument.id }}">Popraw i wygeneruj ponownie</a>
 </div>

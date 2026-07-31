@@ -271,7 +271,8 @@ async def generuj(request: Request, identyfikator: str):
     katalog = plik.parent
     tytul = kontekst.get("nr_roboty") or katalog.name
     dokument_id = db.zapisz_dokument(
-        szablon.id, str(tytul), f"{katalog.name}/{plik.name}", dane, katalog.name)
+        szablon.id, str(tytul), f"{katalog.name}/{plik.name}", dane, katalog.name,
+        str(kontekst.get("nr_operatu") or operaty.numer_z_nazwy(katalog.name)))
     adres = f"/dokument/{dokument_id}"
     if ostrzezenia:
         adres += "?blad=" + quote(" ".join(ostrzezenia))
@@ -283,44 +284,46 @@ def dokument(request: Request, dokument_id: int, blad: str | None = None):
     wiersz = db.dokument(dokument_id)
     if wiersz is None:
         return RedirectResponse("/", status_code=303)
-    return _widok(request, "dokument.html", dokument=wiersz,
-                  dane=json.loads(wiersz["dane_json"]), blad=blad)
+    dane = json.loads(wiersz["dane_json"])
+    # Pole TERYT jest w bazie słownikiem identyfikatorów — na stronie ma się pokazać
+    # to, co człowiek rozpozna, a nie „4 wiersze”.
+    czytelne = {
+        klucz: (generator.pola_teryt(klucz, wartosc)[klucz]
+                if isinstance(wartosc, dict) and "obreb" in wartosc else wartosc)
+        for klucz, wartosc in dane.items()
+    }
+    return _widok(request, "dokument.html", dokument=wiersz, dane=czytelne, blad=blad)
 
 
-@app.get("/pobierz/{dokument_id}/docx")
-def pobierz_docx(dokument_id: int):
+@app.post("/dokument/{dokument_id}/otworz-katalog")
+def otworz_katalog_dokumentu(request: Request, dokument_id: int):
     wiersz = db.dokument(dokument_id)
-    if wiersz is None or not (WYNIKI / wiersz["plik_docx"]).exists():
+    katalog = operaty.katalog_po_nazwie(wiersz["katalog"] or "") if wiersz else None
+    if katalog is None:
         return RedirectResponse("/", status_code=303)
-    plik = WYNIKI / wiersz["plik_docx"]
-    return FileResponse(plik, filename=plik.name,
-                        media_type="application/vnd.openxmlformats-officedocument"
-                                   ".wordprocessingml.document")
+    return _otworz(request, katalog, f"/dokument/{dokument_id}")
 
 
-@app.get("/pobierz/{dokument_id}/pdf")
-def pobierz_pdf(request: Request, dokument_id: int):
-    wiersz = db.dokument(dokument_id)
-    if wiersz is None or not (WYNIKI / wiersz["plik_docx"]).exists():
-        return RedirectResponse("/", status_code=303)
-    zrodlo = WYNIKI / wiersz["plik_docx"]
+@app.post("/scal/{nazwa}/otworz-katalog")
+def otworz_katalog_operatu(request: Request, nazwa: str):
+    katalog = operaty.katalog_po_nazwie(nazwa)
+    if katalog is None:
+        return RedirectResponse("/scal", status_code=303)
+    return _otworz(request, katalog, f"/scal/{quote(nazwa)}")
+
+
+def _otworz(request: Request, katalog: Path, powrot: str) -> RedirectResponse:
+    """Otwiera katalog w Eksploratorze. Program chodzi u brata, więc okno wyskoczy u niego."""
     try:
-        # Konwersja ląduje poza katalogiem operatu (dane/podglad/), a nie obok .docx —
-        # inaczej spis treści pojawiłby się w sklejaniu drugi raz, jako osobny PDF.
-        cel = operaty.jako_pdf(zrodlo)
-    except pdf.BrakKonwertera as blad:
-        return RedirectResponse(f"/dokument/{dokument_id}?blad={quote(str(blad))}",
-                                status_code=303)
+        operaty.otworz_w_systemie(katalog)
     except Exception as blad:
-        # Word potrafi wywalić się na sto sposobów (aktywacja, uszkodzony profil,
-        # otwarte okno dialogowe) — dokument .docx nadal da się pobrać.
         zapisz_blad(request, blad)
-        komunikat = ("Nie udało się zrobić PDF-a z tego dokumentu. Plik Worda (.docx) "
-                     "jest gotowy i możesz go pobrać poniżej. Szczegóły zapisały się "
-                     "w dane\\bledy.log.")
-        return RedirectResponse(f"/dokument/{dokument_id}?blad={quote(komunikat)}",
-                                status_code=303)
-    return FileResponse(cel, filename=cel.name, media_type="application/pdf")
+        return RedirectResponse(
+            powrot + "?blad=" + quote(
+                "Nie udało się otworzyć katalogu. Znajdziesz go ręcznie: "
+                f"wyniki\\{katalog.name}"),
+            status_code=303)
+    return RedirectResponse(powrot, status_code=303)
 
 
 @app.post("/dokument/{dokument_id}/usun")
@@ -357,7 +360,8 @@ def scal_lista(request: Request, komunikat: str | None = None, blad: str | None 
 
 
 @app.get("/scal/{nazwa}", response_class=HTMLResponse)
-def scal_katalog(request: Request, nazwa: str, blad: str | None = None):
+def scal_katalog(request: Request, nazwa: str, blad: str | None = None,
+                 zlozono: bool = False):
     katalog = operaty.katalog_po_nazwie(nazwa)
     if katalog is None:
         return RedirectResponse("/scal", status_code=303)
@@ -365,9 +369,11 @@ def scal_katalog(request: Request, nazwa: str, blad: str | None = None):
     # a miniatury i tak dociągają się leniwie, dopiero gdy przeglądarka o nie poprosi
     pozycje = [{"nazwa": p.name, "word": p.suffix.lower() != ".pdf"}
                for p in operaty.pliki(katalog)]
+    nazwa_pliku = operaty.nazwa_wyniku(katalog)
     return _widok(request, "scal_katalog.html", katalog=katalog.name,
                   opis=operaty.opis(katalog), pozycje=pozycje,
-                  wynik=operaty.nazwa_wyniku(katalog), blad=blad)
+                  wynik=nazwa_pliku, wynik_gotowy=(katalog / nazwa_pliku).exists(),
+                  zlozono=zlozono, blad=blad)
 
 
 @app.get("/miniatura/{nazwa}/{plik}")
@@ -388,6 +394,19 @@ def miniatura(request: Request, nazwa: str, plik: str, obrot: int = 0):
         return Response(status_code=204)
     return Response(obrazek, media_type="image/png",
                     headers={"Cache-Control": "no-store"})
+
+
+@app.get("/scal/{nazwa}/wynik")
+def scal_wynik(nazwa: str):
+    """Złożony PDF pod stałym adresem — stąd otwiera go nowa karta."""
+    katalog = operaty.katalog_po_nazwie(nazwa)
+    if katalog is None:
+        return RedirectResponse("/scal", status_code=303)
+    plik = katalog / operaty.nazwa_wyniku(katalog)
+    if not plik.exists():
+        return RedirectResponse(f"/scal/{quote(nazwa)}", status_code=303)
+    return FileResponse(plik, filename=plik.name, media_type="application/pdf",
+                        content_disposition_type="inline")
 
 
 @app.post("/scal/{nazwa}")
@@ -434,7 +453,11 @@ async def scal_wykonaj(request: Request, nazwa: str):
         pdf.polacz_pdf(wybrane, wynik, etykiety, obroty)
     except pdf.BladPliku as blad:
         return niepowodzenie(str(blad))
-    return FileResponse(wynik, filename=wynik.name, media_type="application/pdf")
+    # Nie odsyłamy pliku prosto w odpowiedzi na POST: formularz z target="_blank" bywa
+    # blokowany i wtedy kliknięcie „Złóż PDF” nie robi *nic*, co dla brata wygląda jak
+    # zepsuty program. Wracamy więc na stronę układania z potwierdzeniem, a gotowy PDF
+    # otwiera się w nowej karcie zwykłym linkiem — tego żadna przeglądarka nie blokuje.
+    return RedirectResponse(f"/scal/{quote(nazwa)}?zlozono=1", status_code=303)
 
 
 # --- ustawienia --------------------------------------------------------------

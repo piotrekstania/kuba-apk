@@ -61,7 +61,7 @@ CREATE TABLE IF NOT EXISTS teryt_stan (
 # Numer schematu trzymamy w `PRAGMA user_version` samej bazy. Dzięki temu nowa wersja
 # programu potrafi doprowadzić starą bazę do porządku, zamiast wywalić się na brakującej
 # kolumnie — a baza u brata jest jedynym miejscem, gdzie siedzi historia i numeracja.
-WERSJA_SCHEMATU = 2
+WERSJA_SCHEMATU = 3
 
 # Kolejne kroki dopisujemy tutaj: {2: ["ALTER TABLE dokumenty ADD COLUMN status TEXT"]}
 # i podnosimy WERSJA_SCHEMATU. Kroki muszą być odporne na powtórzenie i nie mogą
@@ -71,6 +71,9 @@ MIGRACJE: dict[int, list[str]] = {
     # względem wyniki/ (np. "001-2026/spis_tresci.docx"), a `katalog` samą nazwę folderu.
     # Stare wiersze zostają z pustym `katalog` — pliki leżą tam, gdzie leżały.
     2: ["ALTER TABLE dokumenty ADD COLUMN katalog TEXT"],
+    # 3: numer operatu na liście dokumentów. Wyliczanie go z nazwy katalogu działa tylko
+    # dla wzorca 001-2026, a wzorzec numeru siedzi w .json szablonu i może być inny.
+    3: ["ALTER TABLE dokumenty ADD COLUMN nr_operatu TEXT"],
 }
 
 
@@ -113,13 +116,13 @@ def init() -> None:
 # --- dokumenty ---------------------------------------------------------------
 
 def zapisz_dokument(szablon: str, tytul: str, plik_docx: str, dane: dict[str, Any],
-                    katalog: str = "") -> int:
+                    katalog: str = "", nr_operatu: str = "") -> int:
     with polacz() as con:
         kursor = con.execute(
-            "INSERT INTO dokumenty (szablon, tytul, plik_docx, dane_json, utworzono, katalog)"
-            " VALUES (?, ?, ?, ?, ?, ?)",
+            "INSERT INTO dokumenty (szablon, tytul, plik_docx, dane_json, utworzono,"
+            " katalog, nr_operatu) VALUES (?, ?, ?, ?, ?, ?, ?)",
             (szablon, tytul, plik_docx, json.dumps(dane, ensure_ascii=False),
-             datetime.now().isoformat(timespec="seconds"), katalog),
+             datetime.now().isoformat(timespec="seconds"), katalog, nr_operatu),
         )
         return int(kursor.lastrowid)
 

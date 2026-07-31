@@ -1,2 +1,2 @@
-2026.07.31.9
-Każdy operat dostaje teraz własny katalog w „wyniki”, nazwany numerem operatu — w środku spis_tresci.docx, opis roboty i pusty plik z numerem KERG, żebyś widział go w Eksploratorze. Do tego katalogu wkładasz mapy, szkice i wykaz z C-Geo. Zakładka „Łączenie PDF” pokazuje teraz miniatury plików z wybranego operatu: kolejność ustawiasz przeciągając myszą, pliki bokiem obracasz strzałkami, a niepotrzebne wyłączasz krzyżykiem. Gotowy PDF nazywa się dokładnie tak jak numer roboty. Wgrywania plików z dysku już nie ma — wystarczy włożyć je do katalogu.
+2026.07.31.10
+Lista dokumentów zaczyna się teraz od numeru operatu, obok jest numer roboty. Pobierania Worda i PDF-a nie ma — wszystkie pliki leżą w katalogu operatu, a otwiera go przycisk „Otwórz katalog”. Po kliknięciu „Złóż PDF” gotowy plik zapisuje się sam w tym katalogu i można go od razu obejrzeć przyciskiem „Otwórz PDF”.
