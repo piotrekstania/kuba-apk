@@ -82,7 +82,7 @@ OPIS_POL = {
         {"klucz": "nr_roboty", "etykieta": "Nr roboty / KERG", "wymagane": True,
          "grupa": "Robota", "szerokosc": "trzecia"},
         {"klucz": "nr_operatu", "etykieta": "Nr operatu", "typ": "auto_numer",
-         "domyslnie": "{numer3}/{rok}", "grupa": "Robota", "szerokosc": "trzecia"},
+         "domyslnie": "{numer3}.{rok}", "grupa": "Robota", "szerokosc": "trzecia"},
         {"klucz": "data_dokumentu", "etykieta": "Data dokumentu", "typ": "date",
          "domyslnie": "dzisiaj", "grupa": "Robota", "szerokosc": "trzecia"},
         {"klucz": "cel_opracowania", "etykieta": "Cel opracowania", "typ": "select",

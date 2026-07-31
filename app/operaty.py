@@ -21,7 +21,6 @@ from __future__ import annotations
 
 import json
 import os
-import re
 from datetime import datetime
 from pathlib import Path
 from typing import Any
@@ -166,11 +165,6 @@ def jako_pdf(plik: Path) -> Path:
 def usun_podglady(katalog: Path) -> None:
     import shutil
     shutil.rmtree(PODGLADY / katalog.name, ignore_errors=True)
-
-
-def numer_z_nazwy(nazwa: str) -> str:
-    """'001-2026' -> '001/2026' na potrzeby wyświetlania, gdy nie ma opisu."""
-    return re.sub(r"^(\d+)-(\d{4})$", r"\1/\2", nazwa)
 
 
 def otworz_w_systemie(sciezka: Path) -> None:

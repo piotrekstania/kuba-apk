@@ -96,7 +96,7 @@ def przygotuj_kontekst(szablon: Szablon, dane: dict[str, Any], ustawienia: dict[
             numer = db.nastepny_numer(nazwa_licznika, dzis.year)
             if rezerwacje is not None:
                 rezerwacje.append((nazwa_licznika, dzis.year, numer))
-            wzor = pole.domyslnie or "{numer}/{rok}"
+            wzor = pole.domyslnie or "{numer}.{rok}"
             kontekst[pole.klucz] = wzor.format(numer=numer, numer3=f"{numer:03d}", rok=dzis.year)
         elif pole.typ == "teryt":
             wybor = kontekst.get(pole.klucz)

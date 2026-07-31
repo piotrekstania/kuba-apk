@@ -232,7 +232,7 @@ def formularz(request: Request, identyfikator: str, kopiuj: int | None = None):
     for pole in szablon.pola:
         if pole.typ == "auto_numer":
             numer = db.podglad_numeru(szablon.licznik or szablon.id, date.today().year)
-            wzor = pole.domyslnie or "{numer}/{rok}"
+            wzor = pole.domyslnie or "{numer}.{rok}"
             podglad = wzor.format(numer=numer, numer3=f"{numer:03d}", rok=date.today().year)
 
     return _widok(request, "formularz.html", szablon=szablon, wartosci=wartosci,
@@ -272,7 +272,7 @@ async def generuj(request: Request, identyfikator: str):
     tytul = kontekst.get("nr_roboty") or katalog.name
     dokument_id = db.zapisz_dokument(
         szablon.id, str(tytul), f"{katalog.name}/{plik.name}", dane, katalog.name,
-        str(kontekst.get("nr_operatu") or operaty.numer_z_nazwy(katalog.name)))
+        str(kontekst.get("nr_operatu") or katalog.name))
     adres = f"/dokument/{dokument_id}"
     if ostrzezenia:
         adres += "?blad=" + quote(" ".join(ostrzezenia))

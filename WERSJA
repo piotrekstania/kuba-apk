@@ -1,2 +1,2 @@
-2026.07.31.10
-Lista dokumentów zaczyna się teraz od numeru operatu, obok jest numer roboty. Pobierania Worda i PDF-a nie ma — wszystkie pliki leżą w katalogu operatu, a otwiera go przycisk „Otwórz katalog”. Po kliknięciu „Złóż PDF” gotowy plik zapisuje się sam w tym katalogu i można go od razu obejrzeć przyciskiem „Otwórz PDF”.
+2026.07.31.11
+Numer operatu ma teraz kropkę zamiast ukośnika (001.2026), dzięki czemu katalog operatu nazywa się dokładnie tak jak numer — bez żadnych podmian.

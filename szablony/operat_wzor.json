@@ -15,7 +15,7 @@
       "klucz": "nr_operatu",
       "etykieta": "Nr operatu",
       "typ": "auto_numer",
-      "domyslnie": "{numer3}/{rok}",
+      "domyslnie": "{numer3}.{rok}",
       "grupa": "Robota",
       "szerokosc": "trzecia"
     },
