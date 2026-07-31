@@ -30,6 +30,31 @@ CREATE TABLE IF NOT EXISTS liczniki (
     stan   INTEGER NOT NULL DEFAULT 0,
     PRIMARY KEY (nazwa, rok)
 );
+
+-- TERYT: województwa, powiaty i jednostki ewidencyjne (gminy) z pliku GUS-u.
+-- `rodzic` wiąże poziomy: '1201' -> '12', '120102_2' -> '1201'.
+CREATE TABLE IF NOT EXISTS teryt_jednostki (
+    id      TEXT PRIMARY KEY,
+    poziom  TEXT NOT NULL,             -- wojewodztwo | powiat | gmina
+    rodzic  TEXT,
+    nazwa   TEXT NOT NULL,
+    rodzaj  TEXT
+);
+CREATE INDEX IF NOT EXISTS teryt_jednostki_rodzic ON teryt_jednostki (poziom, rodzic);
+
+-- Obręby ewidencyjne z ULDK, dociągane dla gminy przy pierwszym jej wybraniu.
+CREATE TABLE IF NOT EXISTS teryt_obreby (
+    id     TEXT PRIMARY KEY,           -- np. '120102_2.0001'
+    gmina  TEXT NOT NULL,
+    nazwa  TEXT NOT NULL
+);
+CREATE INDEX IF NOT EXISTS teryt_obreby_gmina ON teryt_obreby (gmina);
+
+-- kiedy pobrano listę jednostek i na jaki dzień jest aktualna
+CREATE TABLE IF NOT EXISTS teryt_stan (
+    klucz    TEXT PRIMARY KEY,
+    wartosc  TEXT NOT NULL
+);
 """
 
 

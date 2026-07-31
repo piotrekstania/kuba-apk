@@ -1,2 +1,2 @@
-2026.07.31.4
-Program tłumaczy teraz błędy po polsku i podpowiada, co z nimi zrobić. Przy łączeniu PDF-ów wgrane pliki wreszcie naprawdę się doklejają, a skan .jpg jest odrzucany od razu z wyjaśnieniem. Poprawione też: wykaz współrzędnych nie rozsypuje się przy „Popraw i wygeneruj ponownie”, a nieudane generowanie nie zjada numeru operatu.
+2026.07.31.5
+Położenie działki wybierasz teraz z list: województwo, powiat, jednostka ewidencyjna, obręb. Dane pochodzą z rejestru TERYT (GUS) i z serwisu ULDK (GUGiK), pobierają się same przy pierwszym uruchomieniu i zostają na komputerze, więc program działa też bez internetu. Do dokumentu wchodzą i nazwy, i identyfikatory TERYT — spis znaczników do wstawienia w Wordzie masz w „Jak edytować szablon”, a ręczne odświeżanie list w „Dane stałe”.

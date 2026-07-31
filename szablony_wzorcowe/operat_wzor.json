@@ -1,7 +1,7 @@
 {
   "nazwa": "Operat techniczny (wzór testowy)",
   "opis": "Strona tytułowa + sprawozdanie techniczne + wykaz współrzędnych. Do podmiany na własny szablon.",
-  "wzor_nazwy": "Operat_{nr_roboty}_{obreb}",
+  "wzor_nazwy": "Operat_{nr_roboty}_{polozenie_obreb}",
   "licznik": "operat",
   "pola": [
     {
@@ -56,22 +56,12 @@
       "szerokosc": "trzecia"
     },
     {
-      "klucz": "powiat",
-      "etykieta": "Powiat",
+      "klucz": "polozenie",
+      "etykieta": "Położenie (TERYT)",
+      "typ": "teryt",
+      "wymagane": true,
       "grupa": "Położenie",
-      "szerokosc": "trzecia"
-    },
-    {
-      "klucz": "gmina",
-      "etykieta": "Gmina",
-      "grupa": "Położenie",
-      "szerokosc": "trzecia"
-    },
-    {
-      "klucz": "obreb",
-      "etykieta": "Obręb",
-      "grupa": "Położenie",
-      "szerokosc": "trzecia"
+      "podpowiedz": "Wybierz z list; nazwy i identyfikatory TERYT trafiają do dokumentu osobnymi znacznikami."
     },
     {
       "klucz": "dzialki",

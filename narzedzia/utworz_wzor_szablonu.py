@@ -52,9 +52,12 @@ def zbuduj() -> Path:
            wyrownanie=SRODEK, odstep_przed=36)
     akapit(dokument, "Nr operatu: {{ nr_operatu }}", 12, wyrownanie=SRODEK)
 
-    akapit(dokument, "Powiat: {{ powiat }}    Gmina: {{ gmina }}", 12, wyrownanie=SRODEK,
-           odstep_przed=24)
-    akapit(dokument, "Obręb: {{ obreb }}", 12, wyrownanie=SRODEK)
+    akapit(dokument, "Województwo: {{ polozenie_wojewodztwo }}    Powiat: {{ polozenie_powiat }}",
+           12, wyrownanie=SRODEK, odstep_przed=24)
+    akapit(dokument, "Jednostka ewidencyjna: {{ polozenie_gmina_teryt }} {{ polozenie_gmina }}",
+           12, wyrownanie=SRODEK)
+    akapit(dokument, "Obręb: {{ polozenie_obreb_numer }} {{ polozenie_obreb }} "
+                     "({{ polozenie_obreb_teryt }})", 12, wyrownanie=SRODEK)
     akapit(dokument, "Działki nr: {{ dzialki }}", 12, wyrownanie=SRODEK)
 
     akapit(dokument, "Zamawiający: {{ zamawiajacy }}", 11, wyrownanie=SRODEK, odstep_przed=36)
@@ -70,8 +73,8 @@ def zbuduj() -> Path:
     akapit(dokument, "SPRAWOZDANIE TECHNICZNE", 14, pogrubienie=True, wyrownanie=SRODEK)
 
     akapit(dokument, "1. Cel i zakres opracowania", 12, pogrubienie=True, odstep_przed=14)
-    akapit(dokument, "{{ cel_opracowania }} dla działek nr {{ dzialki }} położonych w obrębie "
-                     "{{ obreb }}, gmina {{ gmina }}, powiat {{ powiat }}.", wyrownanie=JUSTUJ)
+    akapit(dokument, "{{ cel_opracowania }} dla działek nr {{ dzialki }}. "
+                     "Położenie: {{ polozenie }}.", wyrownanie=JUSTUJ)
     akapit(dokument, "{{ zakres_opis }}", wyrownanie=JUSTUJ)
 
     akapit(dokument, "2. Zgłoszenie pracy geodezyjnej", 12, pogrubienie=True, odstep_przed=14)

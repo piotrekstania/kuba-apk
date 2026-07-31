@@ -33,6 +33,8 @@ zainstalowania/uruchomienia, bez instalowania Pythona.
 | Wzorce szablonów w `szablony_wzorcowe/`, a nie w `szablony/` | `szablony/` to **jego** dane — jedyny katalog, który był i wysyłany, i edytowany przez użytkownika; wzorce kopiują się tam tylko gdy brakuje pliku |
 | Wersja schematu bazy w `PRAGMA user_version` + lista `MIGRACJE` | baza u brata to jedyny egzemplarz historii i numeracji; nowy kod na starej bazie musi umieć ją dociągnąć, a nie wywalić się na brakującej kolumnie |
 | **Żaden błąd nie wychodzi do przeglądarki po angielsku** — globalne uchwyty w `app/main.py` + `blad.html`, ślad do `dane/bledy.log` | brat nie odróżni `AttributeError` od awarii dysku; ma zobaczyć, co się stało, że jego dane są całe i co ma zrobić. Log to jedyny ślad po awarii, bo okno konsoli zamyka razem z programem |
+| TERYT: plik `TERC_Urzedowy` z GUS + obręby z ULDK, **wszystko cache'owane w SQLite** | oficjalna usługa GUS (TERYT ws1) wymaga rejestracji i hasła wysyłanego pocztą przez Urząd Statystyczny — u brata to dyskwalifikacja. Cache jest obowiązkowy, bo w terenie nie ma internetu |
+| Obręby dociągane **dla wybranej gminy**, nie dla całej Polski z góry | ULDK oddaje obręby jednej jednostki ewidencyjnej w jednym zapytaniu (~0,1 s), ale gmin jest 3240 — pobieranie wszystkiego z góry to kilkanaście minut przy pierwszym starcie za dane, z których brat użyje kilku |
 
 ## Zasada centralna
 
@@ -96,7 +98,8 @@ starą wersję (autor się na to nadział).
 | `app/pdf.py` | wykrywanie konwertera, DOCX→PDF, łączenie PDF-ów |
 | `app/aktualizacja.py` | pobieranie nowej wersji z GitHuba; **tylko biblioteka standardowa**, bo działa zanim `pip install` dołoży nowe zależności |
 | `WERSJA` | 1. linia = numer porównywany z GitHubem, reszta = opis pokazywany bratu raz po aktualizacji |
-| `app/db.py` | SQLite: `dokumenty`, `ustawienia`, `liczniki` |
+| `app/db.py` | SQLite: `dokumenty`, `ustawienia`, `liczniki`, `teryt_*` |
+| `app/teryt.py` | jednostki TERYT z GUS + obręby z ULDK; **tylko biblioteka standardowa** |
 | `app/main.py` | trasy FastAPI, parsowanie formularza (w tym tabel) |
 | `app/web/templates/` | widoki; `blad.html` to strona każdego niezłapanego wyjątku, a `pomoc.html` instrukcja dla brata — aktualizuj ją razem z funkcjami |
 | `narzedzia/utworz_wzor_szablonu.py` | generuje przykładowy szablon operatu do testów |
@@ -151,6 +154,20 @@ też brat. Interfejs w całości po polsku.
    dostają te same nazwy pól (`tab__punkty__0__…`, `__1__…` liczone po kolumnach) i wykaz
    współrzędnych rozsypuje się przy każdym ponownym wyświetleniu formularza: po błędzie
    walidacji i przy „Popraw i wygeneruj ponownie”.
+13. **GUS nie ma linku do pliku TERC — jest przycisk ASP.NET.** Trzeba wczytać stronę
+   „pliki pełne”, wyciągnąć `__VIEWSTATE` i odesłać POST z `__EVENTTARGET`
+   (`ctl00$body$BTERCUrzedowyPobierz`). Działa i nie wymaga konta, ale jest kruche:
+   gdy GUS przebuduje stronę, przyjdzie HTML zamiast ZIP-a. Dlatego `app/teryt.py`
+   sprawdza nagłówek `PK` i mówi o tym po polsku, zamiast wywalać program —
+   a stare dane zostają w bazie nietknięte.
+14. **Gmina miejsko-wiejska (RODZ=3) nie jest jednostką ewidencyjną.** W EGiB dzieli się
+   na miasto (4) i obszar wiejski (5), i tylko te mają obręby. ULDK odpytane o `_3`
+   zwraca po cichu wyłącznie obręby obszaru wiejskiego — czyli listę niepełną. Dlatego
+   `_3` w ogóle nie trafia do bazy.
+15. **Pole typu `teryt` przychodzi z formularza jako cztery osobne pola**
+   (`pole__polozenie__wojewodztwo` … `__obreb`). `odczytaj_dane` scala je w jeden słownik
+   pod kluczem pola — inaczej walidacja „wymagane” nigdy by go nie zobaczyła, a historia
+   zapisywałaby cztery luźne wartości zamiast jednego wyboru.
 
 ## Stan na teraz — przetestowane end-to-end
 
@@ -174,6 +191,14 @@ numeracji, dane stałe, `wyniki/` i oba jego szablony; przychodzi nowy kod, nowe
 ścieżki „brak internetu" i „wersja aktualna" — obie kończą się startem programu.
 Świeża instalacja i aktualizacja `.venv` przez `start.bat`: też przetestowane.
 
+Pole typu `teryt` sprawdzone od końca do końca: pierwsze uruchomienie ściąga z GUS-u 3636
+jednostek (16 województw / 380 powiatów / 3240 jednostek ewidencyjnych, rejestr na 2026-01-01)
+w tle, bez blokowania startu; kaskada w przeglądarce zawęża listy, obręby dociągają się
+z ULDK przy pierwszym wybraniu gminy (0,12 s) i potem lecą z bazy (0,03 s). Wybór przeżywa
+błąd walidacji i „Popraw i wygeneruj ponownie”. Do dokumentu wchodzą nazwy i identyfikatory
+osobnymi znacznikami (`{{ polozenie_obreb }}` = Baczków, `{{ polozenie_obreb_teryt }}` =
+120102_2.0001).
+
 Numer operatu jest **rezerwowany przed wypełnieniem szablonu** (musi wejść do treści
 dokumentu), a po nieudanym generowaniu oddawany przez `db.zwolnij_numer` — warunkowym
 `UPDATE ... WHERE stan = ?`, żeby nie cofnąć licznika, który w międzyczasie ruszył dalej.
@@ -190,6 +215,8 @@ i skrypty jednorazowe.
 2. **Wczytywanie wykazu współrzędnych z pliku** zamiast wklepywania/wklejania — brat pewnie
    eksportuje dane z programu geodezyjnego (C-Geo, WinKalk, Geonet). Trzeba zapytać o format
    i dopisać parser.
+2a. Sprawdzanie numeru działki przez ULDK (`GetParcelById`) — dane już są pod ręką, a to
+   wyłapałoby literówkę w numerze, zanim operat pójdzie do ośrodka.
 3. **Paczka dla Windowsa.** PyInstaller (`--onedir`) + instalator Inno Setup. Budowanie musi
    iść na Windowsie (brak cross-kompilacji) — albo lokalnie, albo GitHub Actions
    `windows-latest`. `app/config.py` jest już przygotowany na `sys.frozen`.

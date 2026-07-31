@@ -8,6 +8,7 @@ from __future__ import annotations
 import json
 import re
 import shutil
+import threading
 import traceback
 from collections import defaultdict
 from contextlib import asynccontextmanager
@@ -18,7 +19,7 @@ from urllib.parse import quote
 
 from fastapi import FastAPI, Request
 from fastapi.exceptions import RequestValidationError
-from fastapi.responses import FileResponse, HTMLResponse, RedirectResponse
+from fastapi.responses import FileResponse, HTMLResponse, JSONResponse, RedirectResponse
 from fastapi.staticfiles import StaticFiles
 from fastapi.templating import Jinja2Templates
 # UWAGA: UploadFile bierzemy ze Starlette, nie z FastAPI. `fastapi.UploadFile` jest
@@ -27,13 +28,29 @@ from fastapi.templating import Jinja2Templates
 from starlette.datastructures import UploadFile
 from starlette.exceptions import HTTPException as BladHTTP
 
-from . import aktualizacja, db, generator, pdf, szablony
+from . import aktualizacja, db, generator, pdf, szablony, teryt
 from .config import DANE, WEB, WYNIKI
+
+
+def _pierwsze_pobranie_teryt() -> None:
+    """Przy pierwszym uruchomieniu dociąga listę gmin — w tle i po cichu.
+
+    W osobnym wątku, bo start programu nie może czekać na GUS, a brak internetu
+    (np. w terenie) nie może go zatrzymać. Gdy się nie uda, w Ustawieniach jest
+    przycisk do pobrania ręcznie.
+    """
+    try:
+        if teryt.pusto():
+            teryt.aktualizuj_jednostki()
+    except Exception:
+        pass
+
 
 @asynccontextmanager
 async def cykl_zycia(_: FastAPI):
     db.init()
     aktualizacja.uzupelnij_szablony()   # dokłada brakujące wzorce, istniejących nie rusza
+    threading.Thread(target=_pierwsze_pobranie_teryt, daemon=True).start()
     yield
 
 
@@ -158,6 +175,13 @@ def odczytaj_dane(formularz, szablon: szablony.Szablon) -> dict[str, Any]:
                                                 if k.startswith("pole__")}
         elif pole.typ == "tabela":
             proste.setdefault(pole.klucz, [])
+        elif pole.typ == "teryt":
+            # cztery listy rozwijane przychodzą jako pole__polozenie__gmina itd.;
+            # scalamy je w jeden słownik identyfikatorów, żeby walidacja „wymagane”
+            # i zapis do historii widziały to jako jedno pole
+            czesci = {poziom: proste.pop(f"{pole.klucz}__{poziom}", "")
+                      for poziom in ("wojewodztwo", "powiat", "gmina", "obreb")}
+            proste[pole.klucz] = czesci if any(czesci.values()) else {}
     return proste
 
 
@@ -440,9 +464,11 @@ async def scal(request: Request):
 # --- ustawienia (dane stałe) -------------------------------------------------
 
 @app.get("/ustawienia", response_class=HTMLResponse)
-def ustawienia_formularz(request: Request, zapisano: bool = False):
+def ustawienia_formularz(request: Request, zapisano: bool = False,
+                         komunikat: str | None = None, blad: str | None = None):
     return _widok(request, "ustawienia.html", ustawienia=db.wczytaj_ustawienia(),
-                  zapisano=zapisano)
+                  zapisano=zapisano, komunikat=komunikat, blad=blad,
+                  teryt_stan=teryt.stan())
 
 
 @app.post("/ustawienia")
@@ -457,6 +483,54 @@ async def ustawienia_zapis(request: Request):
             nowe[klucz] = wartosc.strip()
     db.zastap_ustawienia(nowe)
     return RedirectResponse("/ustawienia?zapisano=1", status_code=303)
+
+
+# --- TERYT: listy do pól kaskadowych i pobieranie danych ---------------------
+
+@app.get("/teryt/lista")
+def teryt_lista(poziom: str, rodzic: str | None = None):
+    """Zasila listy rozwijane w formularzu. Zwraca JSON, bo woła to JavaScript."""
+    if poziom not in ("wojewodztwo", "powiat", "gmina"):
+        return JSONResponse({"pozycje": [], "blad": "Nieznany poziom podziału."},
+                            status_code=400)
+    return JSONResponse({"pozycje": teryt.potomkowie(rodzic or None, poziom)})
+
+
+@app.get("/teryt/obreby")
+def teryt_obreby(gmina: str):
+    """Obręby jednostki ewidencyjnej — z bazy albo, przy pierwszym razie, z GUGiK-u."""
+    try:
+        return JSONResponse({"pozycje": teryt.obreby(gmina)})
+    except teryt.BladPobierania as blad:
+        return JSONResponse({"pozycje": [], "blad": str(blad)})
+
+
+@app.post("/teryt/aktualizuj")
+def teryt_aktualizuj(request: Request):
+    try:
+        ile, stan_na = teryt.aktualizuj_jednostki()
+        komunikat = (f"Pobrano listę jednostek TERYT: {ile} pozycji "
+                     f"(rejestr GUS na dzień {stan_na}).")
+    except teryt.BladPobierania as blad:
+        return RedirectResponse(f"/ustawienia?blad={quote(str(blad))}", status_code=303)
+    except Exception as blad:
+        zapisz_blad(request, blad)
+        return RedirectResponse(
+            "/ustawienia?blad=" + quote("Nie udało się pobrać listy TERYT. "
+                                        "Szczegóły zapisały się w dane\\bledy.log."),
+            status_code=303)
+    return RedirectResponse(f"/ustawienia?komunikat={quote(komunikat)}", status_code=303)
+
+
+@app.post("/teryt/zapomnij-obreby")
+def teryt_zapomnij_obreby():
+    """Kasuje zapamiętane obręby — pobiorą się na nowo przy następnym wyborze gminy."""
+    with db.polacz() as con:
+        con.execute("DELETE FROM teryt_obreby")
+    return RedirectResponse(
+        "/ustawienia?komunikat=" + quote("Zapamiętane obręby wyczyszczone — pobiorą się "
+                                         "na nowo, gdy wybierzesz gminę."),
+        status_code=303)
 
 
 @app.get("/pomoc", response_class=HTMLResponse)

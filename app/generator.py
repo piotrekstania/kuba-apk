@@ -9,7 +9,7 @@ from typing import Any
 
 from docxtpl import DocxTemplate
 
-from . import db
+from . import db, teryt
 from .config import WYNIKI
 from .szablony import Szablon
 
@@ -47,6 +47,39 @@ def data_pl(wartosc: str) -> str:
         return wartosc
 
 
+def pola_teryt(klucz: str, wybor: dict[str, str]) -> dict[str, str]:
+    """Z wybranych identyfikatorów robi komplet tagów do wstawienia w Wordzie.
+
+    Dla pola `polozenie` powstają m.in. `polozenie_gmina`, `polozenie_gmina_teryt`,
+    `polozenie_obreb`, `polozenie_obreb_teryt` — nazwa i identyfikator osobno, bo
+    w operacie potrzebne są oba.
+    """
+    wynik: dict[str, str] = {}
+    opis: list[str] = []
+
+    for poziom in ("wojewodztwo", "powiat", "gmina"):
+        jednostka = teryt.jednostka(wybor.get(poziom, ""))
+        wynik[f"{klucz}_{poziom}"] = jednostka["nazwa"] if jednostka else ""
+        wynik[f"{klucz}_{poziom}_teryt"] = jednostka["id"] if jednostka else ""
+
+    obreb = teryt.obreb(wybor.get("obreb", ""))
+    wynik[f"{klucz}_obreb"] = obreb["nazwa"] if obreb else ""
+    wynik[f"{klucz}_obreb_teryt"] = obreb["id"] if obreb else ""
+    # sam czterocyfrowy numer obrębu — w operatach cytuje się często tylko jego
+    wynik[f"{klucz}_obreb_numer"] = obreb["id"].rpartition(".")[2] if obreb else ""
+
+    if wynik[f"{klucz}_obreb"]:
+        opis.append(f"obręb {wynik[f'{klucz}_obreb']} ({wynik[f'{klucz}_obreb_teryt']})")
+    if wynik[f"{klucz}_gmina"]:
+        opis.append(f"gmina {wynik[f'{klucz}_gmina']}")
+    if wynik[f"{klucz}_powiat"]:
+        opis.append(f"powiat {wynik[f'{klucz}_powiat']}")
+    if wynik[f"{klucz}_wojewodztwo"]:
+        opis.append(f"województwo {wynik[f'{klucz}_wojewodztwo']}")
+    wynik[klucz] = ", ".join(opis)
+    return wynik
+
+
 def przygotuj_kontekst(szablon: Szablon, dane: dict[str, Any], ustawienia: dict[str, str],
                        rezerwacje: list[tuple[str, int, int]] | None = None) -> dict[str, Any]:
     """Łączy dane z formularza, dane stałe i wartości wyliczane automatycznie.
@@ -66,6 +99,9 @@ def przygotuj_kontekst(szablon: Szablon, dane: dict[str, Any], ustawienia: dict[
                 rezerwacje.append((nazwa_licznika, dzis.year, numer))
             wzor = pole.domyslnie or "{numer}/{rok}"
             kontekst[pole.klucz] = wzor.format(numer=numer, numer3=f"{numer:03d}", rok=dzis.year)
+        elif pole.typ == "teryt":
+            wybor = kontekst.get(pole.klucz)
+            kontekst.update(pola_teryt(pole.klucz, wybor if isinstance(wybor, dict) else {}))
         elif pole.typ == "date" and kontekst.get(pole.klucz):
             # do dokumentu idzie format polski, ale surową datę zostawiamy pod _iso
             kontekst[f"{pole.klucz}_iso"] = kontekst[pole.klucz]

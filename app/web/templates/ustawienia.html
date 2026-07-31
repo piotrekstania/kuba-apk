@@ -37,6 +37,44 @@
   </div>
 </form>
 
+<h2 id="teryt">Jednostki ewidencyjne (TERYT)</h2>
+<p class="szary">Lista województw, powiatów i jednostek ewidencyjnych pochodzi z rejestru
+  TERYT prowadzonego przez GUS, a obręby — z serwisu ULDK Głównego Urzędu Geodezji
+  i Kartografii. Program pobiera ją sam przy pierwszym uruchomieniu i trzyma u siebie,
+  więc <strong>działa też bez internetu</strong>. Odświeżaj, gdy zmieni się podział
+  administracyjny — zwykle raz na rok.</p>
+
+<table class="lista">
+  <tr><th class="waski">Województwa / powiaty / gminy</th>
+      <td>
+        {% if teryt_stan.wojewodztw %}
+          {{ teryt_stan.wojewodztw }} / {{ teryt_stan.powiatow }} / {{ teryt_stan.gmin }}
+          <span class="szary">— rejestr GUS na dzień {{ teryt_stan.stan_na }},
+            pobrano {{ teryt_stan.pobrano.replace('T', ' ') }}</span>
+        {% else %}
+          <span class="gwiazdka">jeszcze nie pobrano</span>
+          <span class="szary">— kliknij „Pobierz listę”, potrzebny jest internet</span>
+        {% endif %}
+      </td></tr>
+  <tr><th class="waski">Zapamiętane obręby</th>
+      <td>{{ teryt_stan.obrebow }}
+        <span class="szary">w {{ teryt_stan.gmin_z_obrebami }} jednostkach ewidencyjnych —
+          dociągają się z GUGiK-u przy pierwszym wybraniu danej gminy</span></td></tr>
+</table>
+
+<div class="pasek">
+  <form method="post" action="/teryt/aktualizuj">
+    <button class="glowny" type="submit">
+      {{ 'Odśwież listę z GUS-u' if teryt_stan.wojewodztw else 'Pobierz listę' }}</button>
+  </form>
+  <form method="post" action="/teryt/zapomnij-obreby"
+        onsubmit="return confirm('Wyczyścić zapamiętane obręby? Pobiorą się na nowo.')">
+    <button type="submit">Pobierz obręby na nowo</button>
+  </form>
+</div>
+<p class="podpowiedz">Pobieranie listy z GUS-u trwa kilka sekund. Dane, które już masz,
+  zostają nietknięte, dopóki nowe nie przyjdą w całości.</p>
+
 <script>
 const tabela = document.querySelector('#tabela-ustawien');
 document.getElementById('dodaj').addEventListener('click', () => {

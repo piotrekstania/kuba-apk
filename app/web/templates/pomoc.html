@@ -110,6 +110,48 @@
 <p class="szary">Bez żadnego z nich generowanie plików .docx działa normalnie; nie działa tylko
   przycisk „Pobierz PDF" i łączenie dokumentów w jeden PDF.</p>
 
+<h2 id="teryt">Położenie z list: województwo → powiat → jednostka ewidencyjna → obręb</h2>
+<p>Zamiast wpisywać ręcznie powiat, gminę i obręb, możesz mieć <strong>cztery listy rozwijane</strong>
+  z oficjalnymi danymi. Wybierasz województwo, zawężają się powiaty, potem jednostki ewidencyjne,
+  a na końcu obręby tej jednostki. Do dokumentu trafiają <strong>i nazwy, i identyfikatory TERYT</strong>.</p>
+
+<p>W pliku .json wystarczy jedno pole:</p>
+<pre>{"klucz": "polozenie", "etykieta": "Położenie", "typ": "teryt", "wymagane": true}</pre>
+
+<p>a w szablonie Worda masz do dyspozycji komplet znaczników — wstawiasz tylko te, których
+  potrzebujesz:</p>
+<table class="lista">
+  <tr><th class="waski">Wpisujesz w Wordzie</th><th>Co się wstawi</th></tr>
+  <tr><td><code>{{ '{{ polozenie }}' }}</code></td>
+      <td>całość jednym zdaniem: <em>obręb Baczków (120102_2.0001), gmina Bochnia,
+          powiat bocheński, województwo małopolskie</em></td></tr>
+  <tr><td><code>{{ '{{ polozenie_obreb }}' }}</code></td><td>Baczków</td></tr>
+  <tr><td><code>{{ '{{ polozenie_obreb_teryt }}' }}</code></td><td>120102_2.0001</td></tr>
+  <tr><td><code>{{ '{{ polozenie_obreb_numer }}' }}</code></td><td>0001</td></tr>
+  <tr><td><code>{{ '{{ polozenie_gmina }}' }}</code></td><td>Bochnia</td></tr>
+  <tr><td><code>{{ '{{ polozenie_gmina_teryt }}' }}</code></td><td>120102_2 — to jest identyfikator
+      jednostki ewidencyjnej</td></tr>
+  <tr><td><code>{{ '{{ polozenie_powiat }}' }}</code></td><td>bocheński</td></tr>
+  <tr><td><code>{{ '{{ polozenie_powiat_teryt }}' }}</code></td><td>1201</td></tr>
+  <tr><td><code>{{ '{{ polozenie_wojewodztwo }}' }}</code></td><td>małopolskie</td></tr>
+  <tr><td><code>{{ '{{ polozenie_wojewodztwo_teryt }}' }}</code></td><td>12</td></tr>
+</table>
+<p class="szary">Jeśli nazwiesz pole inaczej niż <code>polozenie</code>, końcówki zostają te same —
+  dla pola <code>lokalizacja</code> będzie <code>{{ '{{ lokalizacja_obreb }}' }}</code> itd.
+  Tę samą tabelkę masz zawsze pod ręką: w formularzu, pod listami, jest rozwijane
+  „Co z tego wstawić do szablonu Worda”.</p>
+
+<p><strong>Skąd te dane.</strong> Województwa, powiaty i jednostki ewidencyjne pochodzą z rejestru
+  TERYT prowadzonego przez GUS; obręby — z serwisu ULDK Głównego Urzędu Geodezji i Kartografii.
+  Program pobiera listę sam przy pierwszym uruchomieniu i zapisuje u siebie, więc
+  <strong>potem działa bez internetu</strong>. Obręby dociągają się przy pierwszym wybraniu
+  danej gminy (ułamek sekundy) i też zostają zapamiętane. Odświeżanie ręczne jest
+  w <a href="/ustawienia#teryt">Danych stałych</a>, na dole strony — przyda się raz na rok,
+  gdy zmieni się podział administracyjny.</p>
+<p class="szary">Gmin miejsko-wiejskich nie ma na liście jako jednej pozycji — są rozbite na
+  <em>miasto</em> i <em>obszar wiejski</em>, bo tak wygląda podział na jednostki ewidencyjne
+  w ewidencji gruntów.</p>
+
 <h2 id="scalanie">Co można dołączyć do scalonego PDF-a</h2>
 <p>Na stronie <a href="/scal">Łączenie PDF</a> możesz dorzucić własne pliki z dysku, ale tylko
   takie, które program umie zamienić na strony PDF-a: <strong>.pdf</strong> oraz dokumenty Worda
@@ -142,7 +184,9 @@
 <h2>Dostępne typy pól</h2>
 <p><code>text</code>, <code>textarea</code>, <code>date</code>, <code>number</code>,
   <code>select</code>, <code>checkbox</code>, <code>tabela</code>,
-  <code>auto_numer</code> (kolejny numer nadawany automatycznie).
+  <code>auto_numer</code> (kolejny numer nadawany automatycznie),
+  <code>teryt</code> (<a href="#teryt">listy województwo → powiat → jednostka
+  ewidencyjna → obręb</a>).
   Dodatkowo <code>"zrodlo": "ustawienia"</code> chowa pole z formularza i bierze wartość
   z zakładki <a href="/ustawienia">Dane stałe</a>.</p>
 

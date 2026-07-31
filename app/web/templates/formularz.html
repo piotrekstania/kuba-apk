@@ -42,6 +42,53 @@
             <button type="button" class="wklej">wklej z schowka</button></p>
         </div>
 
+        {% elif pole.typ == 'teryt' %}
+        {% set wybor = wartosc if wartosc is mapping else {} %}
+        <div class="pole pelna teryt" data-nazwa="{{ pole.klucz }}"
+             data-wojewodztwo="{{ wybor.get('wojewodztwo', '') }}"
+             data-powiat="{{ wybor.get('powiat', '') }}"
+             data-gmina="{{ wybor.get('gmina', '') }}"
+             data-obreb="{{ wybor.get('obreb', '') }}">
+          <label>{{ pole.etykieta }}{% if pole.wymagane %} <span class="gwiazdka">*</span>{% endif %}</label>
+          <div class="teryt-siatka">
+            {% for poziom, etykieta in [('wojewodztwo', 'Województwo'), ('powiat', 'Powiat'),
+                                        ('gmina', 'Jednostka ewidencyjna (gmina)'),
+                                        ('obreb', 'Obręb ewidencyjny')] %}
+            <div>
+              <label for="t_{{ pole.klucz }}_{{ poziom }}">{{ etykieta }}</label>
+              <select id="t_{{ pole.klucz }}_{{ poziom }}"
+                      name="pole__{{ pole.klucz }}__{{ poziom }}" data-poziom="{{ poziom }}">
+                <option value="">— wybierz —</option>
+              </select>
+            </div>
+            {% endfor %}
+          </div>
+          <p class="teryt-komunikat podpowiedz"></p>
+          {% if pole.podpowiedz %}<p class="podpowiedz">{{ pole.podpowiedz }}</p>{% endif %}
+          <details class="teryt-tagi">
+            <summary class="szary">Co z tego wstawić do szablonu Worda</summary>
+            <table class="lista">
+              <tr><th class="waski">Wpisujesz w Wordzie</th><th>Co się wstawi</th></tr>
+              {% for sufiks, opis in [
+                    ('', 'całość jednym zdaniem: obręb Baczków (120102_2.0001), gmina Bochnia, powiat bocheński, województwo małopolskie'),
+                    ('_obreb', 'nazwa obrębu, np. Baczków'),
+                    ('_obreb_teryt', 'pełny identyfikator obrębu, np. 120102_2.0001'),
+                    ('_obreb_numer', 'sam numer obrębu, np. 0001'),
+                    ('_gmina', 'nazwa jednostki ewidencyjnej, np. Bochnia'),
+                    ('_gmina_teryt', 'identyfikator jednostki ewidencyjnej, np. 120102_2'),
+                    ('_powiat', 'nazwa powiatu, np. bocheński'),
+                    ('_powiat_teryt', 'identyfikator powiatu, np. 1201'),
+                    ('_wojewodztwo', 'nazwa województwa, np. małopolskie'),
+                    ('_wojewodztwo_teryt', 'identyfikator województwa, np. 12')] %}
+              <tr>
+                <td><code>{{ '{{ ' ~ pole.klucz ~ sufiks ~ ' }}' }}</code></td>
+                <td class="szary">{{ opis }}</td>
+              </tr>
+              {% endfor %}
+            </table>
+          </details>
+        </div>
+
         {% elif pole.typ == 'textarea' %}
         <div class="pole {{ pole.szerokosc }}">
           <label for="p_{{ pole.klucz }}">{{ pole.etykieta }}{% if pole.wymagane %} <span class="gwiazdka">*</span>{% endif %}</label>
@@ -150,6 +197,87 @@ document.querySelectorAll('.tabela').forEach(blok => {
     });
   });
   if (!blok.querySelector('tbody tr')) dodajWiersz(blok);
+});
+
+// --- TERYT: województwo -> powiat -> jednostka ewidencyjna -> obręb ---------
+// Listy schodzą z serwera dopiero, gdy są potrzebne: gmin jest blisko cztery tysiące,
+// a obręby dla danej gminy dociągają się z GUGiK-u przy pierwszym jej wybraniu.
+document.querySelectorAll('.teryt').forEach(blok => {
+  const listy = {};
+  ['wojewodztwo', 'powiat', 'gmina', 'obreb'].forEach(p => {
+    listy[p] = blok.querySelector(`select[data-poziom="${p}"]`);
+  });
+  const komunikat = blok.querySelector('.teryt-komunikat');
+
+  function wyczysc(poziom) {
+    listy[poziom].innerHTML = '<option value="">— wybierz —</option>';
+    listy[poziom].disabled = true;
+  }
+
+  function wypelnij(poziom, pozycje, wybrany) {
+    wyczysc(poziom);
+    pozycje.forEach(p => {
+      const opcja = document.createElement('option');
+      opcja.value = p.id;
+      opcja.textContent = p.rodzaj ? `${p.nazwa} (${p.rodzaj})` : p.nazwa;
+      if (p.id === wybrany) opcja.selected = true;
+      listy[poziom].appendChild(opcja);
+    });
+    listy[poziom].disabled = pozycje.length === 0;
+  }
+
+  async function pobierz(adres) {
+    komunikat.textContent = '';
+    try {
+      const odpowiedz = await fetch(adres);
+      const dane = await odpowiedz.json();
+      if (dane.blad) komunikat.textContent = dane.blad;
+      return dane.pozycje || [];
+    } catch (e) {
+      komunikat.textContent = 'Nie udało się pobrać listy — sprawdź połączenie z internetem.';
+      return [];
+    }
+  }
+
+  const lista = (poziom, rodzic) =>
+    pobierz(`/teryt/lista?poziom=${poziom}&rodzic=${encodeURIComponent(rodzic || '')}`);
+
+  async function zaladujObreby(gmina, wybrany) {
+    if (!gmina) return wyczysc('obreb');
+    komunikat.textContent = 'Pobieram obręby…';
+    wypelnij('obreb', await pobierz(`/teryt/obreby?gmina=${encodeURIComponent(gmina)}`), wybrany);
+    if (!komunikat.textContent.startsWith('Nie')) komunikat.textContent = '';
+    if (listy.obreb.options.length === 1) {
+      komunikat.textContent = 'Dla tej jednostki ewidencyjnej serwis GUGiK nie podaje obrębów.';
+    }
+  }
+
+  listy.wojewodztwo.addEventListener('change', async () => {
+    ['powiat', 'gmina', 'obreb'].forEach(wyczysc);
+    wypelnij('powiat', await lista('powiat', listy.wojewodztwo.value));
+  });
+  listy.powiat.addEventListener('change', async () => {
+    ['gmina', 'obreb'].forEach(wyczysc);
+    wypelnij('gmina', await lista('gmina', listy.powiat.value));
+  });
+  listy.gmina.addEventListener('change', () => zaladujObreby(listy.gmina.value));
+
+  // odtworzenie wyboru po błędzie walidacji i przy „Popraw i wygeneruj ponownie”
+  (async () => {
+    const d = blok.dataset;
+    ['powiat', 'gmina', 'obreb'].forEach(wyczysc);
+    wypelnij('wojewodztwo', await lista('wojewodztwo'), d.wojewodztwo);
+    if (listy.wojewodztwo.options.length === 1) {
+      komunikat.textContent = 'Lista jednostek jest pusta — pobierz ją w Ustawieniach.';
+      return;
+    }
+    if (!d.wojewodztwo) return;
+    wypelnij('powiat', await lista('powiat', d.wojewodztwo), d.powiat);
+    if (!d.powiat) return;
+    wypelnij('gmina', await lista('gmina', d.powiat), d.gmina);
+    if (!d.gmina) return;
+    await zaladujObreby(d.gmina, d.obreb);
+  })();
 });
 </script>
 
