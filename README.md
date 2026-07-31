@@ -35,6 +35,14 @@ górnym rogu, którego używa:
 Bez żadnego z nich generowanie .docx nadal działa; nie da się tylko złożyć operatu
 w jeden PDF ani zobaczyć miniatur plików Worda.
 
+Formatki są złożone **Calibri** — jest na każdym Windowsie z pakietem Office. Na Linuksie
+warto dołożyć metrycznie zgodny zamiennik, inaczej podglądy PDF będą się łamać inaczej
+niż dokumenty u odbiorcy:
+
+```bash
+sudo apt install fonts-crosextra-carlito
+```
+
 ## Aktualizacje
 
 Program przy każdym uruchomieniu porównuje swój plik `WERSJA` z tym na GitHubie
@@ -92,6 +100,9 @@ sama się doprowadzi do porządku (po uprzednim zrobieniu kopii).
 | `WERSJA` | numer wersji + opis zmian; podbijasz go, wydając nową wersję |
 | `app/main.py` | strony i obsługa formularzy |
 | `narzedzia/utworz_wzor_szablonu.py` | generuje przykładowy szablon do testów |
+| `narzedzia/ujednolic_wyglad.py` | nakłada wspólny wygląd na wszystkie formatki (krój, logo, hierarchia, stopka); puszczaj po każdej podmianie `.docx` |
+| `narzedzia/popraw_szablon.py` | drobiazgi, których nie da się wyklikać na stałe: tabulator i wcięcie wiszące w spisie treści, podpis przypięty do dołu strony |
+| `narzedzia/instalacja_testowa.py` | odtwarza instalację brata — zip z GitHuba, bez `.git` |
 
 Kluczowa zasada: **źródłem prawdy jest plik .docx**. Dodanie `{{ nowe_pole }}` w Wordzie
 automatycznie dokłada pole w formularzu — bez zmian w kodzie. Instrukcja pisania szablonów

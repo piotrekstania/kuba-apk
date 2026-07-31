@@ -44,6 +44,9 @@ zainstalowania/uruchomienia, bez instalowania Pythona.
 | **Wynik składania nie wraca w odpowiedzi na POST** — POST przekierowuje na stronę układania z komunikatem, a PDF otwiera się z linku `target="_blank"` | formularz z `target="_blank"` bywa blokowany (potwierdzone w przeglądarce podglądu Claude Code: kliknięcie „Złóż PDF” nie robiło nic). Dla brata „nic się nie stało” to najgorszy możliwy objaw; link kliknięty przez człowieka nie jest blokowany nigdy |
 | Podglądy PDF robione **z wyprzedzeniem, w tle**, i **wsadowo** — jedno uruchomienie konwertera na komplet dokumentów | najdroższy jest start Worda, nie sam dokument: cztery pliki osobno to cztery starty. Zmierzone na LibreOfficie: 3,55 s → 1,17 s (67% mniej), na Windowsie zysk większy, bo Word startuje wolniej. Konwersja rusza zaraz po wygenerowaniu, więc do wejścia na stronę składania zwykle jest już po wszystkim |
 | Miniatury stron przez `pypdfium2` + `Pillow`, renderowane na serwerze | brat układa kolejność myszą, więc musi widzieć, co przeciąga. Renderowanie w przeglądarce oznaczałoby kilkanaście ramek z czytnikiem PDF, które połykają zdarzenia myszy; `pypdfium2` to jedno koło z pip, bez niczego do instalowania w systemie |
+| Wygląd formatek nakłada **skrypt** (`ujednolic_wyglad.py`), a nie ręka w Wordzie | dokumenty operatu mają wyglądać jak komplet, a formatki przychodzą pojedynczo i przez lata; ręczne pilnowanie kroju, logo i stopki w każdym pliku z osobna nie ma szans się utrzymać. Skrypt rozpoznaje role akapitów po tym, co w pliku zastaje, więc działa też na formatkach dołożonych później |
+| **Calibri**, nie Bahnschrift | Bahnschrift jest tylko na Windowsie i nie ma odpowiednika na Linuksie, więc podglądy PDF u autora łamały się inaczej niż dokumenty u brata. Calibri ma metrycznie zgodne Carlito (`fonts-crosextra-carlito`) — ten sam plik łamie się tak samo po obu stronach |
+| **Bez numeracji stron**, jedna stopka na wszystkich stronach i we wszystkich dokumentach | operat i tak jest sklejany z kilkunastu plików w jeden PDF, więc numer strony pojedynczego dokumentu nic nie znaczy, a wprowadza w błąd. Uwaga: pole z numerem siedziało też w **nieużywanej** stopce stron parzystych i wróciłoby przy pierwszej zmianie ustawień — dlatego skrypt nadpisuje wszystkie trzy stopki |
 | **Dane stałe usunięte z programu** — nazwisko, uprawnienia, pieczątka firmy | brat woli mieć je wpisane na sztywno w swoim szablonie Worda; to i tak nie zmienia się między robotami, a jeden ekran mniej to jeden ekran mniej do tłumaczenia. `db.wczytaj_ustawienia` i `zrodlo: "ustawienia"` zostają w kodzie, ale bez interfejsu |
 
 ## Zasada centralna
@@ -243,6 +246,11 @@ Formularz → `.docx` → PDF → sklejenie kilku PDF-ów w jeden. Działa: powt
 (z wklejaniem z Excela), sekcje warunkowe, automatyczna numeracja (`001/2026`), daty w formacie
 `31.07.2026` i `31 lipca 2026 r.`, powielanie poprzedniego dokumentu, historia.
 
+Wspólny wygląd formatek (`ujednolic_wyglad.py`) sprawdzony na Wordzie u brata: spis treści
+mieści się na jednej stronie A4 z kompletem 13 pozycji, sprawozdanie zajmuje dwie i tak
+ma zostać — przy dłuższym opisie przebiegu i tak by się nie zmieściło. Podpis zostaje
+przypięty do dołu strony niezależnie od długości spisu.
+
 Wykrywanie konwertera PDF: Word (COM) → LibreOffice zainstalowany → LibreOffice przenośny
 w katalogu `libreoffice/` obok programu. Stan widać w prawym górnym rogu aplikacji.
 
@@ -282,8 +290,12 @@ i skrypty jednorazowe.
 
 ## Co dalej — kolejka
 
-1. **Prawdziwe szablony brata.** `szablony/spis_tresci_wzor.docx` to atrapa wygenerowana skryptem.
-   Gdy przyjdą jego formatki Worda — wstawić w nie tagi i dopisać pliki `.json`.
+1. **Dwa wykazy zmian czekają na prawdziwe formatki.** `spis_tresci_wzor.docx`
+   i `sprawozdanie_techniczne_wzor.docx` to już formatki brata z wstawionymi tagami,
+   po przejściu `ujednolic_wyglad.py`. Natomiast `wykaz_zmian_budynku_wzor.docx`
+   i `wykaz_zmian_dzialki_wzor.docx` to nadal szkielety z `utworz_wzory_wykazow.py`
+   — nagłówki ich tabel są zmyślone. Gdy przyjdą prawdziwe: zachować nazwy plików,
+   przenieść tagi i puścić `ujednolic_wyglad.py`, a potem `popraw_szablon.py`.
 2. **Wczytywanie wykazu współrzędnych z pliku** zamiast wklepywania/wklejania — brat pewnie
    eksportuje dane z programu geodezyjnego (C-Geo, WinKalk, Geonet). Trzeba zapytać o format
    i dopisać parser.
