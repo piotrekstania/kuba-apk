@@ -54,6 +54,14 @@ cudzej pracy w Wordzie.
 Commit bez zmiany `WERSJA` nikomu się nie zainstaluje — i o to chodzi, bo to Ty decydujesz,
 kiedy brat dostaje nową wersję.
 
+W **kopii roboczej gita aktualizator się nie uruchamia** (wykrywa katalog `.git`) — inaczej
+`./start.sh` nadpisałby niezacommitowane zmiany plikami z GitHuba. Tam obowiązuje `git pull`.
+Żeby zobaczyć to, co zobaczy użytkownik, zrób instalację testową bez `.git`:
+
+```bash
+python narzedzia/instalacja_testowa.py /sciezka/do/testu --stara-wersja
+```
+
 `raw.githubusercontent.com` cache'uje pliki około pięciu minut, więc tuż po `push` program
 może jeszcze przez chwilę widzieć starą wersję. To nie awaria — wystarczy odczekać.
 Numer wersji jest zwykłym tekstem, porównywanym na równość, więc format jest dowolny

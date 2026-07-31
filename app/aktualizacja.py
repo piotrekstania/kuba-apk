@@ -14,6 +14,7 @@ dokłada zależności, których w `.venv` jeszcze nie ma.
 """
 from __future__ import annotations
 
+import os
 import shutil
 import sys
 import tempfile
@@ -140,8 +141,21 @@ def co_nowego() -> str | None:
     return tresc or None
 
 
+def kopia_robocza_gita() -> bool:
+    """Czy siedzimy w katalogu, w którym ktoś programuje, a nie u użytkownika."""
+    return (BAZA / ".git").exists()
+
+
 def sprawdz_i_zaktualizuj() -> bool:
     """True = coś podmieniono (program powinien wystartować już z nowego kodu)."""
+    # Kopia robocza gita jest nietykalna: aktualizacja nadpisuje `app/` plikami
+    # z GitHuba i skasowałaby niezacommitowane zmiany programisty. Instalacja
+    # u użytkownika to rozpakowany .zip, więc katalogu `.git` tam nie ma.
+    if kopia_robocza_gita() and os.environ.get("GENERATOR_WYMUS_AKTUALIZACJE") != "1":
+        print("Katalog roboczy gita — pomijam aktualizację (tutaj obowiązuje `git pull`).")
+        uzupelnij_szablony()
+        return False
+
     lokalna, _ = wersja_lokalna()
     zdalna = wersja_zdalna()
     if zdalna is None:

@@ -50,8 +50,20 @@ pypdf, SQLite, na Windowsie dodatkowo `pywin32` (Word przez COM). Wersje przypi�
 w [requirements.txt](requirements.txt). Bez frontendowego frameworka — czysty HTML
 + trochę waniliowego JS w szablonach.
 
-Środowisko docelowe = środowisko autora: **Windows + Microsoft Office (bez LibreOffice)**.
-Ścieżka przez LibreOffice zostaje w kodzie jako zapas i dla Linuksa, ale nie jest tu testowana.
+**Środowisko docelowe (komputer brata) = Windows + Microsoft Office, bez LibreOffice.**
+Ścieżka przez LibreOffice zostaje w kodzie jako zapas i dla Linuksa.
+
+Podział maszyn u autora:
+
+| Maszyna | Rola |
+| --- | --- |
+| Linux | pisanie kodu, `git`, praca z Claude Code |
+| Windows (`E:\git\kuba-apk`) | kopia robocza gita — sprawdzanie Worda i COM-u |
+| Windows, katalog poza gitem | instalacja testowa „jak u brata”: rozpakowany `.zip`, bez `.git`, z aktualizacją z GitHuba; robi ją `narzedzia/instalacja_testowa.py` |
+
+**Aktualizator sam się wyłącza w kopii roboczej gita** (`.git` obok = pomijam) — inaczej
+`./start.sh` na Linuksie nadpisałby niezacommitowane zmiany plikami z GitHuba. Wymuszenie:
+`GENERATOR_WYMUS_AKTUALIZACJE=1`.
 
 ## Uruchomienie
 
@@ -87,6 +99,7 @@ starą wersję (autor się na to nadział).
 | `app/main.py` | trasy FastAPI, parsowanie formularza (w tym tabel) |
 | `app/web/templates/` | widoki; `pomoc.html` to instrukcja dla brata, aktualizuj ją razem z funkcjami |
 | `narzedzia/utworz_wzor_szablonu.py` | generuje przykładowy szablon operatu do testów |
+| `narzedzia/instalacja_testowa.py` | odtwarza instalację brata (zip z GitHuba, bez `.git`), opcja `--stara-wersja` wymusza aktualizację przy starcie |
 | `szablony/`, `wyniki/`, `dane/` | dane użytkownika — dwa ostatnie są w `.gitignore` |
 
 Nazwy zmiennych, funkcji i komentarze są **po polsku** — trzymaj tę konwencję, kod czyta
