@@ -11,6 +11,7 @@ Word sterujemy sami (pywin32), a nie biblioteką docx2pdf, z dwóch powodów:
 """
 from __future__ import annotations
 
+import gc
 import os
 import shutil
 import subprocess
@@ -44,9 +45,11 @@ KANDYDACI_LIBREOFFICE = [
     "/Applications/LibreOffice.app/Contents/MacOS/soffice",
 ]
 
-# Word to jedna aplikacja na komputerze — dwie równoległe konwersje potrafią
-# sobie nawzajem zamknąć instancję, więc puszczamy je pojedynczo.
-_BLOKADA_WORD = threading.Lock()
+# Konwersje puszczamy pojedynczo, **niezależnie od konwertera**. Word to jedna aplikacja
+# na komputerze i dwie równoległe konwersje potrafią sobie zamknąć instancję, a dwa
+# LibreOffice'y dzielące ten sam profil blokują się nawzajem. Sprawdzone: strona składania
+# pobiera miniatury równolegle i potrafiła zawiesić obie konwersje naraz.
+_BLOKADA_KONWERSJI = threading.Lock()
 
 # stałe Worda (nie importujemy makr Office, żeby nie wymagać cache'u typów)
 _WD_FORMAT_PDF = 17               # wdExportFormatPDF
@@ -96,6 +99,16 @@ def dostepny_konwerter() -> str:
     return "brak"
 
 
+def slad(tekst: str) -> None:
+    """Wypisuje krok konwersji, gdy włączona jest diagnostyka (`narzedzia/diagnostyka.bat`).
+
+    Z `flush=True`, bo przy twardej awarii Worda bufor nie zdąży się opróżnić i ostatnia
+    linia — ta najważniejsza, mówiąca, na czym program stanął — przepadłaby.
+    """
+    if os.environ.get("GENERATOR_DIAGNOSTYKA") == "1":
+        print(f"[konwersja] {tekst}", flush=True)
+
+
 @contextmanager
 def _com():
     """Inicjuje COM dla bieżącego wątku (trasy FastAPI chodzą w puli wątków)."""
@@ -115,12 +128,13 @@ def _konwersja_wordem(zrodlo: Path, cel: Path) -> None:
     cel = cel.resolve()
     cel.parent.mkdir(parents=True, exist_ok=True)
 
-    with _BLOKADA_WORD, _com():
+    with _com():                      # szeregowanie robi już `docx_na_pdf`
         word = None
         dokument = None
         try:
             # DispatchEx = własna instancja Worda; nie przejmujemy tej,
             # w której użytkownik ma właśnie otwarte swoje pliki.
+            slad(f"otwieram Worda dla {zrodlo.name}")
             word = win32com.client.DispatchEx("Word.Application")
             word.Visible = False
             word.DisplayAlerts = 0                       # wdAlertsNone
@@ -128,6 +142,7 @@ def _konwersja_wordem(zrodlo: Path, cel: Path) -> None:
                 str(zrodlo), ReadOnly=True, AddToRecentFiles=False,
                 ConfirmConversions=False, Visible=False,
             )
+            slad(f"eksportuję do PDF: {cel.name}")
             dokument.ExportAsFixedFormat(
                 OutputFileName=str(cel),
                 ExportFormat=_WD_FORMAT_PDF,
@@ -151,9 +166,18 @@ def _konwersja_wordem(zrodlo: Path, cel: Path) -> None:
                     word.Quit(_WD_NIE_ZAPISUJ)
                 except Exception:
                     pass
+            # Wskaźniki COM muszą zniknąć, **zanim** wyjdziemy z `_com()`. Zwykłe
+            # wyjście z funkcji zwolniłoby je dopiero po `CoUninitialize`, a zwalnianie
+            # interfejsu w wątku odłączonym już od COM-u potrafi wywalić cały proces
+            # (naruszenie ochrony pamięci, bez żadnego wyjątku w Pythonie).
+            dokument = None
+            word = None
+            gc.collect()
+            slad(f"zamknięto Worda po {zrodlo.name}")
 
 
 def _konwersja_libreoffice(zrodlo: Path, cel: Path) -> None:
+    slad(f"LibreOffice startuje dla {zrodlo.name}")
     soffice = sciezka_libreoffice()
     if not soffice:
         raise BrakKonwertera(
@@ -178,11 +202,13 @@ def _konwersja_libreoffice(zrodlo: Path, cel: Path) -> None:
                 f"LibreOffice nie utworzył PDF-a.\n{wynik.stdout}\n{wynik.stderr}")
         cel.parent.mkdir(parents=True, exist_ok=True)
         shutil.move(str(powstaly), cel)
+        slad(f"LibreOffice skończył: {cel.name}")
 
 
 def docx_na_pdf(zrodlo: Path, cel: Path | None = None) -> Path:
     cel = cel or zrodlo.with_suffix(".pdf")
     konwerter = dostepny_konwerter()
+    slad(f"{zrodlo.name} -> {cel.name}, konwerter: {konwerter}")
 
     if konwerter == "brak":
         raise BrakKonwertera(
@@ -190,12 +216,23 @@ def docx_na_pdf(zrodlo: Path, cel: Path | None = None) -> Path:
             "Zainstaluj jeden z nich, żeby generować PDF-y."
         )
 
+    with _BLOKADA_KONWERSJI:
+        _konwertuj(zrodlo, cel, konwerter)
+
+    if not cel.exists():
+        raise BrakKonwertera(f"Konwersja się nie powiodła — nie powstał plik {cel.name}.")
+    return cel
+
+
+def _konwertuj(zrodlo: Path, cel: Path, konwerter: str) -> None:
+    """Sama konwersja — wołana już pod blokadą, więc nigdy nie chodzi równolegle."""
     if konwerter == "word":
         try:
             _konwersja_wordem(zrodlo, cel)
         except Exception as blad:
             # Word bywa zajęty (otwarte okno dialogowe, aktualizacja Office) —
             # jeśli obok jest LibreOffice, próbujemy nim, zamiast poddawać się.
+            slad(f"Word nie dał rady ({blad}) — próbuję LibreOffice")
             if sciezka_libreoffice():
                 _konwersja_libreoffice(zrodlo, cel)
             else:
@@ -206,10 +243,6 @@ def docx_na_pdf(zrodlo: Path, cel: Path | None = None) -> Path:
                 ) from blad
     else:
         _konwersja_libreoffice(zrodlo, cel)
-
-    if not cel.exists():
-        raise BrakKonwertera(f"Konwersja się nie powiodła — nie powstał plik {cel.name}.")
-    return cel
 
 
 def polacz_pdf(pliki: list[Path], cel: Path,

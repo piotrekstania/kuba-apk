@@ -14,6 +14,8 @@ from pathlib import Path
 
 import pypdfium2 as pdfium
 
+from .pdf import slad
+
 SKALA = 0.45              # ok. 280 px szerokości dla A4 — czytelne i lekkie
 LICZBA_STRON_W_OPISIE = True
 
@@ -24,6 +26,7 @@ def _dokument(plik: Path) -> pdfium.PdfDocument:
 
 def miniatura(plik: Path, obrot: int = 0) -> bytes:
     """PNG pierwszej strony. `obrot` w stopniach: 0, 90, 180, 270."""
+    slad(f"renderuję miniaturę: {plik.name}")
     dokument = _dokument(plik)
     try:
         obraz = dokument[0].render(scale=SKALA, rotation=obrot % 360).to_pil()

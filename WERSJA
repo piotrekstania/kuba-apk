@@ -1,2 +1,2 @@
-2026.07.31.28
-Wszedł Twój szablon sprawozdania technicznego — z numeracją punktów, danymi firmy i pełnym opisem technologii. Bez zaznaczonego opisu przebiegu punkty 7 i 8 pokazują „brak”.
+2026.07.31.29
+Poprawki pod awarię przy miniaturach na Windowsie: konwersje do PDF idą teraz pojedynczo (strona składania pobierała kilka miniatur naraz i uruchamiała tyleż konwersji), a Word jest zwalniany zanim wątek odłączy się od COM-u. Doszło też narzedzia\diagnostyka.bat — uruchamia program tak, że wszystko ląduje w dane\konsola.log.
