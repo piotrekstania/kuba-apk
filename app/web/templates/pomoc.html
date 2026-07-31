@@ -110,6 +110,35 @@
 <p class="szary">Bez żadnego z nich generowanie plików .docx działa normalnie; nie działa tylko
   przycisk „Pobierz PDF" i łączenie dokumentów w jeden PDF.</p>
 
+<h2 id="scalanie">Co można dołączyć do scalonego PDF-a</h2>
+<p>Na stronie <a href="/scal">Łączenie PDF</a> możesz dorzucić własne pliki z dysku, ale tylko
+  takie, które program umie zamienić na strony PDF-a: <strong>.pdf</strong> oraz dokumenty Worda
+  (<code>.docx</code>, <code>.doc</code>, <code>.rtf</code>, <code>.odt</code>).</p>
+<p>Skany, mapy i zdjęcia (<code>.jpg</code>, <code>.png</code>, <code>.tif</code>)
+  trzeba najpierw zapisać jako PDF — w programie skanera albo otwierając plik
+  i wybierając <strong>Drukuj → Microsoft Print to PDF</strong>. Jeśli wskażesz coś innego,
+  program powie o tym od razu i nic nie sklei do połowy.</p>
+
+<h2 id="bledy">Gdy program pokaże błąd</h2>
+<p>Nic nie ginie: dokumenty, historia, numeracja i dane stałe zostają na dysku takie, jakie były.
+  Zwykle wystarczy wrócić na stronę główną i spróbować jeszcze raz.</p>
+<p>Najczęstsze przyczyny i co z nimi zrobić:</p>
+<table class="lista">
+  <tr><th class="waski">Komunikat mówi o…</th><th>Co sprawdzić</th></tr>
+  <tr><td>szablonie</td>
+      <td>czy plik .docx nie jest właśnie otwarty w Wordzie i czy nie ma literówki w tagu —
+          np. <code>{{ '{{ nr_roboty }' }}</code> zamiast <code>{{ '{{ nr_roboty }}' }}</code></td></tr>
+  <tr><td>PDF-ie</td>
+      <td>czy Word nie czeka gdzieś z otwartym oknem (patrz <a href="#pdf">wyżej</a>);
+          sam plik Worda zawsze da się pobrać, nawet gdy PDF się nie uda</td></tr>
+  <tr><td>dołączanym pliku</td>
+      <td>czy to na pewno PDF albo dokument Worda i czy otwiera się normalnie
+          (uszkodzone i zabezpieczone hasłem PDF-y nie dają się skleić)</td></tr>
+</table>
+<p class="szary">Gdyby błąd wracał, na stronie z komunikatem rozwiń „Szczegóły techniczne”.
+  To samo zapisuje się w pliku <code>dane\bledy.log</code> obok programu — wyślij go bratu,
+  wtedy widać dokładnie, co się stało.</p>
+
 <h2>Dostępne typy pól</h2>
 <p><code>text</code>, <code>textarea</code>, <code>date</code>, <code>number</code>,
   <code>select</code>, <code>checkbox</code>, <code>tabela</code>,

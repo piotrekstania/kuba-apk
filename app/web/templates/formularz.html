@@ -24,9 +24,12 @@
             </tr></thead>
             <tbody>
               {% for wiersz in (wartosc if wartosc is iterable and wartosc is not string else []) %}
+              {# numer wiersza trzeba zapamiętać tutaj: w pętli po kolumnach `loop` to już
+                 ta wewnętrzna pętla i `loop.index0` liczyłoby kolumny zamiast wierszy #}
+              {% set nr_wiersza = loop.index0 %}
               <tr>
                 {% for kolumna in pole.kolumny %}
-                <td><input name="tab__{{ pole.klucz }}__{{ loop.index0 }}__{{ kolumna.klucz }}"
+                <td><input name="tab__{{ pole.klucz }}__{{ nr_wiersza }}__{{ kolumna.klucz }}"
                            value="{{ wiersz.get(kolumna.klucz, '') }}"></td>
                 {% endfor %}
                 <td><button type="button" class="usun" title="Usuń wiersz">×</button></td>

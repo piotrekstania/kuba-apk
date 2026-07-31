@@ -154,6 +154,21 @@ def nastepny_numer(nazwa: str, rok: int) -> int:
         ).fetchone()["stan"])
 
 
+def zwolnij_numer(nazwa: str, rok: int, stan: int) -> bool:
+    """Cofa licznik po nieudanym generowaniu. True = numer wrócił do puli.
+
+    Warunek `stan = ?` jest tu istotny: jeśli w międzyczasie powstał kolejny dokument,
+    licznik stoi już gdzie indziej i cofanie go zdublowałoby numer. Wtedy wolimy dziurę
+    w numeracji niż dwa operaty o tym samym numerze.
+    """
+    with polacz() as con:
+        kursor = con.execute(
+            "UPDATE liczniki SET stan = stan - 1 WHERE nazwa = ? AND rok = ? AND stan = ?",
+            (nazwa, rok, stan),
+        )
+        return kursor.rowcount > 0
+
+
 def podglad_numeru(nazwa: str, rok: int) -> int:
     """Jaki numer zostanie nadany następnym razem (bez zużywania go)."""
     with polacz() as con:

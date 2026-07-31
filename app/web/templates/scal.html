@@ -26,9 +26,11 @@
   </fieldset>
 
   <fieldset>
-    <legend>Pliki z dysku (.pdf lub .docx)</legend>
+    <legend>Pliki z dysku (.pdf lub dokument Worda)</legend>
     <div id="wgrane"></div>
     <button type="button" id="dodaj-plik">+ dodaj plik</button>
+    <p class="podpowiedz">Skany, mapy i zdjęcia (.jpg, .png) trzeba najpierw zapisać jako PDF —
+      w programie skanera albo przez Drukuj → Microsoft Print to PDF.</p>
   </fieldset>
 
   <div class="pole polowa">
@@ -49,7 +51,7 @@ function dodajPole() {
   rzad.className = 'rzad-pliku';
   rzad.innerHTML = `
     <input class="maly" type="number" name="kol_plik" value="${100 + pojemnik.children.length}" step="1" title="kolejność">
-    <input type="file" name="pliki" accept=".pdf,.docx">
+    <input type="file" name="pliki" accept=".pdf,.docx,.doc,.rtf,.odt">
     <button type="button" class="usun">×</button>`;
   rzad.querySelector('.usun').addEventListener('click', () => rzad.remove());
   pojemnik.appendChild(rzad);

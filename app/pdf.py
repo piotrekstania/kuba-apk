@@ -61,6 +61,10 @@ class BrakKonwertera(RuntimeError):
     pass
 
 
+class BladPliku(RuntimeError):
+    """Plik, którego nie da się przeczytać jako PDF — uszkodzony albo zabezpieczony."""
+
+
 def sciezka_libreoffice() -> str | None:
     for kandydat in KANDYDACI_LIBREOFFICE:
         znaleziony = shutil.which(kandydat) if os.sep not in kandydat else (
@@ -208,14 +212,29 @@ def docx_na_pdf(zrodlo: Path, cel: Path | None = None) -> Path:
     return cel
 
 
-def polacz_pdf(pliki: list[Path], cel: Path) -> Path:
-    """Skleja PDF-y w podanej kolejności."""
+def polacz_pdf(pliki: list[Path], cel: Path,
+               etykiety: dict[Path, str] | None = None) -> Path:
+    """Skleja PDF-y w podanej kolejności.
+
+    `etykiety` to nazwy do pokazania użytkownikowi — pliki robocze mają na dysku
+    nazwy ze znacznikiem czasu, a on musi rozpoznać swój załącznik po tym, jak
+    go sam nazwał.
+    """
     if not pliki:
         raise ValueError("Nie wskazano żadnych plików do połączenia.")
     zapis = PdfWriter()
     for plik in pliki:
-        for strona in PdfReader(str(plik)).pages:
-            zapis.add_page(strona)
+        # Nazwa pliku w komunikacie jest tu najważniejsza: przy sklejaniu kilkunastu
+        # załączników użytkownik musi wiedzieć, który z nich jest do wymiany.
+        try:
+            for strona in PdfReader(str(plik)).pages:
+                zapis.add_page(strona)
+        except Exception as blad:
+            raise BladPliku(
+                f"Nie udało się odczytać pliku „{(etykiety or {}).get(plik, plik.name)}” "
+                "jako PDF. Bywa tak, gdy plik jest uszkodzony, niedokończony albo "
+                "zabezpieczony hasłem — otwórz go i zapisz jeszcze raz jako PDF."
+            ) from blad
     cel.parent.mkdir(parents=True, exist_ok=True)
     with open(cel, "wb") as wyjscie:
         zapis.write(wyjscie)

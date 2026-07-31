@@ -32,6 +32,7 @@ zainstalowania/uruchomienia, bez instalowania Pythona.
 | Aktualizacje: program sam pobiera `.zip` z GitHuba przy starcie | brat nie jest programistą; nie ma mowy o `git pull` ani o ręcznym rozpakowywaniu paczek na wierzch, bo prędzej czy później nadpisałby sobie szablony |
 | Wzorce szablonów w `szablony_wzorcowe/`, a nie w `szablony/` | `szablony/` to **jego** dane — jedyny katalog, który był i wysyłany, i edytowany przez użytkownika; wzorce kopiują się tam tylko gdy brakuje pliku |
 | Wersja schematu bazy w `PRAGMA user_version` + lista `MIGRACJE` | baza u brata to jedyny egzemplarz historii i numeracji; nowy kod na starej bazie musi umieć ją dociągnąć, a nie wywalić się na brakującej kolumnie |
+| **Żaden błąd nie wychodzi do przeglądarki po angielsku** — globalne uchwyty w `app/main.py` + `blad.html`, ślad do `dane/bledy.log` | brat nie odróżni `AttributeError` od awarii dysku; ma zobaczyć, co się stało, że jego dane są całe i co ma zrobić. Log to jedyny ślad po awarii, bo okno konsoli zamyka razem z programem |
 
 ## Zasada centralna
 
@@ -57,7 +58,7 @@ Podział maszyn u autora:
 
 | Maszyna | Rola |
 | --- | --- |
-| Linux | pisanie kodu, `git`, praca z Claude Code |
+| Linux | pisanie kodu, `git`, praca z Claude Code; po `apt install python3-venv` przechodzi tu cała ścieżka poza Wordem (PDF-y robi LibreOffice) |
 | Windows (`E:\git\kuba-apk`) | kopia robocza gita — sprawdzanie Worda i COM-u |
 | Windows, katalog poza gitem | instalacja testowa „jak u brata”: rozpakowany `.zip`, bez `.git`, z aktualizacją z GitHuba; robi ją `narzedzia/instalacja_testowa.py` |
 
@@ -97,7 +98,7 @@ starą wersję (autor się na to nadział).
 | `WERSJA` | 1. linia = numer porównywany z GitHubem, reszta = opis pokazywany bratu raz po aktualizacji |
 | `app/db.py` | SQLite: `dokumenty`, `ustawienia`, `liczniki` |
 | `app/main.py` | trasy FastAPI, parsowanie formularza (w tym tabel) |
-| `app/web/templates/` | widoki; `pomoc.html` to instrukcja dla brata, aktualizuj ją razem z funkcjami |
+| `app/web/templates/` | widoki; `blad.html` to strona każdego niezłapanego wyjątku, a `pomoc.html` instrukcja dla brata — aktualizuj ją razem z funkcjami |
 | `narzedzia/utworz_wzor_szablonu.py` | generuje przykładowy szablon operatu do testów |
 | `narzedzia/instalacja_testowa.py` | odtwarza instalację brata (zip z GitHuba, bez `.git`), opcja `--stara-wersja` wymusza aktualizację przy starcie |
 | `szablony/`, `wyniki/`, `dane/` | dane użytkownika — dwa ostatnie są w `.gitignore` |
@@ -137,6 +138,16 @@ też brat. Interfejs w całości po polsku.
    `DispatchEx` (własna instancja, nie przejmujemy okna użytkownika), z `Visible = False`
    i `DisplayAlerts = 0`, a `Documents.Open(..., ReadOnly=True)`. Bez `Quit()` w `finally`
    zostaje wiszący proces `WINWORD.EXE`.
+11. **`UploadFile` bierz ze Starlette, nie z FastAPI.** `fastapi.UploadFile` jest *podklasą*
+   `starlette.datastructures.UploadFile`, a `request.form()` tworzy obiekty klasy nadrzędnej —
+   więc `isinstance(plik, fastapi.UploadFile)` jest zawsze fałszem i wgrane pliki znikają
+   bez śladu. Kosztowało to działające scalanie załączników (wykryte dopiero testem z curl-em,
+   bo formularz nie zgłaszał żadnego błędu).
+12. **W zagnieżdżonej pętli Jinja `loop` to ta wewnętrzna.** W `formularz.html` numer wiersza
+   tabeli trzeba zapamiętać w `{% set %}` przed pętlą po kolumnach — inaczej wszystkie wiersze
+   dostają te same nazwy pól (`tab__punkty__0__…`, `__1__…` liczone po kolumnach) i wykaz
+   współrzędnych rozsypuje się przy każdym ponownym wyświetleniu formularza: po błędzie
+   walidacji i przy „Popraw i wygeneruj ponownie”.
 
 ## Stan na teraz — przetestowane end-to-end
 
@@ -159,6 +170,12 @@ numeracji, dane stałe, `wyniki/` i oba jego szablony; przychodzi nowy kod, nowe
 `requirements.txt` i brakujące wzorce; powstaje kopia w `dane/kopie/`. Sprawdzone też
 ścieżki „brak internetu" i „wersja aktualna" — obie kończą się startem programu.
 Świeża instalacja i aktualizacja `.venv` przez `start.bat`: też przetestowane.
+
+Numer operatu jest **rezerwowany przed wypełnieniem szablonu** (musi wejść do treści
+dokumentu), a po nieudanym generowaniu oddawany przez `db.zwolnij_numer` — warunkowym
+`UPDATE ... WHERE stan = ?`, żeby nie cofnąć licznika, który w międzyczasie ruszył dalej.
+Sprawdzone: trzy nieudane próby między dwoma dobrymi dokumentami dają `001` i `002`,
+bez dziury.
 
 **Nie ma jeszcze testów automatycznych.** Weryfikacja szła ręcznie przez przeglądarkę
 i skrypty jednorazowe.

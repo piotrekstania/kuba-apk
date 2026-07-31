@@ -8,16 +8,24 @@ from __future__ import annotations
 import json
 import re
 import shutil
+import traceback
 from collections import defaultdict
 from contextlib import asynccontextmanager
 from datetime import date, datetime
 from pathlib import Path
 from typing import Any
+from urllib.parse import quote
 
-from fastapi import FastAPI, Request, UploadFile
+from fastapi import FastAPI, Request
+from fastapi.exceptions import RequestValidationError
 from fastapi.responses import FileResponse, HTMLResponse, RedirectResponse
 from fastapi.staticfiles import StaticFiles
 from fastapi.templating import Jinja2Templates
+# UWAGA: UploadFile bierzemy ze Starlette, nie z FastAPI. `fastapi.UploadFile` jest
+# *podklasą* tej klasy, a `request.form()` tworzy obiekty klasy nadrzędnej — przez
+# `isinstance(..., fastapi.UploadFile)` każdy wgrany plik po cichu wypadał ze scalania.
+from starlette.datastructures import UploadFile
+from starlette.exceptions import HTTPException as BladHTTP
 
 from . import aktualizacja, db, generator, pdf, szablony
 from .config import DANE, WEB, WYNIKI
@@ -36,11 +44,86 @@ widoki = Jinja2Templates(directory=str(WEB / "templates"))
 PRZESLANE = DANE / "przeslane"
 PRZESLANE.mkdir(parents=True, exist_ok=True)
 
+DZIENNIK_BLEDOW = DANE / "bledy.log"
+
 
 def _widok(request: Request, nazwa: str, **kontekst: Any) -> HTMLResponse:
     kontekst.setdefault("konwerter", pdf.dostepny_konwerter())
     kontekst.setdefault("wersja", aktualizacja.wersja_lokalna()[0])
     return widoki.TemplateResponse(request, nazwa, kontekst)
+
+
+# --- błędy: użytkownik nie jest programistą i nie może zobaczyć angielskiego 500 ----
+
+def zapisz_blad(request: Request, wyjatek: BaseException) -> str:
+    """Dopisuje ślad wyjątku do dane/bledy.log i zwraca go do pokazania na stronie.
+
+    Bez tego jedynym śladem po awarii u brata jest okno konsoli, które zamyka razem
+    z programem — a wtedy zostaje tylko „nie działa”.
+    """
+    slad = "".join(traceback.format_exception(wyjatek))
+    try:
+        with open(DZIENNIK_BLEDOW, "a", encoding="utf-8") as dziennik:
+            dziennik.write(f"\n=== {datetime.now():%Y-%m-%d %H:%M:%S} "
+                           f"{request.method} {request.url.path} ===\n{slad}")
+    except OSError:
+        pass                                   # brak miejsca na dysku nie może zjeść komunikatu
+    return slad
+
+
+def strona_bledu(request: Request, naglowek: str, wyjasnienie: str,
+                 szczegoly: str = "", status: int = 500) -> HTMLResponse:
+    try:
+        return widoki.TemplateResponse(
+            request, "blad.html",
+            {"naglowek": naglowek, "wyjasnienie": wyjasnienie, "szczegoly": szczegoly,
+             "konwerter": pdf.dostepny_konwerter(),
+             "wersja": aktualizacja.wersja_lokalna()[0]},
+            status_code=status,
+        )
+    except Exception:
+        # Sama strona błędu też potrafi paść (np. po nieudanej aktualizacji brakuje
+        # pliku szablonu) — wtedy zostaje goły HTML, ale nadal po polsku.
+        return HTMLResponse(f"<h1>{naglowek}</h1><p>{wyjasnienie}</p>", status_code=status)
+
+
+@app.exception_handler(Exception)
+def blad_nieprzewidziany(request: Request, wyjatek: Exception) -> HTMLResponse:
+    return strona_bledu(
+        request,
+        "Coś poszło nie tak",
+        "Program nie dokończył tej czynności. Twoje dokumenty, dane stałe i numeracja "
+        "są nietknięte — nic nie zostało skasowane. Spróbuj jeszcze raz; jeśli błąd wraca, "
+        "rozwiń szczegóły poniżej i pokaż je bratu.",
+        zapisz_blad(request, wyjatek),
+    )
+
+
+@app.exception_handler(BladHTTP)
+def blad_adresu(request: Request, wyjatek: BladHTTP) -> HTMLResponse:
+    if wyjatek.status_code == 404:
+        return strona_bledu(
+            request, "Nie ma takiej strony",
+            "Ten adres nie istnieje. Mógł się zmienić po aktualizacji programu — "
+            "wróć na stronę główną i zacznij stamtąd.",
+            status=404,
+        )
+    return strona_bledu(
+        request, "Nie udało się otworzyć tej strony",
+        f"Program odpowiedział kodem {wyjatek.status_code}. Wróć na stronę główną "
+        "i spróbuj jeszcze raz.",
+        status=wyjatek.status_code,
+    )
+
+
+@app.exception_handler(RequestValidationError)
+def blad_adresu_z_danymi(request: Request, wyjatek: RequestValidationError) -> HTMLResponse:
+    """Np. /dokument/abc zamiast /dokument/12 — inaczej poleciałby angielski JSON."""
+    return strona_bledu(
+        request, "Nie ma takiej strony",
+        "Adres jest niepoprawny — wróć na stronę główną i wybierz dokument z listy.",
+        status=404,
+    )
 
 
 # --- parsowanie formularza ---------------------------------------------------
@@ -88,11 +171,33 @@ def strona_glowna(request: Request):
                   co_nowego=aktualizacja.co_nowego())   # pokazuje się raz, po aktualizacji
 
 
+def _szablon_albo_blad(request: Request, identyfikator: str):
+    """Zwraca (szablon, None) albo (None, gotowa odpowiedź).
+
+    Szablony edytuje sam użytkownik w Wordzie, więc uszkodzony albo źle otagowany
+    plik jest normalną sytuacją — ma dać zrozumiały komunikat, a nie 500.
+    """
+    try:
+        szablon = szablony.szablon_po_id(identyfikator)
+    except Exception as blad:
+        return None, strona_bledu(
+            request, "Nie udało się otworzyć szablonu",
+            f"Pliku „{identyfikator}.docx” z katalogu szablony nie da się przeczytać. "
+            "Najczęściej znaczy to, że jest otwarty w Wordzie z niezapisanymi zmianami "
+            "albo ma literówkę w znaczniku {{ }} lub {% ... %}. Zamknij go w Wordzie "
+            "i odśwież tę stronę.",
+            zapisz_blad(request, blad),
+        )
+    if szablon is None:
+        return None, RedirectResponse("/", status_code=303)
+    return szablon, None
+
+
 @app.get("/nowy/{identyfikator}", response_class=HTMLResponse)
 def formularz(request: Request, identyfikator: str, kopiuj: int | None = None):
-    szablon = szablony.szablon_po_id(identyfikator)
-    if szablon is None:
-        return RedirectResponse("/", status_code=303)
+    szablon, odpowiedz = _szablon_albo_blad(request, identyfikator)
+    if odpowiedz is not None:
+        return odpowiedz
 
     # wartości startowe; przy typie auto_numer "domyslnie" to wzorzec numeru, nie wartość
     wartosci: dict[str, Any] = {}
@@ -120,9 +225,9 @@ def formularz(request: Request, identyfikator: str, kopiuj: int | None = None):
 
 @app.post("/generuj/{identyfikator}")
 async def generuj(request: Request, identyfikator: str):
-    szablon = szablony.szablon_po_id(identyfikator)
-    if szablon is None:
-        return RedirectResponse("/", status_code=303)
+    szablon, odpowiedz = _szablon_albo_blad(request, identyfikator)
+    if odpowiedz is not None:
+        return odpowiedz
 
     formularz_danych = await request.form()
     dane = odczytaj_dane(formularz_danych, szablon)
@@ -134,7 +239,19 @@ async def generuj(request: Request, identyfikator: str):
                       blad="Uzupełnij wymagane pola: " + ", ".join(brakujace),
                       dzisiaj=date.today().isoformat())
 
-    plik, kontekst = generator.generuj(szablon, dane, db.wczytaj_ustawienia())
+    try:
+        plik, kontekst = generator.generuj(szablon, dane, db.wczytaj_ustawienia())
+    except Exception as blad:
+        # Wracamy na formularz z kompletem wpisanych danych — utrata wykazu współrzędnych
+        # przez literówkę w szablonie byłaby gorsza niż sam błąd.
+        zapisz_blad(request, blad)
+        return _widok(request, "formularz.html", szablon=szablon, wartosci=dane,
+                      blad=f"Nie udało się wypełnić szablonu „{szablon.nazwa}”. Zwykle "
+                           "znaczy to, że w pliku .docx jest literówka w znaczniku "
+                           "{{ }} albo {% ... %}. Twoje dane zostały tutaj — popraw "
+                           f"szablon w Wordzie i kliknij ponownie. Szczegóły: {blad}",
+                      dzisiaj=date.today().isoformat())
+
     tytul = plik.stem.rsplit("__", 1)[0].replace("_", " ")
     dokument_id = db.zapisz_dokument(szablon.id, tytul, plik.name, dane)
     return RedirectResponse(f"/dokument/{dokument_id}", status_code=303)
@@ -161,7 +278,7 @@ def pobierz_docx(dokument_id: int):
 
 
 @app.get("/pobierz/{dokument_id}/pdf")
-def pobierz_pdf(dokument_id: int):
+def pobierz_pdf(request: Request, dokument_id: int):
     wiersz = db.dokument(dokument_id)
     if wiersz is None or not (WYNIKI / wiersz["plik_docx"]).exists():
         return RedirectResponse("/", status_code=303)
@@ -171,7 +288,17 @@ def pobierz_pdf(dokument_id: int):
         try:
             pdf.docx_na_pdf(zrodlo, cel)
         except pdf.BrakKonwertera as blad:
-            return RedirectResponse(f"/dokument/{dokument_id}?blad={blad}", status_code=303)
+            return RedirectResponse(f"/dokument/{dokument_id}?blad={quote(str(blad))}",
+                                    status_code=303)
+        except Exception as blad:
+            # Word potrafi wywalić się na sto sposobów (aktywacja, uszkodzony profil,
+            # otwarte okno dialogowe) — dokument .docx nadal da się pobrać.
+            zapisz_blad(request, blad)
+            komunikat = ("Nie udało się zrobić PDF-a z tego dokumentu. Plik Worda (.docx) "
+                         "jest gotowy i możesz go pobrać poniżej. Szczegóły zapisały się "
+                         "w dane\\bledy.log.")
+            return RedirectResponse(f"/dokument/{dokument_id}?blad={quote(komunikat)}",
+                                    status_code=303)
     db.ustaw_pdf(dokument_id, cel.name)
     return FileResponse(cel, filename=cel.name, media_type="application/pdf")
 
@@ -195,15 +322,41 @@ def scal_formularz(request: Request, dokument: int | None = None, komunikat: str
                   wybrany=dokument, komunikat=komunikat)
 
 
+def _kolejnosc(wartosc: Any, domyslna: float) -> float:
+    """Pole „kolejność” bywa puste albo wpisane z przecinkiem — nie może wywalić scalania."""
+    try:
+        return float(str(wartosc).replace(",", "."))
+    except (TypeError, ValueError):
+        return domyslna
+
+
+# Do scalenia przyjmujemy tylko to, co naprawdę umiemy zamienić na strony PDF-a.
+# Wszystko inne (skan .jpg, arkusz .xlsx) odrzucamy z wyjaśnieniem — bez tego
+# pypdf wywalał się dopiero przy sklejaniu, czyli po konwersji całej reszty.
+ROZSZERZENIA_PDF = {".pdf"}
+ROZSZERZENIA_WORD = {".docx", ".doc", ".rtf", ".odt"}
+
+
 @app.post("/scal")
 async def scal(request: Request):
     formularz_danych = await request.form()
     elementy: list[tuple[float, Path]] = []
     tymczasowe: list[Path] = []
+    etykiety: dict[Path, str] = {}      # ścieżka robocza -> nazwa, którą zna użytkownik
+
+    def sprzataj() -> None:
+        for plik in tymczasowe:
+            plik.unlink(missing_ok=True)
+
+    def niepowodzenie(tresc: str) -> HTMLResponse:
+        """Wraca na formularz z komunikatem zamiast wywalać serwer."""
+        sprzataj()
+        return _widok(request, "scal.html", dokumenty=db.dokumenty(limit=50),
+                      wybrany=None, blad=tresc)
 
     # 1. dokumenty z historii (zaznaczone checkboxem, kolejność z pola liczbowego)
     for klucz in formularz_danych:
-        if not klucz.startswith("dok__"):
+        if not klucz.startswith("dok__") or not klucz[len("dok__"):].isdigit():
             continue
         dokument_id = int(klucz[len("dok__"):])
         wiersz = db.dokument(dokument_id)
@@ -215,36 +368,72 @@ async def scal(request: Request):
             try:
                 pdf.docx_na_pdf(zrodlo, cel)
             except pdf.BrakKonwertera as blad:
-                return RedirectResponse(f"/scal?komunikat={blad}", status_code=303)
+                return niepowodzenie(str(blad))
+            except Exception as blad:
+                zapisz_blad(request, blad)
+                return niepowodzenie(
+                    f"Nie udało się zrobić PDF-a z dokumentu „{wiersz['tytul']}”. "
+                    "Sprawdź, czy Word nie czeka gdzieś z otwartym oknem, i spróbuj ponownie."
+                )
         db.ustaw_pdf(dokument_id, cel.name)
-        kolejnosc = formularz_danych.get(f"kol__{dokument_id}") or "50"
-        elementy.append((float(kolejnosc), cel))
+        etykiety[cel] = wiersz["tytul"]
+        elementy.append((_kolejnosc(formularz_danych.get(f"kol__{dokument_id}"), 50), cel))
 
     # 2. pliki wgrane przez przeglądarkę
+    kolejnosci = formularz_danych.getlist("kol_plik")
     for indeks, przeslany in enumerate(formularz_danych.getlist("pliki")):
         if not isinstance(przeslany, UploadFile) or not przeslany.filename:
             continue
-        docelowy = PRZESLANE / f"{datetime.now():%Y%m%d-%H%M%S}-{indeks}-{przeslany.filename}"
+        # Nazwa pliku przychodzi z przeglądarki, więc nie wolno jej wkleić prosto
+        # w ścieżkę — „..\..\coś” zapisałoby się poza katalogiem dane\przeslane.
+        nazwa = Path(przeslany.filename).name
+        rozszerzenie = Path(nazwa).suffix.lower()
+        if rozszerzenie not in ROZSZERZENIA_PDF | ROZSZERZENIA_WORD:
+            return niepowodzenie(
+                f"Pliku „{nazwa}” nie da się dołączyć — to nie jest PDF ani dokument Worda. "
+                "Skany, mapy i zdjęcia zapisz najpierw jako PDF (w programie skanera albo "
+                "otwierając plik i wybierając Drukuj → Microsoft Print to PDF)."
+            )
+
+        # Rozszerzenie doklejamy z listy dozwolonych, a nie z oczyszczonej nazwy:
+        # przy nazwie bez znaków ASCII (np. cyrylicą) zostałaby sama końcówka i Word
+        # nie wiedziałby, w jakim formacie jest plik.
+        docelowy = (PRZESLANE / f"{datetime.now():%Y%m%d-%H%M%S}-{indeks}"
+                                f"-{generator.bezpieczna_nazwa(Path(nazwa).stem)}{rozszerzenie}")
         with open(docelowy, "wb") as zapis:
             shutil.copyfileobj(przeslany.file, zapis)
         tymczasowe.append(docelowy)
-        if docelowy.suffix.lower() == ".docx":
-            docelowy = pdf.docx_na_pdf(docelowy)
+
+        if rozszerzenie in ROZSZERZENIA_WORD:
+            try:
+                docelowy = pdf.docx_na_pdf(docelowy)
+            except pdf.BrakKonwertera as blad:
+                return niepowodzenie(str(blad))
+            except Exception as blad:
+                zapisz_blad(request, blad)
+                return niepowodzenie(
+                    f"Nie udało się zamienić pliku „{nazwa}” na PDF. Otwórz go w Wordzie "
+                    "i sprawdź, czy da się go normalnie wyświetlić."
+                )
             tymczasowe.append(docelowy)
-        kolejnosc = formularz_danych.getlist("kol_plik")[indeks] if indeks < len(
-            formularz_danych.getlist("kol_plik")) else "60"
-        elementy.append((float(kolejnosc or 60), docelowy))
+
+        etykiety[docelowy] = nazwa
+        elementy.append((_kolejnosc(kolejnosci[indeks] if indeks < len(kolejnosci) else None,
+                                    60), docelowy))
 
     if not elementy:
-        return RedirectResponse("/scal?komunikat=Nie wybrano żadnych plików.", status_code=303)
+        return niepowodzenie("Nie wybrano żadnych plików do połączenia.")
 
     elementy.sort(key=lambda para: para[0])
-    nazwa = formularz_danych.get("nazwa_wynikowa") or "Operat_scalony"
-    wynik = WYNIKI / f"{generator.bezpieczna_nazwa(nazwa)}__{datetime.now():%Y%m%d-%H%M%S}.pdf"
-    pdf.polacz_pdf([sciezka for _, sciezka in elementy], wynik)
+    nazwa_wyniku = formularz_danych.get("nazwa_wynikowa") or "Operat_scalony"
+    wynik = (WYNIKI / f"{generator.bezpieczna_nazwa(nazwa_wyniku)}"
+                      f"__{datetime.now():%Y%m%d-%H%M%S}.pdf")
+    try:
+        pdf.polacz_pdf([sciezka for _, sciezka in elementy], wynik, etykiety)
+    except pdf.BladPliku as blad:
+        return niepowodzenie(str(blad))
 
-    for plik in tymczasowe:
-        plik.unlink(missing_ok=True)
+    sprzataj()
     return FileResponse(wynik, filename=wynik.name, media_type="application/pdf")
 
 

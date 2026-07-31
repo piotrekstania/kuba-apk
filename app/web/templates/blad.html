@@ -1,0 +1,21 @@
+{% extends "base.html" %}
+{% block tytul %}{{ naglowek }}{% endblock %}
+{% block tresc %}
+
+<h1>{{ naglowek }}</h1>
+<p>{{ wyjasnienie }}</p>
+
+<div class="pasek">
+  <a class="glowny" href="/">Wróć do listy dokumentów</a>
+  <a class="wtorny" href="/pomoc">Jak edytować szablon</a>
+</div>
+
+{% if szczegoly %}
+<details>
+  <summary class="szary">Szczegóły techniczne — pokaż je bratu, jeśli błąd się powtarza</summary>
+  <pre>{{ szczegoly }}</pre>
+  <p class="podpowiedz">To samo zapisało się w pliku <code>dane\bledy.log</code> obok programu.</p>
+</details>
+{% endif %}
+
+{% endblock %}

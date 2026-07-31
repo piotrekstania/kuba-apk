@@ -47,9 +47,13 @@ def data_pl(wartosc: str) -> str:
         return wartosc
 
 
-def przygotuj_kontekst(szablon: Szablon, dane: dict[str, Any],
-                       ustawienia: dict[str, str]) -> dict[str, Any]:
-    """Łączy dane z formularza, dane stałe i wartości wyliczane automatycznie."""
+def przygotuj_kontekst(szablon: Szablon, dane: dict[str, Any], ustawienia: dict[str, str],
+                       rezerwacje: list[tuple[str, int, int]] | None = None) -> dict[str, Any]:
+    """Łączy dane z formularza, dane stałe i wartości wyliczane automatycznie.
+
+    Do `rezerwacje` (jeśli podana) dopisują się pobrane numery jako (licznik, rok, numer).
+    Dzięki temu `generuj` potrafi je oddać, gdy wypełnianie szablonu się nie uda.
+    """
     dzis = date.today()
     kontekst: dict[str, Any] = dict(ustawienia)     # dane stałe (geodeta, uprawnienia, firma)
     kontekst.update(dane)
@@ -58,6 +62,8 @@ def przygotuj_kontekst(szablon: Szablon, dane: dict[str, Any],
         if pole.typ == "auto_numer" and not kontekst.get(pole.klucz):
             nazwa_licznika = szablon.licznik or szablon.id
             numer = db.nastepny_numer(nazwa_licznika, dzis.year)
+            if rezerwacje is not None:
+                rezerwacje.append((nazwa_licznika, dzis.year, numer))
             wzor = pole.domyslnie or "{numer}/{rok}"
             kontekst[pole.klucz] = wzor.format(numer=numer, numer3=f"{numer:03d}", rok=dzis.year)
         elif pole.typ == "date" and kontekst.get(pole.klucz):
@@ -82,11 +88,20 @@ def nazwa_pliku(szablon: Szablon, kontekst: dict[str, Any]) -> str:
 
 def generuj(szablon: Szablon, dane: dict[str, Any], ustawienia: dict[str, str]) -> tuple[Path, dict]:
     """Zwraca ścieżkę do gotowego .docx oraz kontekst użyty do wypełnienia."""
-    kontekst = przygotuj_kontekst(szablon, dane, ustawienia)
-    dokument = DocxTemplate(szablon.plik)
-    dokument.render(kontekst, autoescape=True)
+    rezerwacje: list[tuple[str, int, int]] = []
+    kontekst = przygotuj_kontekst(szablon, dane, ustawienia, rezerwacje)
+    try:
+        dokument = DocxTemplate(szablon.plik)
+        dokument.render(kontekst, autoescape=True)
 
-    znacznik = datetime.now().strftime("%Y%m%d-%H%M%S")
-    plik = WYNIKI / f"{nazwa_pliku(szablon, kontekst)}__{znacznik}.docx"
-    dokument.save(plik)
+        znacznik = datetime.now().strftime("%Y%m%d-%H%M%S")
+        plik = WYNIKI / f"{nazwa_pliku(szablon, kontekst)}__{znacznik}.docx"
+        dokument.save(plik)
+    except Exception:
+        # Numer musi być znany przed wypełnianiem, bo wchodzi do treści dokumentu.
+        # Gdy generowanie padnie, oddajemy go — inaczej każda literówka w szablonie
+        # zostawiałaby dziurę w numeracji operatów.
+        for nazwa_licznika, rok, numer in rezerwacje:
+            db.zwolnij_numer(nazwa_licznika, rok, numer)
+        raise
     return plik, kontekst
