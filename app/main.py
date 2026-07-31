@@ -167,6 +167,8 @@ def odczytaj_dane(formularz, szablon: szablony.Szablon) -> dict[str, Any]:
                                                 if k.startswith("pole__")}
         elif pole.typ == "tabela":
             proste.setdefault(pole.klucz, [])
+        elif pole.typ == "dokumenty":
+            proste[pole.klucz] = formularz.getlist(f"pole__{pole.klucz}")
         elif pole.typ == "wybor_wielokrotny":
             # Kolejność bierzemy z listy opcji, nie z formularza, a pozycje „zawsze”
             # dokładamy niezależnie od tego, co przyszło — w formularzu są wyłączone,
@@ -216,6 +218,18 @@ def _szablon_albo_blad(request: Request, identyfikator: str):
     return szablon, None
 
 
+def _inne_szablony(szablon: szablony.Szablon) -> list[dict[str, str]]:
+    """Szablony, które można dogenerować do tego samego operatu — bez tego bieżącego.
+
+    Gdy innych nie ma, wyrzucamy pole typu `dokumenty` z formularza, żeby nie została
+    pusta karta z samym nagłówkiem.
+    """
+    inne = [s for s in szablony.lista_skrocona() if s["id"] != szablon.id]
+    if not inne:
+        szablon.pola = [p for p in szablon.pola if p.typ != "dokumenty"]
+    return inne
+
+
 @app.get("/nowy/{identyfikator}", response_class=HTMLResponse)
 def formularz(request: Request, identyfikator: str, kopiuj: int | None = None):
     szablon, odpowiedz = _szablon_albo_blad(request, identyfikator)
@@ -243,7 +257,8 @@ def formularz(request: Request, identyfikator: str, kopiuj: int | None = None):
             podglad = wzor.format(numer=numer, numer3=f"{numer:03d}", rok=date.today().year)
 
     return _widok(request, "formularz.html", szablon=szablon, wartosci=wartosci,
-                  podglad_numeru=podglad, dzisiaj=date.today().isoformat())
+                  podglad_numeru=podglad, dzisiaj=date.today().isoformat(),
+                  inne_szablony=_inne_szablony(szablon))
 
 
 @app.post("/generuj/{identyfikator}")
@@ -264,7 +279,8 @@ async def generuj(request: Request, identyfikator: str):
     if brakujace:
         return _widok(request, "formularz.html", szablon=szablon, wartosci=dane,
                       blad="Uzupełnij wymagane pola: " + ", ".join(brakujace),
-                      dzisiaj=date.today().isoformat())
+                      dzisiaj=date.today().isoformat(),
+                      inne_szablony=_inne_szablony(szablon))
 
     try:
         plik, kontekst, ostrzezenia = generator.generuj(szablon, dane, db.wczytaj_ustawienia())
@@ -273,13 +289,29 @@ async def generuj(request: Request, identyfikator: str):
         # przez literówkę w szablonie byłaby gorsza niż sam błąd.
         zapisz_blad(request, blad)
         return _widok(request, "formularz.html", szablon=szablon, wartosci=dane,
+                      inne_szablony=_inne_szablony(szablon),
                       blad=f"Nie udało się wypełnić szablonu „{szablon.nazwa}”. Zwykle "
                            "znaczy to, że w pliku .docx jest literówka w znaczniku "
                            "{{ }} albo {% ... %}. Twoje dane zostały tutaj — popraw "
                            f"szablon w Wordzie i kliknij ponownie. Szczegóły: {blad}",
                       dzisiaj=date.today().isoformat())
 
+    # Dodatkowe dokumenty do tego samego katalogu, wypełnione tym samym kontekstem.
+    # Awaria któregoś nie może przekreślić dokumentu głównego, który już jest na dysku —
+    # zgłaszamy ją jako ostrzeżenie na stronie operatu.
     katalog = plik.parent
+    for identyfikator_dodatkowego in dane.get("dokumenty") or []:
+        dodatkowy = szablony.szablon_po_id(str(identyfikator_dodatkowego))
+        if dodatkowy is None or dodatkowy.id == szablon.id:
+            continue
+        try:
+            generator.dopisz_dokument(dodatkowy, kontekst, katalog)
+        except Exception as blad:
+            zapisz_blad(request, blad)
+            ostrzezenia.append(
+                f"Nie udało się wygenerować dokumentu „{dodatkowy.nazwa}” — sprawdź "
+                f"znaczniki w pliku {dodatkowy.plik.name}. Reszta operatu jest gotowa.")
+
     tytul = kontekst.get("nr_roboty") or katalog.name
     dokument_id = db.zapisz_dokument(
         szablon.id, str(tytul), f"{katalog.name}/{plik.name}", dane, katalog.name,

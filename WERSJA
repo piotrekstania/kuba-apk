@@ -1,2 +1,2 @@
-2026.07.31.17
-Szablon nazywa się teraz spis_tresci_wzor.docx, bo wkrótce dojdą kolejne. Nazwa pliku w katalogu operatu wynika wprost z nazwy szablonu, więc każdy następny dokument trafi do własnego pliku, zamiast nadpisywać spis treści.
+2026.07.31.18
+W formularzu doszła karta „Dokumenty do wygenerowania”: zaznaczasz, które jeszcze pliki Worda mają powstać obok głównego. Wszystkie trafiają do tego samego katalogu operatu i dostają te same dane — numer roboty, numer operatu, daty i położenie. Lista pojawia się sama, gdy w katalogu szablonów jest więcej niż jeden plik, i nie ma nic wspólnego ze spisem treści.

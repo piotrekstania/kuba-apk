@@ -102,6 +102,13 @@
         "Sprawozdanie techniczne"
       ],
       "podpowiedz": "Do dokumentu trafią tylko zaznaczone pozycje, w tej kolejności."
+    },
+    {
+      "klucz": "dokumenty",
+      "etykieta": "Wygeneruj też te dokumenty",
+      "typ": "dokumenty",
+      "grupa": "Dokumenty do wygenerowania",
+      "podpowiedz": "Powstaną w tym samym katalogu operatu, z tymi samymi danymi. Ta lista nie ma związku ze spisem treści — zaznaczasz osobno."
     }
   ]
 }

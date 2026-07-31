@@ -135,6 +135,21 @@
   numeracja w dokumencie nie ma dziur. Kolejność zawsze wynika z listy w pliku .json,
   a nie z tego, w jakiej kolejności klikałeś.</p>
 
+<h2 id="dokumenty">Kilka dokumentów za jednym razem</h2>
+<p>Jeden operat to zwykle kilka plików Worda. W formularzu, pod spisem treści, jest karta
+  <strong>„Dokumenty do wygenerowania”</strong> z listą pozostałych szablonów — zaznaczasz,
+  co ma powstać obok dokumentu głównego. Wszystko trafia do <strong>tego samego katalogu
+  operatu</strong> i dostaje te same dane: ten sam numer roboty, numer operatu, daty
+  i położenie.</p>
+<p class="szary">Ta lista <strong>nie ma związku ze spisem treści</strong>. Spis treści mówi,
+  co w operacie jest (także rzeczy, których program nie generuje — mapy z C-Geo, skany).
+  Ta lista mówi, które pliki Worda program ma teraz zrobić.</p>
+<p>Karta bierze się z plików leżących w katalogu <code>szablony/</code>, więc nowy szablon
+  dokłada tam pozycję sam. Gdy jest tylko jeden szablon, karta w ogóle się nie pokazuje.</p>
+<p class="szary">Nazwa pliku wynika z nazwy szablonu: <code>sprawozdanie_techniczne_wzor.docx</code>
+  robi w katalogu operatu <code>sprawozdanie_techniczne.docx</code>. Gdyby któryś dodatkowy
+  szablon miał błąd, dokument główny i tak powstaje — o reszcie program powie osobno.</p>
+
 <h2 id="teryt">Położenie z list: województwo → powiat → jednostka ewidencyjna → obręb</h2>
 <p>Zamiast wpisywać ręcznie powiat, gminę i obręb, możesz mieć <strong>cztery listy rozwijane</strong>
   z oficjalnymi danymi. Wybierasz województwo, zawężają się powiaty, potem jednostki ewidencyjne,

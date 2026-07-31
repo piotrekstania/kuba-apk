@@ -133,6 +133,28 @@ def wczytaj_szablon(plik: Path) -> Szablon:
     return szablon
 
 
+def lista_skrocona() -> list[dict[str, str]]:
+    """Same identyfikatory i nazwy szablonów, bez otwierania plików .docx.
+
+    Potrzebne do listy „co jeszcze wygenerować”. Pełne `lista_szablonow()` czyta każdy
+    dokument Worda, a tutaj wystarczy nazwa — no i wołanie go z `wczytaj_szablon`
+    zapętliłoby się.
+    """
+    wynik = []
+    for plik in sorted(SZABLONY.glob("*.docx")):
+        if plik.name.startswith("~$"):
+            continue
+        nazwa = _etykieta_z_klucza(plik.stem)
+        opis_json = plik.with_suffix(".json")
+        if opis_json.exists():
+            try:
+                nazwa = json.loads(opis_json.read_text(encoding="utf-8")).get("nazwa", nazwa)
+            except ValueError:
+                pass
+        wynik.append({"id": plik.stem, "nazwa": nazwa})
+    return wynik
+
+
 def lista_szablonow() -> list[Szablon]:
     pliki = sorted(p for p in SZABLONY.glob("*.docx") if not p.name.startswith("~$"))
     wynik = []

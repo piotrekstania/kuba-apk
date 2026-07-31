@@ -121,6 +121,20 @@ def nazwa_pliku(szablon: Szablon, kontekst: dict[str, Any]) -> str:
     return bezpieczna_nazwa(baza)
 
 
+def dopisz_dokument(szablon: Szablon, kontekst: dict[str, Any], katalog: Path) -> Path:
+    """Wypełnia dodatkowy szablon **tym samym kontekstem** i kładzie go w katalogu operatu.
+
+    Kontekst jest gotowy, więc numer operatu, daty i położenie są identyczne jak
+    w dokumencie głównym — a `auto_numer` nie sięgnie po kolejny numer z licznika,
+    bo widzi, że wartość już jest.
+    """
+    dokument = DocxTemplate(szablon.plik)
+    dokument.render(kontekst, autoescape=True)
+    plik = katalog / operaty.nazwa_dokumentu(szablon.id)
+    dokument.save(plik)
+    return plik
+
+
 def _numer_operatu(szablon: Szablon, kontekst: dict[str, Any]) -> str:
     for pole in szablon.pola:
         if pole.typ == "auto_numer" and kontekst.get(pole.klucz):

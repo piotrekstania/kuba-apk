@@ -151,6 +151,13 @@ OPIS_POL = {
          "typ": "wybor_wielokrotny", "grupa": "Spis treści",
          "opcje": SPIS_TRESCI, "zawsze": SPIS_ZAWSZE,
          "podpowiedz": "Do dokumentu trafią tylko zaznaczone pozycje, w tej kolejności."},
+
+        # Lista bierze się z plików w katalogu szablony/, nie stąd — nowy szablon
+        # dokłada pozycję sam. Karta znika, gdy innych szablonów nie ma.
+        {"klucz": "dokumenty", "etykieta": "Wygeneruj też te dokumenty",
+         "typ": "dokumenty", "grupa": "Dokumenty do wygenerowania",
+         "podpowiedz": "Powstaną w tym samym katalogu operatu, z tymi samymi danymi. "
+                       "Ta lista nie ma związku ze spisem treści — zaznaczasz osobno."},
     ],
 }
 

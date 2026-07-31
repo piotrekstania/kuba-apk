@@ -106,6 +106,29 @@
           </select>
         </div>
 
+        {% elif pole.typ == 'dokumenty' %}
+        {# lista bierze się z plików w katalogu szablony/, a nie z .json — dorzucenie
+           nowego szablonu ma od razu dokładać pozycję, bez ruszania czegokolwiek.
+           Gdy innych szablonów nie ma, pole w ogóle się nie pokazuje. #}
+        {% if inne_szablony %}
+        {% set wybrane = wartosc if wartosc is iterable and wartosc is not string else [] %}
+        <div class="pole pelna">
+          <label>{{ pole.etykieta }}</label>
+          <ul class="lista-wyboru">
+            {% for inny in inne_szablony %}
+            <li>
+              <label>
+                <input type="checkbox" name="pole__{{ pole.klucz }}" value="{{ inny.id }}"
+                       {{ 'checked' if inny.id in wybrane }}>
+                {{ inny.nazwa }}
+              </label>
+            </li>
+            {% endfor %}
+          </ul>
+          {% if pole.podpowiedz %}<p class="podpowiedz">{{ pole.podpowiedz }}</p>{% endif %}
+        </div>
+        {% endif %}
+
         {% elif pole.typ == 'wybor_wielokrotny' %}
         {% set wybrane = wartosc if wartosc is iterable and wartosc is not string else pole.zawsze %}
         <div class="pole pelna">
