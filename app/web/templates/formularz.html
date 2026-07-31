@@ -19,7 +19,7 @@
     <div class="siatka">
       {% for pole in pola %}
         {% set wartosc = wartosci.get(pole.klucz, '') %}
-        {% set zaleznosc = ' data-widoczne-gdy="' ~ pole.widoczne_gdy ~ '"' if pole.widoczne_gdy else '' %}
+        {% set zaleznosc = ' data-aktywne-gdy="' ~ pole.aktywne_gdy ~ '"' if pole.aktywne_gdy else '' %}
 
         {% if pole.typ == 'tabela' %}
         <div class="pole pelna tabela" data-nazwa="{{ pole.klucz }}">
@@ -250,15 +250,30 @@ document.querySelectorAll('.tabela').forEach(blok => {
   if (!blok.querySelector('tbody tr')) dodajWiersz(blok);
 });
 
-// --- pola pokazywane tylko przy zaznaczonym przełączniku ---------------------
-document.querySelectorAll('[data-widoczne-gdy]').forEach(pole => {
-  const przelacznik = document.querySelector(
-    `input[type=checkbox][name="pole__${pole.dataset.widoczneGdy}"]`);
-  if (!przelacznik) return;
-  const odswiez = () => { pole.hidden = !przelacznik.checked; };
-  przelacznik.addEventListener('change', odswiez);
-  odswiez();
-});
+// --- pola zależne od innych przełączników ------------------------------------
+// Zależności bywają łańcuchowe (sprawozdanie -> opis przebiegu -> bazy danych),
+// więc po każdej zmianie przeliczamy wszystkie po kolei, w kolejności z formularza.
+// Wyłączony przełącznik traktujemy jak odznaczony, choćby miał jeszcze ptaszka.
+function przelacznikZaleznosci(zapis) {
+  const [klucz, wartosc] = zapis.split(':');
+  const wybor = wartosc
+    ? `input[type=checkbox][name="pole__${klucz}"][value="${CSS.escape(wartosc)}"]`
+    : `input[type=checkbox][name="pole__${klucz}"]`;
+  return document.querySelector(wybor);
+}
+
+function odswiezZaleznosci() {
+  document.querySelectorAll('[data-aktywne-gdy]').forEach(pole => {
+    const przelacznik = przelacznikZaleznosci(pole.dataset.aktywneGdy);
+    if (!przelacznik) return;
+    const aktywne = przelacznik.checked && !przelacznik.disabled;
+    pole.classList.toggle('nieaktywne', !aktywne);
+    pole.querySelectorAll('input, textarea, select').forEach(x => { x.disabled = !aktywne; });
+  });
+}
+
+document.querySelector('form').addEventListener('change', odswiezZaleznosci);
+odswiezZaleznosci();
 
 // --- TERYT: województwo -> powiat -> jednostka ewidencyjna -> obręb ---------
 // Listy schodzą z serwera dopiero, gdy są potrzebne: gmin jest blisko cztery tysiące,

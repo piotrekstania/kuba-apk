@@ -180,3 +180,8 @@ button.dodaj-wiersz, .wklej { margin-top: 8px; font-size: 13px; padding: 5px 12p
                       padding: 7px 12px; font-weight: 400; font-size: 14px; cursor: pointer; }
 .lista-wyboru li.stale label { cursor: default; }
 .lista-wyboru input { flex: none; margin: 0; }
+
+/* pole zależne od przełącznika, który jest odznaczony */
+.pole.nieaktywne { opacity: .45; }
+.pole.nieaktywne label { cursor: default; }
+input:disabled, textarea:disabled, select:disabled { background: #f3f4f6; cursor: default; }

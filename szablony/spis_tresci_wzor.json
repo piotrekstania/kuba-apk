@@ -98,24 +98,32 @@
       "podpowiedz": "Do dokumentu trafią tylko zaznaczone pozycje, w tej kolejności."
     },
     {
+      "klucz": "dokumenty",
+      "etykieta": "Wygeneruj też te dokumenty",
+      "typ": "dokumenty",
+      "grupa": "Dokumenty do wygenerowania",
+      "podpowiedz": "Powstaną w tym samym katalogu operatu, z tymi samymi danymi. Ta lista nie ma związku ze spisem treści — zaznaczasz osobno."
+    },
+    {
       "klucz": "opis_przebiegu_jest",
       "etykieta": "Opis przebiegu",
       "typ": "checkbox",
-      "grupa": "Sprawozdanie techniczne",
-      "podpowiedz": "Zaznacz, żeby opisać przebieg prac. Bez zaznaczenia w sprawozdaniu wyjdzie „brak”."
+      "grupa": "Dokumenty do wygenerowania",
+      "aktywne_gdy": "dokumenty:sprawozdanie_techniczne_wzor",
+      "podpowiedz": "Do sprawozdania technicznego. Bez zaznaczenia wyjdzie „brak”."
     },
     {
       "klucz": "opis_przebiegu",
       "etykieta": "Przebieg wykonanych prac",
       "typ": "textarea",
-      "grupa": "Sprawozdanie techniczne",
-      "widoczne_gdy": "opis_przebiegu_jest"
+      "grupa": "Dokumenty do wygenerowania",
+      "aktywne_gdy": "opis_przebiegu_jest"
     },
     {
       "klucz": "bazy",
       "etykieta": "Zmiany w bazach danych",
       "typ": "wybor_wielokrotny",
-      "grupa": "Sprawozdanie techniczne",
+      "grupa": "Dokumenty do wygenerowania",
       "opcje": [
         "BDOT500",
         "GESUT",
@@ -126,14 +134,8 @@
         "GESUT",
         "EGiB"
       ],
+      "aktywne_gdy": "opis_przebiegu_jest",
       "podpowiedz": "Wejdą do sprawozdania po przecinku. Odznaczenie wszystkich daje „brak”."
-    },
-    {
-      "klucz": "dokumenty",
-      "etykieta": "Wygeneruj też te dokumenty",
-      "typ": "dokumenty",
-      "grupa": "Dokumenty do wygenerowania",
-      "podpowiedz": "Powstaną w tym samym katalogu operatu, z tymi samymi danymi. Ta lista nie ma związku ze spisem treści — zaznaczasz osobno."
     }
   ]
 }

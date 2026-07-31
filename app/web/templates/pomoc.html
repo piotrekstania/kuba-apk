@@ -117,12 +117,16 @@
 <p class="szary">Bez żadnego z nich generowanie plików .docx działa normalnie; nie działa tylko
   przycisk „Pobierz PDF" i łączenie dokumentów w jeden PDF.</p>
 
-<h2 id="warunkowe">Pola pokazywane tylko czasami</h2>
-<p>Pole może się pojawiać dopiero po zaznaczeniu innego. W pliku .json wskazujesz,
-  od którego przełącznika zależy:</p>
-<pre>{"klucz": "opis_przebiegu_jest", "etykieta": "Opis przebiegu", "typ": "checkbox"},
+<h2 id="warunkowe">Pola zależne od innych</h2>
+<p>Pole może być wyszarzone, dopóki nie zaznaczysz innego. Nie znika — widać, że jest,
+  tylko nie da się w nie nic wpisać. W pliku .json wskazujesz, od czego zależy:</p>
+<pre>{"klucz": "opis_przebiegu_jest", "etykieta": "Opis przebiegu", "typ": "checkbox",
+ "aktywne_gdy": "dokumenty:sprawozdanie_techniczne_wzor"},
 {"klucz": "opis_przebiegu", "etykieta": "Przebieg prac", "typ": "textarea",
- "widoczne_gdy": "opis_przebiegu_jest"}</pre>
+ "aktywne_gdy": "opis_przebiegu_jest"}</pre>
+<p>Zapis <code>dokumenty:nazwa_szablonu</code> celuje w konkretną pozycję listy
+  „Wygeneruj też te dokumenty”. Zależności mogą się łańcuchować: odznaczenie
+  sprawozdania wyszarza opis przebiegu, a razem z nim wszystko, co od niego zależy.</p>
 <p>W szablonie Worda rozstrzygasz to warunkiem. Pamiętaj: akapit ze znacznikiem
   <code>{{ '{%p' }}</code> znika w całości, więc warunek, treść i zamknięcie muszą być
   w <strong>osobnych akapitach</strong>:</p>

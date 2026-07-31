@@ -151,27 +151,29 @@ OPIS_POL = {
          "opcje": SPIS_TRESCI, "zawsze": SPIS_ZAWSZE,
          "podpowiedz": "Do dokumentu trafią tylko zaznaczone pozycje, w tej kolejności."},
 
-        # --- pola używane przez sprawozdanie techniczne -------------------------
-        {"klucz": "opis_przebiegu_jest", "etykieta": "Opis przebiegu",
-         "typ": "checkbox", "grupa": "Sprawozdanie techniczne",
-         "podpowiedz": "Zaznacz, żeby opisać przebieg prac. Bez zaznaczenia "
-                       "w sprawozdaniu wyjdzie „brak”."},
-        {"klucz": "opis_przebiegu", "etykieta": "Przebieg wykonanych prac",
-         "typ": "textarea", "grupa": "Sprawozdanie techniczne",
-         "widoczne_gdy": "opis_przebiegu_jest"},
-        {"klucz": "bazy", "etykieta": "Zmiany w bazach danych",
-         "typ": "wybor_wielokrotny", "grupa": "Sprawozdanie techniczne",
-         "opcje": ["BDOT500", "GESUT", "EGiB"],
-         "domyslne": ["BDOT500", "GESUT", "EGiB"],
-         "podpowiedz": "Wejdą do sprawozdania po przecinku. Odznaczenie wszystkich "
-                       "daje „brak”."},
-
         # Lista bierze się z plików w katalogu szablony/, nie stąd — nowy szablon
         # dokłada pozycję sam. Karta znika, gdy innych szablonów nie ma.
         {"klucz": "dokumenty", "etykieta": "Wygeneruj też te dokumenty",
          "typ": "dokumenty", "grupa": "Dokumenty do wygenerowania",
          "podpowiedz": "Powstaną w tym samym katalogu operatu, z tymi samymi danymi. "
                        "Ta lista nie ma związku ze spisem treści — zaznaczasz osobno."},
+
+        # Pola sprawozdania stoją w tej samej karcie i budzą się dopiero po zaznaczeniu
+        # sprawozdania na liście wyżej. Dalej zależą już od siebie łańcuchowo.
+        {"klucz": "opis_przebiegu_jest", "etykieta": "Opis przebiegu",
+         "typ": "checkbox", "grupa": "Dokumenty do wygenerowania",
+         "aktywne_gdy": "dokumenty:sprawozdanie_techniczne_wzor",
+         "podpowiedz": "Do sprawozdania technicznego. Bez zaznaczenia wyjdzie „brak”."},
+        {"klucz": "opis_przebiegu", "etykieta": "Przebieg wykonanych prac",
+         "typ": "textarea", "grupa": "Dokumenty do wygenerowania",
+         "aktywne_gdy": "opis_przebiegu_jest"},
+        {"klucz": "bazy", "etykieta": "Zmiany w bazach danych",
+         "typ": "wybor_wielokrotny", "grupa": "Dokumenty do wygenerowania",
+         "opcje": ["BDOT500", "GESUT", "EGiB"],
+         "domyslne": ["BDOT500", "GESUT", "EGiB"],
+         "aktywne_gdy": "opis_przebiegu_jest",
+         "podpowiedz": "Wejdą do sprawozdania po przecinku. Odznaczenie wszystkich "
+                       "daje „brak”."},
     ],
 }
 

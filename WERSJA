@@ -1,2 +1,2 @@
-2026.07.31.25
-Doszło sprawozdanie techniczne — zaznaczasz je w formularzu operatu i powstaje obok spisu treści, z tych samych danych. W karcie „Sprawozdanie techniczne” jest przełącznik „Opis przebiegu” (po zaznaczeniu pojawia się pole na opis) oraz trzy zaznaczone na start bazy: BDOT500, GESUT i EGiB. Bez opisu w sprawozdaniu wychodzi „brak”; odznaczenie wszystkich baz też daje „brak”.
+2026.07.31.26
+Pola sprawozdania przeniosły się do karty „Dokumenty do wygenerowania” i budzą się dopiero po zaznaczeniu sprawozdania — wcześniej są wyszarzone, a nie schowane. Zmiany w bazach danych zależą teraz od „Opisu przebiegu”: bez niego też są wyszarzone. Aktualizacja kasuje wreszcie szablony, których nie ma już w programie.

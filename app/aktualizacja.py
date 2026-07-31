@@ -51,6 +51,13 @@ AKTUALIZOWANE = [
     "WERSJA", "README.md", "CLAUDE.md",
 ]
 
+# Katalogi odwzorowywane jeden do jednego: plik, którego nie ma już w repozytorium,
+# znika też u użytkownika. Bez tego szablon po zmianie nazwy zostawał na zawsze
+# i straszył na liście dokumentów jako pozycja, której nikt już nie utrzymuje.
+# `app/` celowo nie jest lustrzane — kasowanie plików działającego właśnie procesu
+# to proszenie się o kłopoty, a stary moduł nikomu nie przeszkadza.
+LUSTRZANE = {"szablony"}
+
 
 def _czytaj_wersje(tekst: str) -> tuple[str, str]:
     """Pierwsza linia pliku WERSJA to numer, reszta to opis zmian dla użytkownika.
@@ -130,6 +137,13 @@ def zastosuj(nowy_kod: Path) -> None:
             # zaimportowany przez działający właśnie proces aktualizatora.
             shutil.copytree(zrodlo, cel, dirs_exist_ok=True,
                             ignore=shutil.ignore_patterns("__pycache__"))
+            if nazwa in LUSTRZANE:
+                przyszly = {p.name for p in zrodlo.iterdir() if p.is_file()}
+                for stary in cel.iterdir():
+                    # kopia całego katalogu poszła wcześniej do dane/kopie/,
+                    # więc jest z czego wrócić, gdyby coś zniknęło niechcący
+                    if stary.is_file() and stary.name not in przyszly:
+                        stary.unlink(missing_ok=True)
         else:
             shutil.copy2(zrodlo, cel)
 
