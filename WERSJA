@@ -1,2 +1,2 @@
-2026.07.31.32
-Każdy dodatkowy dokument ma teraz własną kartę w formularzu. Sprawozdanie ze swoimi opcjami stoi osobno, wykazy zmian osobno — wcześniej wszystkie checkboxy były w jednej liście, a opcje sprawozdania wyglądały, jakby dotyczyły ostatniej pozycji.
+2026.07.31.33
+Doszły przyciski „Usuń” — na liście dokumentów i na liście w zakładce „Złóż PDF”. Każdy pyta o potwierdzenie i mówi wprost, że znika cały katalog operatu razem z plikami, które sam do niego włożyłeś.

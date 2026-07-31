@@ -42,6 +42,10 @@
     <td class="akcje">
       {% if dokument.katalog %}<a href="/scal/{{ dokument.katalog | urlencode }}">Złóż PDF</a>{% endif %}
       <a href="/nowy/{{ dokument.szablon }}?kopiuj={{ dokument.id }}">Powiel</a>
+      <form method="post" action="/dokument/{{ dokument.id }}/usun"
+            onsubmit="return confirm('Usunąć operat {{ dokument.nr_operatu or dokument.katalog }} wraz z całym katalogiem — także z plikami, które sam tam włożyłeś?')">
+        <button type="submit">Usuń</button>
+      </form>
     </td>
   </tr>
   {% endfor %}

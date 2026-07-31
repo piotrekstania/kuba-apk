@@ -185,3 +185,9 @@ button.dodaj-wiersz, .wklej { margin-top: 8px; font-size: 13px; padding: 5px 12p
 .pole.nieaktywne { opacity: .45; }
 .pole.nieaktywne label { cursor: default; }
 input:disabled, textarea:disabled, select:disabled { background: #f3f4f6; cursor: default; }
+
+/* „Usuń” w kolumnie akcji — ma wyglądać jak pozostałe odnośniki, nie jak przycisk */
+.akcje form { display: inline; }
+.akcje button { border: none; background: none; padding: 0; font: inherit;
+                font-size: 13px; color: var(--zle); cursor: pointer; }
+.akcje button:hover { color: var(--zle); text-decoration: underline; }

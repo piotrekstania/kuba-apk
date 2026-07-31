@@ -22,7 +22,13 @@
     <td>{{ operat.nr_roboty or '—' }}</td>
     <td>{{ operat.plikow }}</td>
     <td class="szary">{{ operat.utworzono.replace('T', ' ')[:16] }}</td>
-    <td><a class="glowny" href="/scal/{{ operat.katalog | urlencode }}">Złóż PDF</a></td>
+    <td class="akcje">
+      <a class="glowny" href="/scal/{{ operat.katalog | urlencode }}">Złóż PDF</a>
+      <form method="post" action="/scal/{{ operat.katalog | urlencode }}/usun"
+            onsubmit="return confirm('Usunąć operat {{ operat.nr_operatu }} wraz z całym katalogiem ({{ operat.plikow }} plików do sklejenia)? Znikną też mapy i skany, które sam tam włożyłeś.')">
+        <button type="submit">Usuń</button>
+      </form>
+    </td>
   </tr>
   {% endfor %}
 </table>

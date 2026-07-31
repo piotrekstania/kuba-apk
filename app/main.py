@@ -391,6 +391,19 @@ def otworz_katalog_dokumentu(request: Request, dokument_id: int):
     return _otworz(request, katalog, f"/dokument/{dokument_id}")
 
 
+@app.post("/scal/{nazwa}/usun")
+def scal_usun(nazwa: str):
+    """Usuwa operat z listy składania — ten sam skutek co „Usuń” na stronie dokumentu."""
+    katalog = operaty.katalog_po_nazwie(nazwa)
+    if katalog is not None:
+        wiersz = db.dokument_po_katalogu(katalog.name)
+        operaty.usun_podglady(katalog)
+        shutil.rmtree(katalog, ignore_errors=True)
+        if wiersz:
+            db.usun_dokument(wiersz["id"])
+    return RedirectResponse("/scal", status_code=303)
+
+
 @app.post("/scal/{nazwa}/otworz-katalog")
 def otworz_katalog_operatu(request: Request, nazwa: str):
     katalog = operaty.katalog_po_nazwie(nazwa)
