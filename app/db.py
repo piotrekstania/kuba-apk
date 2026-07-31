@@ -158,14 +158,6 @@ def dokumenty(limit: int = 100) -> list[sqlite3.Row]:
         ).fetchall()
 
 
-def dokument_po_katalogu(katalog: str) -> sqlite3.Row | None:
-    """Wpis w historii wskazujący ten katalog operatu — do usuwania z listy „Złóż PDF”."""
-    if not katalog:
-        return None
-    with polacz() as con:
-        return con.execute("SELECT * FROM dokumenty WHERE katalog = ?", (katalog,)).fetchone()
-
-
 def usun_dokument(dokument_id: int) -> None:
     with polacz() as con:
         con.execute("DELETE FROM dokumenty WHERE id = ?", (dokument_id,))
