@@ -157,8 +157,12 @@ def generuj(szablon: Szablon, dane: dict[str, Any], ustawienia: dict[str, str],
         # Numer wpisujemy z góry — `auto_numer` po niego nie sięgnie, bo widzi wartość.
         dane = dict(dane)
         for pole in szablon.pola:
-            if pole.typ == "auto_numer":
-                dane.setdefault(pole.klucz, poprzedni["nr_operatu"])
+            # Uwaga: `setdefault` tu nie wystarczy. Przeglądarka wysyła pole numeru
+            # zawsze, tylko puste, więc klucz w danych *jest* — z pustą wartością.
+            # Trzeba sprawdzić wartość, nie obecność klucza, inaczej `przygotuj_kontekst`
+            # uzna, że numeru brak, i weźmie kolejny z licznika.
+            if pole.typ == "auto_numer" and not dane.get(pole.klucz):
+                dane[pole.klucz] = poprzedni["nr_operatu"]
     kontekst = przygotuj_kontekst(szablon, dane, ustawienia, rezerwacje)
     try:
         dokument = DocxTemplate(szablon.plik)
