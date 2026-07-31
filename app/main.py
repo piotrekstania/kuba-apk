@@ -224,16 +224,30 @@ def _szablon_albo_blad(request: Request, identyfikator: str):
     return szablon, None
 
 
-def _inne_szablony(szablon: szablony.Szablon) -> list[dict[str, str]]:
-    """Szablony, które można dogenerować do tego samego operatu — bez tego bieżącego.
+def _listy_dokumentow(szablon: szablony.Szablon) -> dict[str, list[dict[str, str]]]:
+    """Dla każdego pola typu `dokumenty` — które szablony ma pokazać.
 
-    Gdy innych nie ma, wyrzucamy pole typu `dokumenty` z formularza, żeby nie została
-    pusta karta z samym nagłówkiem.
+    Pole z `tylko` bierze wymienione pozycje, więc każdy dokument może mieć własną
+    kartę i swoje opcje pod spodem. Pole bez `tylko` zbiera całą resztę — dzięki temu
+    nowy szablon wrzucony do `szablony/` nadal pokazuje się sam, choćby w karcie
+    „Inne dokumenty”, zamiast zniknąć bez śladu.
+
+    Pola, dla których nie zostało nic do pokazania, wyrzucamy z formularza — inaczej
+    zostałaby pusta karta z samym nagłówkiem.
     """
-    inne = [s for s in szablony.lista_skrocona() if s["id"] != szablon.id]
-    if not inne:
-        szablon.pola = [p for p in szablon.pola if p.typ != "dokumenty"]
-    return inne
+    wszystkie = [s for s in szablony.lista_skrocona() if s["id"] != szablon.id]
+    zajete = {i for p in szablon.pola if p.typ == "dokumenty" for i in p.tylko}
+
+    listy: dict[str, list[dict[str, str]]] = {}
+    for pole in szablon.pola:
+        if pole.typ != "dokumenty":
+            continue
+        listy[pole.klucz] = ([s for s in wszystkie if s["id"] in pole.tylko] if pole.tylko
+                             else [s for s in wszystkie if s["id"] not in zajete])
+
+    szablon.pola = [p for p in szablon.pola
+                    if p.typ != "dokumenty" or listy.get(p.klucz)]
+    return listy
 
 
 @app.get("/nowy/{identyfikator}", response_class=HTMLResponse)
@@ -271,7 +285,7 @@ def formularz(request: Request, identyfikator: str, kopiuj: int | None = None,
 
     return _widok(request, "formularz.html", szablon=szablon, wartosci=wartosci,
                   podglad_numeru=podglad, dzisiaj=date.today().isoformat(),
-                  edytuj=edytuj, inne_szablony=_inne_szablony(szablon))
+                  edytuj=edytuj, listy_dokumentow=_listy_dokumentow(szablon))
 
 
 @app.post("/generuj/{identyfikator}")
@@ -293,7 +307,7 @@ async def generuj(request: Request, identyfikator: str, edytuj: int | None = Non
         return _widok(request, "formularz.html", szablon=szablon, wartosci=dane,
                       blad="Uzupełnij wymagane pola: " + ", ".join(brakujace),
                       dzisiaj=date.today().isoformat(), edytuj=edytuj,
-                      inne_szablony=_inne_szablony(szablon))
+                      listy_dokumentow=_listy_dokumentow(szablon))
 
     poprawiany = db.dokument(edytuj) if edytuj else None
     poprzedni_opis = None
@@ -309,7 +323,7 @@ async def generuj(request: Request, identyfikator: str, edytuj: int | None = Non
         # przez literówkę w szablonie byłaby gorsza niż sam błąd.
         zapisz_blad(request, blad)
         return _widok(request, "formularz.html", szablon=szablon, wartosci=dane,
-                      inne_szablony=_inne_szablony(szablon), edytuj=edytuj,
+                      listy_dokumentow=_listy_dokumentow(szablon), edytuj=edytuj,
                       blad=f"Nie udało się wypełnić szablonu „{szablon.nazwa}”. Zwykle "
                            "znaczy to, że w pliku .docx jest literówka w znaczniku "
                            "{{ }} albo {% ... %}. Twoje dane zostały tutaj — popraw "
@@ -320,7 +334,12 @@ async def generuj(request: Request, identyfikator: str, edytuj: int | None = Non
     # Awaria któregoś nie może przekreślić dokumentu głównego, który już jest na dysku —
     # zgłaszamy ją jako ostrzeżenie na stronie operatu.
     katalog = plik.parent
-    for identyfikator_dodatkowego in dane.get("dokumenty") or []:
+    # zaznaczenia zbieramy ze wszystkich pól typu „dokumenty” — każdy dokument
+    # ma swoją kartę, więc pól jest kilka
+    wybrane_szablony = [identyfikator
+                        for pole in szablon.pola if pole.typ == "dokumenty"
+                        for identyfikator in (dane.get(pole.klucz) or [])]
+    for identyfikator_dodatkowego in wybrane_szablony:
         dodatkowy = szablony.szablon_po_id(str(identyfikator_dodatkowego))
         if dodatkowy is None or dodatkowy.id == szablon.id:
             continue

@@ -193,8 +193,15 @@ Wykonano: brak
 <p class="szary">Ta lista <strong>nie ma związku ze spisem treści</strong>. Spis treści mówi,
   co w operacie jest (także rzeczy, których program nie generuje — mapy z C-Geo, skany).
   Ta lista mówi, które pliki Worda program ma teraz zrobić.</p>
-<p>Karta bierze się z plików leżących w katalogu <code>szablony/</code>, więc nowy szablon
-  dokłada tam pozycję sam. Gdy jest tylko jeden szablon, karta w ogóle się nie pokazuje.</p>
+<p>Karty biorą się z plików leżących w katalogu <code>szablony/</code>, więc nowy szablon
+  dokłada pozycję sam. Każdy dokument może mieć własną kartę — wtedy jego opcje stoją
+  tuż pod jego checkboxem i widać, czego dotyczą. Rozstrzyga o tym <code>"tylko"</code>
+  w opisie pola:</p>
+<pre>{"klucz": "dokumenty_sprawozdanie", "etykieta": "Wygeneruj", "typ": "dokumenty",
+ "grupa": "Sprawozdanie techniczne", "tylko": ["sprawozdanie_techniczne_wzor"]}</pre>
+<p>Pole <strong>bez</strong> <code>"tylko"</code> zbiera całą resztę. Dzięki temu nowy
+  szablon wrzucony do katalogu pokaże się w karcie „Inne dokumenty”, zamiast zniknąć
+  bez śladu — a gdy wszystkie mają już swoje miejsce, ta karta znika.</p>
 <p class="szary">Nazwa pliku wynika z nazwy szablonu: <code>sprawozdanie_techniczne_wzor.docx</code>
   robi w katalogu operatu <code>sprawozdanie_techniczne.docx</code>. Gdyby któryś dodatkowy
   szablon miał błąd, dokument główny i tak powstaje — o reszcie program powie osobno.</p>

@@ -1,2 +1,2 @@
-2026.07.31.31
-Doszły dwa dokumenty do wyboru: wykaz zmian danych ewidencyjnych dotyczących budynku i dotyczących działki ewidencyjnej. Zaznaczasz je w karcie „Dokumenty do wygenerowania” tak samo jak sprawozdanie — nie trzeba nic dodatkowo wpisywać, biorą dane z operatu.
+2026.07.31.32
+Każdy dodatkowy dokument ma teraz własną kartę w formularzu. Sprawozdanie ze swoimi opcjami stoi osobno, wykazy zmian osobno — wcześniej wszystkie checkboxy były w jednej liście, a opcje sprawozdania wyglądały, jakby dotyczyły ostatniej pozycji.

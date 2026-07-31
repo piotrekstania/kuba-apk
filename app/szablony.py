@@ -44,6 +44,7 @@ class Pole:
     zawsze: list[str] = field(default_factory=list)   # pozycje zaznaczone na stałe
     domyslne: list[str] = field(default_factory=list)  # zaznaczone na start, ale odklikywalne
     wzor_wartosci: str = ""     # np. "{nr_roboty}-{opcja}.gml" — wynik pod kluczem <pole>_pliki
+    tylko: list[str] = field(default_factory=list)    # typ "dokumenty": które szablony pokazać
     aktywne_gdy: str = ""       # pole jest wyszarzone, dopóki wskazany przełącznik
                                 # nie jest zaznaczony; "dokumenty:id" celuje w pozycję listy
     kolumny: list[dict[str, str]] = field(default_factory=list)   # tylko dla typ="tabela"
@@ -121,6 +122,7 @@ def wczytaj_szablon(plik: Path) -> Szablon:
             zawsze=list(surowe.get("zawsze", [])),
             domyslne=list(surowe.get("domyslne", [])),
             wzor_wartosci=surowe.get("wzor_wartosci", ""),
+            tylko=list(surowe.get("tylko", [])),
             aktywne_gdy=surowe.get("aktywne_gdy", ""),
             kolumny=list(surowe.get("kolumny", [])),
             domyslnie=str(surowe.get("domyslnie", "")),

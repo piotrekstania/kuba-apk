@@ -151,30 +151,38 @@ OPIS_POL = {
          "opcje": SPIS_TRESCI, "zawsze": SPIS_ZAWSZE,
          "podpowiedz": "Do dokumentu trafią tylko zaznaczone pozycje, w tej kolejności."},
 
-        # Lista bierze się z plików w katalogu szablony/, nie stąd — nowy szablon
-        # dokłada pozycję sam. Karta znika, gdy innych szablonów nie ma.
-        {"klucz": "dokumenty", "etykieta": "Wygeneruj też te dokumenty",
-         "typ": "dokumenty", "grupa": "Dokumenty do wygenerowania",
-         "podpowiedz": "Powstaną w tym samym katalogu operatu, z tymi samymi danymi. "
-                       "Ta lista nie ma związku ze spisem treści — zaznaczasz osobno."},
-
-        # Pola sprawozdania stoją w tej samej karcie i budzą się dopiero po zaznaczeniu
-        # sprawozdania na liście wyżej. Dalej zależą już od siebie łańcuchowo.
+        # Każdy dokument ma własną kartę: checkbox „czy generować”, a pod nim jego
+        # opcje. Dzięki temu opcje sprawozdania nie wyglądają, jakby dotyczyły
+        # ostatniej pozycji wspólnej listy, i jest gdzie dokładać opcje wykazów.
+        {"klucz": "dokumenty_sprawozdanie", "etykieta": "Wygeneruj",
+         "typ": "dokumenty", "grupa": "Sprawozdanie techniczne",
+         "tylko": ["sprawozdanie_techniczne_wzor"]},
         {"klucz": "opis_przebiegu_jest", "etykieta": "Opis przebiegu",
-         "typ": "checkbox", "grupa": "Dokumenty do wygenerowania",
-         "aktywne_gdy": "dokumenty:sprawozdanie_techniczne_wzor",
-         "podpowiedz": "Do sprawozdania technicznego. Bez zaznaczenia wyjdzie „brak”."},
+         "typ": "checkbox", "grupa": "Sprawozdanie techniczne",
+         "aktywne_gdy": "dokumenty_sprawozdanie:sprawozdanie_techniczne_wzor",
+         "podpowiedz": "Bez zaznaczenia w sprawozdaniu wyjdzie „brak”."},
         {"klucz": "opis_przebiegu", "etykieta": "Przebieg wykonanych prac",
-         "typ": "textarea", "grupa": "Dokumenty do wygenerowania",
+         "typ": "textarea", "grupa": "Sprawozdanie techniczne",
          "aktywne_gdy": "opis_przebiegu_jest"},
         {"klucz": "bazy", "etykieta": "Zmiany w bazach danych",
-         "typ": "wybor_wielokrotny", "grupa": "Dokumenty do wygenerowania",
+         "typ": "wybor_wielokrotny", "grupa": "Sprawozdanie techniczne",
          "opcje": ["BDOT500", "GESUT", "EGiB"],
          "domyslne": ["BDOT500", "GESUT", "EGiB"],
          "aktywne_gdy": "opis_przebiegu_jest",
          "wzor_wartosci": "{nr_roboty}-{opcja}.gml",
          "podpowiedz": "Do sprawozdania wejdą jako nazwy plików GML, po przecinku. "
                        "Odznaczenie wszystkich daje „brak”."},
+
+        {"klucz": "dokumenty_wykazy", "etykieta": "Wygeneruj",
+         "typ": "dokumenty", "grupa": "Wykazy zmian danych ewidencyjnych",
+         "tylko": ["wykaz_zmian_budynku_wzor", "wykaz_zmian_dzialki_wzor"],
+         "podpowiedz": "Na razie bez dodatkowych opcji — biorą dane z operatu."},
+
+        # Pole bez „tylko” zbiera resztę: nowy szablon wrzucony do szablony/
+        # pokaże się tutaj, zamiast zniknąć bez śladu. Karta znika, gdy reszty nie ma.
+        {"klucz": "dokumenty", "etykieta": "Wygeneruj też",
+         "typ": "dokumenty", "grupa": "Inne dokumenty",
+         "podpowiedz": "Powstaną w tym samym katalogu operatu, z tymi samymi danymi."},
     ],
 }
 
