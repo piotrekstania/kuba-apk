@@ -1,2 +1,2 @@
-2026.07.31.12
-Drobne porządki w interfejsie: zakładka „Łączenie PDF” nazywa się teraz „Złóż PDF”, a z listy dokumentów zniknęła kolumna z nazwą szablonu.
+2026.07.31.13
+Karta „Robota” ma teraz właściwe pola: numer roboty i numer operatu (oba wymagane), datę zgłoszenia i datę zakończenia pracy geodezyjnej wybierane z kalendarza oraz listę rodzajów prac zgodną z formularzem zgłoszenia. Położenie działki przeniosło się do własnej karty.

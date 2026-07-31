@@ -114,7 +114,7 @@
 
         {% elif pole.typ == 'auto_numer' %}
         <div class="pole {{ pole.szerokosc }}">
-          <label for="p_{{ pole.klucz }}">{{ pole.etykieta }}</label>
+          <label for="p_{{ pole.klucz }}">{{ pole.etykieta }}{% if pole.wymagane %} <span class="gwiazdka">*</span>{% endif %}</label>
           <input id="p_{{ pole.klucz }}" name="pole__{{ pole.klucz }}" value="{{ wartosc }}"
                  placeholder="{{ podglad_numeru or 'nadany automatycznie' }}">
           <p class="podpowiedz">Zostaw puste, żeby program nadał kolejny numer.</p>

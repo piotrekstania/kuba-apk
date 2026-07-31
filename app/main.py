@@ -248,8 +248,12 @@ async def generuj(request: Request, identyfikator: str):
     formularz_danych = await request.form()
     dane = odczytaj_dane(formularz_danych, szablon)
 
+    # `auto_numer` pomijamy: pole zostaje puste celowo, bo numer nadaje program przy
+    # generowaniu. Oznaczenie go jako wymaganego ma sens tylko po to, żeby w formularzu
+    # stała gwiazdka — inaczej każda próba kończyłaby się „uzupełnij wymagane pola”.
     brakujace = [p.etykieta for p in szablon.pola
-                 if p.wymagane and p.zrodlo != "ustawienia" and not dane.get(p.klucz)]
+                 if p.wymagane and p.zrodlo != "ustawienia" and p.typ != "auto_numer"
+                 and not dane.get(p.klucz)]
     if brakujace:
         return _widok(request, "formularz.html", szablon=szablon, wartosci=dane,
                       blad="Uzupełnij wymagane pola: " + ", ".join(brakujace),
