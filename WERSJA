@@ -1,2 +1,2 @@
-2026.07.31.37
-Zmienione: spis treści i sprawozdanie techniczne wyglądają teraz jak jeden komplet — to samo logo w tym samym miejscu i rozmiarze, jeden krój pisma, ta sama hierarchia nagłówków, bez podkreśleń. Numer roboty zostaje czerwony. W sprawozdaniu poprawione wcięcia: druga linijka zdania nie wraca już na margines, a opis złożony z kilku urwanych linijek czyta się jak zwykły akapit.
+2026.07.31.38
+Naprawione: szablony z poprzedniej wersji nie otwierały się w Wordzie, więc nie powstawały też miniatury i PDF-y. Przy ujednolicaniu wyglądu dwa elementy trafiły w niewłaściwe miejsce w pliku — Word takiego dokumentu nie przyjmuje. Formatki są poprawione, wygląd bez zmian.

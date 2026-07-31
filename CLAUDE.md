@@ -173,6 +173,16 @@ też brat. Interfejs w całości po polsku.
    zawinięta pozycja chowa się pod numerem), a podpis — ramki `w:framePr` z
    `vAnchor="margin" yAlign="bottom"`, żeby stał na dole strony niezależnie od długości
    spisu. Skrypt jest odporny na powtórzenie.
+12d. **Kolejność elementów w OOXML jest częścią schematu, a Word tego pilnuje —
+   LibreOffice nie.** Dołożenie `<wp:wrapSquare>` na końcu `<wp:anchor>` (zamiast zaraz
+   po `effectExtent`) i `<w:spacing>` na końcu `<w:rPr>` (zamiast przed `<w:sz>`) dało
+   pliki, które na Linuksie składały się do PDF-a bez jednego ostrzeżenia, a **w Wordzie
+   w ogóle się nie otwierały** — u brata objawiło się to tym, że przestały powstawać
+   miniatury, bo konwersja nie miała czego otworzyć. Kosztowało to całe wydanie.
+   Wniosek: elementy dokładaj **przed** pierwszym, który wg schematu ma iść po nich
+   (`_wstaw_przed` w `ujednolic_wyglad.py`), a poprawność sprawdzaj w kodzie
+   (`_sprawdz_kolejnosc` odmawia zapisania pliku, który Word odrzuci). **Zielony PDF
+   z LibreOffice'a nie jest dowodem, że plik jest poprawny.**
 12b. **Word trzyma każdy tabulator w osobnym biegu tekstu.** `"\t\t" in akapit.text` bywa
    prawdą, choć żaden pojedynczy bieg nie zawiera dwóch tabulatorów — `bieg.text.replace`
    nic wtedy nie robi i „poprawka” cicho nie działa (a przy powtórzeniu dokłada kolejny

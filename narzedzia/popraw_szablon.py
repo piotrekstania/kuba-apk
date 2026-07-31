@@ -56,10 +56,30 @@ def popraw_pozycje_spisu(akapit) -> bool:
     return True
 
 
+# Schemat OOXML ustala kolejność dzieci `w:pPr`: ramka idzie zaraz za `pStyle`,
+# przed całą resztą. Wcześniej wstawialiśmy ją przez `insert(0, ...)`, czyli *przed*
+# `pStyle` — Word to przyjmował, ale plik i tak był niezgodny ze schematem.
+PO_RAMCE = ("widowControl", "numPr", "suppressLineNumbers", "pBdr", "shd", "tabs",
+            "spacing", "ind", "contextualSpacing", "jc", "textAlignment",
+            "outlineLvl", "rPr", "sectPr")
+
+
+def _ustaw_ramke_w_kolejnosci(pPr, ramka) -> None:
+    if ramka.getparent() is not None:
+        pPr.remove(ramka)
+    for dziecko in pPr:
+        if dziecko.tag.split("}")[-1] in PO_RAMCE:
+            dziecko.addprevious(ramka)
+            return
+    pPr.append(ramka)
+
+
 def przypnij_do_dolu(akapit) -> bool:
     """Ramka akapitu zakotwiczona do dołu obszaru tekstu."""
     pPr = akapit._p.get_or_add_pPr()               # noqa: SLF001
-    if pPr.find(qn("w:framePr")) is not None:
+    istniejaca = pPr.find(qn("w:framePr"))
+    if istniejaca is not None:
+        _ustaw_ramke_w_kolejnosci(pPr, istniejaca)  # starsze pliki miały ją przed pStyle
         return False                               # ramka już jest, nie dublujemy
 
     # tabulatory wypychające podpis w prawo rozpychałyby ramkę na całą szerokość
@@ -72,7 +92,7 @@ def przypnij_do_dolu(akapit) -> bool:
                              ("w:hAnchor", "margin"), ("w:xAlign", "right"),
                              ("w:yAlign", "bottom")):
         ramka.set(qn(atrybut), wartosc)
-    pPr.insert(0, ramka)
+    _ustaw_ramke_w_kolejnosci(pPr, ramka)
 
     # puste akapity w tej samej ramce podnoszą podpis znad dolnego marginesu
     poprzedni = akapit._p                          # noqa: SLF001
@@ -96,6 +116,18 @@ def main() -> int:
         return 1
 
     dokument = docx.Document(plik)
+
+    # Ramki wstawione starszą wersją tego skryptu stoją przed `pStyle`, niezgodnie
+    # ze schematem. Prostujemy każdą, także w pustych podkładkach pod podpisem —
+    # te powstają przez skopiowanie akapitu, więc odziedziczyły złą kolejność.
+    ramki = 0
+    for akapit in dokument.paragraphs:
+        pPr = akapit._p.find(qn("w:pPr"))          # noqa: SLF001
+        ramka = pPr.find(qn("w:framePr")) if pPr is not None else None
+        if ramka is not None and list(pPr).index(ramka) == 0 and len(pPr) > 1:
+            _ustaw_ramke_w_kolejnosci(pPr, ramka)
+            ramki += 1
+
     spisy = podpisy = 0
     for akapit in dokument.paragraphs:
         if "loop.index" in akapit.text and "pozycja" in akapit.text:
@@ -107,6 +139,8 @@ def main() -> int:
     print(f"{plik}:")
     print(f"  pozycji spisu treści sformatowanych: {spisy}")
     print(f"  podpisów przypiętych do dołu strony: {podpisy}")
+    if ramki:
+        print(f"  ramek ustawionych zgodnie ze schematem: {ramki}")
     if not spisy:
         print("  UWAGA: nie znalazłem akapitu z pętlą spisu treści "
               "({%p for pozycja in spis_tresci %}) — sprawdź szablon.")

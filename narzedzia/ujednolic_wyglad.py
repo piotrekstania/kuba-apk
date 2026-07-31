@@ -107,7 +107,12 @@ def _scal_ciagi(dokument) -> int:
         do_lewej = akapit.alignment in (None, WD_ALIGN_PARAGRAPH.LEFT,
                                         WD_ALIGN_PARAGRAPH.JUSTIFY)
 
-        moze = (poprzedni is not None and tekst and do_lewej
+        # scalamy tylko czysty tekst: w akapicie z odsyłaczem, zakładką albo polem
+        # Worda przeniesienie samych biegów zgubiłoby resztę bez śladu
+        czysty = all(_nazwa(e) in ("pPr", "r", "bookmarkStart", "bookmarkEnd", "proofErr")
+                     for e in akapit._p)
+
+        moze = (poprzedni is not None and tekst and do_lewej and czysty
                 and not _znacznik(tekst) and not _znacznik(poprzedni.text)
                 and len(poprzedni.text.strip()) >= DLUGOSC_PELNEGO_WIERSZA
                 and not poprzedni.text.strip().endswith(ZAMYKA_ZDANIE))
@@ -172,6 +177,28 @@ def _popraw_tabulatory(akapit) -> bool:
 
 # --- typografia ------------------------------------------------------------------
 
+# Kolejność dzieci w OOXML jest częścią schematu, nie kwestią gustu: Word odmawia
+# otwarcia pliku, w którym element stoi nie tam, gdzie trzeba, a LibreOffice otwiera
+# go bez mrugnięcia. Dlatego wszystko dokładamy **przed** pierwszym elementem, który
+# wg schematu ma iść po nim — i na końcu sprawdzamy to jeszcze raz (`_sprawdz_kolejnosc`).
+PO_ROZSTRZELENIU = ("w", "kern", "position", "sz", "szCs", "highlight", "u", "effect",
+                    "bdr", "shd", "fitText", "vertAlign", "rtl", "cs", "em", "lang",
+                    "eastAsianLayout", "specVanish", "oMath")
+PO_OBLEWANIU = ("docPr", "cNvGraphicFramePr", "graphic", "sizeRelH", "sizeRelV")
+
+
+def _nazwa(element) -> str:
+    return element.tag.split("}")[-1]
+
+
+def _wstaw_przed(rodzic, element, nastepcy: tuple[str, ...]) -> None:
+    for dziecko in rodzic:
+        if _nazwa(dziecko) in nastepcy:
+            dziecko.addprevious(element)
+            return
+    rodzic.append(element)
+
+
 def _rozstrzel(bieg, wartosc: int) -> None:
     rPr = bieg._element.get_or_add_rPr()
     for stary in rPr.findall(qn("w:spacing")):
@@ -179,7 +206,7 @@ def _rozstrzel(bieg, wartosc: int) -> None:
     if wartosc:
         element = OxmlElement("w:spacing")
         element.set(qn("w:val"), str(wartosc))
-        rPr.append(element)
+        _wstaw_przed(rPr, element, PO_ROZSTRZELENIU)
 
 
 def _ustaw(akapit, rozmiar, pogrubienie, *, rozstrzelenie=0) -> None:
@@ -263,9 +290,9 @@ def _ustaw_logo(dokument) -> int:
                 przesuniecie.text = str(int(wartosc))
 
             zadany = _oblewanie(dokument, akapit)
-            for stare in [e for e in kotwica if e.tag.startswith(f"{{{kotwica.nsmap['wp']}}}wrap")]:
+            for stare in [e for e in kotwica if _nazwa(e).startswith("wrap")]:
                 kotwica.remove(stare)
-            kotwica.append(OxmlElement(f"wp:{zadany}"))
+            _wstaw_przed(kotwica, OxmlElement(f"wp:{zadany}"), PO_OBLEWANIU)
             zmienione += 1
     return zmienione
 
@@ -288,6 +315,32 @@ def _ujednolic_tabele(dokument) -> int:
                         bieg.font.size = TRESC
                 komorki += 1
     return komorki
+
+
+def _sprawdz_kolejnosc(dokument) -> list[str]:
+    """Sprawdza, czy dołożone elementy stoją tam, gdzie wymaga tego schemat OOXML.
+
+    Bez tego można w dobrej wierze zapisać plik, który otwiera się na Linuksie
+    i **nie otwiera się w Wordzie** — a to wychodzi dopiero u brata. Kosztowało to
+    już jedno wydanie, więc niech pilnuje tego kod, a nie pamięć.
+    """
+    zarzuty = []
+    for kotwica in dokument.element.body.findall(".//{*}anchor"):
+        nazwy = [_nazwa(e) for e in kotwica]
+        oblewania = [n for n in nazwy if n.startswith("wrap")]
+        for oblewanie in oblewania:
+            pozniejsze = [n for n in PO_OBLEWANIU if n in nazwy]
+            if pozniejsze and nazwy.index(oblewanie) > nazwy.index(pozniejsze[0]):
+                zarzuty.append(f"<wp:{oblewanie}> stoi za <wp:{pozniejsze[0]}>")
+
+    for rPr in dokument.element.body.findall(".//{*}rPr"):
+        nazwy = [_nazwa(e) for e in rPr]
+        if "spacing" not in nazwy:
+            continue
+        pozniejsze = [n for n in PO_ROZSTRZELENIU if n in nazwy]
+        if pozniejsze and nazwy.index("spacing") > nazwy.index(pozniejsze[0]):
+            zarzuty.append(f"<w:spacing> stoi za <w:{pozniejsze[0]}>")
+    return zarzuty
 
 
 def ujednolic(plik: Path) -> dict[str, int]:
@@ -350,6 +403,11 @@ def ujednolic(plik: Path) -> dict[str, int]:
         else:
             _ustaw(akapit, TRESC, False)
             licznik["tresc"] += 1
+
+    zarzuty = _sprawdz_kolejnosc(dokument)
+    if zarzuty:
+        raise SystemExit(f"{plik.name}: nie zapisuję, bo Word odrzuci taki plik — "
+                         + "; ".join(sorted(set(zarzuty))))
 
     dokument.save(plik)
     return licznik
