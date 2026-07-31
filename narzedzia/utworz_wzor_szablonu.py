@@ -172,8 +172,9 @@ OPIS_POL = {
          "opcje": ["BDOT500", "GESUT", "EGiB"],
          "domyslne": ["BDOT500", "GESUT", "EGiB"],
          "aktywne_gdy": "opis_przebiegu_jest",
-         "podpowiedz": "Wejdą do sprawozdania po przecinku. Odznaczenie wszystkich "
-                       "daje „brak”."},
+         "wzor_wartosci": "{nr_roboty}-{opcja}.gml",
+         "podpowiedz": "Do sprawozdania wejdą jako nazwy plików GML, po przecinku. "
+                       "Odznaczenie wszystkich daje „brak”."},
     ],
 }
 

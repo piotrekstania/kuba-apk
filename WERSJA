@@ -1,2 +1,2 @@
-2026.07.31.26
-Pola sprawozdania przeniosły się do karty „Dokumenty do wygenerowania” i budzą się dopiero po zaznaczeniu sprawozdania — wcześniej są wyszarzone, a nie schowane. Zmiany w bazach danych zależą teraz od „Opisu przebiegu”: bez niego też są wyszarzone. Aktualizacja kasuje wreszcie szablony, których nie ma już w programie.
+2026.07.31.27
+Zmiany w bazach danych wychodzą teraz w sprawozdaniu jako nazwy plików GML — np. GK.6640.123.2026-BDOT500.gml — po przecinku. Bez zaznaczonej żadnej bazy nadal „brak”.

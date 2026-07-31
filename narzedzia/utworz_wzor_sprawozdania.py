@@ -72,7 +72,7 @@ def zbuduj() -> Path:
     akapit(dokument, "2. Zmiany w bazach danych", 12, pogrubienie=True, odstep_przed=20)
     akapit(dokument, "{%p if opis_przebiegu_jest and bazy %}")
     akapit(dokument, "Wyniki pracy geodezyjnej powodują zmiany w bazach danych: "
-                     "{{ bazy | join(', ') }}.")
+                     "{{ bazy_pliki | join(', ') }}")
     akapit(dokument, "{%p else %}")
     akapit(dokument, "Wyniki pracy geodezyjnej powodują zmiany w bazach danych: brak")
     akapit(dokument, "{%p endif %}")

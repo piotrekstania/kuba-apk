@@ -28,6 +28,7 @@ TYPY_PROSTE = {"text", "textarea", "date", "number", "select", "checkbox"}
 SUFIKSY_TERYT = ("_wojewodztwo", "_wojewodztwo_teryt", "_powiat", "_powiat_teryt",
                  "_gmina", "_gmina_teryt", "_obreb", "_obreb_teryt", "_obreb_numer")
 SUFIKSY_DATY = ("_iso", "_slownie")
+SUFIKSY_WYBORU = ("_pliki",)
 POLA_WYLICZANE = {"data_dzisiaj", "data_dzisiaj_slownie", "rok"}
 
 
@@ -42,6 +43,7 @@ class Pole:
     opcje: list[str] = field(default_factory=list)
     zawsze: list[str] = field(default_factory=list)   # pozycje zaznaczone na stałe
     domyslne: list[str] = field(default_factory=list)  # zaznaczone na start, ale odklikywalne
+    wzor_wartosci: str = ""     # np. "{nr_roboty}-{opcja}.gml" — wynik pod kluczem <pole>_pliki
     aktywne_gdy: str = ""       # pole jest wyszarzone, dopóki wskazany przełącznik
                                 # nie jest zaznaczony; "dokumenty:id" celuje w pozycję listy
     kolumny: list[dict[str, str]] = field(default_factory=list)   # tylko dla typ="tabela"
@@ -118,6 +120,7 @@ def wczytaj_szablon(plik: Path) -> Szablon:
             opcje=list(surowe.get("opcje", [])),
             zawsze=list(surowe.get("zawsze", [])),
             domyslne=list(surowe.get("domyslne", [])),
+            wzor_wartosci=surowe.get("wzor_wartosci", ""),
             aktywne_gdy=surowe.get("aktywne_gdy", ""),
             kolumny=list(surowe.get("kolumny", [])),
             domyslnie=str(surowe.get("domyslnie", "")),
@@ -133,6 +136,8 @@ def wczytaj_szablon(plik: Path) -> Szablon:
             znane.update(pole.klucz + sufiks for sufiks in SUFIKSY_TERYT)
         elif pole.typ == "date":
             znane.update(pole.klucz + sufiks for sufiks in SUFIKSY_DATY)
+        elif pole.typ == "wybor_wielokrotny":
+            znane.update(pole.klucz + sufiks for sufiks in SUFIKSY_WYBORU)
     for nazwa in _zmienne_szablonu(plik):
         if nazwa not in znane:
             szablon.pola.append(Pole(klucz=nazwa, etykieta=_etykieta_z_klucza(nazwa),

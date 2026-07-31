@@ -144,6 +144,17 @@ Wykonano: brak
 <p>Gdy pozycje mają wyjść jednym ciągiem po przecinku, użyj w Wordzie filtra
   <code>join</code>: <code>{{ '{{ bazy | join(\', \') }}' }}</code> da
   <em>BDOT500, GESUT, EGiB</em>.</p>
+<p>Jeśli w dokumencie ma się pokazać coś zbudowanego z zaznaczenia, a nie samo
+  zaznaczenie, dopisz do pola <code>"wzor_wartosci"</code>. Program przepuści przez
+  ten wzorzec każdą zaznaczoną pozycję i poda wynik pod kluczem
+  <code>&lt;pole&gt;_pliki</code>:</p>
+<pre>{"klucz": "bazy", "typ": "wybor_wielokrotny",
+ "opcje": ["BDOT500", "GESUT", "EGiB"],
+ "wzor_wartosci": "{nr_roboty}-{opcja}.gml"}</pre>
+<p>W Wordzie <code>{{ '{{ bazy_pliki | join(\', \') }}' }}</code> wypisze wtedy
+  <em>GK.6640.123.2026-BDOT500.gml, GK.6640.123.2026-GESUT.gml</em>.
+  We wzorcu użyjesz <code>{opcja}</code> na zaznaczoną pozycję i nazwy dowolnych
+  innych pól formularza w klamrach.</p>
 <pre>{"klucz": "spis_tresci", "etykieta": "Co wchodzi do operatu",
  "typ": "wybor_wielokrotny", "grupa": "Spis treści",
  "opcje": ["Spis treści", "Sprawozdanie techniczne", "Mapa porównania z terenem"],

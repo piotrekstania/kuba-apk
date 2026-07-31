@@ -98,6 +98,17 @@ def przygotuj_kontekst(szablon: Szablon, dane: dict[str, Any], ustawienia: dict[
                 rezerwacje.append((nazwa_licznika, dzis.year, numer))
             wzor = pole.domyslnie or "{numer}/{rok}"
             kontekst[pole.klucz] = wzor.format(numer=numer, numer3=f"{numer:03d}", rok=dzis.year)
+        elif pole.typ == "wybor_wielokrotny" and pole.wzor_wartosci:
+            # Zaznaczone pozycje przepuszczone przez wzorzec, np. „{nr_roboty}-{opcja}.gml”
+            # daje listę nazw plików GML oddawanych do ośrodka. Wzorzec siedzi w .json,
+            # więc zmiana konwencji nazw nie wymaga ruszania programu.
+            class _Luzny(dict):
+                def __missing__(self, klucz):     # brak pola we wzorcu nie może nic wywalić
+                    return ""
+            wybrane = kontekst.get(pole.klucz) or []
+            kontekst[f"{pole.klucz}_pliki"] = [
+                pole.wzor_wartosci.format_map(_Luzny(kontekst, opcja=opcja))
+                for opcja in wybrane]
         elif pole.typ == "teryt":
             wybor = kontekst.get(pole.klucz)
             kontekst.update(pola_teryt(pole.klucz, wybor if isinstance(wybor, dict) else {}))
