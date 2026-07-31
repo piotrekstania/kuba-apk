@@ -1,2 +1,2 @@
-2026.07.31.18
-W formularzu doszła karta „Dokumenty do wygenerowania”: zaznaczasz, które jeszcze pliki Worda mają powstać obok głównego. Wszystkie trafiają do tego samego katalogu operatu i dostają te same dane — numer roboty, numer operatu, daty i położenie. Lista pojawia się sama, gdy w katalogu szablonów jest więcej niż jeden plik, i nie ma nic wspólnego ze spisem treści.
+2026.07.31.19
+Pole I.Z.P.G zniknęło — okazało się tym samym co numer roboty. Numer roboty i numer operatu zajmują teraz po pół szerokości, tak jak daty poniżej.

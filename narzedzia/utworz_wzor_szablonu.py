@@ -87,7 +87,6 @@ def zbuduj() -> Path:
     akapit(dokument, "Nr roboty: {{ nr_roboty }}", 12, pogrubienie=True,
            wyrownanie=SRODEK, odstep_przed=36)
     akapit(dokument, "Nr operatu: {{ nr_operatu }}", 12, wyrownanie=SRODEK)
-    akapit(dokument, "I.Z.P.G: {{ izpg }}", 12, wyrownanie=SRODEK)
 
     akapit(dokument, "Województwo: {{ polozenie_wojewodztwo }}    "
                      "Powiat: {{ polozenie_powiat }}", 12, wyrownanie=SRODEK, odstep_przed=24)
@@ -122,13 +121,12 @@ OPIS_POL = {
     "wzor_nazwy": "Operat_{nr_roboty}",
     "licznik": "operat",
     "pola": [
+        # dwa pola w rzędzie: „polowa” to trzy z sześciu kolumn siatki
         {"klucz": "nr_roboty", "etykieta": "Nr roboty", "wymagane": True,
-         "grupa": "Robota", "szerokosc": "trzecia"},
+         "grupa": "Robota", "szerokosc": "polowa"},
         {"klucz": "nr_operatu", "etykieta": "Nr operatu", "typ": "auto_numer",
          "wymagane": True, "domyslnie": "{numer3}/{rok}",
-         "grupa": "Robota", "szerokosc": "trzecia"},
-        {"klucz": "izpg", "etykieta": "I.Z.P.G", "wymagane": True,
-         "grupa": "Robota", "szerokosc": "trzecia"},
+         "grupa": "Robota", "szerokosc": "polowa"},
 
         # obie daty w jednym rzędzie: „polowa” to trzy z sześciu kolumn siatki
         {"klucz": "data_zgloszenia", "etykieta": "Data zgłoszenia pracy geodezyjnej",

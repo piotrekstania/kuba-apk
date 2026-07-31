@@ -9,7 +9,7 @@
       "etykieta": "Nr roboty",
       "wymagane": true,
       "grupa": "Robota",
-      "szerokosc": "trzecia"
+      "szerokosc": "polowa"
     },
     {
       "klucz": "nr_operatu",
@@ -18,14 +18,7 @@
       "wymagane": true,
       "domyslnie": "{numer3}/{rok}",
       "grupa": "Robota",
-      "szerokosc": "trzecia"
-    },
-    {
-      "klucz": "izpg",
-      "etykieta": "I.Z.P.G",
-      "wymagane": true,
-      "grupa": "Robota",
-      "szerokosc": "trzecia"
+      "szerokosc": "polowa"
     },
     {
       "klucz": "data_zgloszenia",
