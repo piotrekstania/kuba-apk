@@ -332,7 +332,8 @@ async def generuj(request: Request, identyfikator: str, edytuj: int | None = Non
 
     tytul = kontekst.get("nr_roboty") or katalog.name
     if poprawiany:
-        db.zaktualizuj_dokument(poprawiany["id"], str(tytul), dane)
+        db.zaktualizuj_dokument(poprawiany["id"], str(tytul), dane,
+                                f"{katalog.name}/{plik.name}", katalog.name)
         dokument_id = poprawiany["id"]
     else:
         dokument_id = db.zapisz_dokument(

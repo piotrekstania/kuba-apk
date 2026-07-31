@@ -127,11 +127,18 @@ def zapisz_dokument(szablon: str, tytul: str, plik_docx: str, dane: dict[str, An
         return int(kursor.lastrowid)
 
 
-def zaktualizuj_dokument(dokument_id: int, tytul: str, dane: dict[str, Any]) -> None:
-    """Poprawiony operat zostaje tym samym wpisem — nie zakładamy nowego."""
+def zaktualizuj_dokument(dokument_id: int, tytul: str, dane: dict[str, Any],
+                         plik_docx: str, katalog: str) -> None:
+    """Poprawiony operat zostaje tym samym wpisem — nie zakładamy nowego.
+
+    Ścieżki też odświeżamy: gdy ktoś skasuje katalog operatu z Eksploratora, poprawianie
+    zakłada go od nowa i wpis musi wskazywać to, co naprawdę leży na dysku.
+    """
     with polacz() as con:
-        con.execute("UPDATE dokumenty SET tytul = ?, dane_json = ? WHERE id = ?",
-                    (tytul, json.dumps(dane, ensure_ascii=False), dokument_id))
+        con.execute(
+            "UPDATE dokumenty SET tytul = ?, dane_json = ?, plik_docx = ?, katalog = ?"
+            " WHERE id = ?",
+            (tytul, json.dumps(dane, ensure_ascii=False), plik_docx, katalog, dokument_id))
 
 
 def ustaw_pdf(dokument_id: int, plik_pdf: str) -> None:

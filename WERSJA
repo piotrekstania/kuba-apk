@@ -1,2 +1,2 @@
-2026.07.31.20
-Wszedł Twój szablon operatu. Na stronie startowej jest teraz jeden kafelek — „Operat”; sprawozdanie i protokoły dokłada się do niego checkboxem w formularzu, bo same bez operatu nie istnieją. Najważniejsze: „Popraw ten operat” nie nadaje już kolejnego numeru — zostaje ten sam numer i ten sam katalog, a pliki się nadpisują. Do zakładania nowej roboty z tymi samymi danymi służy osobne „Powiel jako nowy”.
+2026.07.31.21
+Wszedł Twój poprawiony szablon. Spis treści wygląda teraz jak lista: numery i tekst w równych kolumnach niezależnie od tego, czy numer ma jedną czy dwie cyfry, większe odstępy między pozycjami, a zawinięty wiersz trzyma się tekstu zamiast chować pod numer.
