@@ -184,8 +184,12 @@ def sprawdz_i_zaktualizuj() -> bool:
         print("Program działa dalej w starej wersji, nic nie zostało zepsute.")
         return False
 
-    ZNACZNIK_NOWOSCI.write_text(f"{numer}\n{opis}", encoding="utf-8")
-    print(f"Zaktualizowano do wersji {numer}. {opis}")
+    # Numer bierzemy z tego, co naprawdę przyszło w paczce, a nie z zapowiedzi:
+    # raw.githubusercontent potrafi być kilka minut do tyłu i ogłosić starszą wersję,
+    # niż zawiera pobrany .zip. Użytkownik ma zobaczyć numer, który faktycznie ma.
+    zainstalowany, opis_zainstalowany = wersja_lokalna()
+    ZNACZNIK_NOWOSCI.write_text(f"{zainstalowany}\n{opis_zainstalowany}", encoding="utf-8")
+    print(f"Zaktualizowano do wersji {zainstalowany}. {opis_zainstalowany}")
     print(f"Kopia poprzedniej wersji i bazy: {kopia}")
     return True
 
