@@ -119,8 +119,7 @@
                    ale program i tak zawsze je dokłada, więc nie ma czego gubić #}
                 <input type="checkbox" name="pole__{{ pole.klucz }}" value="{{ opcja }}"
                        {{ 'checked' if stale or opcja in wybrane }} {{ 'disabled' if stale }}>
-                {{ loop.index }}. {{ opcja }}
-                {% if stale %}<span class="szary">— zawsze</span>{% endif %}
+                {{ opcja }}
               </label>
             </li>
             {% endfor %}
