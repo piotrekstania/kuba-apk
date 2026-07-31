@@ -27,7 +27,9 @@
     <th class="waski">{{ klucz }}</th>
     <td>
       {% if wartosc is iterable and wartosc is not string %}
-        {{ wartosc | length }} wierszy
+        {# lista tekstów (np. spis treści) czyta się sama; lista słowników to tabela #}
+        {% if wartosc and wartosc[0] is string %}{{ wartosc | join('; ') }}
+        {% else %}{{ wartosc | length }} wierszy{% endif %}
       {% else %}{{ wartosc }}{% endif %}
     </td>
   </tr>

@@ -167,6 +167,13 @@ def odczytaj_dane(formularz, szablon: szablony.Szablon) -> dict[str, Any]:
                                                 if k.startswith("pole__")}
         elif pole.typ == "tabela":
             proste.setdefault(pole.klucz, [])
+        elif pole.typ == "wybor_wielokrotny":
+            # Kolejność bierzemy z listy opcji, nie z formularza, a pozycje „zawsze”
+            # dokładamy niezależnie od tego, co przyszło — w formularzu są wyłączone,
+            # więc przeglądarka i tak ich nie wysyła.
+            zaznaczone = set(formularz.getlist(f"pole__{pole.klucz}"))
+            proste[pole.klucz] = [o for o in pole.opcje
+                                  if o in zaznaczone or o in pole.zawsze]
         elif pole.typ == "teryt":
             # cztery listy rozwijane przychodzą jako pole__polozenie__gmina itd.;
             # scalamy je w jeden słownik identyfikatorów, żeby walidacja „wymagane”

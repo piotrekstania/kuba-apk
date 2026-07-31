@@ -117,6 +117,24 @@
 <p class="szary">Bez żadnego z nich generowanie plików .docx działa normalnie; nie działa tylko
   przycisk „Pobierz PDF" i łączenie dokumentów w jeden PDF.</p>
 
+<h2 id="spis">Listy wielokrotnego wyboru (np. spis treści)</h2>
+<p>Pole typu <code>wybor_wielokrotny</code> daje w formularzu listę do odhaczenia,
+  a do dokumentu wpuszcza <strong>tylko zaznaczone pozycje</strong>. Pozycje wpisane
+  w <code>"zawsze"</code> są zaznaczone na stałe — widać je, ale nie da się ich odznaczyć.</p>
+<pre>{"klucz": "spis_tresci", "etykieta": "Co wchodzi do operatu",
+ "typ": "wybor_wielokrotny", "grupa": "Spis treści",
+ "opcje": ["Spis treści", "Sprawozdanie techniczne", "Mapa porównania z terenem"],
+ "zawsze": ["Spis treści", "Sprawozdanie techniczne"]}</pre>
+<p>W Wordzie wypisujesz je pętlą po akapitach. Pamiętaj, że akapit ze znacznikiem
+  <code>{{ '{%p' }}</code> znika w całości, więc pętla i treść muszą być
+  w <strong>osobnych akapitach</strong>:</p>
+<pre>{{ '{%p for pozycja in spis_tresci %}' }}   ← osobny akapit
+{{ '{{ loop.index }}' }}. {{ '{{ pozycja }}' }}          ← treść, powtórzy się dla każdej pozycji
+{{ '{%p endfor %}' }}                ← osobny akapit</pre>
+<p><code>{{ '{{ loop.index }}' }}</code> numeruje od nowa, więc gdy czegoś nie zaznaczysz,
+  numeracja w dokumencie nie ma dziur. Kolejność zawsze wynika z listy w pliku .json,
+  a nie z tego, w jakiej kolejności klikałeś.</p>
+
 <h2 id="teryt">Położenie z list: województwo → powiat → jednostka ewidencyjna → obręb</h2>
 <p>Zamiast wpisywać ręcznie powiat, gminę i obręb, możesz mieć <strong>cztery listy rozwijane</strong>
   z oficjalnymi danymi. Wybierasz województwo, zawężają się powiaty, potem jednostki ewidencyjne,
@@ -232,7 +250,8 @@
   <code>select</code>, <code>checkbox</code>, <code>tabela</code>,
   <code>auto_numer</code> (kolejny numer nadawany automatycznie),
   <code>teryt</code> (<a href="#teryt">listy województwo → powiat → jednostka
-  ewidencyjna → obręb</a>).</p>
+  ewidencyjna → obręb</a>), <code>wybor_wielokrotny</code>
+  (<a href="#spis">lista do odhaczenia</a>).</p>
 <p class="szary">Dane, które nie zmieniają się między robotami — Twoje nazwisko, numer
   uprawnień, pieczątka firmy — wpisz po prostu na stałe w szablon Worda. Nie ma sensu
   klikać ich za każdym razem ani trzymać w programie.</p>

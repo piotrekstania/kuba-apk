@@ -40,6 +40,7 @@ class Pole:
     grupa: str = "Dane"
     podpowiedz: str = ""
     opcje: list[str] = field(default_factory=list)
+    zawsze: list[str] = field(default_factory=list)   # pozycje zaznaczone na stałe
     kolumny: list[dict[str, str]] = field(default_factory=list)   # tylko dla typ="tabela"
     domyslnie: str = ""
     zrodlo: str = ""            # "ustawienia" = bierz z danych stałych, nie pokazuj w formularzu
@@ -110,6 +111,7 @@ def wczytaj_szablon(plik: Path) -> Szablon:
             grupa=surowe.get("grupa", "Dane"),
             podpowiedz=surowe.get("podpowiedz", ""),
             opcje=list(surowe.get("opcje", [])),
+            zawsze=list(surowe.get("zawsze", [])),
             kolumny=list(surowe.get("kolumny", [])),
             domyslnie=str(surowe.get("domyslnie", "")),
             zrodlo=surowe.get("zrodlo", ""),

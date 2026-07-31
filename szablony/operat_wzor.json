@@ -76,6 +76,32 @@
       "grupa": "Położenie",
       "szerokosc": "polowa",
       "podpowiedz": "np. 123/4 albo kilka po przecinku: 123/4, 123/5, 124"
+    },
+    {
+      "klucz": "spis_tresci",
+      "etykieta": "Co wchodzi do operatu",
+      "typ": "wybor_wielokrotny",
+      "grupa": "Spis treści",
+      "opcje": [
+        "Spis treści",
+        "Sprawozdanie techniczne",
+        "Mapa porównania z terenem",
+        "Szkic ilustrujący rozmieszczenie punktów szczegółów terenowych",
+        "Wykaz pomierzonych lub obliczonych współrzędnych punktów szczegółów terenowych",
+        "Wykaz zmian danych ewidencyjnych budynku",
+        "Wykaz zmian danych ewidencyjnych",
+        "Protokół ustalenie przebiegu granic działek ewidencyjnych",
+        "Protokół wznowienie znaków granicznych, wyznaczenie punktów granicznych",
+        "Protokół z czynności przyjęcia granic nieruchomości",
+        "Mapa z projektem podziału nieruchomości",
+        "Zawiadomienia stron",
+        "Pełnomocnictwa stron"
+      ],
+      "zawsze": [
+        "Spis treści",
+        "Sprawozdanie techniczne"
+      ],
+      "podpowiedz": "Do dokumentu trafią tylko zaznaczone pozycje, w tej kolejności."
     }
   ]
 }

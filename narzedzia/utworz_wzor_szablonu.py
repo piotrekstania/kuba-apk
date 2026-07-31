@@ -21,6 +21,25 @@ from docx.shared import Pt
 sys.path.insert(0, str(Path(__file__).resolve().parent.parent))
 from app.config import SZABLONY  # noqa: E402
 
+# Pozycje spisu treści operatu. Dwie pierwsze są w każdym operacie, więc w formularzu
+# stoją zaznaczone i wyłączone — widać je, ale nie da się ich odznaczyć.
+SPIS_TRESCI = [
+    "Spis treści",
+    "Sprawozdanie techniczne",
+    "Mapa porównania z terenem",
+    "Szkic ilustrujący rozmieszczenie punktów szczegółów terenowych",
+    "Wykaz pomierzonych lub obliczonych współrzędnych punktów szczegółów terenowych",
+    "Wykaz zmian danych ewidencyjnych budynku",
+    "Wykaz zmian danych ewidencyjnych",
+    "Protokół ustalenie przebiegu granic działek ewidencyjnych",
+    "Protokół wznowienie znaków granicznych, wyznaczenie punktów granicznych",
+    "Protokół z czynności przyjęcia granic nieruchomości",
+    "Mapa z projektem podziału nieruchomości",
+    "Zawiadomienia stron",
+    "Pełnomocnictwa stron",
+]
+SPIS_ZAWSZE = SPIS_TRESCI[:2]
+
 # Rodzaje prac geodezyjnych — nazewnictwo z formularza zgłoszenia pracy geodezyjnej.
 # Ostatnia pozycja jest tak długa celowo: to pełne brzmienie przepisu i w dokumencie
 # ma się wydrukować w całości.
@@ -84,6 +103,12 @@ def zbuduj() -> Path:
            wyrownanie=SRODEK)
     akapit(dokument, "({{ data_zakonczenia_slownie }})", 10, wyrownanie=SRODEK)
 
+    akapit(dokument, "SPIS TREŚCI", 14, pogrubienie=True, wyrownanie=SRODEK, odstep_przed=48)
+    # {%p for %} kasuje cały akapit ze znacznikiem, więc pętla i treść muszą być osobno
+    akapit(dokument, "{%p for pozycja in spis_tresci %}")
+    akapit(dokument, "{{ loop.index }}. {{ pozycja }}", 12, odstep_przed=4)
+    akapit(dokument, "{%p endfor %}")
+
     akapit(dokument, "Położenie: {{ polozenie }}", 10, odstep_przed=60)
 
     plik = SZABLONY / "operat_wzor.docx"
@@ -121,6 +146,11 @@ OPIS_POL = {
         {"klucz": "nr_dzialki", "etykieta": "Nr działki", "wymagane": True,
          "grupa": "Położenie", "szerokosc": "polowa",
          "podpowiedz": "np. 123/4 albo kilka po przecinku: 123/4, 123/5, 124"},
+
+        {"klucz": "spis_tresci", "etykieta": "Co wchodzi do operatu",
+         "typ": "wybor_wielokrotny", "grupa": "Spis treści",
+         "opcje": SPIS_TRESCI, "zawsze": SPIS_ZAWSZE,
+         "podpowiedz": "Do dokumentu trafią tylko zaznaczone pozycje, w tej kolejności."},
     ],
 }
 

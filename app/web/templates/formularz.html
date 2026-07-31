@@ -106,6 +106,28 @@
           </select>
         </div>
 
+        {% elif pole.typ == 'wybor_wielokrotny' %}
+        {% set wybrane = wartosc if wartosc is iterable and wartosc is not string else pole.zawsze %}
+        <div class="pole pelna">
+          <label>{{ pole.etykieta }}{% if pole.wymagane %} <span class="gwiazdka">*</span>{% endif %}</label>
+          <ul class="lista-wyboru">
+            {% for opcja in pole.opcje %}
+            {% set stale = opcja in pole.zawsze %}
+            <li{% if stale %} class="stale"{% endif %}>
+              <label>
+                {# pozycje obowiązkowe są zaznaczone i wyłączone — przeglądarka ich nie wyśle,
+                   ale program i tak zawsze je dokłada, więc nie ma czego gubić #}
+                <input type="checkbox" name="pole__{{ pole.klucz }}" value="{{ opcja }}"
+                       {{ 'checked' if stale or opcja in wybrane }} {{ 'disabled' if stale }}>
+                {{ loop.index }}. {{ opcja }}
+                {% if stale %}<span class="szary">— zawsze</span>{% endif %}
+              </label>
+            </li>
+            {% endfor %}
+          </ul>
+          {% if pole.podpowiedz %}<p class="podpowiedz">{{ pole.podpowiedz }}</p>{% endif %}
+        </div>
+
         {% elif pole.typ == 'checkbox' %}
         <div class="pole {{ pole.szerokosc }} przelacznik">
           <label><input type="checkbox" name="pole__{{ pole.klucz }}" {{ 'checked' if wartosc }}>
