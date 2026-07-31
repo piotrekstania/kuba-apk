@@ -9,7 +9,7 @@ i w [README.md](README.md).
 Odbiorcą jest **brat użytkownika — geodeta**. Nie jest programistą. Ma dostać narzędzie,
 które zastępuje ręczne przeklejanie danych do formatek w Wordzie:
 
-1. wypełnia formularz w przeglądarce (dane roboty, działki, wykaz współrzędnych),
+1. wypełnia formularz w przeglądarce (dane roboty, położenie działki),
 2. dostaje **gotowy plik Worda** — to jest główny produkt, nie PDF,
 3. czasem robi z niego PDF i **skleja z innymi PDF-ami** (mapy, skany, załączniki do operatu).
 
@@ -28,13 +28,14 @@ zainstalowania/uruchomienia, bez instalowania Pythona.
 | Wordem sterujemy sami przez `pywin32`, **nie** przez `docx2pdf` | `docx2pdf` woła `Dispatch` bez `CoInitialize()`, a trasy FastAPI chodzą w wątkach roboczych — tam to pada; własny kod daje też `ExportAsFixedFormat` (jakość, zakładki) i pewne zamknięcie Worda |
 | **Nie** drugi, niezależny generator PDF (ReportLab/WeasyPrint) | oznaczałby dwa szablony do utrzymania, które po pół roku wyglądają inaczej |
 | **Nie** konwersja przez API w chmurze | dane osobowe + wymaga internetu |
-| SQLite | historia, numeracja, dane stałe — zero konfiguracji |
+| SQLite | historia, numeracja, dane TERYT — zero konfiguracji |
 | Aktualizacje: program sam pobiera `.zip` z GitHuba przy starcie | brat nie jest programistą; nie ma mowy o `git pull` ani o ręcznym rozpakowywaniu paczek na wierzch, bo prędzej czy później nadpisałby sobie szablony |
 | Wzorce szablonów w `szablony_wzorcowe/`, a nie w `szablony/` | `szablony/` to **jego** dane — jedyny katalog, który był i wysyłany, i edytowany przez użytkownika; wzorce kopiują się tam tylko gdy brakuje pliku |
 | Wersja schematu bazy w `PRAGMA user_version` + lista `MIGRACJE` | baza u brata to jedyny egzemplarz historii i numeracji; nowy kod na starej bazie musi umieć ją dociągnąć, a nie wywalić się na brakującej kolumnie |
 | **Żaden błąd nie wychodzi do przeglądarki po angielsku** — globalne uchwyty w `app/main.py` + `blad.html`, ślad do `dane/bledy.log` | brat nie odróżni `AttributeError` od awarii dysku; ma zobaczyć, co się stało, że jego dane są całe i co ma zrobić. Log to jedyny ślad po awarii, bo okno konsoli zamyka razem z programem |
 | TERYT: plik `TERC_Urzedowy` z GUS + obręby z ULDK, **wszystko cache'owane w SQLite** | oficjalna usługa GUS (TERYT ws1) wymaga rejestracji i hasła wysyłanego pocztą przez Urząd Statystyczny — u brata to dyskwalifikacja. Cache jest obowiązkowy, bo w terenie nie ma internetu |
-| Obręby dociągane **dla wybranej gminy**, nie dla całej Polski z góry | ULDK oddaje obręby jednej jednostki ewidencyjnej w jednym zapytaniu (~0,1 s), ale gmin jest 3240 — pobieranie wszystkiego z góry to kilkanaście minut przy pierwszym starcie za dane, z których brat użyje kilku |
+| Obręby dociągane **dla wybranej gminy**, a hurtowo tylko na wyraźne kliknięcie | ULDK oddaje obręby jednej jednostki w jednym zapytaniu (~0,1 s), więc na co dzień nie ma czego pobierać z góry. Przycisk „Pobierz obręby dla całej Polski” (z paskiem postępu) jest dla wyjazdu w teren bez zasięgu: 3240 zapytań, ok. 100 s, 54 tys. obrębów, baza rośnie do ~4,7 MB |
+| **Dane stałe usunięte z programu** — nazwisko, uprawnienia, pieczątka firmy | brat woli mieć je wpisane na sztywno w swoim szablonie Worda; to i tak nie zmienia się między robotami, a jeden ekran mniej to jeden ekran mniej do tłumaczenia. `db.wczytaj_ustawienia` i `zrodlo: "ustawienia"` zostają w kodzie, ale bez interfejsu |
 
 ## Zasada centralna
 
@@ -98,7 +99,7 @@ starą wersję (autor się na to nadział).
 | `app/pdf.py` | wykrywanie konwertera, DOCX→PDF, łączenie PDF-ów |
 | `app/aktualizacja.py` | pobieranie nowej wersji z GitHuba; **tylko biblioteka standardowa**, bo działa zanim `pip install` dołoży nowe zależności |
 | `WERSJA` | 1. linia = numer porównywany z GitHubem, reszta = opis pokazywany bratu raz po aktualizacji |
-| `app/db.py` | SQLite: `dokumenty`, `ustawienia`, `liczniki`, `teryt_*` |
+| `app/db.py` | SQLite: `dokumenty`, `liczniki`, `teryt_*` (`ustawienia` bez interfejsu) |
 | `app/teryt.py` | jednostki TERYT z GUS + obręby z ULDK; **tylko biblioteka standardowa** |
 | `app/main.py` | trasy FastAPI, parsowanie formularza (w tym tabel) |
 | `app/web/templates/` | widoki; `blad.html` to strona każdego niezłapanego wyjątku, a `pomoc.html` instrukcja dla brata — aktualizuj ją razem z funkcjami |
@@ -168,13 +169,26 @@ też brat. Interfejs w całości po polsku.
    (`pole__polozenie__wojewodztwo` … `__obreb`). `odczytaj_dane` scala je w jeden słownik
    pod kluczem pola — inaczej walidacja „wymagane” nigdy by go nie zobaczyła, a historia
    zapisywałaby cztery luźne wartości zamiast jednego wyboru.
+16. **Znaczniki wyliczane muszą być wpisane na listę w `szablony.py`.** Wszystko, czego nie
+   ma w `.json`, a jest w `.docx`, ląduje w formularzu jako puste pole tekstowe — więc
+   `{{ polozenie_gmina }}` czy `{{ data_dokumentu_slownie }}` robiły grupę „Pozostałe pola
+   z szablonu” pełną pól, których nikt nie ma wypełniać. Stąd `SUFIKSY_TERYT`, `SUFIKSY_DATY`
+   i `POLA_WYLICZANE`; dokładając nowy wyliczany znacznik w `generator.py`, dopisz go tam.
+17. **`hidden` w HTML-u nie działa, gdy CSS ustawia `display`.** Reguła
+   `button, .glowny, .wtorny { display: inline-block }` przebijała domyślne `[hidden]`
+   przeglądarki i przycisk „Przerwij” był widoczny zawsze. Stąd `[hidden] { display: none
+   !important }` na górze `style.css`.
+18. **Przerwanie puli wątków musi wychodzić z pętli po wynikach.** `ThreadPoolExecutor.map`
+   ma już w kolejce wszystkie zadania; gdy zadanie po ustawieniu flagi stopu tylko szybko
+   zwraca pustkę, licznik postępu i tak dobija do końca i wygląda to jak udane pobranie.
+   Tak samo znacznik „trwa” trzeba postawić **w funkcji startującej, pod zamkiem**, a nie
+   w wątku roboczym — inaczej dwa szybkie kliknięcia uruchamiają dwa pobierania naraz.
 
 ## Stan na teraz — przetestowane end-to-end
 
 Formularz → `.docx` → PDF → sklejenie kilku PDF-ów w jeden. Działa: powtarzalne wiersze tabeli
 (z wklejaniem z Excela), sekcje warunkowe, automatyczna numeracja (`001/2026`), daty w formacie
-`31.07.2026` i `31 lipca 2026 r.`, dane stałe podstawiane do każdego dokumentu, powielanie
-poprzedniego dokumentu, historia, ustawienia.
+`31.07.2026` i `31 lipca 2026 r.`, powielanie poprzedniego dokumentu, historia.
 
 Wykrywanie konwertera PDF: Word (COM) → LibreOffice zainstalowany → LibreOffice przenośny
 w katalogu `libreoffice/` obok programu. Stan widać w prawym górnym rogu aplikacji.
@@ -186,7 +200,7 @@ a jak go nie ma — pokazuje po polsku, że Word czeka pewnie z otwartym oknem d
 
 Aktualizacja sprawdzona na symulacji (skrypt jednorazowy, podstawione `file://` zamiast
 GitHuba, instalacja z bazą + własnym szablonem brata): przeżywają baza, historia, licznik
-numeracji, dane stałe, `wyniki/` i oba jego szablony; przychodzi nowy kod, nowe
+numeracji, `wyniki/` i oba jego szablony; przychodzi nowy kod, nowe
 `requirements.txt` i brakujące wzorce; powstaje kopia w `dane/kopie/`. Sprawdzone też
 ścieżki „brak internetu" i „wersja aktualna" — obie kończą się startem programu.
 Świeża instalacja i aktualizacja `.venv` przez `start.bat`: też przetestowane.
@@ -198,6 +212,11 @@ z ULDK przy pierwszym wybraniu gminy (0,12 s) i potem lecą z bazy (0,03 s). Wyb
 błąd walidacji i „Popraw i wygeneruj ponownie”. Do dokumentu wchodzą nazwy i identyfikatory
 osobnymi znacznikami (`{{ polozenie_obreb }}` = Baczków, `{{ polozenie_obreb_teryt }}` =
 120102_2.0001).
+
+Pobieranie obrębów dla całej Polski przetestowane w przeglądarce: 3240 jednostek w ok. 100 s
+(4 zapytania naraz), 54 251 obrębów w 3227 jednostkach — 13 jednostek ULDK nie zna i to
+normalne. Pasek postępu, przerwanie w połowie i „Pobierz brakujące” (wznawia tylko to,
+czego nie ma) działają; drugie kliknięcie w trakcie nie startuje drugiego pobierania.
 
 Numer operatu jest **rezerwowany przed wypełnieniem szablonu** (musi wejść do treści
 dokumentu), a po nieudanym generowaniu oddawany przez `db.zwolnij_numer` — warunkowym

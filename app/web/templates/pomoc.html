@@ -72,7 +72,7 @@
   program. Nie rusza:</p>
 <table class="lista">
   <tr><th class="waski">Co</th><th>Gdzie siedzi</th></tr>
-  <tr><td>historia dokumentów, numeracja, dane stałe</td><td><code>dane/</code></td></tr>
+  <tr><td>historia dokumentów, numeracja, pobrane dane TERYT</td><td><code>dane/</code></td></tr>
   <tr><td>wygenerowane operaty i PDF-y</td><td><code>wyniki/</code></td></tr>
   <tr><td><strong>Twoje szablony Worda</strong></td><td><code>szablony/</code></td></tr>
 </table>
@@ -146,8 +146,12 @@
   Program pobiera listę sam przy pierwszym uruchomieniu i zapisuje u siebie, więc
   <strong>potem działa bez internetu</strong>. Obręby dociągają się przy pierwszym wybraniu
   danej gminy (ułamek sekundy) i też zostają zapamiętane. Odświeżanie ręczne jest
-  w <a href="/ustawienia#teryt">Danych stałych</a>, na dole strony — przyda się raz na rok,
+  w <a href="/ustawienia#teryt">Ustawieniach</a> — przyda się raz na rok,
   gdy zmieni się podział administracyjny.</p>
+<p class="szary">Jeśli wybierasz się w teren bez zasięgu, w Ustawieniach jest przycisk
+  <strong>„Pobierz obręby dla całej Polski”</strong>. Ściąga z góry obręby wszystkich
+  jednostek ewidencyjnych w kraju — trwa kilka minut, pokazuje pasek postępu i można
+  je przerwać oraz dokończyć później.</p>
 <p class="szary">Gmin miejsko-wiejskich nie ma na liście jako jednej pozycji — są rozbite na
   <em>miasto</em> i <em>obszar wiejski</em>, bo tak wygląda podział na jednostki ewidencyjne
   w ewidencji gruntów.</p>
@@ -186,8 +190,9 @@
   <code>select</code>, <code>checkbox</code>, <code>tabela</code>,
   <code>auto_numer</code> (kolejny numer nadawany automatycznie),
   <code>teryt</code> (<a href="#teryt">listy województwo → powiat → jednostka
-  ewidencyjna → obręb</a>).
-  Dodatkowo <code>"zrodlo": "ustawienia"</code> chowa pole z formularza i bierze wartość
-  z zakładki <a href="/ustawienia">Dane stałe</a>.</p>
+  ewidencyjna → obręb</a>).</p>
+<p class="szary">Dane, które nie zmieniają się między robotami — Twoje nazwisko, numer
+  uprawnień, pieczątka firmy — wpisz po prostu na stałe w szablon Worda. Nie ma sensu
+  klikać ich za każdym razem ani trzymać w programie.</p>
 
 {% endblock %}

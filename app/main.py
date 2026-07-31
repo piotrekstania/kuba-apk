@@ -6,7 +6,6 @@ ani multitenancy — to celowe uproszczenie.
 from __future__ import annotations
 
 import json
-import re
 import shutil
 import threading
 import traceback
@@ -109,7 +108,7 @@ def blad_nieprzewidziany(request: Request, wyjatek: Exception) -> HTMLResponse:
     return strona_bledu(
         request,
         "Coś poszło nie tak",
-        "Program nie dokończył tej czynności. Twoje dokumenty, dane stałe i numeracja "
+        "Program nie dokończył tej czynności. Twoje dokumenty, szablony i numeracja "
         "są nietknięte — nic nie zostało skasowane. Spróbuj jeszcze raz; jeśli błąd wraca, "
         "rozwiń szczegóły poniżej i pokaż je bratu.",
         zapisz_blad(request, wyjatek),
@@ -461,28 +460,18 @@ async def scal(request: Request):
     return FileResponse(wynik, filename=wynik.name, media_type="application/pdf")
 
 
-# --- ustawienia (dane stałe) -------------------------------------------------
+# --- ustawienia --------------------------------------------------------------
+#
+# Dane stałe geodety (nazwisko, uprawnienia, firma) miały tu swój formularz, ale brat
+# woli mieć je wpisane na sztywno w swoich szablonach Worda — i ma rację, bo to i tak
+# jego pieczątka, a nie coś, co zmienia się między robotami. Ustawienia zostają dla
+# rzeczy, które program musi trzymać u siebie: danych TERYT.
 
 @app.get("/ustawienia", response_class=HTMLResponse)
-def ustawienia_formularz(request: Request, zapisano: bool = False,
-                         komunikat: str | None = None, blad: str | None = None):
-    return _widok(request, "ustawienia.html", ustawienia=db.wczytaj_ustawienia(),
-                  zapisano=zapisano, komunikat=komunikat, blad=blad,
+def ustawienia_formularz(request: Request, komunikat: str | None = None,
+                         blad: str | None = None):
+    return _widok(request, "ustawienia.html", komunikat=komunikat, blad=blad,
                   teryt_stan=teryt.stan())
-
-
-@app.post("/ustawienia")
-async def ustawienia_zapis(request: Request):
-    formularz_danych = await request.form()
-    nowe: dict[str, str] = {}
-    klucze = formularz_danych.getlist("klucz")
-    wartosci = formularz_danych.getlist("wartosc")
-    for klucz, wartosc in zip(klucze, wartosci):
-        klucz = re.sub(r"[^a-z0-9_]", "", klucz.strip().lower().replace(" ", "_"))
-        if klucz:
-            nowe[klucz] = wartosc.strip()
-    db.zastap_ustawienia(nowe)
-    return RedirectResponse("/ustawienia?zapisano=1", status_code=303)
 
 
 # --- TERYT: listy do pól kaskadowych i pobieranie danych ---------------------
@@ -520,6 +509,24 @@ def teryt_aktualizuj(request: Request):
                                         "Szczegóły zapisały się w dane\\bledy.log."),
             status_code=303)
     return RedirectResponse(f"/ustawienia?komunikat={quote(komunikat)}", status_code=303)
+
+
+@app.post("/teryt/obreby-wszystkie")
+def teryt_obreby_wszystkie(od_nowa: bool = False):
+    """Startuje pobieranie obrębów dla całej Polski — trwa kilka minut, więc w tle."""
+    return JSONResponse({"ruszylo": teryt.uruchom_pobieranie_obrebow(od_nowa),
+                         "postep": teryt.postep()})
+
+
+@app.get("/teryt/postep")
+def teryt_postep():
+    return JSONResponse(teryt.postep())
+
+
+@app.post("/teryt/przerwij")
+def teryt_przerwij():
+    teryt.przerwij_pobieranie()
+    return JSONResponse({"postep": teryt.postep()})
 
 
 @app.post("/teryt/zapomnij-obreby")

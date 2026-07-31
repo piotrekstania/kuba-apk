@@ -1,2 +1,2 @@
-2026.07.31.5
-Położenie działki wybierasz teraz z list: województwo, powiat, jednostka ewidencyjna, obręb. Dane pochodzą z rejestru TERYT (GUS) i z serwisu ULDK (GUGiK), pobierają się same przy pierwszym uruchomieniu i zostają na komputerze, więc program działa też bez internetu. Do dokumentu wchodzą i nazwy, i identyfikatory TERYT — spis znaczników do wstawienia w Wordzie masz w „Jak edytować szablon”, a ręczne odświeżanie list w „Dane stałe”.
+2026.07.31.6
+Formularz jest teraz przycięty do danych roboty i położenia działki — resztę sekcji dołożymy po kolei, tak jak ustalimy. Ekran „Dane stałe” zniknął: nazwisko, uprawnienia i pieczątkę wpisz na stałe w swoim szablonie Worda. W Ustawieniach doszedł przycisk „Pobierz obręby dla całej Polski” z paskiem postępu — ściąga obręby wszystkich gmin w kraju (kilka minut), żeby dało się pracować w terenie bez internetu; można go przerwać i dokończyć później.

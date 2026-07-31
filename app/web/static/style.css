@@ -12,6 +12,10 @@
 
 * { box-sizing: border-box; }
 
+/* Reguły niżej ustawiają `display` przyciskom, a to przebija domyślne [hidden]
+   z przeglądarki — bez tego atrybut `hidden` w HTML-u nic by nie robił. */
+[hidden] { display: none !important; }
+
 body {
   margin: 0;
   font: 15px/1.55 "Segoe UI", system-ui, -apple-system, sans-serif;
@@ -99,6 +103,13 @@ table.wiersze td { padding: 4px 6px; }
 th.waski { width: 220px; }
 .akcje a { margin-right: 10px; font-size: 13px; }
 .rzad-pliku { display: flex; gap: 8px; align-items: center; margin-bottom: 8px; }
+
+/* pasek postępu pobierania obrębów */
+progress { width: 100%; height: 14px; margin-top: 4px;
+           border: 1px solid var(--linia); border-radius: 999px; overflow: hidden; }
+progress::-webkit-progress-bar { background: #eceff3; }
+progress::-webkit-progress-value { background: var(--akcent); }
+progress::-moz-progress-bar { background: var(--akcent); }
 
 /* pole TERYT: cztery listy w jednym rzędzie */
 .teryt-siatka { display: grid; grid-template-columns: repeat(4, 1fr); gap: 10px; }

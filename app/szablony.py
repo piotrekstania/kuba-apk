@@ -22,6 +22,14 @@ from .config import SZABLONY
 
 TYPY_PROSTE = {"text", "textarea", "date", "number", "select", "checkbox"}
 
+# Znaczniki, które program **wylicza sam** z innych pól — nie wolno ich pokazać
+# w formularzu jako pustych pól do wpisania. Muszą się zgadzać z tym, co dokłada
+# `generator.przygotuj_kontekst` i `generator.pola_teryt`.
+SUFIKSY_TERYT = ("_wojewodztwo", "_wojewodztwo_teryt", "_powiat", "_powiat_teryt",
+                 "_gmina", "_gmina_teryt", "_obreb", "_obreb_teryt", "_obreb_numer")
+SUFIKSY_DATY = ("_iso", "_slownie")
+POLA_WYLICZANE = {"data_dzisiaj", "data_dzisiaj_slownie", "rok"}
+
 
 @dataclass
 class Pole:
@@ -110,7 +118,12 @@ def wczytaj_szablon(plik: Path) -> Szablon:
 
     # kolejność: najpierw pola opisane w .json, potem reszta wykryta w szablonie
     szablon.pola = list(opisane.values())
-    znane = set(opisane)
+    znane = set(opisane) | POLA_WYLICZANE
+    for pole in opisane.values():
+        if pole.typ == "teryt":
+            znane.update(pole.klucz + sufiks for sufiks in SUFIKSY_TERYT)
+        elif pole.typ == "date":
+            znane.update(pole.klucz + sufiks for sufiks in SUFIKSY_DATY)
     for nazwa in _zmienne_szablonu(plik):
         if nazwa not in znane:
             szablon.pola.append(Pole(klucz=nazwa, etykieta=_etykieta_z_klucza(nazwa),

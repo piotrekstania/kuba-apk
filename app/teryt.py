@@ -22,9 +22,11 @@ import csv
 import html
 import io
 import re
+import threading
 import urllib.parse
 import urllib.request
 import zipfile
+from concurrent.futures import ThreadPoolExecutor
 from datetime import datetime
 
 from . import db
@@ -232,3 +234,102 @@ def stan() -> dict[str, str | int]:
 
 def pusto() -> bool:
     return int(stan()["wojewodztw"]) == 0
+
+
+# --- pobieranie obrębów dla całej Polski -------------------------------------
+#
+# Ponad trzy tysiące zapytań, więc leci to w tle, z paskiem postępu i możliwością
+# przerwania. Zapisuje wątek główny tej roboty, a nie wątki pobierające — SQLite
+# nie lubi kilku piszących naraz, a i tak wąskim gardłem jest sieć.
+
+ROWNOLEGLE = 4                 # tyle zapytań naraz; więcej nie przyspiesza, a obciąża GUGiK
+
+_postep = {"trwa": False, "zrobione": 0, "wszystkich": 0, "pobranych": 0,
+           "gmina": "", "blad": "", "przerwane": False, "koniec": ""}
+_zamek = threading.Lock()
+_stop = threading.Event()
+
+
+def postep() -> dict:
+    with _zamek:
+        return dict(_postep)
+
+
+def przerwij_pobieranie() -> None:
+    _stop.set()
+
+
+def _gminy_do_pobrania(od_nowa: bool) -> list[str]:
+    with db.polacz() as con:
+        if od_nowa:
+            wiersze = con.execute(
+                "SELECT id FROM teryt_jednostki WHERE poziom = 'gmina' ORDER BY id").fetchall()
+        else:
+            # pomijamy te, które już mamy — dzięki temu przerwane pobieranie da się wznowić
+            wiersze = con.execute(
+                "SELECT id FROM teryt_jednostki WHERE poziom = 'gmina'"
+                " AND id NOT IN (SELECT DISTINCT gmina FROM teryt_obreby) ORDER BY id").fetchall()
+    return [w["id"] for w in wiersze]
+
+
+def pobierz_wszystkie_obreby(od_nowa: bool = False) -> None:
+    """Chodzi w osobnym wątku; stan czyta przeglądarka przez `postep()`."""
+    _stop.clear()
+    gminy = _gminy_do_pobrania(od_nowa)
+    with _zamek:
+        _postep.update({"trwa": True, "wszystkich": len(gminy)})
+
+    def zadanie(gmina: str):
+        if _stop.is_set():
+            return gmina, None
+        try:
+            return gmina, _pobierz_obreby(gmina)
+        except BladPobierania:
+            return gmina, None
+
+    przerwane = False
+    try:
+        with ThreadPoolExecutor(max_workers=ROWNOLEGLE) as pula:
+            for gmina, obreby in pula.map(zadanie, gminy):
+                # Po przerwaniu wychodzimy z pętli, zamiast doliczać pominięte gminy —
+                # inaczej pasek dobiegłby do końca i wyglądało to jak udane pobranie.
+                if _stop.is_set():
+                    przerwane = True
+                    break
+                if obreby:
+                    with db.polacz() as con:
+                        con.execute("DELETE FROM teryt_obreby WHERE gmina = ?", (gmina,))
+                        con.executemany(
+                            "INSERT OR REPLACE INTO teryt_obreby (id, gmina, nazwa)"
+                            " VALUES (?, ?, ?)",
+                            [(i, gmina, n) for i, n in obreby])
+                with _zamek:
+                    _postep["zrobione"] += 1
+                    _postep["gmina"] = gmina
+                    if obreby:
+                        _postep["pobranych"] += len(obreby)
+    except Exception as blad:                     # sieć potrafi paść w połowie
+        with _zamek:
+            _postep["blad"] = f"Pobieranie przerwał błąd: {blad}"
+    finally:
+        with _zamek:
+            _postep["trwa"] = False
+            _postep["przerwane"] = przerwane
+            _postep["koniec"] = datetime.now().isoformat(timespec="seconds")
+        _stop.clear()
+
+
+def uruchom_pobieranie_obrebow(od_nowa: bool = False) -> bool:
+    """False = już trwa, drugiego nie startujemy.
+
+    Znacznik „trwa” stawiamy **tutaj**, pod zamkiem, a nie w wątku roboczym: między
+    sprawdzeniem a startem wątku mieści się drugie kliknięcie i poleciałyby dwa
+    pobierania naraz, dopisując się do tego samego licznika postępu.
+    """
+    with _zamek:
+        if _postep["trwa"]:
+            return False
+        _postep.update({"trwa": True, "zrobione": 0, "wszystkich": 0, "pobranych": 0,
+                        "gmina": "", "blad": "", "przerwane": False, "koniec": ""})
+    threading.Thread(target=pobierz_wszystkie_obreby, args=(od_nowa,), daemon=True).start()
+    return True

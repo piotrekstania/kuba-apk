@@ -1,41 +1,8 @@
 {% extends "base.html" %}
-{% block tytul %}Dane stałe{% endblock %}
+{% block tytul %}Ustawienia{% endblock %}
 {% block tresc %}
 
-<h1>Dane stałe</h1>
-<p class="szary">Te wartości są podstawiane do <em>każdego</em> dokumentu — nie trzeba ich wpisywać
-  za każdym razem. W szablonie Worda używasz ich tak samo jak zwykłych pól, np.
-  <code>{{ '{{ uprawnienia_nr }}' }}</code>.</p>
-
-{% if zapisano %}<div class="komunikat">Zapisano.</div>{% endif %}
-
-<form method="post" action="/ustawienia">
-  <table class="lista" id="tabela-ustawien">
-    <tr><th class="waski">Nazwa pola w szablonie</th><th>Wartość</th><th></th></tr>
-    {% for klucz, wartosc in ustawienia.items() %}
-    <tr>
-      <td><input name="klucz" value="{{ klucz }}"></td>
-      <td><input name="wartosc" value="{{ wartosc }}"></td>
-      <td><button type="button" class="usun">×</button></td>
-    </tr>
-    {% endfor %}
-    {% if not ustawienia %}
-    {% for propozycja in ['geodeta_imie_nazwisko', 'uprawnienia_nr', 'firma_nazwa',
-                          'firma_adres', 'firma_nip', 'firma_telefon', 'firma_email'] %}
-    <tr>
-      <td><input name="klucz" value="{{ propozycja }}"></td>
-      <td><input name="wartosc" value=""></td>
-      <td><button type="button" class="usun">×</button></td>
-    </tr>
-    {% endfor %}
-    {% endif %}
-  </table>
-
-  <div class="pasek">
-    <button type="button" id="dodaj">+ dodaj pole</button>
-    <button class="glowny" type="submit">Zapisz</button>
-  </div>
-</form>
+<h1>Ustawienia</h1>
 
 <h2 id="teryt">Jednostki ewidencyjne (TERYT)</h2>
 <p class="szary">Lista województw, powiatów i jednostek ewidencyjnych pochodzi z rejestru
@@ -57,9 +24,9 @@
         {% endif %}
       </td></tr>
   <tr><th class="waski">Zapamiętane obręby</th>
-      <td>{{ teryt_stan.obrebow }}
-        <span class="szary">w {{ teryt_stan.gmin_z_obrebami }} jednostkach ewidencyjnych —
-          dociągają się z GUGiK-u przy pierwszym wybraniu danej gminy</span></td></tr>
+      <td id="stan-obrebow">{{ teryt_stan.obrebow }}
+        <span class="szary">w {{ teryt_stan.gmin_z_obrebami }} z {{ teryt_stan.gmin }}
+          jednostek ewidencyjnych</span></td></tr>
 </table>
 
 <div class="pasek">
@@ -69,22 +36,92 @@
   </form>
   <form method="post" action="/teryt/zapomnij-obreby"
         onsubmit="return confirm('Wyczyścić zapamiętane obręby? Pobiorą się na nowo.')">
-    <button type="submit">Pobierz obręby na nowo</button>
+    <button type="submit">Wyczyść zapamiętane obręby</button>
   </form>
 </div>
-<p class="podpowiedz">Pobieranie listy z GUS-u trwa kilka sekund. Dane, które już masz,
-  zostają nietknięte, dopóki nowe nie przyjdą w całości.</p>
+
+<h2>Obręby dla całej Polski</h2>
+<p class="szary">Normalnie obręby dociągają się same, gdy pierwszy raz wybierzesz daną gminę —
+  trwa to ułamek sekundy i nic nie trzeba klikać. Tutaj możesz pobrać je
+  <strong>z góry dla wszystkich jednostek ewidencyjnych w kraju</strong>, żeby potem
+  pracować całkiem bez internetu. To ponad trzy tysiące zapytań do serwisu GUGiK,
+  więc potrwa kilka minut — okno możesz zamknąć, pobieranie leci dalej.</p>
+
+<div id="postep-panel">
+  <div class="pasek">
+    <button class="glowny" id="start-obrebow" type="button">Pobierz obręby dla całej Polski</button>
+    <button id="wznow-obrebow" type="button">Pobierz brakujące</button>
+    <button class="niebezpieczny" id="stop-obrebow" type="button" hidden>Przerwij</button>
+  </div>
+  <progress id="postep-pasek" value="0" max="100" hidden></progress>
+  <p id="postep-opis" class="podpowiedz"></p>
+</div>
 
 <script>
-const tabela = document.querySelector('#tabela-ustawien');
-document.getElementById('dodaj').addEventListener('click', () => {
-  const wiersz = tabela.insertRow(-1);
-  wiersz.innerHTML = `<td><input name="klucz"></td><td><input name="wartosc"></td>
-                      <td><button type="button" class="usun">×</button></td>`;
+const pasek = document.getElementById('postep-pasek');
+const opis = document.getElementById('postep-opis');
+const przyciskStart = document.getElementById('start-obrebow');
+const przyciskWznow = document.getElementById('wznow-obrebow');
+const przyciskStop = document.getElementById('stop-obrebow');
+let odpytywanie = null;
+
+function pokaz(p) {
+  const trwa = p.trwa;
+  pasek.hidden = !trwa && !p.zrobione;
+  przyciskStop.hidden = !trwa;
+  przyciskStart.disabled = trwa;
+  przyciskWznow.disabled = trwa;
+
+  if (p.wszystkich) {
+    pasek.max = p.wszystkich;
+    pasek.value = p.zrobione;
+  }
+  if (trwa) {
+    const procent = p.wszystkich ? Math.round(100 * p.zrobione / p.wszystkich) : 0;
+    opis.textContent = `Pobrano ${p.zrobione} z ${p.wszystkich} jednostek (${procent}%) — `
+                     + `${p.pobranych} obrębów. Ostatnia: ${p.gmina}`;
+  } else if (p.blad) {
+    opis.textContent = p.blad;
+  } else if (p.przerwane) {
+    opis.textContent = `Przerwano po ${p.zrobione} jednostkach. `
+                     + `Kliknij „Pobierz brakujące”, żeby dokończyć.`;
+  } else if (p.koniec) {
+    opis.textContent = `Gotowe: ${p.zrobione} jednostek, ${p.pobranych} obrębów. `
+                     + `Obręby są teraz dostępne bez internetu.`;
+  }
+}
+
+async function odpytaj() {
+  const p = await (await fetch('/teryt/postep')).json();
+  pokaz(p);
+  if (!p.trwa && odpytywanie) {
+    clearInterval(odpytywanie);
+    odpytywanie = null;
+    if (p.koniec) setTimeout(() => location.reload(), 1500);   // odśwież liczniki w tabelce
+  }
+  return p;
+}
+
+function pilnuj() {
+  if (!odpytywanie) odpytywanie = setInterval(odpytaj, 1000);
+}
+
+async function start(odNowa) {
+  opis.textContent = 'Startuję…';
+  await fetch('/teryt/obreby-wszystkie?od_nowa=' + (odNowa ? 'true' : 'false'), {method: 'POST'});
+  pilnuj();
+}
+
+przyciskStart.addEventListener('click', () => start(true));
+przyciskWznow.addEventListener('click', () => start(false));
+przyciskStop.addEventListener('click', async () => {
+  przyciskStop.disabled = true;
+  await fetch('/teryt/przerwij', {method: 'POST'});
+  przyciskStop.disabled = false;
 });
-tabela.addEventListener('click', zdarzenie => {
-  if (zdarzenie.target.classList.contains('usun')) zdarzenie.target.closest('tr').remove();
-});
+
+// gdy pobieranie już trwa (np. po odświeżeniu strony), od razu podłącz się do postępu
+odpytaj().then(p => { if (p.trwa) pilnuj(); });
 </script>
 
 {% endblock %}
