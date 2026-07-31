@@ -35,6 +35,8 @@ zainstalowania/uruchomienia, bez instalowania Pythona.
 | **Żaden błąd nie wychodzi do przeglądarki po angielsku** — globalne uchwyty w `app/main.py` + `blad.html`, ślad do `dane/bledy.log` | brat nie odróżni `AttributeError` od awarii dysku; ma zobaczyć, co się stało, że jego dane są całe i co ma zrobić. Log to jedyny ślad po awarii, bo okno konsoli zamyka razem z programem |
 | TERYT: plik `TERC_Urzedowy` z GUS + obręby z ULDK, **wszystko cache'owane w SQLite** | oficjalna usługa GUS (TERYT ws1) wymaga rejestracji i hasła wysyłanego pocztą przez Urząd Statystyczny — u brata to dyskwalifikacja. Cache jest obowiązkowy, bo w terenie nie ma internetu |
 | Obręby dociągane **dla wybranej gminy**, a hurtowo tylko na wyraźne kliknięcie | ULDK oddaje obręby jednej jednostki w jednym zapytaniu (~0,1 s), więc na co dzień nie ma czego pobierać z góry. Przycisk „Pobierz obręby dla całej Polski” (z paskiem postępu) jest dla wyjazdu w teren bez zasięgu: 3240 zapytań, ok. 100 s, 54 tys. obrębów, baza rośnie do ~4,7 MB |
+| **Jeden operat = jeden katalog w `wyniki/`**, nazwany numerem operatu; scalony PDF nazywa się dokładnie jak numer roboty | brat i tak dokłada do operatu mapy i szkice Eksploratorem, a przepisy wymagają, żeby gotowy plik nazywał się numerem KERG. Katalog opisuje `operat.json`, żeby przeżył skopiowanie na inny dysk i utratę bazy |
+| Miniatury stron przez `pypdfium2` + `Pillow`, renderowane na serwerze | brat układa kolejność myszą, więc musi widzieć, co przeciąga. Renderowanie w przeglądarce oznaczałoby kilkanaście ramek z czytnikiem PDF, które połykają zdarzenia myszy; `pypdfium2` to jedno koło z pip, bez niczego do instalowania w systemie |
 | **Dane stałe usunięte z programu** — nazwisko, uprawnienia, pieczątka firmy | brat woli mieć je wpisane na sztywno w swoim szablonie Worda; to i tak nie zmienia się między robotami, a jeden ekran mniej to jeden ekran mniej do tłumaczenia. `db.wczytaj_ustawienia` i `zrodlo: "ustawienia"` zostają w kodzie, ale bez interfejsu |
 
 ## Zasada centralna
@@ -101,6 +103,8 @@ starą wersję (autor się na to nadział).
 | `WERSJA` | 1. linia = numer porównywany z GitHubem, reszta = opis pokazywany bratu raz po aktualizacji |
 | `app/db.py` | SQLite: `dokumenty`, `liczniki`, `teryt_*` (`ustawienia` bez interfejsu) |
 | `app/teryt.py` | jednostki TERYT z GUS + obręby z ULDK; **tylko biblioteka standardowa** |
+| `app/operaty.py` | katalog operatu: zakładanie, `operat.json`, lista plików do sklejenia |
+| `app/miniatury.py` | podgląd pierwszej strony PDF-a (pypdfium2 + Pillow) |
 | `app/main.py` | trasy FastAPI, parsowanie formularza (w tym tabel) |
 | `app/web/templates/` | widoki; `blad.html` to strona każdego niezłapanego wyjątku, a `pomoc.html` instrukcja dla brata — aktualizuj ją razem z funkcjami |
 | `narzedzia/utworz_wzor_szablonu.py` | generuje przykładowy szablon operatu do testów |

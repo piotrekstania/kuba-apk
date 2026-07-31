@@ -1,2 +1,2 @@
-2026.07.31.8
-Szablony przyjeżdżają teraz razem z programem i przy aktualizacji podmieniają się na nowe — nie ma już osobnych „wzorcowych” i „twoich”. Jeśli coś w formatce ma wyglądać inaczej, powiedz bratu; poprawka przyjdzie z kolejną aktualizacją. Poprzednia wersja szablonów zostaje w dane\kopie.
+2026.07.31.9
+Każdy operat dostaje teraz własny katalog w „wyniki”, nazwany numerem operatu — w środku spis_tresci.docx, opis roboty i pusty plik z numerem KERG, żebyś widział go w Eksploratorze. Do tego katalogu wkładasz mapy, szkice i wykaz z C-Geo. Zakładka „Łączenie PDF” pokazuje teraz miniatury plików z wybranego operatu: kolejność ustawiasz przeciągając myszą, pliki bokiem obracasz strzałkami, a niepotrzebne wyłączasz krzyżykiem. Gotowy PDF nazywa się dokładnie tak jak numer roboty. Wgrywania plików z dysku już nie ma — wystarczy włożyć je do katalogu.

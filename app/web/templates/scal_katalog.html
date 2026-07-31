@@ -1,0 +1,95 @@
+{% extends "base.html" %}
+{% block tytul %}Operat {{ opis.nr_operatu or katalog }}{% endblock %}
+{% block tresc %}
+
+<h1>Operat {{ opis.nr_operatu or katalog }}</h1>
+<p class="szary">Katalog <code>wyniki\{{ katalog }}</code>{% if opis.nr_roboty %} ·
+  nr roboty <strong>{{ opis.nr_roboty }}</strong>{% endif %}</p>
+
+{% if pozycje %}
+<p>Przeciągnij kafelki myszą, żeby ustawić kolejność. Plik, który przyszedł bokiem,
+  obróć strzałkami — obrót zapisze się w gotowym PDF-ie. Kafelek wyłączony krzyżykiem
+  nie wejdzie do dokumentu.</p>
+
+<form method="post" action="/scal/{{ katalog | urlencode }}">
+  <div class="kafelki" id="kafelki">
+    {% for pozycja in pozycje %}
+    <div class="kafelek" draggable="true" data-nazwa="{{ pozycja.nazwa }}">
+      <div class="kafelek-podglad">
+        <img loading="lazy" alt="{{ pozycja.nazwa }}"
+             src="/miniatura/{{ katalog | urlencode }}/{{ pozycja.nazwa | urlencode }}">
+      </div>
+      <p class="kafelek-nazwa" title="{{ pozycja.nazwa }}">{{ pozycja.nazwa }}</p>
+      <div class="kafelek-akcje">
+        <button type="button" class="obroc" data-kierunek="-90" title="Obróć w lewo">⟲</button>
+        <button type="button" class="obroc" data-kierunek="90" title="Obróć w prawo">⟳</button>
+        <button type="button" class="pomin" title="Nie dołączaj tego pliku">×</button>
+      </div>
+      <input type="hidden" name="plik" value="{{ pozycja.nazwa }}">
+      <input type="hidden" name="obrot__{{ pozycja.nazwa }}" value="0">
+    </div>
+    {% endfor %}
+  </div>
+
+  <div class="pasek">
+    <button class="glowny" type="submit">Złóż PDF: {{ wynik }}</button>
+    <a class="wtorny" href="/scal">Wróć do listy</a>
+  </div>
+  <p class="podpowiedz">Gotowy plik trafi do katalogu operatu pod nazwą
+    <code>{{ wynik }}</code> — dokładnie taką, jakiej wymagają przepisy.</p>
+</form>
+{% else %}
+<p>W tym katalogu nie ma jeszcze nic do sklejenia. Włóż do
+  <code>wyniki\{{ katalog }}</code> swoje pliki (PDF-y albo dokumenty Worda)
+  i odśwież tę stronę.</p>
+<div class="pasek"><a class="wtorny" href="/scal">Wróć do listy</a></div>
+{% endif %}
+
+<script>
+const siatka = document.getElementById('kafelki');
+let ciagniety = null;
+
+siatka?.addEventListener('dragstart', z => {
+  ciagniety = z.target.closest('.kafelek');
+  ciagniety.classList.add('ciagniety');
+  z.dataTransfer.effectAllowed = 'move';
+});
+
+siatka?.addEventListener('dragend', () => {
+  ciagniety?.classList.remove('ciagniety');
+  ciagniety = null;
+});
+
+siatka?.addEventListener('dragover', z => {
+  z.preventDefault();
+  const nad = z.target.closest('.kafelek');
+  if (!nad || nad === ciagniety || !ciagniety) return;
+  // wstawiamy przed albo za, zależnie od tego, po której stronie środka jest kursor
+  const prostokat = nad.getBoundingClientRect();
+  const zaSrodkiem = z.clientX > prostokat.left + prostokat.width / 2;
+  siatka.insertBefore(ciagniety, zaSrodkiem ? nad.nextSibling : nad);
+});
+
+siatka?.addEventListener('click', z => {
+  const kafelek = z.target.closest('.kafelek');
+  if (!kafelek) return;
+
+  if (z.target.classList.contains('obroc')) {
+    const pole = kafelek.querySelector('input[name^="obrot__"]');
+    const kat = (parseInt(pole.value || 0) + parseInt(z.target.dataset.kierunek) + 360) % 360;
+    pole.value = kat;
+    // obracamy sam podgląd w przeglądarce — nie ma po co pytać serwera o nowy obrazek
+    kafelek.querySelector('img').style.transform = `rotate(${kat}deg)`;
+    kafelek.querySelector('.kafelek-podglad').classList.toggle('bokiem', kat % 180 !== 0);
+  }
+
+  if (z.target.classList.contains('pomin')) {
+    const wylaczony = kafelek.classList.toggle('pominiety');
+    kafelek.querySelectorAll('input').forEach(pole => pole.disabled = wylaczony);
+    z.target.textContent = wylaczony ? '↺' : '×';
+    z.target.title = wylaczony ? 'Dołącz z powrotem' : 'Nie dołączaj tego pliku';
+  }
+});
+</script>
+
+{% endblock %}

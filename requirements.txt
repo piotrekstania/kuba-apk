@@ -6,6 +6,11 @@ docxtpl==0.20.2
 python-docx==1.2.0
 pypdf==6.14.2
 
+# Miniatury stron PDF na stronie układania kolejności. pypdfium2 to jedno koło z pip
+# (silnik pdfium w środku, nic do instalowania w systemie), Pillow zapisuje wynik do PNG.
+pypdfium2==5.12.1
+pillow==12.3.0
+
 # Windows: sterowanie Microsoft Wordem przez COM (DOCX -> PDF, wierność 1:1).
 # Na Linuksie/macOS instalacja się pomija i zostaje ścieżka przez LibreOffice.
 pywin32==312 ; sys_platform == "win32"

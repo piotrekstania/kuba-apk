@@ -163,14 +163,43 @@
   <em>miasto</em> i <em>obszar wiejski</em>, bo tak wygląda podział na jednostki ewidencyjne
   w ewidencji gruntów.</p>
 
-<h2 id="scalanie">Co można dołączyć do scalonego PDF-a</h2>
-<p>Na stronie <a href="/scal">Łączenie PDF</a> możesz dorzucić własne pliki z dysku, ale tylko
-  takie, które program umie zamienić na strony PDF-a: <strong>.pdf</strong> oraz dokumenty Worda
-  (<code>.docx</code>, <code>.doc</code>, <code>.rtf</code>, <code>.odt</code>).</p>
-<p>Skany, mapy i zdjęcia (<code>.jpg</code>, <code>.png</code>, <code>.tif</code>)
-  trzeba najpierw zapisać jako PDF — w programie skanera albo otwierając plik
-  i wybierając <strong>Drukuj → Microsoft Print to PDF</strong>. Jeśli wskażesz coś innego,
-  program powie o tym od razu i nic nie sklei do połowy.</p>
+<h2 id="scalanie">Katalog operatu i składanie PDF-a</h2>
+<p>Przy każdym wygenerowaniu dokumentu program zakłada w <code>wyniki\</code>
+  <strong>osobny katalog nazwany numerem operatu</strong> (np. <code>001-2026</code>)
+  i wkłada do niego <code>spis_tresci.docx</code>. Ukośnik z numeru zamienia się
+  na myślnik, bo Windows nie przyjmie go w nazwie folderu.</p>
+<p>W tym katalogu znajdziesz jeszcze dwie rzeczy:</p>
+<table class="lista">
+  <tr><th class="waski">Plik</th><th>Do czego</th></tr>
+  <tr><td><code>operat.json</code></td>
+      <td>opis roboty dla programu — numer operatu, numer roboty, data, wpisane dane.
+          Dzięki niemu katalog jest samowystarczalny: przeżyje skopiowanie na inny dysk</td></tr>
+  <tr><td>pusty plik o nazwie numeru roboty</td>
+      <td>tylko po to, żebyś widział numer w Eksploratorze bez otwierania czegokolwiek.
+          Nie ma rozszerzenia, więc nigdy nie wejdzie do sklejania</td></tr>
+</table>
+
+<p><strong>Twoja robota:</strong> wrzuć do tego katalogu wszystko, co ma wejść do operatu —
+  mapy, szkice polowe, skany, wykaz współrzędnych wyeksportowany z C-Geo. Przyjmowane są
+  PDF-y i dokumenty Worda (<code>.docx</code>, <code>.doc</code>, <code>.rtf</code>,
+  <code>.odt</code>). Zdjęcia i skany zapisz najpierw jako PDF — w programie skanera albo
+  przez <strong>Drukuj → Microsoft Print to PDF</strong>.</p>
+
+<p>Potem wejdź w <a href="/scal">Łączenie PDF</a>, wybierz operat i zobaczysz kafelki
+  z podglądem pierwszej strony każdego pliku:</p>
+<table class="lista">
+  <tr><th class="waski">Co zrobić</th><th>Jak</th></tr>
+  <tr><td>ustawić kolejność</td><td>przeciągnij kafelek myszą w nowe miejsce</td></tr>
+  <tr><td>obrócić plik, który przyszedł bokiem</td>
+      <td>strzałki ⟲ ⟳ pod podglądem; obrót zapisuje się w gotowym PDF-ie</td></tr>
+  <tr><td>pominąć plik</td><td>krzyżyk × — kafelek zszarzeje i nie wejdzie do dokumentu</td></tr>
+</table>
+<p>Na starcie pierwszy jest spis treści, reszta alfabetycznie — więc nazywając pliki
+  <code>01_szkic.pdf</code>, <code>02_mapa.pdf</code> masz kolejność od razu dobrą
+  i nie musisz nic przeciągać.</p>
+<p><strong>Gotowy PDF nazywa się dokładnie tak, jak numer roboty</strong> — tego wymagają
+  przepisy — i trafia do tego samego katalogu operatu. Przy kolejnym składaniu nie wchodzi
+  sam w siebie, więc możesz poprawiać i składać do skutku.</p>
 
 <h2 id="bledy">Gdy program pokaże błąd</h2>
 <p>Nic nie ginie: dokumenty, historia, numeracja i dane stałe zostają na dysku takie, jakie były.

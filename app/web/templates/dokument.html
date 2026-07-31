@@ -5,10 +5,17 @@
 <h1>{{ dokument.tytul }}</h1>
 <p class="szary">Szablon: {{ dokument.szablon }} · utworzono {{ dokument.utworzono.replace('T', ' ') }}</p>
 
+{% if dokument.katalog %}
+<div class="komunikat">
+  Pliki tego operatu leżą w katalogu <code>wyniki\{{ dokument.katalog }}</code>.
+  Włóż tam mapy, szkice i wykaz współrzędnych z C-Geo, a potem złóż z tego jeden PDF.
+</div>
+{% endif %}
+
 <div class="pasek">
   <a class="glowny" href="/pobierz/{{ dokument.id }}/docx">Pobierz Word (.docx)</a>
   <a class="glowny" href="/pobierz/{{ dokument.id }}/pdf">Pobierz PDF</a>
-  <a class="wtorny" href="/scal?dokument={{ dokument.id }}">Połącz z innym PDF-em</a>
+  {% if dokument.katalog %}<a class="glowny" href="/scal/{{ dokument.katalog | urlencode }}">Złóż PDF operatu</a>{% endif %}
   <a class="wtorny" href="/nowy/{{ dokument.szablon }}?kopiuj={{ dokument.id }}">Popraw i wygeneruj ponownie</a>
 </div>
 
@@ -27,8 +34,8 @@
 </table>
 
 <form method="post" action="/dokument/{{ dokument.id }}/usun"
-      onsubmit="return confirm('Usunąć dokument i jego pliki?')">
-  <button class="niebezpieczny" type="submit">Usuń dokument</button>
+      onsubmit="return confirm('Usunąć operat wraz z całym katalogiem {{ dokument.katalog }} — także z plikami, które sam tam włożyłeś?')">
+  <button class="niebezpieczny" type="submit">Usuń operat i jego katalog</button>
 </form>
 
 {% endblock %}

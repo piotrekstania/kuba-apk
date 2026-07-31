@@ -213,7 +213,8 @@ def docx_na_pdf(zrodlo: Path, cel: Path | None = None) -> Path:
 
 
 def polacz_pdf(pliki: list[Path], cel: Path,
-               etykiety: dict[Path, str] | None = None) -> Path:
+               etykiety: dict[Path, str] | None = None,
+               obroty: dict[Path, int] | None = None) -> Path:
     """Skleja PDF-y w podanej kolejności.
 
     `etykiety` to nazwy do pokazania użytkownikowi — pliki robocze mają na dysku
@@ -226,8 +227,11 @@ def polacz_pdf(pliki: list[Path], cel: Path,
     for plik in pliki:
         # Nazwa pliku w komunikacie jest tu najważniejsza: przy sklejaniu kilkunastu
         # załączników użytkownik musi wiedzieć, który z nich jest do wymiany.
+        kat = (obroty or {}).get(plik, 0) % 360
         try:
             for strona in PdfReader(str(plik)).pages:
+                if kat:
+                    strona.rotate(kat)      # obrót zapisany w PDF-ie, bez przerysowywania
                 zapis.add_page(strona)
         except Exception as blad:
             raise BladPliku(

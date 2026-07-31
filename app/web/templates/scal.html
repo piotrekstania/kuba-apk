@@ -3,61 +3,32 @@
 {% block tresc %}
 
 <h1>Łączenie PDF</h1>
-<p class="szary">Zaznacz wygenerowane dokumenty i/lub wgraj gotowe pliki (mapy, skany, załączniki).
-  Liczba w polu „kolejność” decyduje o tym, co idzie pierwsze.</p>
+<p class="szary">Wybierz operat. Sklejasz zawartość jego katalogu — spis treści plus to,
+  co sam do niego włożyłeś: mapy, szkice, wykaz współrzędnych z C-Geo, skany.
+  Kolejność ustawisz myszą, a strony do góry nogami obrócisz jednym kliknięciem.</p>
 
-<form method="post" action="/scal" enctype="multipart/form-data">
-
-  <fieldset>
-    <legend>Twoje dokumenty</legend>
-    <table class="lista">
-      <tr><th class="waski"></th><th class="waski">Kolejność</th><th>Dokument</th><th>Data</th></tr>
-      {% for dokument in dokumenty %}
-      <tr>
-        <td><input type="checkbox" name="dok__{{ dokument.id }}"
-                   {{ 'checked' if wybrany == dokument.id }}></td>
-        <td><input class="maly" type="number" name="kol__{{ dokument.id }}"
-                   value="{{ loop.index }}" step="1"></td>
-        <td>{{ dokument.tytul }}</td>
-        <td class="szary">{{ dokument.utworzono.replace('T', ' ') }}</td>
-      </tr>
-      {% endfor %}
-    </table>
-  </fieldset>
-
-  <fieldset>
-    <legend>Pliki z dysku (.pdf lub dokument Worda)</legend>
-    <div id="wgrane"></div>
-    <button type="button" id="dodaj-plik">+ dodaj plik</button>
-    <p class="podpowiedz">Skany, mapy i zdjęcia (.jpg, .png) trzeba najpierw zapisać jako PDF —
-      w programie skanera albo przez Drukuj → Microsoft Print to PDF.</p>
-  </fieldset>
-
-  <div class="pole polowa">
-    <label for="nazwa">Nazwa pliku wynikowego</label>
-    <input id="nazwa" name="nazwa_wynikowa" value="Operat_scalony">
-  </div>
-
-  <div class="pasek">
-    <button class="glowny" type="submit">Połącz i pobierz PDF</button>
-    <a class="wtorny" href="/">Wróć</a>
-  </div>
-</form>
-
-<script>
-const pojemnik = document.getElementById('wgrane');
-function dodajPole() {
-  const rzad = document.createElement('div');
-  rzad.className = 'rzad-pliku';
-  rzad.innerHTML = `
-    <input class="maly" type="number" name="kol_plik" value="${100 + pojemnik.children.length}" step="1" title="kolejność">
-    <input type="file" name="pliki" accept=".pdf,.docx,.doc,.rtf,.odt">
-    <button type="button" class="usun">×</button>`;
-  rzad.querySelector('.usun').addEventListener('click', () => rzad.remove());
-  pojemnik.appendChild(rzad);
-}
-document.getElementById('dodaj-plik').addEventListener('click', dodajPole);
-dodajPole();
-</script>
+{% if operaty %}
+<table class="lista">
+  <tr>
+    <th class="waski">Nr operatu</th>
+    <th>Nr roboty (tak będzie się nazywał PDF)</th>
+    <th class="waski">Plików</th>
+    <th class="waski">Utworzono</th>
+    <th class="waski"></th>
+  </tr>
+  {% for operat in operaty %}
+  <tr>
+    <td><strong>{{ operat.nr_operatu }}</strong></td>
+    <td>{{ operat.nr_roboty or '—' }}</td>
+    <td>{{ operat.plikow }}</td>
+    <td class="szary">{{ operat.utworzono.replace('T', ' ')[:16] }}</td>
+    <td><a class="glowny" href="/scal/{{ operat.katalog | urlencode }}">Złóż PDF</a></td>
+  </tr>
+  {% endfor %}
+</table>
+{% else %}
+<p>Nie ma jeszcze żadnego operatu. <a href="/">Wygeneruj pierwszy dokument</a> — program
+  założy dla niego katalog, do którego dołożysz resztę plików.</p>
+{% endif %}
 
 {% endblock %}

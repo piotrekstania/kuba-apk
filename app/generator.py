@@ -9,8 +9,7 @@ from typing import Any
 
 from docxtpl import DocxTemplate
 
-from . import db, teryt
-from .config import WYNIKI
+from . import db, operaty, teryt
 from .szablony import Szablon
 
 MIESIACE = ["stycznia", "lutego", "marca", "kwietnia", "maja", "czerwca", "lipca",
@@ -122,22 +121,40 @@ def nazwa_pliku(szablon: Szablon, kontekst: dict[str, Any]) -> str:
     return bezpieczna_nazwa(baza)
 
 
-def generuj(szablon: Szablon, dane: dict[str, Any], ustawienia: dict[str, str]) -> tuple[Path, dict]:
-    """Zwraca ścieżkę do gotowego .docx oraz kontekst użyty do wypełnienia."""
+def _numer_operatu(szablon: Szablon, kontekst: dict[str, Any]) -> str:
+    for pole in szablon.pola:
+        if pole.typ == "auto_numer" and kontekst.get(pole.klucz):
+            return str(kontekst[pole.klucz])
+    return ""
+
+
+def generuj(szablon: Szablon, dane: dict[str, Any],
+            ustawienia: dict[str, str]) -> tuple[Path, dict, list[str]]:
+    """Zakłada katalog operatu i wkłada do niego spis treści.
+
+    Zwraca (plik .docx, kontekst, ostrzeżenia do pokazania użytkownikowi).
+    """
     rezerwacje: list[tuple[str, int, int]] = []
     kontekst = przygotuj_kontekst(szablon, dane, ustawienia, rezerwacje)
     try:
         dokument = DocxTemplate(szablon.plik)
         dokument.render(kontekst, autoescape=True)
 
+        # Katalog nazywa się numerem operatu; gdy szablon go nie ma, bierzemy nazwę
+        # z wzorca nazwy pliku, żeby robota i tak dostała swój folder.
+        numer = _numer_operatu(szablon, kontekst)
         znacznik = datetime.now().strftime("%Y%m%d-%H%M%S")
-        plik = WYNIKI / f"{nazwa_pliku(szablon, kontekst)}__{znacznik}.docx"
+        katalog, ostrzezenia = operaty.zaloz(
+            numer or f"{nazwa_pliku(szablon, kontekst)}__{znacznik}",
+            str(kontekst.get("nr_roboty", "")), szablon.id, dane)
+
+        plik = katalog / operaty.SPIS_TRESCI
         dokument.save(plik)
     except Exception:
         # Numer musi być znany przed wypełnianiem, bo wchodzi do treści dokumentu.
         # Gdy generowanie padnie, oddajemy go — inaczej każda literówka w szablonie
         # zostawiałaby dziurę w numeracji operatów.
-        for nazwa_licznika, rok, numer in rezerwacje:
-            db.zwolnij_numer(nazwa_licznika, rok, numer)
+        for nazwa_licznika, rok, numer_licznika in rezerwacje:
+            db.zwolnij_numer(nazwa_licznika, rok, numer_licznika)
         raise
-    return plik, kontekst
+    return plik, kontekst, ostrzezenia

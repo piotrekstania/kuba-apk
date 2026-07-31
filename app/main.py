@@ -18,16 +18,13 @@ from urllib.parse import quote
 
 from fastapi import FastAPI, Request
 from fastapi.exceptions import RequestValidationError
-from fastapi.responses import FileResponse, HTMLResponse, JSONResponse, RedirectResponse
+from fastapi.responses import (FileResponse, HTMLResponse, JSONResponse,
+                               RedirectResponse, Response)
 from fastapi.staticfiles import StaticFiles
 from fastapi.templating import Jinja2Templates
-# UWAGA: UploadFile bierzemy ze Starlette, nie z FastAPI. `fastapi.UploadFile` jest
-# *podklasą* tej klasy, a `request.form()` tworzy obiekty klasy nadrzędnej — przez
-# `isinstance(..., fastapi.UploadFile)` każdy wgrany plik po cichu wypadał ze scalania.
-from starlette.datastructures import UploadFile
 from starlette.exceptions import HTTPException as BladHTTP
 
-from . import aktualizacja, db, generator, pdf, szablony, teryt
+from . import aktualizacja, db, generator, miniatury, operaty, pdf, szablony, teryt
 from .config import DANE, WEB, WYNIKI
 
 
@@ -55,9 +52,6 @@ async def cykl_zycia(_: FastAPI):
 app = FastAPI(title="Generator operatów", lifespan=cykl_zycia)
 app.mount("/static", StaticFiles(directory=WEB / "static"), name="static")
 widoki = Jinja2Templates(directory=str(WEB / "templates"))
-
-PRZESLANE = DANE / "przeslane"
-PRZESLANE.mkdir(parents=True, exist_ok=True)
 
 DZIENNIK_BLEDOW = DANE / "bledy.log"
 
@@ -262,7 +256,7 @@ async def generuj(request: Request, identyfikator: str):
                       dzisiaj=date.today().isoformat())
 
     try:
-        plik, kontekst = generator.generuj(szablon, dane, db.wczytaj_ustawienia())
+        plik, kontekst, ostrzezenia = generator.generuj(szablon, dane, db.wczytaj_ustawienia())
     except Exception as blad:
         # Wracamy na formularz z kompletem wpisanych danych — utrata wykazu współrzędnych
         # przez literówkę w szablonie byłaby gorsza niż sam błąd.
@@ -274,9 +268,14 @@ async def generuj(request: Request, identyfikator: str):
                            f"szablon w Wordzie i kliknij ponownie. Szczegóły: {blad}",
                       dzisiaj=date.today().isoformat())
 
-    tytul = plik.stem.rsplit("__", 1)[0].replace("_", " ")
-    dokument_id = db.zapisz_dokument(szablon.id, tytul, plik.name, dane)
-    return RedirectResponse(f"/dokument/{dokument_id}", status_code=303)
+    katalog = plik.parent
+    tytul = kontekst.get("nr_roboty") or katalog.name
+    dokument_id = db.zapisz_dokument(
+        szablon.id, str(tytul), f"{katalog.name}/{plik.name}", dane, katalog.name)
+    adres = f"/dokument/{dokument_id}"
+    if ostrzezenia:
+        adres += "?blad=" + quote(" ".join(ostrzezenia))
+    return RedirectResponse(adres, status_code=303)
 
 
 @app.get("/dokument/{dokument_id}", response_class=HTMLResponse)
@@ -305,157 +304,136 @@ def pobierz_pdf(request: Request, dokument_id: int):
     if wiersz is None or not (WYNIKI / wiersz["plik_docx"]).exists():
         return RedirectResponse("/", status_code=303)
     zrodlo = WYNIKI / wiersz["plik_docx"]
-    cel = zrodlo.with_suffix(".pdf")
-    if not cel.exists():
-        try:
-            pdf.docx_na_pdf(zrodlo, cel)
-        except pdf.BrakKonwertera as blad:
-            return RedirectResponse(f"/dokument/{dokument_id}?blad={quote(str(blad))}",
-                                    status_code=303)
-        except Exception as blad:
-            # Word potrafi wywalić się na sto sposobów (aktywacja, uszkodzony profil,
-            # otwarte okno dialogowe) — dokument .docx nadal da się pobrać.
-            zapisz_blad(request, blad)
-            komunikat = ("Nie udało się zrobić PDF-a z tego dokumentu. Plik Worda (.docx) "
-                         "jest gotowy i możesz go pobrać poniżej. Szczegóły zapisały się "
-                         "w dane\\bledy.log.")
-            return RedirectResponse(f"/dokument/{dokument_id}?blad={quote(komunikat)}",
-                                    status_code=303)
-    db.ustaw_pdf(dokument_id, cel.name)
+    try:
+        # Konwersja ląduje poza katalogiem operatu (dane/podglad/), a nie obok .docx —
+        # inaczej spis treści pojawiłby się w sklejaniu drugi raz, jako osobny PDF.
+        cel = operaty.jako_pdf(zrodlo)
+    except pdf.BrakKonwertera as blad:
+        return RedirectResponse(f"/dokument/{dokument_id}?blad={quote(str(blad))}",
+                                status_code=303)
+    except Exception as blad:
+        # Word potrafi wywalić się na sto sposobów (aktywacja, uszkodzony profil,
+        # otwarte okno dialogowe) — dokument .docx nadal da się pobrać.
+        zapisz_blad(request, blad)
+        komunikat = ("Nie udało się zrobić PDF-a z tego dokumentu. Plik Worda (.docx) "
+                     "jest gotowy i możesz go pobrać poniżej. Szczegóły zapisały się "
+                     "w dane\\bledy.log.")
+        return RedirectResponse(f"/dokument/{dokument_id}?blad={quote(komunikat)}",
+                                status_code=303)
     return FileResponse(cel, filename=cel.name, media_type="application/pdf")
 
 
 @app.post("/dokument/{dokument_id}/usun")
 def usun(dokument_id: int):
+    """Kasuje operat razem z katalogiem — czyli także z plikami dołożonymi ręcznie.
+
+    Strona pyta o potwierdzenie, podając nazwę katalogu i liczbę plików w środku,
+    żeby nikt nie skasował map i skanów w ciemno.
+    """
     wiersz = db.dokument(dokument_id)
     if wiersz:
-        for nazwa in (wiersz["plik_docx"], wiersz["plik_pdf"]):
-            if nazwa:
-                (WYNIKI / nazwa).unlink(missing_ok=True)
+        katalog = operaty.katalog_po_nazwie(wiersz["katalog"] or "")
+        if katalog is not None:
+            operaty.usun_podglady(katalog)
+            shutil.rmtree(katalog, ignore_errors=True)
+        else:
+            for nazwa in (wiersz["plik_docx"], wiersz["plik_pdf"]):
+                if nazwa:
+                    (WYNIKI / nazwa).unlink(missing_ok=True)
         db.usun_dokument(dokument_id)
     return RedirectResponse("/", status_code=303)
 
 
 # --- łączenie PDF ------------------------------------------------------------
+#
+# Sklejamy zawartość **katalogu operatu**, a nie pliki wybierane z dysku: brat wkłada
+# tam swoje mapy i szkice zwykłym Eksploratorem, więc program ma tylko pokazać, co
+# w folderze leży, pozwolić ustawić kolejność myszą i obrócić to, co przyszło bokiem.
 
 @app.get("/scal", response_class=HTMLResponse)
-def scal_formularz(request: Request, dokument: int | None = None, komunikat: str | None = None):
-    return _widok(request, "scal.html", dokumenty=db.dokumenty(limit=50),
-                  wybrany=dokument, komunikat=komunikat)
+def scal_lista(request: Request, komunikat: str | None = None, blad: str | None = None):
+    return _widok(request, "scal.html", operaty=operaty.lista(),
+                  komunikat=komunikat, blad=blad)
 
 
-def _kolejnosc(wartosc: Any, domyslna: float) -> float:
-    """Pole „kolejność” bywa puste albo wpisane z przecinkiem — nie może wywalić scalania."""
+@app.get("/scal/{nazwa}", response_class=HTMLResponse)
+def scal_katalog(request: Request, nazwa: str, blad: str | None = None):
+    katalog = operaty.katalog_po_nazwie(nazwa)
+    if katalog is None:
+        return RedirectResponse("/scal", status_code=303)
+    # liczby stron nie liczymy: dla plików Worda wymagałaby konwersji całej listy,
+    # a miniatury i tak dociągają się leniwie, dopiero gdy przeglądarka o nie poprosi
+    pozycje = [{"nazwa": p.name, "word": p.suffix.lower() != ".pdf"}
+               for p in operaty.pliki(katalog)]
+    return _widok(request, "scal_katalog.html", katalog=katalog.name,
+                  opis=operaty.opis(katalog), pozycje=pozycje,
+                  wynik=operaty.nazwa_wyniku(katalog), blad=blad)
+
+
+@app.get("/miniatura/{nazwa}/{plik}")
+def miniatura(request: Request, nazwa: str, plik: str, obrot: int = 0):
+    """PNG pierwszej strony — dokumenty Worda są po drodze zamieniane na PDF."""
+    katalog = operaty.katalog_po_nazwie(nazwa)
+    if katalog is None:
+        return RedirectResponse("/scal", status_code=303)
+    zrodlo = katalog / Path(plik).name            # sama nazwa, żeby nie wyjść z katalogu
+    if not zrodlo.is_file():
+        return RedirectResponse("/scal", status_code=303)
     try:
-        return float(str(wartosc).replace(",", "."))
-    except (TypeError, ValueError):
-        return domyslna
+        obrazek = miniatury.miniatura(operaty.jako_pdf(zrodlo), obrot)
+    except pdf.BrakKonwertera:
+        return Response(status_code=204)          # brak konwertera: strona pokaże zastępnik
+    except Exception as blad:
+        zapisz_blad(request, blad)
+        return Response(status_code=204)
+    return Response(obrazek, media_type="image/png",
+                    headers={"Cache-Control": "no-store"})
 
 
-# Do scalenia przyjmujemy tylko to, co naprawdę umiemy zamienić na strony PDF-a.
-# Wszystko inne (skan .jpg, arkusz .xlsx) odrzucamy z wyjaśnieniem — bez tego
-# pypdf wywalał się dopiero przy sklejaniu, czyli po konwersji całej reszty.
-ROZSZERZENIA_PDF = {".pdf"}
-ROZSZERZENIA_WORD = {".docx", ".doc", ".rtf", ".odt"}
+@app.post("/scal/{nazwa}")
+async def scal_wykonaj(request: Request, nazwa: str):
+    katalog = operaty.katalog_po_nazwie(nazwa)
+    if katalog is None:
+        return RedirectResponse("/scal", status_code=303)
 
-
-@app.post("/scal")
-async def scal(request: Request):
     formularz_danych = await request.form()
-    elementy: list[tuple[float, Path]] = []
-    tymczasowe: list[Path] = []
-    etykiety: dict[Path, str] = {}      # ścieżka robocza -> nazwa, którą zna użytkownik
+    kolejnosc = formularz_danych.getlist("plik")          # nazwy w kolejności ustawionej myszą
+    dostepne = {p.name: p for p in operaty.pliki(katalog)}
 
-    def sprzataj() -> None:
-        for plik in tymczasowe:
-            plik.unlink(missing_ok=True)
+    def niepowodzenie(tresc: str):
+        return RedirectResponse(f"/scal/{quote(nazwa)}?blad={quote(tresc)}", status_code=303)
 
-    def niepowodzenie(tresc: str) -> HTMLResponse:
-        """Wraca na formularz z komunikatem zamiast wywalać serwer."""
-        sprzataj()
-        return _widok(request, "scal.html", dokumenty=db.dokumenty(limit=50),
-                      wybrany=None, blad=tresc)
-
-    # 1. dokumenty z historii (zaznaczone checkboxem, kolejność z pola liczbowego)
-    for klucz in formularz_danych:
-        if not klucz.startswith("dok__") or not klucz[len("dok__"):].isdigit():
+    wybrane: list[Path] = []
+    obroty: dict[Path, int] = {}
+    etykiety: dict[Path, str] = {}
+    for pozycja in kolejnosc:
+        zrodlo = dostepne.get(pozycja)
+        if zrodlo is None:
             continue
-        dokument_id = int(klucz[len("dok__"):])
-        wiersz = db.dokument(dokument_id)
-        if not wiersz:
-            continue
-        zrodlo = WYNIKI / wiersz["plik_docx"]
-        cel = zrodlo.with_suffix(".pdf")
-        if not cel.exists():
-            try:
-                pdf.docx_na_pdf(zrodlo, cel)
-            except pdf.BrakKonwertera as blad:
-                return niepowodzenie(str(blad))
-            except Exception as blad:
-                zapisz_blad(request, blad)
-                return niepowodzenie(
-                    f"Nie udało się zrobić PDF-a z dokumentu „{wiersz['tytul']}”. "
-                    "Sprawdź, czy Word nie czeka gdzieś z otwartym oknem, i spróbuj ponownie."
-                )
-        db.ustaw_pdf(dokument_id, cel.name)
-        etykiety[cel] = wiersz["tytul"]
-        elementy.append((_kolejnosc(formularz_danych.get(f"kol__{dokument_id}"), 50), cel))
-
-    # 2. pliki wgrane przez przeglądarkę
-    kolejnosci = formularz_danych.getlist("kol_plik")
-    for indeks, przeslany in enumerate(formularz_danych.getlist("pliki")):
-        if not isinstance(przeslany, UploadFile) or not przeslany.filename:
-            continue
-        # Nazwa pliku przychodzi z przeglądarki, więc nie wolno jej wkleić prosto
-        # w ścieżkę — „..\..\coś” zapisałoby się poza katalogiem dane\przeslane.
-        nazwa = Path(przeslany.filename).name
-        rozszerzenie = Path(nazwa).suffix.lower()
-        if rozszerzenie not in ROZSZERZENIA_PDF | ROZSZERZENIA_WORD:
+        try:
+            gotowy = operaty.jako_pdf(zrodlo)
+        except pdf.BrakKonwertera as blad:
+            return niepowodzenie(str(blad))
+        except Exception as blad:
+            zapisz_blad(request, blad)
             return niepowodzenie(
-                f"Pliku „{nazwa}” nie da się dołączyć — to nie jest PDF ani dokument Worda. "
-                "Skany, mapy i zdjęcia zapisz najpierw jako PDF (w programie skanera albo "
-                "otwierając plik i wybierając Drukuj → Microsoft Print to PDF)."
-            )
+                f"Nie udało się zamienić pliku „{zrodlo.name}” na PDF. "
+                "Otwórz go i sprawdź, czy wyświetla się normalnie.")
+        wybrane.append(gotowy)
+        etykiety[gotowy] = zrodlo.name
+        try:
+            obroty[gotowy] = int(formularz_danych.get(f"obrot__{pozycja}") or 0)
+        except ValueError:
+            obroty[gotowy] = 0
 
-        # Rozszerzenie doklejamy z listy dozwolonych, a nie z oczyszczonej nazwy:
-        # przy nazwie bez znaków ASCII (np. cyrylicą) zostałaby sama końcówka i Word
-        # nie wiedziałby, w jakim formacie jest plik.
-        docelowy = (PRZESLANE / f"{datetime.now():%Y%m%d-%H%M%S}-{indeks}"
-                                f"-{generator.bezpieczna_nazwa(Path(nazwa).stem)}{rozszerzenie}")
-        with open(docelowy, "wb") as zapis:
-            shutil.copyfileobj(przeslany.file, zapis)
-        tymczasowe.append(docelowy)
-
-        if rozszerzenie in ROZSZERZENIA_WORD:
-            try:
-                docelowy = pdf.docx_na_pdf(docelowy)
-            except pdf.BrakKonwertera as blad:
-                return niepowodzenie(str(blad))
-            except Exception as blad:
-                zapisz_blad(request, blad)
-                return niepowodzenie(
-                    f"Nie udało się zamienić pliku „{nazwa}” na PDF. Otwórz go w Wordzie "
-                    "i sprawdź, czy da się go normalnie wyświetlić."
-                )
-            tymczasowe.append(docelowy)
-
-        etykiety[docelowy] = nazwa
-        elementy.append((_kolejnosc(kolejnosci[indeks] if indeks < len(kolejnosci) else None,
-                                    60), docelowy))
-
-    if not elementy:
+    if not wybrane:
         return niepowodzenie("Nie wybrano żadnych plików do połączenia.")
 
-    elementy.sort(key=lambda para: para[0])
-    nazwa_wyniku = formularz_danych.get("nazwa_wynikowa") or "Operat_scalony"
-    wynik = (WYNIKI / f"{generator.bezpieczna_nazwa(nazwa_wyniku)}"
-                      f"__{datetime.now():%Y%m%d-%H%M%S}.pdf")
+    wynik = katalog / operaty.nazwa_wyniku(katalog)
     try:
-        pdf.polacz_pdf([sciezka for _, sciezka in elementy], wynik, etykiety)
+        pdf.polacz_pdf(wybrane, wynik, etykiety, obroty)
     except pdf.BladPliku as blad:
         return niepowodzenie(str(blad))
-
-    sprzataj()
     return FileResponse(wynik, filename=wynik.name, media_type="application/pdf")
 
 
