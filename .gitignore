@@ -3,6 +3,7 @@ __pycache__/
 *.pyc
 wyniki/
 dane/
+szablony/
 build/
 dist/
 *.spec

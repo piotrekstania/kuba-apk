@@ -1,8 +1,13 @@
 """Konwersja DOCX -> PDF i łączenie plików PDF.
 
 Kolejność wyboru konwertera:
-1. Microsoft Word przez COM (docx2pdf) — jeśli jest zainstalowany, wygląd 1:1.
-2. LibreOffice w trybie --headless — działa wszędzie, także bez Worda.
+1. Microsoft Word przez COM — jeśli jest zainstalowany, wygląd 1:1 z dokumentem.
+2. LibreOffice w trybie --headless — zapas na komputery bez Worda.
+
+Word sterujemy sami (pywin32), a nie biblioteką docx2pdf, z dwóch powodów:
+* docx2pdf woła `Dispatch` bez `CoInitialize()`, a trasy FastAPI wykonują się
+  w wątkach roboczych — tam COM nie jest zainicjowany i konwersja pada;
+* `ExportAsFixedFormat` daje kontrolę nad jakością PDF-a i zakładkami.
 """
 from __future__ import annotations
 
@@ -11,6 +16,8 @@ import shutil
 import subprocess
 import sys
 import tempfile
+import threading
+from contextlib import contextmanager
 from pathlib import Path
 
 from pypdf import PdfReader, PdfWriter
@@ -37,6 +44,18 @@ KANDYDACI_LIBREOFFICE = [
     "/Applications/LibreOffice.app/Contents/MacOS/soffice",
 ]
 
+# Word to jedna aplikacja na komputerze — dwie równoległe konwersje potrafią
+# sobie nawzajem zamknąć instancję, więc puszczamy je pojedynczo.
+_BLOKADA_WORD = threading.Lock()
+
+# stałe Worda (nie importujemy makr Office, żeby nie wymagać cache'u typów)
+_WD_FORMAT_PDF = 17               # wdExportFormatPDF
+_WD_JAKOSC_DRUK = 0               # wdExportOptimizeForPrint
+_WD_CALY_DOKUMENT = 0             # wdExportAllDocument
+_WD_TRESC_DOKUMENTU = 0           # wdExportDocumentContent
+_WD_ZAKLADKI_NAGLOWKI = 1         # wdExportCreateHeadingBookmarks
+_WD_NIE_ZAPISUJ = 0               # wdDoNotSaveChanges
+
 
 class BrakKonwertera(RuntimeError):
     pass
@@ -55,8 +74,9 @@ def _word_dostepny() -> bool:
     if sys.platform != "win32":
         return False
     try:
-        import win32com.client  # noqa: F401  (dokładamy z docx2pdf)
         import winreg
+
+        import win32com.client  # noqa: F401  (bez pywin32 nie ma czym sterować Wordem)
         winreg.OpenKey(winreg.HKEY_CLASSES_ROOT, "Word.Application")
         return True
     except Exception:
@@ -72,41 +92,119 @@ def dostepny_konwerter() -> str:
     return "brak"
 
 
+@contextmanager
+def _com():
+    """Inicjuje COM dla bieżącego wątku (trasy FastAPI chodzą w puli wątków)."""
+    import pythoncom
+    pythoncom.CoInitialize()
+    try:
+        yield
+    finally:
+        pythoncom.CoUninitialize()
+
+
+def _konwersja_wordem(zrodlo: Path, cel: Path) -> None:
+    """Otwiera dokument w niewidocznej instancji Worda i eksportuje do PDF."""
+    import win32com.client
+
+    zrodlo = zrodlo.resolve()
+    cel = cel.resolve()
+    cel.parent.mkdir(parents=True, exist_ok=True)
+
+    with _BLOKADA_WORD, _com():
+        word = None
+        dokument = None
+        try:
+            # DispatchEx = własna instancja Worda; nie przejmujemy tej,
+            # w której użytkownik ma właśnie otwarte swoje pliki.
+            word = win32com.client.DispatchEx("Word.Application")
+            word.Visible = False
+            word.DisplayAlerts = 0                       # wdAlertsNone
+            dokument = word.Documents.Open(
+                str(zrodlo), ReadOnly=True, AddToRecentFiles=False,
+                ConfirmConversions=False, Visible=False,
+            )
+            dokument.ExportAsFixedFormat(
+                OutputFileName=str(cel),
+                ExportFormat=_WD_FORMAT_PDF,
+                OpenAfterExport=False,
+                OptimizeFor=_WD_JAKOSC_DRUK,
+                Range=_WD_CALY_DOKUMENT,
+                Item=_WD_TRESC_DOKUMENTU,
+                IncludeDocProps=True,
+                CreateBookmarks=_WD_ZAKLADKI_NAGLOWKI,
+                DocStructureTags=True,
+                BitmapMissingFonts=True,
+            )
+        finally:
+            if dokument is not None:
+                try:
+                    dokument.Close(_WD_NIE_ZAPISUJ)
+                except Exception:
+                    pass
+            if word is not None:
+                try:
+                    word.Quit(_WD_NIE_ZAPISUJ)
+                except Exception:
+                    pass
+
+
+def _konwersja_libreoffice(zrodlo: Path, cel: Path) -> None:
+    soffice = sciezka_libreoffice()
+    if not soffice:
+        raise BrakKonwertera(
+            "Nie znaleziono ani Microsoft Word, ani LibreOffice. "
+            "Zainstaluj LibreOffice (darmowy), żeby generować PDF-y."
+        )
+    # Katalog roboczy wewnątrz projektu, a nie w /tmp: LibreOffice ze Snapa/Flatpaka
+    # ma własny, odizolowany /tmp i gotowy plik byłby dla nas niewidoczny.
+    with tempfile.TemporaryDirectory(dir=KATALOG_ROBOCZY) as tymczasowy:
+        wynik = subprocess.run(
+            [soffice, "--headless", "--norestore", "--nolockcheck",
+             f"-env:UserInstallation={PROFIL_LIBREOFFICE}",
+             "--convert-to", "pdf", "--outdir", tymczasowy, str(zrodlo)],
+            capture_output=True, text=True, timeout=180,
+        )
+        powstaly = Path(tymczasowy) / (zrodlo.stem + ".pdf")
+        if not powstaly.exists():                       # awaryjnie: cokolwiek co powstało
+            inne = list(Path(tymczasowy).glob("*.pdf"))
+            powstaly = inne[0] if inne else powstaly
+        if not powstaly.exists():
+            raise BrakKonwertera(
+                f"LibreOffice nie utworzył PDF-a.\n{wynik.stdout}\n{wynik.stderr}")
+        cel.parent.mkdir(parents=True, exist_ok=True)
+        shutil.move(str(powstaly), cel)
+
+
 def docx_na_pdf(zrodlo: Path, cel: Path | None = None) -> Path:
     cel = cel or zrodlo.with_suffix(".pdf")
     konwerter = dostepny_konwerter()
 
-    if konwerter == "word":
-        from docx2pdf import convert
-        convert(str(zrodlo), str(cel))
-        if cel.exists():
-            return cel
+    if konwerter == "brak":
+        raise BrakKonwertera(
+            "Nie znaleziono ani Microsoft Word, ani LibreOffice. "
+            "Zainstaluj jeden z nich, żeby generować PDF-y."
+        )
 
-    if konwerter == "libreoffice" or not cel.exists():
-        soffice = sciezka_libreoffice()
-        if not soffice:
-            raise BrakKonwertera(
-                "Nie znaleziono ani Microsoft Word, ani LibreOffice. "
-                "Zainstaluj LibreOffice (darmowy), żeby generować PDF-y."
-            )
-        # Katalog roboczy wewnątrz projektu, a nie w /tmp: LibreOffice ze Snapa/Flatpaka
-        # ma własny, odizolowany /tmp i gotowy plik byłby dla nas niewidoczny.
-        with tempfile.TemporaryDirectory(dir=KATALOG_ROBOCZY) as tymczasowy:
-            wynik = subprocess.run(
-                [soffice, "--headless", "--norestore", "--nolockcheck",
-                 f"-env:UserInstallation={PROFIL_LIBREOFFICE}",
-                 "--convert-to", "pdf", "--outdir", tymczasowy, str(zrodlo)],
-                capture_output=True, text=True, timeout=180,
-            )
-            powstaly = Path(tymczasowy) / (zrodlo.stem + ".pdf")
-            if not powstaly.exists():                       # awaryjnie: cokolwiek co powstało
-                inne = list(Path(tymczasowy).glob("*.pdf"))
-                powstaly = inne[0] if inne else powstaly
-            if not powstaly.exists():
+    if konwerter == "word":
+        try:
+            _konwersja_wordem(zrodlo, cel)
+        except Exception as blad:
+            # Word bywa zajęty (otwarte okno dialogowe, aktualizacja Office) —
+            # jeśli obok jest LibreOffice, próbujemy nim, zamiast poddawać się.
+            if sciezka_libreoffice():
+                _konwersja_libreoffice(zrodlo, cel)
+            else:
                 raise BrakKonwertera(
-                    f"LibreOffice nie utworzył PDF-a.\n{wynik.stdout}\n{wynik.stderr}")
-            cel.parent.mkdir(parents=True, exist_ok=True)
-            shutil.move(str(powstaly), cel)
+                    f"Microsoft Word nie zrobił PDF-a: {blad}\n"
+                    "Sprawdź, czy Word nie czeka z otwartym oknem (np. aktywacja "
+                    "albo pytanie o zapis) i spróbuj ponownie."
+                ) from blad
+    else:
+        _konwersja_libreoffice(zrodlo, cel)
+
+    if not cel.exists():
+        raise BrakKonwertera(f"Konwersja się nie powiodła — nie powstał plik {cel.name}.")
     return cel
 
 

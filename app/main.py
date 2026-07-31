@@ -19,12 +19,13 @@ from fastapi.responses import FileResponse, HTMLResponse, RedirectResponse
 from fastapi.staticfiles import StaticFiles
 from fastapi.templating import Jinja2Templates
 
-from . import db, generator, pdf, szablony
+from . import aktualizacja, db, generator, pdf, szablony
 from .config import DANE, WEB, WYNIKI
 
 @asynccontextmanager
 async def cykl_zycia(_: FastAPI):
     db.init()
+    aktualizacja.uzupelnij_szablony()   # dokłada brakujące wzorce, istniejących nie rusza
     yield
 
 
@@ -38,6 +39,7 @@ PRZESLANE.mkdir(parents=True, exist_ok=True)
 
 def _widok(request: Request, nazwa: str, **kontekst: Any) -> HTMLResponse:
     kontekst.setdefault("konwerter", pdf.dostepny_konwerter())
+    kontekst.setdefault("wersja", aktualizacja.wersja_lokalna()[0])
     return widoki.TemplateResponse(request, nazwa, kontekst)
 
 
@@ -82,7 +84,8 @@ def odczytaj_dane(formularz, szablon: szablony.Szablon) -> dict[str, Any]:
 def strona_glowna(request: Request):
     return _widok(request, "index.html",
                   szablony=szablony.lista_szablonow(),
-                  dokumenty=db.dokumenty(limit=15))
+                  dokumenty=db.dokumenty(limit=15),
+                  co_nowego=aktualizacja.co_nowego())   # pokazuje się raz, po aktualizacji
 
 
 @app.get("/nowy/{identyfikator}", response_class=HTMLResponse)

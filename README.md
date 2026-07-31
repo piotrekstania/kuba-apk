@@ -25,24 +25,53 @@ Przeglądarka otworzy się sama na `http://127.0.0.1:8000`.
 Potrzebny jest jeden z dwóch programów — aplikacja wykrywa je sama i pokazuje w prawym
 górnym rogu, którego używa:
 
-1. **Microsoft Word** (Windows) — wygląd PDF-a 1:1 z dokumentem. Wymaga doinstalowania
-   `docx2pdf` (odkomentowana linia w `requirements.txt`).
-2. **[LibreOffice](https://pl.libreoffice.org/)** — darmowy, działa na każdym systemie.
+1. **Microsoft Word** (Windows) — ścieżka domyślna, wygląd PDF-a 1:1 z dokumentem.
+   Nic nie trzeba dokładać: `start.bat` instaluje `pywin32` i program steruje Wordem sam.
+   Word otwiera się niewidocznie, w osobnej instancji, i zamyka po konwersji — nie przeszkadza
+   w pracy w normalnie otwartym Wordzie.
+2. **[LibreOffice](https://pl.libreoffice.org/)** — darmowy zapas na komputery bez Worda
+   (a także na Linuksa/macOS); wykrywany też jako wersja przenośna w katalogu `libreoffice/`.
 
 Bez żadnego z nich generowanie .docx nadal działa, tylko przycisk „Pobierz PDF” zgłosi brak
 konwertera.
+
+## Aktualizacje
+
+Program przy każdym uruchomieniu porównuje swój plik `WERSJA` z tym na GitHubie
+(`piotrekstania/kuba-apk`, gałąź `main`). Jeśli tam jest nowszy, pobiera paczkę `.zip`
+i podmienia **wyłącznie kod**. Brak internetu = start po staremu, bez błędu.
+
+Nietykalne przy aktualizacji: `dane/` (historia, dane stałe, liczniki numeracji),
+`wyniki/` (gotowe dokumenty) i `szablony/` (formatki Worda ustawione przez użytkownika).
+Przed każdą podmianą leci kopia bazy i poprzedniego kodu do `dane/kopie/`.
+
+Wzorce szablonów są w `szablony_wzorcowe/` i trafiają do `szablony/` tylko wtedy, gdy
+pliku o tej nazwie jeszcze tam nie ma — dzięki temu aktualizacja nigdy nie nadpisze
+cudzej pracy w Wordzie.
+
+**Wydanie nowej wersji = podbicie pliku `WERSJA` i `git push`.** Pierwsza linia to numer
+(porównywany), reszta to opis pokazywany użytkownikowi jednorazowo po aktualizacji.
+Commit bez zmiany `WERSJA` nikomu się nie zainstaluje — i o to chodzi, bo to Ty decydujesz,
+kiedy brat dostaje nową wersję.
+
+Zmiany w bazie danych obsługuje `PRAGMA user_version` i lista `MIGRACJE` w
+[app/db.py](app/db.py): dopisujesz krok, podbijasz `WERSJA_SCHEMATU`, a stara baza
+sama się doprowadzi do porządku (po uprzednim zrobieniu kopii).
 
 ## Jak to jest poskładane
 
 | Katalog / plik | Do czego |
 | --- | --- |
-| `szablony/` | pliki `.docx` z tagami `{{ }}` — **to tu brat edytuje wygląd dokumentów** |
+| `szablony/` | pliki `.docx` z tagami `{{ }}` — **to tu brat edytuje wygląd dokumentów**; nie jedzie w repo, aktualizacja go nie rusza |
+| `szablony_wzorcowe/` | wzorce wysyłane z programem; kopiują się do `szablony/` tylko gdy brakuje |
 | `szablony/*.json` | nieobowiązkowy opis pól: etykiety, typy, kolejność, grupy |
 | `wyniki/` | wygenerowane dokumenty i PDF-y |
 | `dane/operaty.sqlite3` | historia, dane stałe, liczniki numeracji |
 | `app/szablony.py` | czyta szablon i buduje z niego formularz |
 | `app/generator.py` | wypełnia szablon danymi |
 | `app/pdf.py` | konwersja DOCX→PDF i łączenie PDF-ów |
+| `app/aktualizacja.py` | pobieranie nowej wersji z GitHuba, kopie zapasowe |
+| `WERSJA` | numer wersji + opis zmian; podbijasz go, wydając nową wersję |
 | `app/main.py` | strony i obsługa formularzy |
 | `narzedzia/utworz_wzor_szablonu.py` | generuje przykładowy szablon do testów |
 

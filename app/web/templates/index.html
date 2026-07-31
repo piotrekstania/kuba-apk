@@ -1,6 +1,13 @@
 {% extends "base.html" %}
 {% block tresc %}
 
+{% if co_nowego %}
+<div class="komunikat">
+  <strong>Program zaktualizował się do wersji {{ co_nowego.split('\n')[0] }}.</strong>
+  {{ co_nowego.split('\n')[1:] | join(' ') }}
+</div>
+{% endif %}
+
 <h1>Nowy dokument</h1>
 
 {% if szablony %}

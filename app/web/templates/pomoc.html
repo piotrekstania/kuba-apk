@@ -64,6 +64,26 @@
   ]
 }</pre>
 
+<h2 id="aktualizacje">Aktualizacje programu</h2>
+<p>Program przy każdym uruchomieniu sprawdza, czy jest nowsza wersja, i jeśli jest —
+  pobiera ją sam. Nie trzeba nic instalować ani niczego nadpisywać; po aktualizacji
+  na stronie głównej pojawia się jednorazowa informacja, co doszło.</p>
+<p><strong>Twoje rzeczy zostają nietknięte.</strong> Aktualizacja podmienia wyłącznie sam
+  program. Nie rusza:</p>
+<table class="lista">
+  <tr><th class="waski">Co</th><th>Gdzie siedzi</th></tr>
+  <tr><td>historia dokumentów, numeracja, dane stałe</td><td><code>dane/</code></td></tr>
+  <tr><td>wygenerowane operaty i PDF-y</td><td><code>wyniki/</code></td></tr>
+  <tr><td><strong>Twoje szablony Worda</strong></td><td><code>szablony/</code></td></tr>
+</table>
+<p>Szablony są tu najważniejsze: jeśli poprawisz sobie <code>operat_wzor.docx</code> —
+  ustawisz pieczątkę, czcionki, układ — <strong>aktualizacja tego nie nadpisze</strong>.
+  Nowe wzorce dokładają się tylko wtedy, gdy pliku o takiej nazwie jeszcze nie masz.
+  Na wszelki wypadek przed każdą aktualizacją program odkłada kopię bazy i poprzedniej
+  wersji do <code>dane/kopie/</code>.</p>
+<p class="szary">Gdy nie ma internetu (np. w terenie), program po prostu startuje w tej
+  wersji, którą ma — sprawdzanie aktualizacji nigdy nie blokuje pracy.</p>
+
 <h2 id="pdf">Skąd się biorą PDF-y</h2>
 <p>Sam dokument Worda program składa samodzielnie. Do zrobienia z niego PDF-a potrzebny jest
   jeden z dwóch silników — aplikacja wykrywa je sama i pokazuje w prawym górnym rogu, którego
@@ -73,7 +93,9 @@
   <tr><th class="waski">Silnik</th><th>Kiedy</th></tr>
   <tr><td>Microsoft Word</td>
       <td>gdy jest zainstalowany na tym komputerze — nic nie trzeba dokładać, PDF wygląda
-          dokładnie tak jak dokument w Wordzie</td></tr>
+          dokładnie tak jak dokument w Wordzie. Program otwiera Worda
+          <strong>niewidocznie, w osobnym oknie w tle</strong>, i zamyka go po zrobieniu PDF-a
+          — możesz spokojnie mieć w tym czasie otwarte swoje dokumenty</td></tr>
   <tr><td>LibreOffice</td>
       <td>gdy Worda nie ma; darmowy, wystarczy że jest zainstalowany —
           <strong>nie trzeba w nim niczego otwierać ani robić go domyślnym programem</strong>,
@@ -82,6 +104,9 @@
       <td>katalog <code>libreoffice/</code> położony obok programu też zostanie znaleziony —
           wtedy nie ma żadnej instalacji</td></tr>
 </table>
+<p class="szary">Gdy PDF się nie zrobi, a Word jest zainstalowany, najczęstsza przyczyna to
+  Word czekający z otwartym oknem (aktywacja pakietu Office, pytanie o zapis, tryb chroniony).
+  Wystarczy otworzyć Worda ręcznie, zamknąć to okno i kliknąć „Pobierz PDF” jeszcze raz.</p>
 <p class="szary">Bez żadnego z nich generowanie plików .docx działa normalnie; nie działa tylko
   przycisk „Pobierz PDF" i łączenie dokumentów w jeden PDF.</p>
 

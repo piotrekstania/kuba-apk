@@ -1,10 +1,11 @@
 """Warstwa danych: SQLite bez ORM-a, bo tabele są trzy i takie zostaną."""
 import json
+import shutil
 import sqlite3
 from datetime import datetime
 from typing import Any
 
-from .config import BAZA_DANYCH
+from .config import BAZA_DANYCH, DANE
 
 SCHEMAT = """
 CREATE TABLE IF NOT EXISTS dokumenty (
@@ -32,15 +33,51 @@ CREATE TABLE IF NOT EXISTS liczniki (
 """
 
 
+# Numer schematu trzymamy w `PRAGMA user_version` samej bazy. Dzięki temu nowa wersja
+# programu potrafi doprowadzić starą bazę do porządku, zamiast wywalić się na brakującej
+# kolumnie — a baza u brata jest jedynym miejscem, gdzie siedzi historia i numeracja.
+WERSJA_SCHEMATU = 1
+
+# Kolejne kroki dopisujemy tutaj: {2: ["ALTER TABLE dokumenty ADD COLUMN status TEXT"]}
+# i podnosimy WERSJA_SCHEMATU. Kroki muszą być odporne na powtórzenie i nie mogą
+# kasować danych.
+MIGRACJE: dict[int, list[str]] = {}
+
+
 def polacz() -> sqlite3.Connection:
     con = sqlite3.connect(BAZA_DANYCH)
     con.row_factory = sqlite3.Row
     return con
 
 
+def _kopia_przed_migracja(wersja: int) -> None:
+    if not BAZA_DANYCH.exists():
+        return
+    katalog = DANE / "kopie"
+    katalog.mkdir(parents=True, exist_ok=True)
+    shutil.copy2(BAZA_DANYCH,
+                 katalog / f"operaty-schemat{wersja}-{datetime.now():%Y%m%d-%H%M%S}.sqlite3")
+
+
 def init() -> None:
     with polacz() as con:
         con.executescript(SCHEMAT)
+        wersja = int(con.execute("PRAGMA user_version").fetchone()[0])
+        if wersja == 0:
+            # Bazy sprzed wprowadzenia numeracji mają komplet tabel wersji 1 —
+            # `SCHEMAT` wyżej właśnie się o to zatroszczył.
+            wersja = 1
+            con.execute(f"PRAGMA user_version = {wersja}")
+
+    if wersja >= WERSJA_SCHEMATU:
+        return
+
+    _kopia_przed_migracja(wersja)
+    with polacz() as con:
+        for nastepna in range(wersja + 1, WERSJA_SCHEMATU + 1):
+            for polecenie in MIGRACJE.get(nastepna, []):
+                con.execute(polecenie)
+            con.execute(f"PRAGMA user_version = {nastepna}")   # int, nie da się tu podstawić ?
 
 
 # --- dokumenty ---------------------------------------------------------------

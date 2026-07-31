@@ -25,9 +25,13 @@ zainstalowania/uruchomienia, bez instalowania Pythona.
 | **Nie** klasyczna aplikacja desktopowa (Tkinter/Qt) | nic się nie zyskuje, traci się czas na budowanie formularzy |
 | docxtpl — szablonem jest **zwykły plik .docx** | brat sam edytuje wygląd dokumentu w Wordzie; gdyby układ dokumentu siedział w kodzie, każda zmiana pieczątki wracałaby do programisty |
 | DOCX→PDF przez Worda (COM) albo LibreOffice `--headless` | ta sama ścieżka co szablon, więc PDF wygląda identycznie jak dokument |
+| Wordem sterujemy sami przez `pywin32`, **nie** przez `docx2pdf` | `docx2pdf` woła `Dispatch` bez `CoInitialize()`, a trasy FastAPI chodzą w wątkach roboczych — tam to pada; własny kod daje też `ExportAsFixedFormat` (jakość, zakładki) i pewne zamknięcie Worda |
 | **Nie** drugi, niezależny generator PDF (ReportLab/WeasyPrint) | oznaczałby dwa szablony do utrzymania, które po pół roku wyglądają inaczej |
 | **Nie** konwersja przez API w chmurze | dane osobowe + wymaga internetu |
 | SQLite | historia, numeracja, dane stałe — zero konfiguracji |
+| Aktualizacje: program sam pobiera `.zip` z GitHuba przy starcie | brat nie jest programistą; nie ma mowy o `git pull` ani o ręcznym rozpakowywaniu paczek na wierzch, bo prędzej czy później nadpisałby sobie szablony |
+| Wzorce szablonów w `szablony_wzorcowe/`, a nie w `szablony/` | `szablony/` to **jego** dane — jedyny katalog, który był i wysyłany, i edytowany przez użytkownika; wzorce kopiują się tam tylko gdy brakuje pliku |
+| Wersja schematu bazy w `PRAGMA user_version` + lista `MIGRACJE` | baza u brata to jedyny egzemplarz historii i numeracji; nowy kod na starej bazie musi umieć ją dociągnąć, a nie wywalić się na brakującej kolumnie |
 
 ## Zasada centralna
 
@@ -42,8 +46,12 @@ to znak, że idziesz pod prąd tej architektury.
 ## Stos
 
 Python 3.11+ (u autora testowane na 3.14), FastAPI + uvicorn, Jinja2, docxtpl (python-docx),
-pypdf, SQLite. Wersje przypięte w [requirements.txt](requirements.txt). Bez frontendowego
-frameworka — czysty HTML + trochę waniliowego JS w szablonach.
+pypdf, SQLite, na Windowsie dodatkowo `pywin32` (Word przez COM). Wersje przypięte
+w [requirements.txt](requirements.txt). Bez frontendowego frameworka — czysty HTML
++ trochę waniliowego JS w szablonach.
+
+Środowisko docelowe = środowisko autora: **Windows + Microsoft Office (bez LibreOffice)**.
+Ścieżka przez LibreOffice zostaje w kodzie jako zapas i dla Linuksa, ale nie jest tu testowana.
 
 ## Uruchomienie
 
@@ -73,6 +81,8 @@ starą wersję (autor się na to nadział).
 | `app/szablony.py` | czyta `.docx` + opcjonalny `.json` → obiekt `Szablon` z listą `Pole`; to tu powstaje formularz |
 | `app/generator.py` | wypełnia szablon, numeracja automatyczna, formaty dat, bezpieczne nazwy plików |
 | `app/pdf.py` | wykrywanie konwertera, DOCX→PDF, łączenie PDF-ów |
+| `app/aktualizacja.py` | pobieranie nowej wersji z GitHuba; **tylko biblioteka standardowa**, bo działa zanim `pip install` dołoży nowe zależności |
+| `WERSJA` | 1. linia = numer porównywany z GitHubem, reszta = opis pokazywany bratu raz po aktualizacji |
 | `app/db.py` | SQLite: `dokumenty`, `ustawienia`, `liczniki` |
 | `app/main.py` | trasy FastAPI, parsowanie formularza (w tym tabel) |
 | `app/web/templates/` | widoki; `pomoc.html` to instrukcja dla brata, aktualizuj ją razem z funkcjami |
@@ -97,6 +107,23 @@ też brat. Interfejs w całości po polsku.
    działała także wtedy, gdy użytkownik ma otwarty zwykły LibreOffice.
 5. `domyslnie` przy polu typu `auto_numer` to **wzorzec numeru** (`{numer3}/{rok}`), a nie
    wartość startowa — nie wolno go wstawiać do formularza jako `value`.
+6. **COM trzeba zainicjować w każdym wątku.** Trasy FastAPI zapisane jako `def` (a takie są
+   `/pobierz/*/pdf` i `/scal`) wykonują się w puli wątków, nie w głównym — bez
+   `pythoncom.CoInitialize()` leci `CoInitialize has not been called`. Stąd `_com()`
+   w `app/pdf.py`.
+7. **Wydanie = podbicie `WERSJA` + push.** Sam commit nic bratu nie wyśle — porównywany
+   jest wyłącznie pierwszy wiersz pliku `WERSJA`. To celowe: decydujesz, kiedy dostaje
+   nową wersję. Odwrotna pułapka: podbicie `WERSJA` bez wypchnięcia reszty kodu wyśle
+   mu paczkę z gałęzi `main` w stanie, w jakim akurat jest.
+8. **Aktualizator nie może importować niczego spoza stdlib.** Chodzi z `.venv`, w którym
+   nowych zależności jeszcze nie ma — `start.bat` woła go *przed* `pip install`, właśnie
+   po to, żeby nowa wersja mogła dokładać biblioteki.
+9. **Aktualizacja nadpisuje `app/` plik po pliku, nie kasując katalogu** — w trakcie
+   działa z niego proces, który tę aktualizację przeprowadza.
+10. **Word to jedna aplikacja na komputerze.** Konwersje idą pod `threading.Lock`, przez
+   `DispatchEx` (własna instancja, nie przejmujemy okna użytkownika), z `Visible = False`
+   i `DisplayAlerts = 0`, a `Documents.Open(..., ReadOnly=True)`. Bez `Quit()` w `finally`
+   zostaje wiszący proces `WINWORD.EXE`.
 
 ## Stan na teraz — przetestowane end-to-end
 
@@ -107,6 +134,18 @@ poprzedniego dokumentu, historia, ustawienia.
 
 Wykrywanie konwertera PDF: Word (COM) → LibreOffice zainstalowany → LibreOffice przenośny
 w katalogu `libreoffice/` obok programu. Stan widać w prawym górnym rogu aplikacji.
+
+Ścieżka wordowa sprawdzona na Windows 11 + Office 16.0 (Python 3.14): formularz → `.docx` →
+PDF przez trasę `/pobierz/{id}/pdf` (ok. 1,5 s) → `/scal`. Po konwersji nie zostaje proces
+`WINWORD.EXE`. Gdy Word wywali się w trakcie, kod próbuje jeszcze LibreOffice’em (jeśli jest),
+a jak go nie ma — pokazuje po polsku, że Word czeka pewnie z otwartym oknem dialogowym.
+
+Aktualizacja sprawdzona na symulacji (skrypt jednorazowy, podstawione `file://` zamiast
+GitHuba, instalacja z bazą + własnym szablonem brata): przeżywają baza, historia, licznik
+numeracji, dane stałe, `wyniki/` i oba jego szablony; przychodzi nowy kod, nowe
+`requirements.txt` i brakujące wzorce; powstaje kopia w `dane/kopie/`. Sprawdzone też
+ścieżki „brak internetu" i „wersja aktualna" — obie kończą się startem programu.
+Świeża instalacja i aktualizacja `.venv` przez `start.bat`: też przetestowane.
 
 **Nie ma jeszcze testów automatycznych.** Weryfikacja szła ręcznie przez przeglądarkę
 i skrypty jednorazowe.
@@ -122,11 +161,12 @@ i skrypty jednorazowe.
    iść na Windowsie (brak cross-kompilacji) — albo lokalnie, albo GitHub Actions
    `windows-latest`. `app/config.py` jest już przygotowany na `sys.frozen`.
    Przy `--onefile` liczyć się z ostrzeżeniem SmartScreen i wolniejszym startem.
-4. **Word jako konwerter na Windowsie**: odkomentować `docx2pdf` w `requirements.txt`
-   (ciągnie `pywin32`) i sprawdzić realnie na maszynie brata — dotąd testowane tylko
-   na LibreOffice pod Linuksem.
-5. Kolejne typy dokumentów (protokół, szkic, sprawozdanie) — każdy to nowy plik w `szablony/`.
-6. Testy (pytest) na `odczytaj_dane`, `przygotuj_kontekst` i wykrywanie pól z szablonu.
+   Uwaga przy pakowaniu: `pywin32` wymaga w PyInstallerze `--hidden-import win32com.client`
+   i `--hidden-import pythoncom`, inaczej konwersja PDF w `.exe` nie ruszy.
+4. Kolejne typy dokumentów (protokół, szkic, sprawozdanie) — każdy to nowy plik w `szablony/`.
+5. Testy (pytest) na `odczytaj_dane`, `przygotuj_kontekst` i wykrywanie pól z szablonu.
+6. `bezpieczna_nazwa` gubi polskie znaki bez odpowiednika ASCII — „Sułkowice” w nazwie pliku
+   robi się „Sukowice”. Kosmetyka, ale warto podmienić na transliterację (ł→l, ą→a…).
 
 ## Pytania otwarte do brata
 
