@@ -54,6 +54,11 @@ cudzej pracy w Wordzie.
 Commit bez zmiany `WERSJA` nikomu się nie zainstaluje — i o to chodzi, bo to Ty decydujesz,
 kiedy brat dostaje nową wersję.
 
+`raw.githubusercontent.com` cache'uje pliki około pięciu minut, więc tuż po `push` program
+może jeszcze przez chwilę widzieć starą wersję. To nie awaria — wystarczy odczekać.
+Numer wersji jest zwykłym tekstem, porównywanym na równość, więc format jest dowolny
+(`2026.07.31`, `2026.07.31.1`, `1.4` — co wygodniejsze).
+
 Zmiany w bazie danych obsługuje `PRAGMA user_version` i lista `MIGRACJE` w
 [app/db.py](app/db.py): dopisujesz krok, podbijasz `WERSJA_SCHEMATU`, a stara baza
 sama się doprowadzi do porządku (po uprzednim zrobieniu kopii).
