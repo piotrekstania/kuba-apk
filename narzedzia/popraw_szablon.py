@@ -17,6 +17,7 @@ Uruchomienie po wgraniu nowej formatki:
 Skrypt jest odporny na powtórzenie — puszczenie go dwa razy niczego nie psuje.
 """
 import argparse
+import copy
 import sys
 from pathlib import Path
 
@@ -31,6 +32,11 @@ sys.path.insert(0, str(Path(__file__).resolve().parent.parent))
 WCIECIE = Cm(0.9)        # z zapasem na numery dwucyfrowe przy czcionce formatki
 ODSTEP_PO = Pt(6)        # przerwa między pozycjami spisu
 PODPIS_ZAWIERA = ("Stania", "upr")     # po czym poznajemy akapit z podpisem
+# Ramka trzyma się dołu obszaru tekstu. Żeby podnieść podpis, dokładamy pod nim puste
+# akapity **z tą samą ramką** — kolejne akapity o identycznym `framePr` należą do tej
+# samej ramki, więc rośnie ona w dół, a jej dolna krawędź zostaje przy marginesie.
+# (Sam `space_after` nie wystarcza: LibreOffice nie wlicza go do wysokości ramki.)
+PODPIS_PUSTE_WIERSZE = 2
 
 
 def popraw_pozycje_spisu(akapit) -> bool:
@@ -54,7 +60,7 @@ def przypnij_do_dolu(akapit) -> bool:
     """Ramka akapitu zakotwiczona do dołu obszaru tekstu."""
     pPr = akapit._p.get_or_add_pPr()               # noqa: SLF001
     if pPr.find(qn("w:framePr")) is not None:
-        return False                               # już przypięty
+        return False                               # ramka już jest, nie dublujemy
 
     # tabulatory wypychające podpis w prawo rozpychałyby ramkę na całą szerokość
     for bieg in list(akapit.runs):
@@ -67,6 +73,15 @@ def przypnij_do_dolu(akapit) -> bool:
                              ("w:yAlign", "bottom")):
         ramka.set(qn(atrybut), wartosc)
     pPr.insert(0, ramka)
+
+    # puste akapity w tej samej ramce podnoszą podpis znad dolnego marginesu
+    poprzedni = akapit._p                          # noqa: SLF001
+    for _ in range(PODPIS_PUSTE_WIERSZE):
+        pusty = copy.deepcopy(akapit._p)           # noqa: SLF001
+        for bieg in pusty.findall(qn("w:r")):
+            pusty.remove(bieg)
+        poprzedni.addnext(pusty)
+        poprzedni = pusty
     return True
 
 
