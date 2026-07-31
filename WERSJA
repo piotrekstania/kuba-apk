@@ -1,2 +1,2 @@
-2026.07.31.30
-Dalsze poprawki pod awarię przy miniaturach: renderowanie idzie teraz pojedynczo (silnik PDF nie znosi pracy w kilku wątkach naraz), a ten sam plik nie jest już konwertowany kilka razy równolegle — przy operacie z dwoma dokumentami Word uruchamiał się cztery razy zamiast dwóch.
+2026.07.31.31
+Doszły dwa dokumenty do wyboru: wykaz zmian danych ewidencyjnych dotyczących budynku i dotyczących działki ewidencyjnej. Zaznaczasz je w karcie „Dokumenty do wygenerowania” tak samo jak sprawozdanie — nie trzeba nic dodatkowo wpisywać, biorą dane z operatu.
