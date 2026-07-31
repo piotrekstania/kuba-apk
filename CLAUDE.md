@@ -111,7 +111,8 @@ starą wersję (autor się na to nadział).
 | `app/miniatury.py` | podgląd pierwszej strony PDF-a (pypdfium2 + Pillow) |
 | `app/main.py` | trasy FastAPI, parsowanie formularza (w tym tabel) |
 | `app/web/templates/` | widoki; `blad.html` to strona każdego niezłapanego wyjątku, a `pomoc.html` instrukcja dla brata — aktualizuj ją razem z funkcjami |
-| `narzedzia/utworz_wzor_szablonu.py` | generuje przykładowy szablon spisu treści do testów |
+| `narzedzia/utworz_wzor_szablonu.py` | generuje przykładowy szablon spisu treści do testów; nie nadpisze istniejącego bez `--nadpisz` |
+| `narzedzia/popraw_szablon.py` | **puść po każdej podmianie formatki od brata** — nakłada tabulator i wcięcie wiszące w spisie treści oraz przypina podpis do dołu strony |
 | `narzedzia/instalacja_testowa.py` | odtwarza instalację brata (zip z GitHuba, bez `.git`), opcja `--stara-wersja` wymusza aktualizację przy starcie |
 | `szablony/` | formatki Worda, wersjonowane w repo; aktualizacja je podmienia |
 | `wyniki/`, `dane/` | dane użytkownika, w `.gitignore` |
@@ -159,6 +160,18 @@ też brat. Interfejs w całości po polsku.
    więc `isinstance(plik, fastapi.UploadFile)` jest zawsze fałszem i wgrane pliki znikają
    bez śladu. Kosztowało to działające scalanie załączników (wykryte dopiero testem z curl-em,
    bo formularz nie zgłaszał żadnego błędu).
+12a. **Formatowania akapitu nie da się wyklikać raz na zawsze w formatce brata.** Przy każdej
+   nowej wersji `.docx` trzeba puścić `narzedzia/popraw_szablon.py`: pozycja spisu treści
+   potrzebuje tabulatora zamiast spacji po numerze (inaczej „1.” i „13.” mają różną
+   szerokość i tekst startuje w różnych miejscach) oraz wcięcia wiszącego (inaczej
+   zawinięta pozycja chowa się pod numerem), a podpis — ramki `w:framePr` z
+   `vAnchor="margin" yAlign="bottom"`, żeby stał na dole strony niezależnie od długości
+   spisu. Skrypt jest odporny na powtórzenie.
+13a. **Puste pole z formularza to nie brak pola.** Przeglądarka wysyła każdy `<input>`,
+   także pusty, więc `dane.setdefault(klucz, ...)` nic nie zrobi — klucz *jest*, tylko
+   z pustym napisem. Kosztowało to numerację: poprawianie operatu brało kolejny numer
+   z licznika mimo podstawiania starego. Testując trasy curl-em wysyłaj **komplet pól
+   formularza**, łącznie z pustymi, bo inaczej sprawdzasz coś innego niż przeglądarka.
 12. **W zagnieżdżonej pętli Jinja `loop` to ta wewnętrzna.** W `formularz.html` numer wiersza
    tabeli trzeba zapamiętać w `{% set %}` przed pętlą po kolumnach — inaczej wszystkie wiersze
    dostają te same nazwy pól (`tab__punkty__0__…`, `__1__…` liczone po kolumnach) i wykaz

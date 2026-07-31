@@ -1,2 +1,2 @@
-2026.07.31.22
-Naprawione: poprawianie operatu zakładało za każdym razem nowy katalog z kolejnym numerem, mimo że numer w dokumencie zostawał stary. Teraz poprawka naprawdę wraca do tego samego operatu. Wszedł też Twój szablon z poprawioną odległością, żeby spis mieścił się na jednej stronie.
+2026.07.31.23
+Podpis stoi teraz zawsze na dole strony — niezależnie od tego, czy spis treści ma dwie pozycje, czy trzynaście.
