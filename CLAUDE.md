@@ -148,6 +148,12 @@ też brat. Interfejs w całości po polsku.
    `/pobierz/*/pdf` i `/scal`) wykonują się w puli wątków, nie w głównym — bez
    `pythoncom.CoInitialize()` leci `CoInitialize has not been called`. Stąd `_com()`
    w `app/pdf.py`.
+7a. **Numer wersji to `rok.miesiąc.dzień.licznik` — data ma być z dnia wydania,
+   a licznik liczy wydania tego dnia i zaczyna się od 1.** Łatwo o tym zapomnieć przy
+   serii poprawek ciągnącej się po północy: numery doszły do `2026.07.31.40`, choć
+   wydania szły już 1 sierpnia. Nic się przez to nie psuje — porównanie jest wyłącznie
+   na równość (`numer == lokalna`), nigdy „na większy”, więc licznik może wrócić do 1
+   przy nowej dacie — ale numer przestaje mówić, kiedy brat co dostał.
 7. **Wydanie = podbicie `WERSJA` + push.** Sam commit nic bratu nie wyśle — porównywany
    jest wyłącznie pierwszy wiersz pliku `WERSJA`. To celowe: decydujesz, kiedy dostaje
    nową wersję. Odwrotna pułapka: podbicie `WERSJA` bez wypchnięcia reszty kodu wyśle
