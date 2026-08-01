@@ -72,7 +72,7 @@ from app.config import SZABLONY  # noqa: E402
 KROJ = "Calibri"
 
 TYTUL = Pt(14)
-NAGLOWEK = Pt(11)
+NAGLOWEK = Pt(12)          # rozmiar wybrany przez brata; skrypt tylko go pilnuje
 TRESC = Pt(10)
 PUSTY = Pt(6)              # wysokość pustego akapitu = odstęp między blokami
 
