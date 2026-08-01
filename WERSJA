@@ -1,2 +1,2 @@
-2026.08.01.3
-Zmienione: poprawiona formatka wykazu zmian dotyczącego budynku. Pogrubienia, które wpiszesz w Wordzie, zostają teraz nietknięte — program ustala tylko krój, wielkości i układ, a o tym, co wyróżnić w treści, decyduje formatka.
+2026.08.01.4
+Nowość: prawdziwa formatka wykazu zmian dotyczącego działki ewidencyjnej (pozioma, z tabelą stanu dotychczasowego i nowego). Poprawione: w obu wykazach dane na górze i blok podpisu stoją teraz w równych kolumnach — wcześniej każdy wiersz lądował gdzie indziej. Pogrubienia dopisane w spisie treści zachowane.

@@ -74,8 +74,6 @@ STOPKA_WZORCOWA = "spis_tresci_wzor.docx"
 STOPKA_ROZMIAR = Pt(8)
 STOPKA_KOLOR = RGBColor(0x6B, 0x6B, 0x6B)
 
-TABULATOR_WARTOSCI = Mm(50)     # kolumna wartości w blokach „Etykieta:  wartość”
-
 PODPIS = "Stania"
 
 ZAMYKA_ZDANIE = (".", ":", ";", "!", "?")
@@ -157,17 +155,61 @@ def _popraw_wciecie(akapit) -> bool:
     return True
 
 
-def _popraw_tabulatory(akapit) -> bool:
-    """Ciąg tabulatorów → jeden tabulator z jawnym przystankiem.
+KROJE_PLIKI = (
+    "C:/Windows/Fonts/calibri.ttf",
+    "/usr/share/fonts/truetype/crosextra/Carlito-Regular.ttf",
+)
+KROJE_PLIKI_POGRUBIONE = (
+    "C:/Windows/Fonts/calibrib.ttf",
+    "/usr/share/fonts/truetype/crosextra/Carlito-Bold.ttf",
+)
+ODSTEP_KOLUMNY = Mm(4)          # prześwit między najdłuższą etykietą a wartością
+PRZERWA_W_BLOKU = 2             # tyle pustych akapitów bloku jeszcze nie rozdziela
 
-    Przy domyślnych przystankach co 12,7 mm wartość ląduje w innym miejscu zależnie
-    od tego, czy etykieta to „Działka:” czy „Obręb ewid.:”. Stąd schodki.
+
+def _plik_kroju(pogrubiony: bool):
+    for sciezka in (KROJE_PLIKI_POGRUBIONE if pogrubiony else KROJE_PLIKI):
+        if Path(sciezka).exists():
+            return sciezka
+    return None
+
+
+def _szerokosc(tekst: str, pogrubiony: bool = False) -> float:
+    """Szerokość napisu w EMU, przy rozmiarze tekstu zwykłego.
+
+    Mierzymy prawdziwym plikiem czcionki (Calibri albo metrycznie zgodne Carlito),
+    bo od tego zależy, gdzie postawić kolumnę wartości. Gdy czcionki nie ma,
+    szacujemy z liczby znaków — wynik jest wtedy zgrubny, ale nadal lepszy niż
+    przystanek wzięty z sufitu.
+    """
+    plik = _plik_kroju(pogrubiony)
+    if plik is None:
+        return int(Mm(len(tekst) * TRESC.pt * 0.17))
+    from PIL import ImageFont                                  # noqa: PLC0415
+    czcionka = ImageFont.truetype(plik, 100)
+    punkty = czcionka.getlength(tekst) / 100 * TRESC.pt
+    return int(Emu(int(punkty * 12700)))
+
+
+def _etykieta_i_wartosc(akapit) -> tuple[str, str] | None:
+    """Rozbija „Etykieta:<tab>wartość” na części. `None`, gdy to nie taki akapit."""
+    if "\t" not in akapit.text:
+        return None
+    etykieta, _, wartosc = akapit.text.partition("\t")
+    if not etykieta.strip().endswith(":"):
+        return None
+    return etykieta.strip(), wartosc.replace("\t", " ").strip()
+
+
+def _zostaw_jeden_tabulator(akapit) -> bool:
+    """Ciąg tabulatorów → jeden. O tym, gdzie ląduje wartość, decyduje przystanek.
+
+    Word trzyma każdy tabulator w osobnym biegu tekstu, więc `"\\t\\t" in bieg.text`
+    bywa fałszem, choć w akapicie stoją obok siebie dwa — nadmiarowe trzeba usuwać,
+    idąc przez cały akapit i pamiętając ostatni znak z poprzedniego biegu.
     """
     if "\t\t" not in akapit.text:
         return False
-
-    # Word trzyma każdy tabulator w osobnym biegu, więc `\t\t` nie występuje wewnątrz
-    # żadnego z nich — nadmiarowe tabulatory trzeba usuwać, idąc przez cały akapit.
     po_tabulatorze = False
     for bieg in akapit.runs:
         zostawione = []
@@ -177,12 +219,101 @@ def _popraw_tabulatory(akapit) -> bool:
             po_tabulatorze = znak == "\t"
             zostawione.append(znak)
         bieg.text = "".join(zostawione)
-
-    ustawienia = akapit.paragraph_format
-    przystanek = Emu(int(TABULATOR_WARTOSCI) + int(ustawienia.left_indent or 0))
-    if all(t.position != przystanek for t in ustawienia.tab_stops):
-        ustawienia.tab_stops.add_tab_stop(przystanek)
     return True
+
+
+def _bloki_etykieta_wartosc(dokument) -> list[list]:
+    """Grupy sąsiadujących wierszy „Etykieta:<tab>wartość”.
+
+    Puste akapity pomiędzy nie przerywają grupy — w bloku podpisu rozdzielają wiersze,
+    a i tak należą do tego samego układu.
+    """
+    from docx.text.paragraph import Paragraph                  # noqa: PLC0415
+
+    grupy, biezaca, puste_z_rzedu = [], [], 0
+
+    def zamknij():
+        nonlocal biezaca, puste_z_rzedu
+        if biezaca:
+            grupy.append(biezaca)
+        biezaca, puste_z_rzedu = [], 0
+
+    # Idziemy po **zawartości dokumentu**, nie po samych akapitach: tabela stojąca
+    # między blokiem nagłówkowym a podpisem znaczy, że to dwa osobne układy. Pętla
+    # po `dokument.paragraphs` w ogóle jej nie widzi i skleiłaby oba bloki w jeden.
+    for element in dokument.element.body:
+        if _nazwa(element) == "tbl":
+            zamknij()
+            continue
+        if _nazwa(element) != "p":
+            continue
+        akapit = Paragraph(element, dokument)
+        if _etykieta_i_wartosc(akapit):
+            biezaca.append(akapit)
+            puste_z_rzedu = 0
+        elif not akapit.text.strip():
+            puste_z_rzedu += 1
+            if puste_z_rzedu > PRZERWA_W_BLOKU:      # duża przerwa = osobny układ
+                zamknij()
+        else:
+            zamknij()
+    zamknij()
+    return [g for g in grupy if len(g) > 1]
+
+
+def _wyrownaj_bloki(dokument) -> int:
+    """Ustawia wartości bloku w jednej kolumnie, za najdłuższą etykietą.
+
+    Rozjazd bierze się stąd, że każdy wiersz ma własną liczbę tabulatorów i własne
+    wcięcie, a przystanek — jeśli w ogóle jest — bywa ustawiony bliżej niż kończy się
+    najdłuższa etykieta. Wtedy tabulator ją przeskakuje i ląduje na przypadkowym
+    przystanku domyślnym.
+
+    **Nie ruszamy bloków, które są już równe** — jeśli wszystkie wiersze mają ten sam
+    przystanek i mieści się za nim najdłuższa etykieta, to znaczy, że ktoś ustawił go
+    świadomie w Wordzie.
+    """
+    sekcja = dokument.sections[0]
+    szerokosc_tekstu = sekcja.page_width - sekcja.left_margin - sekcja.right_margin
+
+    zmienione = 0
+    for grupa in _bloki_etykieta_wartosc(dokument):
+        przystanki = [[t.position for t in p.paragraph_format.tab_stops] for p in grupa]
+        etykiety = [_etykieta_i_wartosc(p)[0] for p in grupa]
+        najdluzsza = max(_szerokosc(e, True) for e in etykiety)
+
+        rowny = (all(len(p) == 1 for p in przystanki)
+                 and len({p[0] for p in przystanki}) == 1)
+        if rowny:
+            wciecia = {int(p.paragraph_format.left_indent or 0) for p in grupa}
+            if len(wciecia) == 1 and przystanki[0][0] >= int(wciecia.pop()) + najdluzsza:
+                continue                                    # już równo i z zapasem
+
+        # wcięcie wspólne dla całej grupy: bierzemy najmniejsze, żeby nic nie uciekło
+        # poza margines (wcięcie pierwszego wiersza jest już zamienione na wcięcie
+        # akapitu, więc porównujemy jabłka z jabłkami)
+        wciecie = min(int(p.paragraph_format.left_indent or 0) for p in grupa)
+        kolumna = najdluzsza + int(ODSTEP_KOLUMNY)
+
+        # blok ma się zmieścić na stronie: jeśli za kolumną nie starcza miejsca
+        # na najdłuższą wartość, przesuwamy cały blok w lewo
+        najdluzsza_wartosc = max(_szerokosc(_etykieta_i_wartosc(p)[1], True) for p in grupa)
+        # z zapasem szerokości prześwitu: pomiar jest dokładny co do czcionki, ale
+        # Word łamie wiersz odrobinę wcześniej, niż wynika z sumy szerokości znaków
+        nadmiar = (wciecie + kolumna + najdluzsza_wartosc
+                   + int(ODSTEP_KOLUMNY) - int(szerokosc_tekstu))
+        if nadmiar > 0:
+            wciecie = max(0, wciecie - nadmiar)
+
+        for akapit in grupa:
+            ustawienia = akapit.paragraph_format
+            ustawienia.left_indent = Emu(wciecie)
+            ustawienia.first_line_indent = None
+            _zostaw_jeden_tabulator(akapit)
+            ustawienia.tab_stops.clear_all()
+            ustawienia.tab_stops.add_tab_stop(Emu(wciecie + kolumna))
+            zmienione += 1
+    return zmienione
 
 
 # --- typografia ------------------------------------------------------------------
@@ -468,7 +599,8 @@ def ujednolic(plik: Path, stopka_wzorcowa=None) -> dict[str, int]:
     dokument = docx.Document(plik)
     licznik = dict.fromkeys(
         ("tytul", "naglowek", "etykieta", "tresc", "podpis", "pusty",
-         "scalone", "wciecia", "tabulatory", "logo", "komorki", "stopka"), 0)
+         "scalone", "wciecia", "tabulatory", "kolumny", "logo", "komorki",
+         "stopka"), 0)
 
     # styl bazowy: cokolwiek dopiszesz później w Wordzie, wyjdzie w tym samym kroju
     normalny = dokument.styles["Normal"]
@@ -481,6 +613,14 @@ def ujednolic(plik: Path, stopka_wzorcowa=None) -> dict[str, int]:
     # plik wzorcowy normalizuje własną stopkę; reszta dostaje jego kopię
     licznik["stopka"] = _ujednolic_stopke(
         dokument, None if plik.name == STOPKA_WZORCOWA else stopka_wzorcowa)
+
+    # Wcięcia muszą być poprawione **przed** wyrównaniem bloków: dopóki wiersz ma
+    # wcięcie „pierwszego wiersza”, jego lewa krawędź jest inna niż się wydaje.
+    for akapit in dokument.paragraphs:
+        if akapit.text.strip():
+            licznik["wciecia"] += _popraw_wciecie(akapit)
+            licznik["tabulatory"] += _zostaw_jeden_tabulator(akapit)
+    licznik["kolumny"] = _wyrownaj_bloki(dokument)
 
     akapity = dokument.paragraphs
     z_trescia = [p for p in akapity if p.text.strip()]
@@ -501,9 +641,6 @@ def ujednolic(plik: Path, stopka_wzorcowa=None) -> dict[str, int]:
                     bieg.font.name, bieg.font.size = KROJ, PUSTY
                 licznik["pusty"] += 1
             continue
-
-        licznik["wciecia"] += _popraw_wciecie(akapit)
-        licznik["tabulatory"] += _popraw_tabulatory(akapit)
 
         if _rozmiar(akapit) == najwiekszy and najwiekszy > TRESC.pt:
             _ustaw(akapit, TYTUL, True, rozstrzelenie=TYTUL_ROZSTRZELENIE)
