@@ -211,17 +211,25 @@ def _plik_kroju(pogrubiony: bool):
     return None
 
 
+KOMUNIKAT_BRAK_KROJU = (
+    "Nie znaleziono pliku czcionki Calibri ani Carlito, a bez pomiaru nie da się\n"
+    "policzyć, gdzie postawić kolumnę wartości. Oszacowanie z liczby znaków wychodzi\n"
+    "inne niż prawdziwy pomiar (zmierzone: przystanek 3781 → 4371 twipów, czyli ponad\n"
+    "centymetr) i przestawiłoby układ w formatkach, których nikt nie prosił o zmianę.\n"
+    "Na Linuksie: sudo apt install fonts-crosextra-carlito"
+)
+
+
 def _szerokosc(tekst: str, pogrubiony: bool = False) -> float:
     """Szerokość napisu w EMU, przy rozmiarze tekstu zwykłego.
 
-    Mierzymy prawdziwym plikiem czcionki (Calibri albo metrycznie zgodne Carlito),
-    bo od tego zależy, gdzie postawić kolumnę wartości. Gdy czcionki nie ma,
-    szacujemy z liczby znaków — wynik jest wtedy zgrubny, ale nadal lepszy niż
-    przystanek wzięty z sufitu.
+    Mierzymy **prawdziwym plikiem czcionki** (Calibri albo metrycznie zgodne Carlito),
+    bo od tego zależy, gdzie postawić kolumnę wartości. Bez czcionki nie zgadujemy:
+    skrypt ma odmówić, a nie po cichu przesunąć bratu kolumny w całym operacie.
     """
     plik = _plik_kroju(pogrubiony)
     if plik is None:
-        return int(Mm(len(tekst) * TRESC.pt * 0.17))
+        raise SystemExit(KOMUNIKAT_BRAK_KROJU)
     from PIL import ImageFont                                  # noqa: PLC0415
     czcionka = ImageFont.truetype(plik, 100)
     punkty = czcionka.getlength(tekst) / 100 * TRESC.pt
@@ -672,6 +680,12 @@ def _sprawdz_kolejnosc(dokument) -> list[str]:
 
 
 def ujednolic(plik: Path, stopka_wzorcowa=None) -> dict[str, int]:
+    # Sprawdzamy krój **przed** otwarciem dokumentu, a nie dopiero przy pierwszym
+    # pomiarze: inaczej plik bez bloków „Etykieta: wartość” przeszedłby bez słowa,
+    # a następny w kolejce padłby w połowie serii.
+    if _plik_kroju(False) is None or _plik_kroju(True) is None:
+        raise SystemExit(KOMUNIKAT_BRAK_KROJU)
+
     dokument = docx.Document(plik)
     licznik = dict.fromkeys(
         ("tytul", "naglowek", "etykieta", "tresc", "podpis", "pusty",

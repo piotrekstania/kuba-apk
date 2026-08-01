@@ -16,7 +16,17 @@ MIESIACE = ["stycznia", "lutego", "marca", "kwietnia", "maja", "czerwca", "lipca
             "sierpnia", "września", "października", "listopada", "grudnia"]
 
 
+# Znaki, których rozkład NFKD nie rusza, bo nie są „litera + znak diakrytyczny”,
+# tylko osobnymi literami alfabetu. Bez tej tablicy wypadały z nazwy bez śladu:
+# „Sułkowice” robiło się „Sukowice”, a „Łódź” — „odz”.
+PODMIANY_LITER = str.maketrans({
+    "ł": "l", "Ł": "L", "đ": "d", "Đ": "D", "ø": "o", "Ø": "O",
+    "ß": "ss", "æ": "ae", "Æ": "Ae", "œ": "oe", "Œ": "Oe",
+})
+
+
 def _bez_ogonkow(tekst: str) -> str:
+    tekst = tekst.translate(PODMIANY_LITER)
     return "".join(z for z in unicodedata.normalize("NFKD", tekst) if not unicodedata.combining(z))
 
 

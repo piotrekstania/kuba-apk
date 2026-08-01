@@ -1,2 +1,2 @@
-2026.08.01.10
-Naprawione: w sprawozdaniu wiersz z tolerancjami pod „Pomiar kontrolny…” przesuwał się w lewo — program zwijał wpisane w Wordzie tabulatory do jednego. Teraz zostają nietknięte.
+2026.08.01.11
+Poprawka: polskie „ł” nie znika już z nazw plików — „Sułkowice” zostaje „Sulkowice”, a nie „Sukowice”. Formatki są bez zmian, ta wersja ich nie rusza.

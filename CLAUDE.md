@@ -48,6 +48,7 @@ zainstalowania/uruchomienia, bez instalowania Pythona.
 | **Skrypt ustala hierarchię, brat ustala akcenty.** `ujednolic_wyglad.py` narzuca już tylko krój, rozmiary tytułu/nagłówka/tekstu, logo i stopkę. Nie rusza: pogrubień (w treści, w etykietach, w tabelach), wyrównania akapitów, rozmiarów w tabelach ani tabulatorów poza wyrównywanym blokiem | ta lista rosła kosztem **czterech** wpadek — skrypt po kolei kasował bratu pogrubienia w treści, pogrubienia etykiet, wybrany rozmiar nagłówka („Spis treści” 11 → 12 pt) i wcięcie zrobione pięcioma tabulatorami. Za każdym razem jego świadomy wybór brałem za niespójność do naprawienia, a poprawianie tego w Wordzie nic nie dawało, bo skrypt cofał to przy następnym uruchomieniu. Zasada: **jak się wahasz, czy coś ujednolicić — nie ujednolicaj**. Jedyny wyjątek to czerwony numer roboty, zawsze pogrubiony |
 | **Jedna stopka, przepisywana z `spis_tresci_wzor.docx`** do pozostałych formatek | każda formatka przychodzi z własną kopią firmówki i drobne różnice same się w nich zalęgają: raz kreska jest obramowaniem akapitu, raz wklejonym obrazkiem, raz nazwa ulicy jest z wielkiej litery, raz z małej. Przystanki kolumn liczą się z szerokości **danej** strony, bo wykaz działki jest poziomy |
 | Kolumna wartości w blokach „Etykieta: wartość” liczona z **pomiaru najdłuższej etykiety** prawdziwym plikiem czcionki | przystanek wzięty „na oko” albo wpisany na sztywno prędzej czy później wypada przed końcem etykiety — wtedy tabulator ją przeskakuje i ląduje na przypadkowym przystanku domyślnym. Tak właśnie rozjeżdżał się nagłówek wykazów. Mierzy `PIL.ImageFont` po pliku Calibri/Carlito |
+| **Bez pliku czcionki skrypt odmawia pracy**, zamiast szacować z liczby znaków | oszacowanie wychodzi inne niż pomiar — zmierzone na obu wykazach: przystanek 3781 → 4371 twipów, czyli kolumna wartości przesunięta o ponad centymetr. Skrypt wypisywał przy tym zwykłe „kolumny: 4” i zapisywał plik, więc uruchomienie go na maszynie bez Calibri/Carlito po cichu przestawiało formatki, których nikt nie prosił o zmianę. Na Linuksie: `sudo apt install fonts-crosextra-carlito` |
 | **Calibri**, nie Bahnschrift | Bahnschrift jest tylko na Windowsie i nie ma odpowiednika na Linuksie, więc podglądy PDF u autora łamały się inaczej niż dokumenty u brata. Calibri ma metrycznie zgodne Carlito (`fonts-crosextra-carlito`) — ten sam plik łamie się tak samo po obu stronach |
 | **Bez numeracji stron**, jedna stopka na wszystkich stronach i we wszystkich dokumentach | operat i tak jest sklejany z kilkunastu plików w jeden PDF, więc numer strony pojedynczego dokumentu nic nie znaczy, a wprowadza w błąd. Uwaga: pole z numerem siedziało też w **nieużywanej** stopce stron parzystych i wróciłoby przy pierwszej zmianie ustawień — dlatego skrypt nadpisuje wszystkie trzy stopki |
 | W wykazie zmian działki identyfikator kończy się **kropką i niczym więcej** — `[{{ polozenie_obreb_teryt }}.]` | to **nie jest błąd ani niedokończona edycja**, tylko pomysł brata: program wstawia obręb, a numer działki brat dopisuje sam w Wordzie, bo w jednym wykazie bywa ich kilka i nie zawsze wszystkie z formularza. `{{ nr_dzialki }}` celowo nie występuje w tym pliku — nie „poprawiaj” tego |
@@ -318,8 +319,38 @@ dokumentu), a po nieudanym generowaniu oddawany przez `db.zwolnij_numer` — war
 Sprawdzone: trzy nieudane próby między dwoma dobrymi dokumentami dają `001` i `002`,
 bez dziury.
 
-**Nie ma jeszcze testów automatycznych.** Weryfikacja szła ręcznie przez przeglądarkę
-i skrypty jednorazowe.
+## Testy
+
+```bash
+.venv/bin/pip install -r requirements-dev.txt
+.venv/bin/pytest
+```
+
+Chodzą w kilkanaście sekund, bez sieci i bez Worda (konwersja jest podmieniana na atrapę;
+jeden test oznaczony markerem `konwerter` używa prawdziwego LibreOffice'a, gdy jest).
+Żaden test nie dotyka prawdziwych `wyniki/` i `dane/` — `tests/conftest.py` podmienia
+ścieżki **w każdym module z osobna**, bo `from .config import WYNIKI` przywiązuje je
+do modułu w chwili importu.
+
+Co pilnują, w kolejności od najbardziej bolesnych doświadczeń:
+
+| Plik | Czego pilnuje |
+| --- | --- |
+| `test_ujednolic_wyglad.py` | że skrypt **nie cofa decyzji brata** (pogrubienia w treści i w etykietach, rozmiar nagłówka, ciąg tabulatorów), jest idempotentny, a wydane formatki przechodzą kontrolę kolejności OOXML — czyli otworzą się w Wordzie |
+| `test_szablony.py` | że każda formatka daje się wczytać, nic nie wpada do „Pozostałych pól”, a **dokumenty dodatkowe nie używają znaczników, których formularz nie zbiera** (to najcichszy sposób zepsucia operatu: puste miejsce zamiast błędu) |
+| `test_generator.py` | numeracja bez dziur, poprawianie nieznużywające numeru, formaty dat, brak `{{ }}` w gotowym pliku |
+| `test_aktualizacja.py` | że `dane/` i `wyniki/` przeżywają, szablony są lustrzane, a nieudana aktualizacja zostawia działający program (GitHub podstawiony przez `file://`) |
+| `test_db.py` | migracje starej bazy bez utraty historii i licznika |
+| `test_trasy.py` | formularz → operat przez HTTP, polskie strony błędów, brak wyjścia poza `wyniki/` |
+| `test_operaty.py`, `test_pdf.py` | nazwy katalogów i plików, kolejność sklejania, komunikat przy uszkodzonym PDF |
+
+Testy stabilności formatek **pomijają się bez czcionki Calibri/Carlito**
+(`sudo apt install fonts-crosextra-carlito`), bo bez niej `ujednolic_wyglad.py` w ogóle
+odmawia pracy. W CI czcionka jest instalowana, więc tam ten strażnik zawsze działa.
+
+Testy chodzą w GitHub Actions przy każdym pushu na `main` — [.github/workflows/testy.yml](.github/workflows/testy.yml).
+**Zerknij na wynik, zanim podbijesz `WERSJA`**: u brata aktualizacja instaluje się sama
+przy starcie, więc czerwony test po wydaniu jest już tylko raportem ze szkody.
 
 ## Co dalej — kolejka
 
@@ -343,9 +374,9 @@ i skrypty jednorazowe.
    Uwaga przy pakowaniu: `pywin32` wymaga w PyInstallerze `--hidden-import win32com.client`
    i `--hidden-import pythoncom`, inaczej konwersja PDF w `.exe` nie ruszy.
 4. Kolejne typy dokumentów (protokół, szkic, sprawozdanie) — każdy to nowy plik w `szablony/`.
-5. Testy (pytest) na `odczytaj_dane`, `przygotuj_kontekst` i wykrywanie pól z szablonu.
-6. `bezpieczna_nazwa` gubi polskie znaki bez odpowiednika ASCII — „Sułkowice” w nazwie pliku
-   robi się „Sukowice”. Kosmetyka, ale warto podmienić na transliterację (ł→l, ą→a…).
+5. Pokrycie testami tego, czego dziś nie ruszają: Word przez COM (potrzebny Windows),
+   sieć do GUS-u i ULDK (atrapy odpowiedzi), renderowanie miniatur, układanie
+   kolejności myszą w przeglądarce.
 
 ## Pytania otwarte do brata
 
