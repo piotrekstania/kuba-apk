@@ -1,0 +1,35 @@
+name: testy
+
+# Czerwony krzyżyk przed podbiciem pliku WERSJA jest wart więcej niż ten sam test
+# uruchomiony po wydaniu — u brata aktualizacja instaluje się sama przy starcie.
+on:
+  push:
+    branches: [main]
+  pull_request:
+  workflow_dispatch:
+
+jobs:
+  pytest:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+          cache: pip
+
+      # Bez metrycznie zgodnej z Calibri czcionki testy stabilności formatek pomijają
+      # się po cichu — a to one pilnują, że skrypt nie przestawia dokumentów brata.
+      - name: Czcionka Carlito (zgodna metrycznie z Calibri)
+        run: |
+          sudo apt-get update -qq
+          sudo apt-get install -y -qq fonts-crosextra-carlito
+
+      - name: Zależności
+        run: pip install -r requirements-dev.txt
+
+      # Konwersję DOCX→PDF pomijamy: na runnerze nie ma Worda, a obecność
+      # LibreOffice'a zależy od wersji obrazu — reszta testów chodzi na atrapie.
+      - name: Testy
+        run: pytest -m "not konwerter"

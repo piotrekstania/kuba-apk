@@ -1,0 +1,8 @@
+# Narzędzia deweloperskie — NIE instalują się u użytkownika.
+# `start.bat` czyta wyłącznie requirements.txt, więc brat tego nie ciągnie.
+#
+#   .venv/bin/pip install -r requirements-dev.txt
+#   .venv/bin/pytest
+-r requirements.txt
+pytest==9.1.1
+httpx==0.28.1
