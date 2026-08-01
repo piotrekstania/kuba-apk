@@ -223,12 +223,22 @@ def _rozstrzel(bieg, wartosc: int) -> None:
 
 
 def _ustaw(akapit, rozmiar, pogrubienie, *, rozstrzelenie=0) -> None:
+    """`pogrubienie=None` znaczy „zostaw, jak jest w formatce”.
+
+    Podział ról: skrypt odpowiada za hierarchię (co jest tytułem, nagłówkiem,
+    etykietą), a autor formatki za akcenty wewnątrz tekstu — to on wie, która
+    wartość jest w danym dokumencie ważna. Wymuszanie grubości w treści kasowało
+    pogrubienia dokładane w Wordzie i wracały przy każdym uruchomieniu skryptu.
+    """
     for bieg in akapit.runs:
         bieg.font.name = KROJ
         bieg.font.size = rozmiar
         # czerwień to numer roboty — zostaje czerwona i zawsze pogrubiona, bo to
         # jedyna rzecz w dokumencie, której szuka się wzrokiem
-        bieg.bold = True if _czerwony(bieg) else pogrubienie
+        if _czerwony(bieg):
+            bieg.bold = True
+        elif pogrubienie is not None:
+            bieg.bold = pogrubienie
         bieg.underline = False
         _rozstrzel(bieg, rozstrzelenie)
 
@@ -512,7 +522,7 @@ def ujednolic(plik: Path, stopka_wzorcowa=None) -> dict[str, int]:
             akapit.paragraph_format.keep_with_next = True
             licznik["naglowek"] += 1
         elif akapit is ostatni and PODPIS in tekst:
-            _ustaw(akapit, TRESC, False)
+            _ustaw(akapit, TRESC, None)
             akapit.alignment = WD_ALIGN_PARAGRAPH.RIGHT
             akapit.paragraph_format.left_indent = None
             akapit.paragraph_format.first_line_indent = None
@@ -523,7 +533,7 @@ def ujednolic(plik: Path, stopka_wzorcowa=None) -> dict[str, int]:
             akapit.paragraph_format.keep_with_next = True
             licznik["etykieta"] += 1
         else:
-            _ustaw(akapit, TRESC, False)
+            _ustaw(akapit, TRESC, None)
             licznik["tresc"] += 1
 
     zarzuty = _sprawdz_kolejnosc(dokument)
