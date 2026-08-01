@@ -326,6 +326,12 @@ PO_ROZSTRZELENIU = ("w", "kern", "position", "sz", "szCs", "highlight", "u", "ef
                     "bdr", "shd", "fitText", "vertAlign", "rtl", "cs", "em", "lang",
                     "eastAsianLayout", "specVanish", "oMath")
 PO_OBLEWANIU = ("docPr", "cNvGraphicFramePr", "graphic", "sizeRelH", "sizeRelV")
+# `w:tabs` w `w:pPr` stoi zaraz za `w:pBdr` i `w:shd`
+PO_PRZYSTANKACH = ("suppressAutoHyphens", "kinsoku", "wordWrap", "overflowPunct",
+                   "topLinePunct", "autoSpaceDE", "autoSpaceDN", "bidi",
+                   "adjustRightInd", "snapToGrid", "spacing", "ind",
+                   "contextualSpacing", "jc", "textAlignment", "outlineLvl",
+                   "rPr", "sectPr")
 
 # Te sposoby oblewania wymagają atrybutu `wrapText` — bez niego Word odrzuca plik.
 OBLEWANIE_Z_TEKSTEM = ("wrapSquare", "wrapTight", "wrapThrough")
@@ -493,6 +499,37 @@ def _stopka_wzorcowa() -> list | None:
     return None
 
 
+def _przystanki_stopki(dokument) -> None:
+    """Rozkłada trzy kolumny stopki na pełną szerokość **tej** strony.
+
+    Stopka jest jedna dla wszystkich formatek, a przystanki miała wpisane na sztywno
+    (80 mm na środek, 160 mm do prawej) — czyli pod kartkę pionową. Na poziomej,
+    gdzie tekst ma 248 mm, dane kończyły się w dwóch trzecich szerokości i wyglądało
+    to, jakby ktoś wkleił stopkę z innego dokumentu. Liczymy je więc z rozmiaru strony.
+    """
+    sekcja = dokument.sections[0]
+    szerokosc = int(sekcja.page_width) - int(sekcja.left_margin) - int(sekcja.right_margin)
+    polowa = szerokosc // 2
+
+    for styl in dokument.styles:
+        if styl.style_id not in ("Stopka", "Footer"):
+            continue
+        pPr = styl.element.find(qn("w:pPr"))
+        if pPr is None:
+            continue
+        przystanki = pPr.find(qn("w:tabs"))
+        if przystanki is None:
+            przystanki = OxmlElement("w:tabs")
+            _wstaw_przed(pPr, przystanki, PO_PRZYSTANKACH)
+        for stary in list(przystanki):
+            przystanki.remove(stary)
+        for wyrownanie, pozycja in (("center", polowa), ("right", szerokosc)):
+            tab = OxmlElement("w:tab")
+            tab.set(qn("w:val"), wyrownanie)
+            tab.set(qn("w:pos"), str(int(pozycja / 914400 * 1440)))    # EMU -> twipy
+            przystanki.append(tab)
+
+
 def _ujednolic_stopke(dokument, wzorcowe=None) -> int:
     """Jedna stopka: na każdej stronie, w każdym dokumencie, bez numeracji stron.
 
@@ -514,6 +551,8 @@ def _ujednolic_stopke(dokument, wzorcowe=None) -> int:
             if gora is not None:                     # gruba kreska -> włos
                 gora.set(qn("w:sz"), "2")
                 gora.set(qn("w:color"), "BFBFBF")
+
+    _przystanki_stopki(dokument)
 
     zmienione = 0
     for sekcja in dokument.sections:
