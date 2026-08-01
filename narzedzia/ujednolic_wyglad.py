@@ -143,7 +143,12 @@ def _scal_ciagi(dokument) -> int:
         moze = (poprzedni is not None and tekst and do_lewej and czysty
                 and not _znacznik(tekst) and not _znacznik(poprzedni.text)
                 and len(poprzedni.text.strip()) >= DLUGOSC_PELNEGO_WIERSZA
-                and not poprzedni.text.strip().endswith(ZAMYKA_ZDANIE))
+                and not poprzedni.text.strip().endswith(ZAMYKA_ZDANIE)
+                # dalszy ciąg musi zaczynać się małą literą — wtedy to bez wątpienia
+                # środek zdania. Wiersz zaczynający się wielką literą, cyfrą albo
+                # nawiasem bywa **celowo** osobny (tolerancje pomiaru w nawiasach
+                # kwadratowych pod opisem punktu) i sklejenie go psuje układ
+                and tekst[:1].islower())
         if moze:
             ostatni = poprzedni.runs[-1]
             if not ostatni.text.endswith(" "):
@@ -724,8 +729,11 @@ def ujednolic(plik: Path, stopka_wzorcowa=None) -> dict[str, int]:
             akapit.paragraph_format.first_line_indent = None
             licznik["podpis"] += 1
         elif tekst.endswith(":"):
-            _ustaw(akapit, TRESC, True)
-            # etykieta bez swojej wartości na dole strony wygląda na urwany dokument
+            # Grubości etykiety też nie narzucamy: brat pisze etykiety zwykłym pismem,
+            # a pogrubia wartości — i to on ma o tym decydować. Rola „etykieta” zostaje,
+            # bo niesie coś innego: etykieta bez swojej wartości na dole strony wygląda
+            # na urwany dokument.
+            _ustaw(akapit, TRESC, None)
             akapit.paragraph_format.keep_with_next = True
             licznik["etykieta"] += 1
         else:
