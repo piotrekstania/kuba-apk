@@ -296,12 +296,12 @@ i skrypty jednorazowe.
 
 ## Co dalej — kolejka
 
-1. **Dwa wykazy zmian czekają na prawdziwe formatki.** `spis_tresci_wzor.docx`
-   i `sprawozdanie_techniczne_wzor.docx` to już formatki brata z wstawionymi tagami,
-   po przejściu `ujednolic_wyglad.py`. Natomiast `wykaz_zmian_budynku_wzor.docx`
-   i `wykaz_zmian_dzialki_wzor.docx` to nadal szkielety z `utworz_wzory_wykazow.py`
-   — nagłówki ich tabel są zmyślone. Gdy przyjdą prawdziwe: zachować nazwy plików,
-   przenieść tagi i puścić `ujednolic_wyglad.py`, a potem `popraw_szablon.py`.
+1. **Wykaz zmian dotyczący działki czeka na prawdziwą formatkę.** Spis treści,
+   sprawozdanie i wykaz zmian budynku to już formatki brata, po przejściu
+   `ujednolic_wyglad.py`. Zostaje `wykaz_zmian_dzialki_wzor.docx` — szkielet
+   z `utworz_wzory_wykazow.py`, którego nagłówki tabeli są zmyślone. Gdy przyjdzie
+   prawdziwa: zachować nazwę pliku, sprawdzić, czy ma tagi (budynkowa przyszła już
+   z nimi), i puścić `ujednolic_wyglad.py`, a potem `popraw_szablon.py`.
 2. **Wczytywanie wykazu współrzędnych z pliku** zamiast wklepywania/wklejania — brat pewnie
    eksportuje dane z programu geodezyjnego (C-Geo, WinKalk, Geonet). Trzeba zapytać o format
    i dopisać parser.

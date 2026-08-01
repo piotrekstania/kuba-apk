@@ -68,6 +68,9 @@ LOGO_SZEROKOSC = Mm(50)
 LOGO_OD_LEWEJ = Mm(5.8)
 LOGO_OD_GORY = Mm(4)
 
+# Stopka pochodzi z jednego pliku i jest przepisywana do pozostałych — patrz
+# `_stopka_wzorcowa`. Ten plik jest jej źródłem prawdy.
+STOPKA_WZORCOWA = "spis_tresci_wzor.docx"
 STOPKA_ROZMIAR = Pt(8)
 STOPKA_KOLOR = RGBColor(0x6B, 0x6B, 0x6B)
 
@@ -328,7 +331,28 @@ def _stopka_biegi(akapit) -> None:
             rPr.remove(caps)
 
 
-def _ujednolic_stopke(dokument) -> int:
+def _stopka_wzorcowa() -> list | None:
+    """Akapity stopki z pliku wzorcowego — jedno źródło prawdy dla wszystkich formatek.
+
+    Każda formatka przychodzi z własną kopią firmówki i drobne różnice same się w nich
+    zalęgają: raz kreska jest obramowaniem akapitu, raz wklejonym obrazkiem, w jednej
+    nazwa ulicy jest z wielkiej litery, w innej z małej. Zamiast poprawiać to w kółko
+    ręcznie, każdy dokument dostaje stopkę przepisaną z `spis_tresci_wzor.docx`.
+    """
+    wzorzec = SZABLONY / STOPKA_WZORCOWA
+    if not wzorzec.exists():
+        return None
+    dokument = docx.Document(wzorzec)
+    for sekcja in dokument.sections:
+        akapity = [p for p in sekcja.first_page_footer.paragraphs if p.text.strip()]
+        # przepisujemy tylko czysty tekst: obrazek niósłby ze sobą powiązanie z paczki
+        # źródłowej, którego w pliku docelowym nie ma
+        if akapity and not any(p._p.findall(".//{*}drawing") for p in akapity):
+            return [copy.deepcopy(p._p) for p in akapity]
+    return None
+
+
+def _ujednolic_stopke(dokument, wzorcowe=None) -> int:
     """Jedna stopka: na każdej stronie, w każdym dokumencie, bez numeracji stron.
 
     Numer strony siedział w zwykłej stopce (stopka pierwszej strony miała dane firmy).
@@ -352,28 +376,34 @@ def _ujednolic_stopke(dokument) -> int:
 
     zmienione = 0
     for sekcja in dokument.sections:
-        zrodlo = [p for p in sekcja.first_page_footer.paragraphs if p.text.strip()]
-        if not zrodlo:
-            continue
-        for akapit in zrodlo:
-            _stopka_biegi(akapit)
+        if wzorcowe:
+            wzorcowa_stopka = wzorcowe
+        else:
+            wlasne = [p for p in sekcja.first_page_footer.paragraphs if p.text.strip()]
+            if not wlasne:
+                continue
+            for akapit in wlasne:
+                _stopka_biegi(akapit)
+            wzorcowa_stopka = [copy.deepcopy(p._p) for p in wlasne]
 
-        # także stopka stron parzystych: nie jest teraz używana, ale trzymała
-        # pole z numerem strony i odezwałaby się przy pierwszej zmianie ustawień
-        for cel in (sekcja.footer, sekcja.even_page_footer):
+        # wszystkie trzy stopki dostają to samo: pierwsza strona, dalsze i parzyste.
+        # Ta ostatnia nie jest teraz używana, ale trzymała pole z numerem strony
+        # i odezwałaby się przy pierwszej zmianie ustawień
+        for cel in (sekcja.first_page_footer, sekcja.footer, sekcja.even_page_footer):
             for akapit in list(cel.paragraphs):
                 akapit._p.getparent().remove(akapit._p)
-            for akapit in zrodlo:
-                cel._element.append(copy.deepcopy(akapit._p))
+            for akapit in wzorcowa_stopka:
+                cel._element.append(copy.deepcopy(akapit))
             zmienione += 1
     return zmienione
 
 
 def _ujednolic_tabele(dokument) -> int:
-    """Komórki tabel: ten sam krój i rozmiar, grubość zostaje.
+    """Komórki tabel: ten sam krój, ale **rozmiar i grubość zostają**.
 
-    Nagłówek tabeli bywa pogrubiony celowo, a treść nie — tego nie ruszamy,
-    bo w tabeli grubość niesie znaczenie, a nie tylko wygląd.
+    Formularz z kilkunastoma wierszami bywa złożony 7-punktową czcionką, żeby zmieścić
+    się na stronie — narzucenie mu rozmiaru tekstu zwykłego rozsypałoby tabelę.
+    Grubość w tabeli też niesie znaczenie (nagłówek kolumny), a nie sam wygląd.
     """
     komorki = 0
     for tabela in dokument.tables:
@@ -382,7 +412,6 @@ def _ujednolic_tabele(dokument) -> int:
                 for akapit in komorka.paragraphs:
                     for bieg in akapit.runs:
                         bieg.font.name = KROJ
-                        bieg.font.size = TRESC
                 komorki += 1
     return komorki
 
@@ -425,7 +454,7 @@ def _sprawdz_kolejnosc(dokument) -> list[str]:
     return zarzuty
 
 
-def ujednolic(plik: Path) -> dict[str, int]:
+def ujednolic(plik: Path, stopka_wzorcowa=None) -> dict[str, int]:
     dokument = docx.Document(plik)
     licznik = dict.fromkeys(
         ("tytul", "naglowek", "etykieta", "tresc", "podpis", "pusty",
@@ -439,12 +468,16 @@ def ujednolic(plik: Path) -> dict[str, int]:
     licznik["scalone"] = _scal_ciagi(dokument)
     licznik["logo"] = _ustaw_logo(dokument)
     licznik["komorki"] = _ujednolic_tabele(dokument)
-    licznik["stopka"] = _ujednolic_stopke(dokument)
+    # plik wzorcowy normalizuje własną stopkę; reszta dostaje jego kopię
+    licznik["stopka"] = _ujednolic_stopke(
+        dokument, None if plik.name == STOPKA_WZORCOWA else stopka_wzorcowa)
 
     akapity = dokument.paragraphs
     z_trescia = [p for p in akapity if p.text.strip()]
     najwiekszy = max((_rozmiar(p) for p in z_trescia), default=0)
     ostatni = z_trescia[-1] if z_trescia else None
+    tytuly = [p._p for p in z_trescia
+              if _rozmiar(p) == najwiekszy and najwiekszy > TRESC.pt]
 
     for akapit in akapity:
         tekst = akapit.text.strip()
@@ -465,8 +498,14 @@ def ujednolic(plik: Path) -> dict[str, int]:
         if _rozmiar(akapit) == najwiekszy and najwiekszy > TRESC.pt:
             _ustaw(akapit, TYTUL, True, rozstrzelenie=TYTUL_ROZSTRZELENIE)
             akapit.alignment = WD_ALIGN_PARAGRAPH.CENTER
-            akapit.paragraph_format.space_before = ODSTEP_NAD_TYTULEM
-            akapit.paragraph_format.space_after = ODSTEP_POD_TYTULEM
+            # Tytuł bywa złożony z kilku akapitów („WYKAZ ZMIAN DANYCH EWIDENCYJNYCH”
+            # / „DOTYCZĄCYCH BUDYNKU”). Odstęp należy się całemu blokowi, a nie każdemu
+            # wierszowi z osobna — inaczej tytuł rozjeżdża się w pionie.
+            akapit.paragraph_format.space_before = (
+                ODSTEP_NAD_TYTULEM if akapit._p is tytuly[0] else Pt(0))
+            akapit.paragraph_format.space_after = (
+                ODSTEP_POD_TYTULEM if akapit._p is tytuly[-1] else Pt(0))
+            akapit.paragraph_format.keep_with_next = True
             licznik["tytul"] += 1
         elif _rozmiar(akapit) > TRESC.pt:
             _ustaw(akapit, NAGLOWEK, True)
@@ -502,10 +541,16 @@ if __name__ == "__main__":
     argumenty = parser.parse_args()
 
     pliki = [Path(s) for s in argumenty.szablony] or sorted(SZABLONY.glob("*_wzor.docx"))
+
+    # plik wzorcowy przepuszczamy najpierw, żeby reszta dostała już poprawioną stopkę
+    wzorcowy = SZABLONY / STOPKA_WZORCOWA
+    if wzorcowy.exists() and not any(p.name == STOPKA_WZORCOWA for p in pliki):
+        ujednolic(wzorcowy)
+    wzorcowa = _stopka_wzorcowa()
     for plik in pliki:
         if not plik.exists():
             print(f"Nie ma pliku {plik}")
             continue
-        podsumowanie = ujednolic(plik)
+        podsumowanie = ujednolic(plik, wzorcowa)
         print(f"{plik.name}: "
               + ", ".join(f"{n}: {i}" for n, i in podsumowanie.items() if i))

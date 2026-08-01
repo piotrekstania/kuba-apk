@@ -1,2 +1,2 @@
-2026.08.01.1
-Poprawiony sam numer wersji: data w numerze stanęła na 31 lipca, choć wydania szły już 1 sierpnia. Program działa dokładnie tak samo jak w poprzedniej wersji.
+2026.08.01.2
+Nowość: prawdziwa formatka wykazu zmian danych ewidencyjnych dotyczących budynku — z tabelą atrybutów wymaganą przez ośrodek, w tym samym wyglądzie co spis treści i sprawozdanie. Poprawione: wartości w nagłówku wykazu stoją w jednej kolumnie, a stopka jest teraz przepisywana z jednego wzorca, więc we wszystkich dokumentach jest identyczna.
