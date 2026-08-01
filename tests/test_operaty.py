@@ -98,6 +98,16 @@ def test_katalog_po_nazwie_nie_wypuszcza_poza_wyniki(srodowisko):
 def test_lista_operatow_od_najnowszego(srodowisko):
     operaty.zaloz("001/2026", "GK.1.2026", "spis_tresci_wzor", {})
     operaty.zaloz("002/2026", "GK.2.2026", "spis_tresci_wzor", {})
+    # Daty wpisujemy ręcznie: `utworzono` ma dokładność do sekundy, więc dwa operaty
+    # założone w tej samej sekundzie mają identyczny klucz sortowania i o kolejności
+    # decyduje przypadek (kolejność z `iterdir`). Na dysku brata to bez znaczenia —
+    # w teście dawało wynik zależny od maszyny.
+    for nazwa, kiedy in (("001.2026", "2026-07-31T09:00:00"),
+                         ("002.2026", "2026-08-01T09:00:00")):
+        plik = srodowisko.wyniki / nazwa / "operat.json"
+        plik.write_text(json.dumps({**json.loads(plik.read_text(encoding="utf-8")),
+                                    "utworzono": kiedy}, ensure_ascii=False),
+                        encoding="utf-8")
     # katalog bez operat.json nie jest operatem
     (srodowisko.wyniki / "przypadkowy_folder").mkdir()
 
