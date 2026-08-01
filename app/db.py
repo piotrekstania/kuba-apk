@@ -2,6 +2,7 @@
 import json
 import shutil
 import sqlite3
+from contextlib import contextmanager
 from datetime import datetime
 from typing import Any
 
@@ -83,6 +84,23 @@ def polacz() -> sqlite3.Connection:
     return con
 
 
+@contextmanager
+def polaczenie():
+    """Połączenie z bazą, **zamykane** po wyjściu z bloku.
+
+    `with sqlite3.connect(...)` zatwierdza transakcję, ale pliku nie zamyka. Na Linuksie
+    nie widać tego wcale — otwarty uchwyt nie przeszkadza skasować ani podmienić pliku.
+    Na Windowsie (czyli u brata) zablokowana baza to `PermissionError` przy każdej próbie
+    ruszenia pliku: przywróceniu kopii zapasowej, podmianie bazy, sprzątaniu katalogu.
+    """
+    con = polacz()
+    try:
+        with con:                     # commit przy wyjściu, rollback przy wyjątku
+            yield con
+    finally:
+        con.close()
+
+
 def _kopia_przed_migracja(wersja: int) -> None:
     if not BAZA_DANYCH.exists():
         return
@@ -93,7 +111,7 @@ def _kopia_przed_migracja(wersja: int) -> None:
 
 
 def init() -> None:
-    with polacz() as con:
+    with polaczenie() as con:
         con.executescript(SCHEMAT)
         wersja = int(con.execute("PRAGMA user_version").fetchone()[0])
         if wersja == 0:
@@ -106,7 +124,7 @@ def init() -> None:
         return
 
     _kopia_przed_migracja(wersja)
-    with polacz() as con:
+    with polaczenie() as con:
         for nastepna in range(wersja + 1, WERSJA_SCHEMATU + 1):
             for polecenie in MIGRACJE.get(nastepna, []):
                 con.execute(polecenie)
@@ -117,7 +135,7 @@ def init() -> None:
 
 def zapisz_dokument(szablon: str, tytul: str, plik_docx: str, dane: dict[str, Any],
                     katalog: str = "", nr_operatu: str = "") -> int:
-    with polacz() as con:
+    with polaczenie() as con:
         kursor = con.execute(
             "INSERT INTO dokumenty (szablon, tytul, plik_docx, dane_json, utworzono,"
             " katalog, nr_operatu) VALUES (?, ?, ?, ?, ?, ?, ?)",
@@ -134,7 +152,7 @@ def zaktualizuj_dokument(dokument_id: int, tytul: str, dane: dict[str, Any],
     Ścieżki też odświeżamy: gdy ktoś skasuje katalog operatu z Eksploratora, poprawianie
     zakłada go od nowa i wpis musi wskazywać to, co naprawdę leży na dysku.
     """
-    with polacz() as con:
+    with polaczenie() as con:
         con.execute(
             "UPDATE dokumenty SET tytul = ?, dane_json = ?, plik_docx = ?, katalog = ?"
             " WHERE id = ?",
@@ -142,44 +160,44 @@ def zaktualizuj_dokument(dokument_id: int, tytul: str, dane: dict[str, Any],
 
 
 def ustaw_pdf(dokument_id: int, plik_pdf: str) -> None:
-    with polacz() as con:
+    with polaczenie() as con:
         con.execute("UPDATE dokumenty SET plik_pdf = ? WHERE id = ?", (plik_pdf, dokument_id))
 
 
 def dokument(dokument_id: int) -> sqlite3.Row | None:
-    with polacz() as con:
+    with polaczenie() as con:
         return con.execute("SELECT * FROM dokumenty WHERE id = ?", (dokument_id,)).fetchone()
 
 
 def dokumenty(limit: int = 100) -> list[sqlite3.Row]:
-    with polacz() as con:
+    with polaczenie() as con:
         return con.execute(
             "SELECT * FROM dokumenty ORDER BY id DESC LIMIT ?", (limit,)
         ).fetchall()
 
 
 def usun_dokument(dokument_id: int) -> None:
-    with polacz() as con:
+    with polaczenie() as con:
         con.execute("DELETE FROM dokumenty WHERE id = ?", (dokument_id,))
 
 
 # --- ustawienia (dane stałe geodety, podstawiane do każdego dokumentu) -------
 
 def wczytaj_ustawienia() -> dict[str, str]:
-    with polacz() as con:
+    with polaczenie() as con:
         return {w["klucz"]: w["wartosc"] for w in con.execute("SELECT * FROM ustawienia")}
 
 
 def zastap_ustawienia(wartosci: dict[str, str]) -> None:
     """Formularz przysyła komplet pól, więc usunięte wiersze mają zniknąć z bazy."""
-    with polacz() as con:
+    with polaczenie() as con:
         con.execute("DELETE FROM ustawienia")
         con.executemany("INSERT INTO ustawienia (klucz, wartosc) VALUES (?, ?)",
                         list(wartosci.items()))
 
 
 def zapisz_ustawienia(wartosci: dict[str, str]) -> None:
-    with polacz() as con:
+    with polaczenie() as con:
         con.executemany(
             "INSERT INTO ustawienia (klucz, wartosc) VALUES (?, ?)"
             " ON CONFLICT(klucz) DO UPDATE SET wartosc = excluded.wartosc",
@@ -191,7 +209,7 @@ def zapisz_ustawienia(wartosci: dict[str, str]) -> None:
 
 def nastepny_numer(nazwa: str, rok: int) -> int:
     """Zwiększa i zwraca licznik. Transakcja, więc bezpieczne przy kilku kartach."""
-    with polacz() as con:
+    with polaczenie() as con:
         con.execute(
             "INSERT INTO liczniki (nazwa, rok, stan) VALUES (?, ?, 1)"
             " ON CONFLICT(nazwa, rok) DO UPDATE SET stan = stan + 1",
@@ -209,7 +227,7 @@ def zwolnij_numer(nazwa: str, rok: int, stan: int) -> bool:
     licznik stoi już gdzie indziej i cofanie go zdublowałoby numer. Wtedy wolimy dziurę
     w numeracji niż dwa operaty o tym samym numerze.
     """
-    with polacz() as con:
+    with polaczenie() as con:
         kursor = con.execute(
             "UPDATE liczniki SET stan = stan - 1 WHERE nazwa = ? AND rok = ? AND stan = ?",
             (nazwa, rok, stan),
@@ -219,7 +237,7 @@ def zwolnij_numer(nazwa: str, rok: int, stan: int) -> bool:
 
 def podglad_numeru(nazwa: str, rok: int) -> int:
     """Jaki numer zostanie nadany następnym razem (bez zużywania go)."""
-    with polacz() as con:
+    with polaczenie() as con:
         wiersz = con.execute(
             "SELECT stan FROM liczniki WHERE nazwa = ? AND rok = ?", (nazwa, rok)
         ).fetchone()

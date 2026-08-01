@@ -281,6 +281,12 @@ też brat. Interfejs w całości po polsku.
    zwraca pustkę, licznik postępu i tak dobija do końca i wygląda to jak udane pobranie.
    Tak samo znacznik „trwa” trzeba postawić **w funkcji startującej, pod zamkiem**, a nie
    w wątku roboczym — inaczej dwa szybkie kliknięcia uruchamiają dwa pobierania naraz.
+19. **`with sqlite3.connect(...)` nie zamyka pliku** — zatwierdza transakcję i tyle.
+   Na Linuksie otwarty uchwyt nie przeszkadza nawet skasować bazy, więc wyciek połączeń
+   przeżył cały rozwój niezauważony; na Windowsie, czyli u brata, każda próba ruszenia
+   pliku to `PermissionError`. Stąd `db.polaczenie()` — context manager, który commituje
+   **i** zamyka. Pilnuje tego `test_polaczenie_zamyka_plik_bazy`, bo przy samej różnicy
+   platform CI tego nie złapie. Wyszło dopiero, gdy testy bazy puszczono na Windowsie.
 
 ## Stan na teraz — przetestowane end-to-end
 
@@ -359,7 +365,8 @@ Co pilnują, w kolejności od najbardziej bolesnych doświadczeń:
 | `test_szablony.py` | że każda formatka daje się wczytać, nic nie wpada do „Pozostałych pól”, a **dokumenty dodatkowe nie używają znaczników, których formularz nie zbiera** (to najcichszy sposób zepsucia operatu: puste miejsce zamiast błędu) |
 | `test_generator.py` | numeracja bez dziur, poprawianie nieznużywające numeru, formaty dat, brak `{{ }}` w gotowym pliku |
 | `test_aktualizacja.py` | że `dane/` i `wyniki/` przeżywają, szablony są lustrzane, a nieudana aktualizacja zostawia działający program (GitHub podstawiony przez `file://`) |
-| `test_db.py` | migracje starej bazy bez utraty historii i licznika |
+| `test_db.py` | migracje starej bazy bez utraty historii i licznika; że połączenie **zamyka plik** (inaczej Windows blokuje bazę) |
+| `test_word.py` | ścieżka przez Worda (COM) — tylko Windows z Office, nigdy w CI; opis niżej |
 | `test_trasy.py` | formularz → operat przez HTTP, polskie strony błędów, brak wyjścia poza `wyniki/` |
 | `test_operaty.py`, `test_pdf.py` | nazwy katalogów i plików, kolejność sklejania, komunikat przy uszkodzonym PDF |
 
@@ -371,12 +378,12 @@ Testy chodzą w GitHub Actions przy każdym pushu na `main` — [.github/workflo
 **Zerknij na wynik, zanim podbijesz `WERSJA`**: u brata aktualizacja instaluje się sama
 przy starcie, więc czerwony test po wydaniu jest już tylko raportem ze szkody.
 
-### Do zrobienia na Windowsie: testy ścieżki wordowej
+### Testy ścieżki wordowej — `tests/test_word.py`
 
-Ta część jest nietestowana i **nie da się jej sprawdzić na Linuksie ani w CI** (na runnerze
-nie ma Worda). Poniżej przepis dla sesji odpalonej w `E:\git\kuba-apk`.
-
-Środowisko:
+Napisane i przechodzące na Windows 11 + Office 16.0 (Python 3.14, 01.08.2026).
+**Nie da się ich sprawdzić na Linuksie ani w CI** — na runnerze nie ma Worda, więc
+`.github/workflows/testy.yml` pomija je przez `-m "not konwerter and not word"`.
+Uruchamiasz je ręcznie przed każdym wydaniem dotykającym `app/pdf.py`:
 
 ```bat
 .venv\Scripts\pip install -r requirements-dev.txt
@@ -384,47 +391,36 @@ nie ma Worda). Poniżej przepis dla sesji odpalonej w `E:\git\kuba-apk`.
 ```
 
 Przed pierwszym uruchomieniem **otwórz Worda ręcznie i zamknij** — świeża instalacja Office
-potrafi przy pierwszym starcie pokazać okno aktywacji albo pytanie o domyślny format, a wtedy
-konwersja wisi, zamiast paść. To samo dotyczy komputera brata.
+potrafi pokazać okno aktywacji albo pytanie o domyślny format, a wtedy konwersja wisi,
+zamiast paść. To samo dotyczy komputera brata.
 
-Nowy plik `tests/test_word.py`, wszystko za markerem `word` (jest już zarejestrowany
-w `pyproject.toml`) i za wspólnym warunkiem pominięcia:
-
-```python
-pytestmark = [
-    pytest.mark.word,
-    pytest.mark.skipif(sys.platform != "win32", reason="ścieżka wordowa tylko na Windowsie"),
-    pytest.mark.skipif(pdf.dostepny_konwerter() != "word", reason="Word niewykryty"),
-]
-```
-
-Co napisać, w kolejności ważności:
-
-| Test | Co sprawdza i dlaczego akurat to |
+| Test | Czego pilnuje |
 | --- | --- |
-| `test_konwersja_pojedyncza` | `pdf.docx_na_pdf` robi PDF, a `PdfReader.extract_text` zawiera wpisany numer operatu. Po konwersji **nie ma pliku `*.czesciowy`** — plik roboczy ma zniknąć niezależnie od wyniku |
-| `test_nie_zostaje_wiszacy_word` | liczba procesów `WINWORD.EXE` po konwersji nie jest większa niż przed (`tasklist /FI "IMAGENAME eq WINWORD.EXE"`). Bez `Quit()` w `finally` proces zostaje i przy kolejnych robotach mnoży się w tle — objaw u brata: komputer zwalnia, a Word „nie chce się otworzyć” |
-| `test_konwersja_z_watku_roboczego` | `docx_na_pdf` puszczone przez `ThreadPoolExecutor` kończy się PDF-em. To jest **główny powód**, dla którego nie używamy `docx2pdf`: trasy `/scal` i miniatury chodzą w puli wątków, a tam bez `CoInitialize()` leci `CoInitialize has not been called` |
-| `test_dwie_konwersje_naraz` | dwa wątki naraz → oba PDF-y powstają i żaden nie jest urwany. Pilnuje `_BLOKADA_KONWERSJI`; bez niej dwie instancje Worda potrafiły sobie nawzajem zamknąć sesję |
-| `test_wsad_jednym_uruchomieniem` | `docx_na_pdf_wsad` na czterech dokumentach oddaje cztery PDF-y i trwa **wyraźnie krócej** niż cztery osobne wywołania (na LibreOfficie było 3,55 s → 1,17 s; na Wordzie różnica ma być większa, bo start jest droższy). Asercję czasową daj z dużym zapasem — to ma łapać regresję „wróciliśmy do startu na dokument”, a nie mierzyć wydajność |
-| `test_awaria_worda_schodzi_na_libreoffice` | podmień `pdf._wordem_wsad` na rzucający wyjątek; gdy obok jest LibreOffice, PDF ma i tak powstać. Gdy go nie ma — `BrakKonwertera` z komunikatem o oknie dialogowym, po polsku |
-| `test_trasa_scal_prawdziwym_wordem` | jeden test end-to-end przez `TestClient`: operat z dwoma dokumentami → `POST /scal/{katalog}` → w katalogu leży sklejony PDF o nazwie numeru roboty. To sprawdza całą ścieżkę razem z wątkami FastAPI |
-| `test_zakladki_z_naglowkow` | dokument ze stylem `Heading 1` → `PdfReader.outline` niepuste. Pilnuje `CreateBookmarks` w `ExportAsFixedFormat`; jak się zepsuje, nikt nie zauważy, dopóki ktoś nie otworzy operatu w czytniku |
+| `test_konwersja_pojedyncza` | PDF ma treść dokumentu i **nie zostaje plik `*.czesciowy`** |
+| `test_nie_zostaje_wiszacy_word` | liczba procesów `WINWORD.EXE` nie rośnie — bez `Quit()` w `finally` mnożą się w tle |
+| `test_konwersja_z_watku_roboczego` | konwersja z puli wątków; to jest **powód, dla którego nie ma docx2pdf** |
+| `test_dwie_konwersje_naraz` | `_BLOKADA_KONWERSJI`; żaden PDF nie jest urwany |
+| `test_wsad_jednym_uruchomieniem` | wsad wyraźnie szybszy niż konwersje po kolei — zmierzone na Wordzie przy czterech dokumentach: **26,5 s → 4,2 s (84% mniej)**, bo Word startuje raz zamiast czterech razy (na LibreOfficie było 3,55 s → 1,17 s) |
+| `test_zakladki_z_naglowkow` | `CreateBookmarks` — brak zauważy dopiero ktoś otwierający operat w czytniku |
+| `test_awaria_worda_*` | zejście na LibreOffice, a bez niego polski komunikat o oknie dialogowym |
+| `test_trasa_scal_prawdziwym_wordem` | cała ścieżka przez HTTP: operat → `POST /scal` → PDF o nazwie numeru roboty |
 
-Pułapki, na które uważaj przy pisaniu:
+Dwie rzeczy, które wyglądają na awarię, a nią nie są:
 
-* **Nie puszczaj tych testów równolegle** (`-n auto` z pytest-xdist) — Word to jedna aplikacja
-  na komputerze; równoległość testuje wtedy sam siebie, nie kod.
-* Konwersja to ok. 1,5 s na dokument, więc cała ta grupa potrwa kilkanaście sekund. To nie
-  jest powód, żeby ją pomijać, ale jest powód, żeby trzymała się markera `word`.
-* Gdy test padnie w połowie, **zajrzyj do Menedżera zadań** i ubij zostawionego `WINWORD.EXE`,
-  zanim uruchomisz kolejny — inaczej następne testy kłamią.
-* Diagnostyka: `narzedzia\diagnostyka.bat` ustawia `GENERATOR_DIAGNOSTYKA=1` i wtedy
-  `pdf.slad()` wypisuje każdy krok konwersji. W teście możesz ustawić tę zmienną
-  przez `monkeypatch.setenv` i czytać `capsys`, gdy trzeba dojść, gdzie stanęło.
-* Testy wordowe **nie mogą trafić do CI** — w `.github/workflows/testy.yml` jest już
-  `-m "not konwerter and not word"`. Uruchamiasz je ręcznie na Windowsie przed każdym
-  wydaniem, które dotyka `app/pdf.py`, i piszesz w commicie, że przeszły.
+1. **`Windows fatal exception: code 0x800706be`** wypisywane przy każdej konwersji.
+   To `RPC_S_CALL_FAILED` — pierwszorzutowy wyjątek SEH przy zwalnianiu wskaźnika COM
+   po `Quit()`, czyli po zniknięciu procesu Worda (`app/pdf.py`, `word = None`).
+   Przechwytuje go pywin32, PDF powstaje, proces kończy się zerem. Widać go tylko
+   dlatego, że pytest włącza `faulthandler`; aplikacja go nie włącza, więc brat tego
+   nie zobaczy. **Nie wyciszaj tego** — prawdziwa awaria to niezerowy kod wyjścia
+   albo czerwona asercja, a `faulthandler` jest tu wart więcej niż cisza.
+2. Testu nie puszczaj równolegle (`-n auto`) — Word to jedna aplikacja na komputerze,
+   równoległość testowałaby wtedy samą siebie, a nie kod.
+
+Gdy test padnie w połowie, **zajrzyj do Menedżera zadań** i ubij zostawionego
+`WINWORD.EXE`, zanim uruchomisz kolejny — inaczej następne testy kłamią.
+Diagnostyka: `narzedzia\diagnostyka.bat` ustawia `GENERATOR_DIAGNOSTYKA=1`, wtedy
+`pdf.slad()` wypisuje każdy krok konwersji.
 
 Czego test nie zastąpi, a trzeba zrobić okiem: **obejrzeć złożony PDF** po konwersji Wordem
 i porównać z tym z LibreOffice'a. Wszystkie usterki formatek z lipca (podpis zjeżdżający

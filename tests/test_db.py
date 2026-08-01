@@ -8,12 +8,28 @@ from __future__ import annotations
 
 import sqlite3
 
+import pytest
+
 from app import db
 
 
 def _kolumny(nazwa_tabeli: str) -> set[str]:
-    with db.polacz() as con:
+    with db.polaczenie() as con:
         return {w["name"] for w in con.execute(f"PRAGMA table_info({nazwa_tabeli})")}
+
+
+def test_polaczenie_zamyka_plik_bazy(srodowisko):
+    """`with sqlite3.connect(...)` zatwierdza transakcję, ale **pliku nie zamyka**.
+
+    Na Linuksie otwarty uchwyt niczego nie psuje, więc regresja przeszłaby tu i w CI
+    bez śladu — a na Windowsie, czyli u brata, zablokowana baza to `PermissionError`
+    przy każdej próbie ruszenia pliku (przywrócenie kopii, podmiana, sprzątanie).
+    """
+    with db.polaczenie() as con:
+        con.execute("SELECT 1")
+
+    with pytest.raises(sqlite3.ProgrammingError):
+        con.execute("SELECT 1")
 
 
 def test_swieza_baza_jest_w_najnowszym_schemacie(srodowisko):
