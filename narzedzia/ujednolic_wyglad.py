@@ -4,33 +4,53 @@ Zamysł: dokumenty w jednej teczce mają wyglądać jak komplet, a nie jak forma
 w różnych latach. Hierarchię buduje **rozmiar i grubość pisma**, a nie podkreślenia
 i ozdobniki — stąd „minimalistycznie”.
 
+**Podział ról: skrypt odpowiada za hierarchię, autor formatki za akcenty.** Skrypt
+mówi, co jest tytułem, nagłówkiem i etykietą, jakim krojem i w jakim rozmiarze —
+ale o tym, którą wartość w danym dokumencie wyróżnić pogrubieniem, decyduje brat
+w Wordzie. Wymuszanie grubości w treści kasowało jego poprawki przy każdym
+uruchomieniu (`pogrubienie=None` w `_ustaw` znaczy „zostaw, jak jest”).
+
 Czego skrypt NIE rusza:
 
 * słów — ani jednego znaku treści, także znaczników ``{{ }}`` i ``{%p %}``,
-* czerwieni — numer roboty zostaje czerwony wszędzie, gdzie był,
-* stopki, marginesów i rozmiaru strony — te są w obu plikach już zgodne.
+* czerwieni — numer roboty zostaje czerwony wszędzie, gdzie był (i pogrubiony:
+  to jedyne miejsce, gdzie grubość narzucamy),
+* pogrubień w treści, wyrównania akapitów i rozmiarów w tabelach,
+* marginesów i rozmiaru strony.
 
 Co ujednolica:
 
-* **krój** — jeden na cały dokument, także w stylu bazowym, żeby dopisany później
-  w Wordzie akapit nie wyszedł inną czcionką,
+* **krój** — jeden na cały dokument, także w stylu bazowym i w tabelach, żeby
+  dopisany później w Wordzie akapit nie wyszedł inną czcionką,
 * **logo** — ta sama szerokość i to samo miejsce w każdym dokumencie; proporcje
   obrazka zostają nienaruszone,
+* **stopkę** — przepisywaną z `STOPKA_WZORCOWA`, żeby była identyczna wszędzie;
+  jej trzy kolumny rozkładają się na szerokość **danej** strony, więc formatka
+  pozioma nie dostaje ustawień pionowej (`_przystanki_stopki`),
 * **hierarchię** — tytuł, nagłówek sekcji, etykieta, tekst; puste akapity dostają
   jeden mały rozmiar, więc odstępy między blokami są równe,
 * **wcięcia** — akapit wcięty „pierwszym wierszem” dostaje wcięcie całego akapitu.
   To najczęstsza usterka tych formatek: druga linijka zdania wracała na margines
   i blok rozjeżdżał się w schodki,
-* **tabulatory** — ciąg tabulatorów zastępuje jeden, z jawnym przystankiem, żeby
-  wartości stały w jednej kolumnie niezależnie od długości etykiety,
+* **kolumny w blokach „Etykieta:<tab>wartość”** — wspólne wcięcie i jeden przystanek
+  wyliczony z **pomiaru najdłuższej etykiety** prawdziwym plikiem czcionki
+  (`_wyrownaj_bloki`). Blok, który jest już równy, zostaje nietknięty,
 * **łamańce** — zdanie rozbite na kilka akapitów wraca do jednego akapitu
   (patrz `_scal_ciagi`).
 
 Role akapitów rozpoznaje po tym, co w dokumencie już jest, więc reguły zadziałają
 też na formatkach dołożonych później.
 
+Na koniec `_sprawdz_kolejnosc` odmawia zapisania pliku, którego Word by nie otworzył
+— patrz pułapki 12d i 12e w CLAUDE.md. Zielony PDF z LibreOffice'a nie jest dowodem,
+że plik jest poprawny.
+
     python narzedzia/ujednolic_wyglad.py                     # wszystkie wzory
     python narzedzia/ujednolic_wyglad.py szablony/inny.docx
+
+Uruchomienie na pojedynczym pliku i tak przetwarza najpierw `STOPKA_WZORCOWA`,
+bo to z niej bierze się stopka — ten plik zapisze się więc nawet wtedy, gdy nic
+się w nim nie zmienia.
 """
 import argparse
 import copy

@@ -45,6 +45,9 @@ zainstalowania/uruchomienia, bez instalowania Pythona.
 | Podglądy PDF robione **z wyprzedzeniem, w tle**, i **wsadowo** — jedno uruchomienie konwertera na komplet dokumentów | najdroższy jest start Worda, nie sam dokument: cztery pliki osobno to cztery starty. Zmierzone na LibreOfficie: 3,55 s → 1,17 s (67% mniej), na Windowsie zysk większy, bo Word startuje wolniej. Konwersja rusza zaraz po wygenerowaniu, więc do wejścia na stronę składania zwykle jest już po wszystkim |
 | Miniatury stron przez `pypdfium2` + `Pillow`, renderowane na serwerze | brat układa kolejność myszą, więc musi widzieć, co przeciąga. Renderowanie w przeglądarce oznaczałoby kilkanaście ramek z czytnikiem PDF, które połykają zdarzenia myszy; `pypdfium2` to jedno koło z pip, bez niczego do instalowania w systemie |
 | Wygląd formatek nakłada **skrypt** (`ujednolic_wyglad.py`), a nie ręka w Wordzie | dokumenty operatu mają wyglądać jak komplet, a formatki przychodzą pojedynczo i przez lata; ręczne pilnowanie kroju, logo i stopki w każdym pliku z osobna nie ma szans się utrzymać. Skrypt rozpoznaje role akapitów po tym, co w pliku zastaje, więc działa też na formatkach dołożonych później |
+| **Skrypt ustala hierarchię, brat ustala akcenty** — `ujednolic_wyglad.py` nie rusza pogrubień w treści ani wyrównania akapitów | wymuszanie grubości kasowało pogrubienia, które brat dokładał w Wordzie, i wracało to przy każdym uruchomieniu. To on wie, która wartość w danym dokumencie jest ważna; skrypt wie tylko, co jest tytułem, a co etykietą. Jedyny wyjątek to czerwony numer roboty — zawsze pogrubiony |
+| **Jedna stopka, przepisywana z `spis_tresci_wzor.docx`** do pozostałych formatek | każda formatka przychodzi z własną kopią firmówki i drobne różnice same się w nich zalęgają: raz kreska jest obramowaniem akapitu, raz wklejonym obrazkiem, raz nazwa ulicy jest z wielkiej litery, raz z małej. Przystanki kolumn liczą się z szerokości **danej** strony, bo wykaz działki jest poziomy |
+| Kolumna wartości w blokach „Etykieta: wartość” liczona z **pomiaru najdłuższej etykiety** prawdziwym plikiem czcionki | przystanek wzięty „na oko” albo wpisany na sztywno prędzej czy później wypada przed końcem etykiety — wtedy tabulator ją przeskakuje i ląduje na przypadkowym przystanku domyślnym. Tak właśnie rozjeżdżał się nagłówek wykazów. Mierzy `PIL.ImageFont` po pliku Calibri/Carlito |
 | **Calibri**, nie Bahnschrift | Bahnschrift jest tylko na Windowsie i nie ma odpowiednika na Linuksie, więc podglądy PDF u autora łamały się inaczej niż dokumenty u brata. Calibri ma metrycznie zgodne Carlito (`fonts-crosextra-carlito`) — ten sam plik łamie się tak samo po obu stronach |
 | **Bez numeracji stron**, jedna stopka na wszystkich stronach i we wszystkich dokumentach | operat i tak jest sklejany z kilkunastu plików w jeden PDF, więc numer strony pojedynczego dokumentu nic nie znaczy, a wprowadza w błąd. Uwaga: pole z numerem siedziało też w **nieużywanej** stopce stron parzystych i wróciłoby przy pierwszej zmianie ustawień — dlatego skrypt nadpisuje wszystkie trzy stopki |
 | **Dane stałe usunięte z programu** — nazwisko, uprawnienia, pieczątka firmy | brat woli mieć je wpisane na sztywno w swoim szablonie Worda; to i tak nie zmienia się między robotami, a jeden ekran mniej to jeden ekran mniej do tłumaczenia. `db.wczytaj_ustawienia` i `zrodlo: "ustawienia"` zostają w kodzie, ale bez interfejsu |
@@ -199,6 +202,14 @@ też brat. Interfejs w całości po polsku.
    podmiana oblewania na „gołe” `OxmlElement("wp:wrapSquare")` gubi go po cichu.
    Oba błędy trafiły tylko w spis treści (sprawozdanie ma `wrapTopAndBottom`, który
    niczego nie wymaga), więc objaw wyglądał na „jeden plik zepsuty, drugi działa”.
+12f. **`dokument.paragraphs` nie widzi tabel.** Wyznaczając bloki akapitów sąsiadujących
+   ze sobą, trzeba iść po `dokument.element.body`, bo tabela stojąca między blokiem
+   nagłówkowym a podpisem jest dla pętli po akapitach niewidzialna — oba bloki
+   skleiły się wtedy w jeden i podpis wykazu zjechał na lewą stronę kartki.
+12g. **Przy dopasowywaniu bloku do szerokości strony zostaw zapas.** Pomiar szerokości
+   napisu z pliku czcionki jest dokładny, ale Word łamie wiersz odrobinę wcześniej,
+   niż wynika z sumy szerokości znaków. Bez zapasu podpis łamał się o włos i wypychał
+   wykaz działki na drugą stronę.
 12b. **Word trzyma każdy tabulator w osobnym biegu tekstu.** `"\t\t" in akapit.text` bywa
    prawdą, choć żaden pojedynczy bieg nie zawiera dwóch tabulatorów — `bieg.text.replace`
    nic wtedy nie robi i „poprawka” cicho nie działa (a przy powtórzeniu dokłada kolejny
@@ -252,10 +263,16 @@ Formularz → `.docx` → PDF → sklejenie kilku PDF-ów w jeden. Działa: powt
 (z wklejaniem z Excela), sekcje warunkowe, automatyczna numeracja (`001/2026`), daty w formacie
 `31.07.2026` i `31 lipca 2026 r.`, powielanie poprzedniego dokumentu, historia.
 
-Wspólny wygląd formatek (`ujednolic_wyglad.py`) sprawdzony na Wordzie u brata: spis treści
-mieści się na jednej stronie A4 z kompletem 13 pozycji, sprawozdanie zajmuje dwie i tak
-ma zostać — przy dłuższym opisie przebiegu i tak by się nie zmieściło. Podpis zostaje
-przypięty do dołu strony niezależnie od długości spisu.
+**Wszystkie cztery formatki to prawdziwe dokumenty brata**, po przejściu
+`ujednolic_wyglad.py` i `popraw_szablon.py`: spis treści, sprawozdanie techniczne
+oraz wykazy zmian danych ewidencyjnych dotyczące budynku (pionowy) i działki
+(**poziomy**, 13 kolumn). Wygląd sprawdzony na Wordzie u brata — po serii poprawek,
+w których to on decydował o pogrubieniach, a skrypt o reszcie.
+
+Spis treści mieści się na jednej stronie A4 z kompletem 13 pozycji, a podpis zostaje
+przypięty do dołu strony niezależnie od jego długości. Sprawozdanie mieści się na
+jednej stronie przy krótkim opisie przebiegu i świadomie **nie walczymy o to** przy
+dłuższym — dwie strony są tu normalne.
 
 Wykrywanie konwertera PDF: Word (COM) → LibreOffice zainstalowany → LibreOffice przenośny
 w katalogu `libreoffice/` obok programu. Stan widać w prawym górnym rogu aplikacji.
@@ -296,11 +313,14 @@ i skrypty jednorazowe.
 
 ## Co dalej — kolejka
 
-1. **Wszystkie cztery formatki są już prawdziwe** — `utworz_wzory_wykazow.py`
-   zostaje tylko jako generator szkieletu na przyszłe dokumenty. Wykaz działki jest
-   w orientacji **poziomej**; przy dokładaniu kolejnych pamiętaj, że `ujednolic_wyglad.py`
-   liczy szerokość bloków z rozmiaru strony danego pliku, więc pozioma nie wymaga
-   niczego dodatkowego.
+1. **Dokładanie kolejnej formatki** (przepis, bo to się będzie powtarzać): wrzuć `.docx`
+   do `szablony/` pod nazwą `<coś>_wzor.docx`, sprawdź, czy brat wstawił tagi `{{ }}`,
+   i puść `ujednolic_wyglad.py`, a potem `popraw_szablon.py`. Checkbox w formularzu
+   pojawi się sam. Obowiązkowo **obejrzyj złożony PDF**, a nie same liczby — wszystkie
+   usterki tej serii (podpis zjeżdżający w lewo, dokument puchnący na drugą stronę,
+   stopka kończąca się w dwóch trzecich szerokości) widać było dopiero na obrazku.
+   Orientacja pozioma nie wymaga niczego dodatkowego: szerokości liczą się z rozmiaru
+   strony danego pliku. `utworz_wzory_wykazow.py` zostaje jako generator szkieletu.
 2. **Wczytywanie wykazu współrzędnych z pliku** zamiast wklepywania/wklejania — brat pewnie
    eksportuje dane z programu geodezyjnego (C-Geo, WinKalk, Geonet). Trzeba zapytać o format
    i dopisać parser.

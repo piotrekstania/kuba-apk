@@ -100,7 +100,7 @@ sama się doprowadzi do porządku (po uprzednim zrobieniu kopii).
 | `WERSJA` | numer wersji + opis zmian; podbijasz go, wydając nową wersję |
 | `app/main.py` | strony i obsługa formularzy |
 | `narzedzia/utworz_wzor_szablonu.py` | generuje przykładowy szablon do testów |
-| `narzedzia/ujednolic_wyglad.py` | nakłada wspólny wygląd na wszystkie formatki (krój, logo, hierarchia, stopka); puszczaj po każdej podmianie `.docx` |
+| `narzedzia/ujednolic_wyglad.py` | nakłada wspólny wygląd na wszystkie formatki — krój, logo, stopka, hierarchia nagłówków, wyrównanie kolumn; **nie rusza treści, pogrubień ani czerwieni**. Puszczaj po każdej podmianie `.docx` |
 | `narzedzia/popraw_szablon.py` | drobiazgi, których nie da się wyklikać na stałe: tabulator i wcięcie wiszące w spisie treści, podpis przypięty do dołu strony |
 | `narzedzia/instalacja_testowa.py` | odtwarza instalację brata — zip z GitHuba, bez `.git` |
 
