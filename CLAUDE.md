@@ -45,7 +45,7 @@ zainstalowania/uruchomienia, bez instalowania Pythona.
 | Podglądy PDF robione **z wyprzedzeniem, w tle**, i **wsadowo** — jedno uruchomienie konwertera na komplet dokumentów | najdroższy jest start Worda, nie sam dokument: cztery pliki osobno to cztery starty. Zmierzone na LibreOfficie: 3,55 s → 1,17 s (67% mniej), na Windowsie zysk większy, bo Word startuje wolniej. Konwersja rusza zaraz po wygenerowaniu, więc do wejścia na stronę składania zwykle jest już po wszystkim |
 | Miniatury stron przez `pypdfium2` + `Pillow`, renderowane na serwerze | brat układa kolejność myszą, więc musi widzieć, co przeciąga. Renderowanie w przeglądarce oznaczałoby kilkanaście ramek z czytnikiem PDF, które połykają zdarzenia myszy; `pypdfium2` to jedno koło z pip, bez niczego do instalowania w systemie |
 | Wygląd formatek nakłada **skrypt** (`ujednolic_wyglad.py`), a nie ręka w Wordzie | dokumenty operatu mają wyglądać jak komplet, a formatki przychodzą pojedynczo i przez lata; ręczne pilnowanie kroju, logo i stopki w każdym pliku z osobna nie ma szans się utrzymać. Skrypt rozpoznaje role akapitów po tym, co w pliku zastaje, więc działa też na formatkach dołożonych później |
-| **Skrypt ustala hierarchię, brat ustala akcenty** — `ujednolic_wyglad.py` nie rusza pogrubień w treści ani wyrównania akapitów | wymuszanie grubości kasowało pogrubienia, które brat dokładał w Wordzie, i wracało to przy każdym uruchomieniu. To on wie, która wartość w danym dokumencie jest ważna; skrypt wie tylko, co jest tytułem, a co etykietą. Jedyny wyjątek to czerwony numer roboty — zawsze pogrubiony |
+| **Skrypt ustala hierarchię, brat ustala akcenty.** `ujednolic_wyglad.py` narzuca już tylko krój, rozmiary tytułu/nagłówka/tekstu, logo i stopkę. Nie rusza: pogrubień (w treści, w etykietach, w tabelach), wyrównania akapitów, rozmiarów w tabelach ani tabulatorów poza wyrównywanym blokiem | ta lista rosła kosztem **czterech** wpadek — skrypt po kolei kasował bratu pogrubienia w treści, pogrubienia etykiet, wybrany rozmiar nagłówka („Spis treści” 11 → 12 pt) i wcięcie zrobione pięcioma tabulatorami. Za każdym razem jego świadomy wybór brałem za niespójność do naprawienia, a poprawianie tego w Wordzie nic nie dawało, bo skrypt cofał to przy następnym uruchomieniu. Zasada: **jak się wahasz, czy coś ujednolicić — nie ujednolicaj**. Jedyny wyjątek to czerwony numer roboty, zawsze pogrubiony |
 | **Jedna stopka, przepisywana z `spis_tresci_wzor.docx`** do pozostałych formatek | każda formatka przychodzi z własną kopią firmówki i drobne różnice same się w nich zalęgają: raz kreska jest obramowaniem akapitu, raz wklejonym obrazkiem, raz nazwa ulicy jest z wielkiej litery, raz z małej. Przystanki kolumn liczą się z szerokości **danej** strony, bo wykaz działki jest poziomy |
 | Kolumna wartości w blokach „Etykieta: wartość” liczona z **pomiaru najdłuższej etykiety** prawdziwym plikiem czcionki | przystanek wzięty „na oko” albo wpisany na sztywno prędzej czy później wypada przed końcem etykiety — wtedy tabulator ją przeskakuje i ląduje na przypadkowym przystanku domyślnym. Tak właśnie rozjeżdżał się nagłówek wykazów. Mierzy `PIL.ImageFont` po pliku Calibri/Carlito |
 | **Calibri**, nie Bahnschrift | Bahnschrift jest tylko na Windowsie i nie ma odpowiednika na Linuksie, więc podglądy PDF u autora łamały się inaczej niż dokumenty u brata. Calibri ma metrycznie zgodne Carlito (`fonts-crosextra-carlito`) — ten sam plik łamie się tak samo po obu stronach |
@@ -275,9 +275,14 @@ oraz wykazy zmian danych ewidencyjnych dotyczące budynku (pionowy) i działki
 w których to on decydował o pogrubieniach, a skrypt o reszcie.
 
 Spis treści mieści się na jednej stronie A4 z kompletem 13 pozycji, a podpis zostaje
-przypięty do dołu strony niezależnie od jego długości. Sprawozdanie mieści się na
-jednej stronie przy krótkim opisie przebiegu i świadomie **nie walczymy o to** przy
-dłuższym — dwie strony są tu normalne.
+przypięty do dołu strony niezależnie od jego długości. Sprawozdanie zajmuje dwie strony
+i świadomie **nie walczymy o jedną** — przy dłuższym opisie przebiegu i tak by się nie
+zmieściło (decyzja brata). Oba wykazy mieszczą się na jednej.
+
+Formatki przeszły kilka rund poprawek brata. Przy każdej podmianie sprawdzaj nie tylko
+to, czy skrypt się wykonał, ale **czy nie cofnął jego zmian** — najprościej porównaniem
+biegów tekstu przed i po (pogrubienia, wyrównanie, liczba tabulatorów, liczba akapitów).
+Cztery razy okazało się, że cofnął.
 
 Wykrywanie konwertera PDF: Word (COM) → LibreOffice zainstalowany → LibreOffice przenośny
 w katalogu `libreoffice/` obok programu. Stan widać w prawym górnym rogu aplikacji.

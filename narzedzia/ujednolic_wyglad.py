@@ -15,8 +15,16 @@ Czego skrypt NIE rusza:
 * słów — ani jednego znaku treści, także znaczników ``{{ }}`` i ``{%p %}``,
 * czerwieni — numer roboty zostaje czerwony wszędzie, gdzie był (i pogrubiony:
   to jedyne miejsce, gdzie grubość narzucamy),
-* pogrubień w treści, wyrównania akapitów i rozmiarów w tabelach,
+* pogrubień — ani w treści, ani w etykietach, ani w tabelach,
+* wyrównania akapitów i rozmiarów pisma w tabelach,
+* **tabulatorów poza wyrównywanym blokiem** — ciąg tabulatorów to świadome
+  wcięcie autora, a nie usterka do wyprostowania,
 * marginesów i rozmiaru strony.
+
+Ta lista rosła kosztem czterech wpadek: skrypt po kolei kasował bratu pogrubienia
+w treści, pogrubienia etykiet, wybrany rozmiar nagłówka i wcięcie zrobione
+tabulatorami. Za każdym razem brałem jego świadomy wybór za niespójność do
+naprawienia. **Jeśli wahasz się, czy coś ujednolicić — nie ujednolicaj.**
 
 Co ujednolica:
 
@@ -123,10 +131,14 @@ def _scal_ciagi(dokument) -> int:
     czyta się jak kolumna urwanych linijek, a przy innej czcionce łamie się w losowych
     miejscach.
 
-    Sklejamy tylko wtedy, gdy poprzedni akapit **wygląda na urwany w połowie zdania**:
-    jest wyrównany do lewej, ma długość pełnego wiersza i nie kończy się kropką ani
-    dwukropkiem. Dzięki temu krótkie, wyśrodkowane wpisy (adres firmy, NIP) zostają
-    osobno — a to one ucierpiałyby najbardziej na błędnym sklejeniu.
+    Sklejamy tylko wtedy, gdy zdanie jest **bez wątpienia** urwane w połowie: poprzedni
+    akapit jest wyrównany do lewej, ma długość pełnego wiersza i nie kończy się kropką
+    ani dwukropkiem, a dalszy ciąg zaczyna się **małą literą**.
+
+    Ten ostatni warunek doszedł później i jest najważniejszy. Bez niego reguła sklejała
+    wiersz, który brat celowo złamał — opis punktu pomiarowego i tolerancje w nawiasach
+    kwadratowych pod spodem. Krótkie, wyśrodkowane wpisy (adres firmy, NIP) chroni
+    wymagana długość poprzedniego akapitu.
     """
     scalone = 0
     poprzedni = None
