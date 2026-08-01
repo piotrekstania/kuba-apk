@@ -64,6 +64,25 @@ kolejność i grupy pól.
 Jeśli masz pomysł, który wymaga wpisania listy pól konkretnego operatu do kodu Pythona —
 to znak, że idziesz pod prąd tej architektury.
 
+## Zasady pracy nad kodem (obowiązują od 01.08.2026)
+
+1. **Żadna zmiana kodu nie idzie do commitu bez zielonego `pytest`.** Nie „uruchomię
+   później”, nie „to drobiazg”. U brata aktualizacja instaluje się sama przy starcie,
+   więc wypchnięty błąd jest u niego, zanim się o nim dowiesz.
+2. **Nowa funkcja = nowy test, w tym samym commicie.** Nie w następnym, nie „jak
+   będzie czas”. Test ma sprawdzać zachowanie, na którym zależy użytkownikowi,
+   a nie to, że funkcja się wywołuje.
+3. **Naprawiony błąd = test, który go łapie.** Najpierw czerwony, potem poprawka.
+   Inaczej nie masz dowodu, że naprawiłeś to, co się psuło.
+4. **Testu nie „naprawia się” przez rozluźnienie asercji.** Gdy test czerwienieje po
+   zmianie, domyślnie to zmiana jest zła, a nie test. Jeśli jednak test opisywał złe
+   oczekiwanie — zmień go świadomie i napisz w commicie dlaczego.
+5. **Formatek w `szablony/` nie ruszasz bez wyraźnej prośby.** To dopracowane dokumenty
+   brata; sprawdzaj `git diff -- szablony/` przed commitem — ma być puste. Skryptów
+   `ujednolic_wyglad.py` i `popraw_szablon.py` nie uruchamiasz „przy okazji”.
+6. **Zerknij na CI przed podbiciem `WERSJA`.** Zielony krzyżyk po wydaniu to już tylko
+   raport ze szkody.
+
 ## Stos
 
 Python 3.11+ (u autora testowane na 3.14), FastAPI + uvicorn, Jinja2, docxtpl (python-docx),
@@ -351,6 +370,66 @@ odmawia pracy. W CI czcionka jest instalowana, więc tam ten strażnik zawsze dz
 Testy chodzą w GitHub Actions przy każdym pushu na `main` — [.github/workflows/testy.yml](.github/workflows/testy.yml).
 **Zerknij na wynik, zanim podbijesz `WERSJA`**: u brata aktualizacja instaluje się sama
 przy starcie, więc czerwony test po wydaniu jest już tylko raportem ze szkody.
+
+### Do zrobienia na Windowsie: testy ścieżki wordowej
+
+Ta część jest nietestowana i **nie da się jej sprawdzić na Linuksie ani w CI** (na runnerze
+nie ma Worda). Poniżej przepis dla sesji odpalonej w `E:\git\kuba-apk`.
+
+Środowisko:
+
+```bat
+.venv\Scripts\pip install -r requirements-dev.txt
+.venv\Scripts\pytest -m word -v
+```
+
+Przed pierwszym uruchomieniem **otwórz Worda ręcznie i zamknij** — świeża instalacja Office
+potrafi przy pierwszym starcie pokazać okno aktywacji albo pytanie o domyślny format, a wtedy
+konwersja wisi, zamiast paść. To samo dotyczy komputera brata.
+
+Nowy plik `tests/test_word.py`, wszystko za markerem `word` (jest już zarejestrowany
+w `pyproject.toml`) i za wspólnym warunkiem pominięcia:
+
+```python
+pytestmark = [
+    pytest.mark.word,
+    pytest.mark.skipif(sys.platform != "win32", reason="ścieżka wordowa tylko na Windowsie"),
+    pytest.mark.skipif(pdf.dostepny_konwerter() != "word", reason="Word niewykryty"),
+]
+```
+
+Co napisać, w kolejności ważności:
+
+| Test | Co sprawdza i dlaczego akurat to |
+| --- | --- |
+| `test_konwersja_pojedyncza` | `pdf.docx_na_pdf` robi PDF, a `PdfReader.extract_text` zawiera wpisany numer operatu. Po konwersji **nie ma pliku `*.czesciowy`** — plik roboczy ma zniknąć niezależnie od wyniku |
+| `test_nie_zostaje_wiszacy_word` | liczba procesów `WINWORD.EXE` po konwersji nie jest większa niż przed (`tasklist /FI "IMAGENAME eq WINWORD.EXE"`). Bez `Quit()` w `finally` proces zostaje i przy kolejnych robotach mnoży się w tle — objaw u brata: komputer zwalnia, a Word „nie chce się otworzyć” |
+| `test_konwersja_z_watku_roboczego` | `docx_na_pdf` puszczone przez `ThreadPoolExecutor` kończy się PDF-em. To jest **główny powód**, dla którego nie używamy `docx2pdf`: trasy `/scal` i miniatury chodzą w puli wątków, a tam bez `CoInitialize()` leci `CoInitialize has not been called` |
+| `test_dwie_konwersje_naraz` | dwa wątki naraz → oba PDF-y powstają i żaden nie jest urwany. Pilnuje `_BLOKADA_KONWERSJI`; bez niej dwie instancje Worda potrafiły sobie nawzajem zamknąć sesję |
+| `test_wsad_jednym_uruchomieniem` | `docx_na_pdf_wsad` na czterech dokumentach oddaje cztery PDF-y i trwa **wyraźnie krócej** niż cztery osobne wywołania (na LibreOfficie było 3,55 s → 1,17 s; na Wordzie różnica ma być większa, bo start jest droższy). Asercję czasową daj z dużym zapasem — to ma łapać regresję „wróciliśmy do startu na dokument”, a nie mierzyć wydajność |
+| `test_awaria_worda_schodzi_na_libreoffice` | podmień `pdf._wordem_wsad` na rzucający wyjątek; gdy obok jest LibreOffice, PDF ma i tak powstać. Gdy go nie ma — `BrakKonwertera` z komunikatem o oknie dialogowym, po polsku |
+| `test_trasa_scal_prawdziwym_wordem` | jeden test end-to-end przez `TestClient`: operat z dwoma dokumentami → `POST /scal/{katalog}` → w katalogu leży sklejony PDF o nazwie numeru roboty. To sprawdza całą ścieżkę razem z wątkami FastAPI |
+| `test_zakladki_z_naglowkow` | dokument ze stylem `Heading 1` → `PdfReader.outline` niepuste. Pilnuje `CreateBookmarks` w `ExportAsFixedFormat`; jak się zepsuje, nikt nie zauważy, dopóki ktoś nie otworzy operatu w czytniku |
+
+Pułapki, na które uważaj przy pisaniu:
+
+* **Nie puszczaj tych testów równolegle** (`-n auto` z pytest-xdist) — Word to jedna aplikacja
+  na komputerze; równoległość testuje wtedy sam siebie, nie kod.
+* Konwersja to ok. 1,5 s na dokument, więc cała ta grupa potrwa kilkanaście sekund. To nie
+  jest powód, żeby ją pomijać, ale jest powód, żeby trzymała się markera `word`.
+* Gdy test padnie w połowie, **zajrzyj do Menedżera zadań** i ubij zostawionego `WINWORD.EXE`,
+  zanim uruchomisz kolejny — inaczej następne testy kłamią.
+* Diagnostyka: `narzedzia\diagnostyka.bat` ustawia `GENERATOR_DIAGNOSTYKA=1` i wtedy
+  `pdf.slad()` wypisuje każdy krok konwersji. W teście możesz ustawić tę zmienną
+  przez `monkeypatch.setenv` i czytać `capsys`, gdy trzeba dojść, gdzie stanęło.
+* Testy wordowe **nie mogą trafić do CI** — w `.github/workflows/testy.yml` jest już
+  `-m "not konwerter and not word"`. Uruchamiasz je ręcznie na Windowsie przed każdym
+  wydaniem, które dotyka `app/pdf.py`, i piszesz w commicie, że przeszły.
+
+Czego test nie zastąpi, a trzeba zrobić okiem: **obejrzeć złożony PDF** po konwersji Wordem
+i porównać z tym z LibreOffice'a. Wszystkie usterki formatek z lipca (podpis zjeżdżający
+w lewo, dokument puchnący na drugą stronę, stopka kończąca się w dwóch trzecich szerokości)
+widać było dopiero na obrazku, a nie w liczbach.
 
 ## Co dalej — kolejka
 

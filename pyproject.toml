@@ -3,4 +3,5 @@ testpaths = ["tests"]
 addopts = "-q --strict-markers"
 markers = [
     "konwerter: wymaga Worda albo LibreOffice'a (pomijany, gdy ich nie ma)",
+    "word: ścieżka przez Microsoft Word (COM) — tylko Windows z Office, nigdy w CI",
 ]

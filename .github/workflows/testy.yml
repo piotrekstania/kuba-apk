@@ -31,5 +31,6 @@ jobs:
 
       # Konwersję DOCX→PDF pomijamy: na runnerze nie ma Worda, a obecność
       # LibreOffice'a zależy od wersji obrazu — reszta testów chodzi na atrapie.
+      # Testy wordowe (marker `word`) puszcza się ręcznie na Windowsie z Office.
       - name: Testy
-        run: pytest -m "not konwerter"
+        run: pytest -m "not konwerter and not word"
