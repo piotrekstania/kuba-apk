@@ -216,6 +216,10 @@ też brat. Interfejs w całości po polsku.
    nic wtedy nie robi i „poprawka” cicho nie działa (a przy powtórzeniu dokłada kolejny
    przystanek). Nadmiarowe tabulatory trzeba usuwać, idąc przez cały akapit i pamiętając
    ostatni znak z poprzedniego biegu; tak robi `narzedzia/ujednolic_wyglad.py`.
+   **Ale zwijaj je wyłącznie w bloku, któremu sam ustawiasz przystanek.** Poza nim
+   ciąg tabulatorów to świadome wcięcie: brat wsuwa pięcioma tabulatorami wiersz
+   z tolerancjami (`[dl – 0.02 m] / [dh – 0.03 m]`) pod kolumnę wartości, a zwinięcie
+   ich do jednego przesuwało mu ten wiersz w lewo przy każdym uruchomieniu skryptu.
 12c. **Pusty akapit nie zawsze jest odstępem.** Ten z ramką `w:framePr` to podkładka
    podnosząca przypięty podpis (patrz `popraw_szablon.py`); zmiana jego rozmiaru przesuwa
    podpis na stronie. Przy hurtowym formatowaniu akapity w ramce trzeba pomijać.

@@ -663,7 +663,7 @@ def ujednolic(plik: Path, stopka_wzorcowa=None) -> dict[str, int]:
     dokument = docx.Document(plik)
     licznik = dict.fromkeys(
         ("tytul", "naglowek", "etykieta", "tresc", "podpis", "pusty",
-         "scalone", "wciecia", "tabulatory", "kolumny", "logo", "komorki",
+         "scalone", "wciecia", "kolumny", "logo", "komorki",
          "stopka"), 0)
 
     # styl bazowy: cokolwiek dopiszesz później w Wordzie, wyjdzie w tym samym kroju
@@ -680,10 +680,15 @@ def ujednolic(plik: Path, stopka_wzorcowa=None) -> dict[str, int]:
 
     # Wcięcia muszą być poprawione **przed** wyrównaniem bloków: dopóki wiersz ma
     # wcięcie „pierwszego wiersza”, jego lewa krawędź jest inna niż się wydaje.
+    # Tabulatorów poza wyrównywanymi blokami **nie ruszamy**. Ciąg tabulatorów bywa
+    # świadomym wcięciem — brat wsuwa nimi wiersz z tolerancjami pod kolumnę wartości
+    # („[dl – 0.02 m] / [dh – 0.03 m]” pod opisem punktu, pięć tabulatorów). Zwijanie
+    # ich do jednego przesuwało ten wiersz na lewo przy każdym uruchomieniu skryptu.
+    # Wewnątrz bloku to co innego: tam sami stawiamy przystanek, więc jeden tabulator
+    # jest dokładnie tym, czego trzeba — i tam zwijanie zostaje.
     for akapit in dokument.paragraphs:
         if akapit.text.strip():
             licznik["wciecia"] += _popraw_wciecie(akapit)
-            licznik["tabulatory"] += _zostaw_jeden_tabulator(akapit)
     licznik["kolumny"] = _wyrownaj_bloki(dokument)
 
     akapity = dokument.paragraphs

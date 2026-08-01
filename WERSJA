@@ -1,2 +1,2 @@
-2026.08.01.9
-Zmienione: poprawiony spis treści (większy nagłówek „Spis treści”) oraz sprawozdanie techniczne — doszło zdanie o dokładności punktów granicznych i możliwości projektowania bliżej niż 4 m od granicy.
+2026.08.01.10
+Naprawione: w sprawozdaniu wiersz z tolerancjami pod „Pomiar kontrolny…” przesuwał się w lewo — program zwijał wpisane w Wordzie tabulatory do jednego. Teraz zostają nietknięte.
