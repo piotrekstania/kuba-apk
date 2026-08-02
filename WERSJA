@@ -1,2 +1,2 @@
-2026.08.02.12
-Nowość: po wpisaniu numeru działki program sprawdza w ewidencji (ULDK), czy taka działka istnieje w wybranym obrębie, i pisze o tym pod polem. To tylko podpowiedź na literówkę — nigdy nie blokuje wygenerowania dokumentu, a gdy usługa nie odpowiada, nie pisze nic.
+2026.08.02.13
+Sprawdzanie działki pokazuje teraz także jej przybliżoną powierzchnię, np. „6002 — ok. 0,4159 ha (4159 m²)”. Warto na nią zerknąć: numer 123/5 wpisany zamiast 123/4 zwykle też istnieje, więc samo „jest taka działka” tego nie wyłapie, a inna wielkość od razu.
