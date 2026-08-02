@@ -237,6 +237,95 @@ def usun_podglady(katalog: Path) -> None:
     shutil.rmtree(PODGLADY / katalog.name, ignore_errors=True)
 
 
+def _okno_katalogu(nazwa: str):
+    """Uchwyt okna Eksploratora pokazującego dany katalog (albo None).
+
+    Okna folderów mają klasę `CabinetWClass`, a nazwa katalogu jest w tytule. Numery
+    operatów („001.2026”) są na tyle charakterystyczne, że nie trafimy w cudze okno.
+    """
+    import win32gui
+
+    znalezione = []
+
+    def sprawdz(uchwyt, _):
+        if (win32gui.GetClassName(uchwyt) == "CabinetWClass"
+                and win32gui.IsWindowVisible(uchwyt)
+                and nazwa in win32gui.GetWindowText(uchwyt).lower()):
+            znalezione.append(uchwyt)
+
+    win32gui.EnumWindows(sprawdz, None)
+    return znalezione[0] if znalezione else None
+
+
+def _na_pierwszy_plan(katalog: Path) -> None:
+    """Wyciąga okno otwartego katalogu przed pozostałe okna.
+
+    Windows **nie pozwala** procesowi w tle zabrać pierwszego planu, a nasz serwer
+    właśnie takim procesem jest: aktywna jest przeglądarka, nie uvicorn. Bez tego
+    Eksplorator otwiera się za oknem przeglądarki i miga tylko na pasku zadań —
+    z punktu widzenia brata „przycisk nic nie zrobił”. (Sprawdzone: przez trasę HTTP
+    okno nigdy nie wychodziło na wierzch, choć ten sam `os.startfile` wywołany
+    z świeżo uruchomionego skryptu wychodził — bo tamten proces miał prawo do planu).
+
+    Obejście: podpinamy swoją kolejkę wejścia pod wątek okna, które plan ma teraz,
+    i dopiero wtedy prosimy o wysunięcie. Chodzi w osobnym wątku, bo okno Eksploratora
+    pojawia się z opóźnieniem, a odpowiedź HTTP nie ma na co czekać.
+    """
+    import time
+
+    try:
+        import win32con
+        import win32gui
+        import win32process
+    except ImportError:
+        return                                 # bez pywin32 zostaje zachowanie jak dotąd
+
+    nazwa = katalog.name.lower()
+    koniec = time.monotonic() + 3.0            # tyle wystarcza na start Eksploratora
+    while time.monotonic() < koniec:
+        try:
+            uchwyt = _okno_katalogu(nazwa)
+        except Exception:
+            return
+        if uchwyt:
+            podpiete = False
+            watek_aktywnego = watek_celu = 0
+            try:
+                aktywne = win32gui.GetForegroundWindow()
+                watek_aktywnego = win32process.GetWindowThreadProcessId(aktywne)[0]
+                watek_celu = win32process.GetWindowThreadProcessId(uchwyt)[0]
+                if watek_aktywnego and watek_aktywnego != watek_celu:
+                    podpiete = bool(win32process.AttachThreadInput(
+                        watek_aktywnego, watek_celu, True))
+                win32gui.ShowWindow(uchwyt, win32con.SW_RESTORE)   # gdy był zminimalizowany
+                win32gui.BringWindowToTop(uchwyt)
+                win32gui.SetForegroundWindow(uchwyt)
+            except Exception:
+                # SetForegroundWindow potrafi odmówić i to nie jest awaria programu —
+                # katalog jest otwarty, tyle że w tle.
+                pass
+            finally:
+                if podpiete:
+                    try:
+                        win32process.AttachThreadInput(watek_aktywnego, watek_celu, False)
+                    except Exception:
+                        pass
+            return
+        time.sleep(0.15)
+
+
+def _wysun_po_cichu(katalog: Path) -> None:
+    """Opakowanie wątku: wysuwanie okna to kosmetyka i nie ma prawa nic wypisać.
+
+    Wyjątek w wątku roboczym nie przewróciłby programu, ale wysypałby bratu do konsoli
+    angielski ślad stosu — a to jest dokładnie to, czego w tym programie nie robimy.
+    """
+    try:
+        _na_pierwszy_plan(katalog)
+    except Exception:
+        pass
+
+
 def otworz_w_systemie(sciezka: Path) -> None:
     """Otwiera katalog w Eksploratorze (albo odpowiedniku na Linuksie/macOS).
 
@@ -249,6 +338,13 @@ def otworz_w_systemie(sciezka: Path) -> None:
 
     if sys.platform == "win32":
         os.startfile(sciezka)                                    # noqa: S606 (tylko Windows)
+        # Wysunięcie okna nie może przewrócić otwierania katalogu: gdy zawiedzie
+        # (brak pywin32, inna wersja Windowsa), katalog i tak jest otwarty — po prostu
+        # w tle, czyli tak jak było wcześniej.
+        try:
+            threading.Thread(target=_wysun_po_cichu, args=(sciezka,), daemon=True).start()
+        except Exception:
+            pass
     elif sys.platform == "darwin":
         subprocess.Popen(["open", str(sciezka)])
     else:

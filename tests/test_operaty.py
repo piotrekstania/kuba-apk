@@ -2,6 +2,9 @@
 from __future__ import annotations
 
 import json
+import sys
+
+import pytest
 
 from app import operaty
 
@@ -134,3 +137,21 @@ def test_pdf_nie_jest_konwertowany_ponownie(srodowisko, bez_konwertera):
     mapa.write_bytes(b"%PDF-1.4\n")
     assert operaty.jako_pdf(mapa) == mapa
 
+
+
+@pytest.mark.skipif(sys.platform != "win32", reason="wysuwanie okna dotyczy tylko Windowsa")
+def test_otwarcie_katalogu_przezywa_awarie_wysuwania_okna(srodowisko, monkeypatch):
+    """Wysuwanie okna na wierzch nie może przewrócić samego otwierania katalogu.
+
+    Gdyby `SetForegroundWindow` albo brak pywin32 wywalił wyjątek, brat straciłby
+    działającą funkcję w zamian za kosmetykę.
+    """
+    otwarte = []
+    monkeypatch.setattr(operaty.os, "startfile", otwarte.append, raising=False)
+    monkeypatch.setattr(operaty, "_na_pierwszy_plan",
+                        lambda _: (_ for _ in ()).throw(RuntimeError("brak pywin32")))
+
+    katalog, _ = operaty.zaloz("001/2026", "GK.1.2026", "spis_tresci_wzor", {})
+    operaty.otworz_w_systemie(katalog)
+
+    assert otwarte == [katalog]

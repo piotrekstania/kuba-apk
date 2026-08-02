@@ -290,6 +290,17 @@ też brat. Interfejs w całości po polsku.
    pliku to `PermissionError`. Stąd `db.polaczenie()` — context manager, który commituje
    **i** zamyka. Pilnuje tego `test_polaczenie_zamyka_plik_bazy`, bo przy samej różnicy
    platform CI tego nie złapie. Wyszło dopiero, gdy testy bazy puszczono na Windowsie.
+20. **Windows nie pozwala procesowi w tle wyciągnąć okna na pierwszy plan.** „Otwórz
+   katalog” woła `os.startfile`, ale aktywna jest przeglądarka, nie uvicorn — Eksplorator
+   otwierał się *za* oknem przeglądarki i tylko migał na pasku zadań, czyli dla brata
+   „przycisk nic nie zrobił”. Mylące przy diagnozie: ten sam `os.startfile` uruchomiony
+   ze świeżo odpalonego skryptu **wychodzi** na wierzch (proces startujący ma jeszcze
+   prawo do planu), więc problem znika, gdy się go testuje poza serwerem. Sprawdzaj to
+   przez trasę HTTP. Obejście w `operaty._na_pierwszy_plan`: znaleźć okno klasy
+   `CabinetWClass` z nazwą katalogu w tytule, podpiąć się `AttachThreadInput` pod wątek
+   okna aktywnego i dopiero wtedy `SetForegroundWindow`. Chodzi w osobnym wątku (okno
+   pojawia się z opóźnieniem) i **musi być niemy** — wyjątek w wątku wysypałby bratu
+   angielski ślad stosu do konsoli.
 
 ## Stan na teraz — przetestowane end-to-end
 
