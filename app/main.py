@@ -24,7 +24,8 @@ from fastapi.staticfiles import StaticFiles
 from fastapi.templating import Jinja2Templates
 from starlette.exceptions import HTTPException as BladHTTP
 
-from . import aktualizacja, db, generator, miniatury, operaty, pdf, szablony, teryt
+from . import (aktualizacja, db, generator, miniatury, operaty, pdf, statystyki,
+               szablony, teryt)
 from .config import DANE, WEB, WYNIKI
 
 
@@ -45,6 +46,9 @@ def _pierwsze_pobranie_teryt() -> None:
 @asynccontextmanager
 async def cykl_zycia(_: FastAPI):
     db.init()
+    # Liczniki startują od tego, co brat już zrobił — inaczej po aktualizacji
+    # zobaczyłby „0 operatów”, mając ich pięćdziesiąt. Robi się to raz.
+    statystyki.zasiej_z_historii()
     threading.Thread(target=_pierwsze_pobranie_teryt, daemon=True).start()
     yield
 
@@ -59,7 +63,7 @@ DZIENNIK_BLEDOW = DANE / "bledy.log"
 def _widok(request: Request, nazwa: str, **kontekst: Any) -> HTMLResponse:
     kontekst.setdefault("konwerter", pdf.dostepny_konwerter())
     kontekst.setdefault("wersja", aktualizacja.wersja_lokalna()[0])
-    kontekst.setdefault("statystyki", operaty.statystyki())
+    kontekst.setdefault("statystyki", statystyki.podsumowanie())
     return widoki.TemplateResponse(request, nazwa, kontekst)
 
 
@@ -351,12 +355,14 @@ async def generuj(request: Request, identyfikator: str, edytuj: int | None = Non
     wybrane_szablony = [identyfikator
                         for pole in szablon.pola if pole.typ == "dokumenty"
                         for identyfikator in (dane.get(pole.klucz) or [])]
+    wypelnionych = 1                      # dokument główny już powstał
     for identyfikator_dodatkowego in wybrane_szablony:
         dodatkowy = szablony.szablon_po_id(str(identyfikator_dodatkowego))
         if dodatkowy is None or dodatkowy.id == szablon.id:
             continue
         try:
             generator.dopisz_dokument(dodatkowy, kontekst, katalog)
+            wypelnionych += 1
         except Exception as blad:
             zapisz_blad(request, blad)
             ostrzezenia.append(
@@ -367,6 +373,12 @@ async def generuj(request: Request, identyfikator: str, edytuj: int | None = Non
     # składania, PDF-y zwykle są już gotowe i miniatury pokazują się od razu.
     threading.Thread(target=_przygotuj_podglady_po_cichu, args=(katalog,),
                      daemon=True).start()
+
+    # Poprawianie operatu **nie jest** nowym operatem — tak samo jak nie zużywa numeru.
+    # Dokumenty liczymy za każdym razem, bo za każdym razem program je naprawdę wypełnia.
+    statystyki.zlicz(statystyki.DOKUMENT, wypelnionych)
+    if not poprawiany:
+        statystyki.zlicz(statystyki.OPERAT)
 
     tytul = kontekst.get("nr_roboty") or katalog.name
     if poprawiany:
@@ -557,6 +569,7 @@ async def scal_wykonaj(request: Request, nazwa: str):
         pdf.polacz_pdf(wybrane, wynik, etykiety, obroty)
     except pdf.BladPliku as blad:
         return niepowodzenie(str(blad))
+    statystyki.zlicz(statystyki.PDF)      # dopiero tutaj: PDF naprawdę leży na dysku
     # Nie odsyłamy pliku prosto w odpowiedzi na POST: formularz z target="_blank" bywa
     # blokowany i wtedy kliknięcie „Złóż PDF” nie robi *nic*, co dla brata wygląda jak
     # zepsuty program. Wracamy więc na stronę układania z potwierdzeniem, a gotowy PDF

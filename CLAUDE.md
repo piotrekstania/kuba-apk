@@ -52,6 +52,8 @@ zainstalowania/uruchomienia, bez instalowania Pythona.
 | **Calibri**, nie Bahnschrift | Bahnschrift jest tylko na Windowsie i nie ma odpowiednika na Linuksie, więc podglądy PDF u autora łamały się inaczej niż dokumenty u brata. Calibri ma metrycznie zgodne Carlito (`fonts-crosextra-carlito`) — ten sam plik łamie się tak samo po obu stronach |
 | **Bez numeracji stron**, jedna stopka na wszystkich stronach i we wszystkich dokumentach | operat i tak jest sklejany z kilkunastu plików w jeden PDF, więc numer strony pojedynczego dokumentu nic nie znaczy, a wprowadza w błąd. Uwaga: pole z numerem siedziało też w **nieużywanej** stopce stron parzystych i wróciłoby przy pierwszej zmianie ustawień — dlatego skrypt nadpisuje wszystkie trzy stopki |
 | W wykazie zmian działki identyfikator kończy się **kropką i niczym więcej** — `[{{ polozenie_obreb_teryt }}.]` | to **nie jest błąd ani niedokończona edycja**, tylko pomysł brata: program wstawia obręb, a numer działki brat dopisuje sam w Wordzie, bo w jednym wykazie bywa ich kilka i nie zawsze wszystkie z formularza. `{{ nr_dzialki }}` celowo nie występuje w tym pliku — nie „poprawiaj” tego |
+| **Liczniki pracy liczą zdarzenia w bazie, a nie pliki na dysku** (`app/statystyki.py`, tabela `zdarzenia`) | pierwsza wersja liczyła zawartość `wyniki/` i myliła się w obie strony: brat przenosi gotowe operaty na dysk archiwalny, więc licznik cofałby się do zera mimo setki zrobionych robót, a pliki, które sam dokłada do katalogu (mapy, skany, wypisy), wpadały jako „wygenerowane przez program”. Baza jest właściwym miejscem, bo `dane/` przeżywa aktualizacje, trafia do `dane/kopie/`, a `SET ile = ile + 1` jest niepodzielne — plik JSON gubiłby zliczenia przy dwóch kartach naraz |
+| Historia liczników odtwarzana **raz** przy pierwszym starcie nowej wersji (`zasiej_z_historii`) | brat ma już kilkadziesiąt operatów; licznik od zera wyglądałby na zepsuty. Operaty odtwarzamy z tabeli `dokumenty` (pamięta też te zarchiwizowane), dokumenty i PDF-y z katalogów jeszcze obecnych w `wyniki/` — i **tylko pliki o nazwach nadawanych przez program**, żeby jego własne nie wpadły nawet ten jeden raz |
 | **Dane stałe usunięte z programu** — nazwisko, uprawnienia, pieczątka firmy | brat woli mieć je wpisane na sztywno w swoim szablonie Worda; to i tak nie zmienia się między robotami, a jeden ekran mniej to jeden ekran mniej do tłumaczenia. `db.wczytaj_ustawienia` i `zrodlo: "ustawienia"` zostają w kodzie, ale bez interfejsu |
 
 ## Zasada centralna
@@ -135,7 +137,8 @@ starą wersję (autor się na to nadział).
 | `app/pdf.py` | wykrywanie konwertera, DOCX→PDF, łączenie PDF-ów |
 | `app/aktualizacja.py` | pobieranie nowej wersji z GitHuba; **tylko biblioteka standardowa**, bo działa zanim `pip install` dołoży nowe zależności |
 | `WERSJA` | 1. linia = numer porównywany z GitHubem, reszta = opis pokazywany bratu raz po aktualizacji |
-| `app/db.py` | SQLite: `dokumenty`, `liczniki`, `teryt_*` (`ustawienia` bez interfejsu) |
+| `app/db.py` | SQLite: `dokumenty`, `liczniki`, `zdarzenia`, `teryt_*` (`ustawienia` bez interfejsu) |
+| `app/statystyki.py` | liczniki do stopki: operaty, dokumenty, złożone PDF-y; zliczane w chwili zdarzenia |
 | `app/teryt.py` | jednostki TERYT z GUS + obręby z ULDK; **tylko biblioteka standardowa** |
 | `app/operaty.py` | katalog operatu: zakładanie, `operat.json`, lista plików do sklejenia; nazwa pliku wynika z nazwy szablonu (`spis_tresci_wzor` → `spis_tresci.docx`) |
 | `app/miniatury.py` | podgląd pierwszej strony PDF-a (pypdfium2 + Pillow) |
@@ -369,6 +372,7 @@ Co pilnują, w kolejności od najbardziej bolesnych doświadczeń:
 | `test_word.py` | ścieżka przez Worda (COM) — tylko Windows z Office, nigdy w CI; opis niżej |
 | `test_trasy.py` | formularz → operat przez HTTP, polskie strony błędów, brak wyjścia poza `wyniki/` |
 | `test_operaty.py`, `test_pdf.py` | nazwy katalogów i plików, kolejność sklejania, komunikat przy uszkodzonym PDF |
+| `test_statystyki.py` | że licznik **nie cofa się po archiwizacji** operatu i **nie rośnie** od plików dołożonych przez brata — na tym wyłożyła się pierwsza wersja |
 
 Testy stabilności formatek **pomijają się bez czcionki Calibri/Carlito**
 (`sudo apt install fonts-crosextra-carlito`), bo bez niej `ujednolic_wyglad.py` w ogóle

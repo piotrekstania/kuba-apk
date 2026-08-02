@@ -151,33 +151,6 @@ def lista() -> list[dict[str, Any]]:
     return sorted(wynik, key=lambda o: o["utworzono"], reverse=True)
 
 
-def statystyki() -> dict[str, int]:
-    """Trzy liczby do stopki — liczone z tego, co **naprawdę leży** w `wyniki/`.
-
-    Dzięki temu brat może je sprawdzić Eksploratorem i wyjdzie mu to samo; liczby brane
-    z bazy rozjeżdżałyby się z dyskiem, gdy skopiuje operat na inny komputer albo skasuje
-    katalog ręcznie.
-
-    Świadomie **nie** liczymy tu podglądów z `dane/podglad/` (to pliki robocze programu,
-    nie jego dokumenty) ani PDF-ów, które sam wrzucił do katalogu operatu — mapy i skany
-    z ośrodka nie są „wygenerowane”. PDF liczymy jeden na operat: ten złożony, o nazwie
-    numeru roboty.
-    """
-    operatow = dokumentow = pdfow = 0
-    for sciezka in WYNIKI.iterdir() if WYNIKI.is_dir() else []:
-        if not sciezka.is_dir() or not (sciezka / PLIK_OPISU).exists():
-            continue
-        operatow += 1
-        dokumentow += sum(
-            1 for plik in sciezka.iterdir()
-            if plik.is_file() and plik.suffix.lower() in ROZSZERZENIA_WORD
-            and not plik.name.startswith("~$")      # pliki tymczasowe otwartego Worda
-        )
-        if (sciezka / nazwa_wyniku(sciezka)).exists():
-            pdfow += 1
-    return {"operatow": operatow, "dokumentow": dokumentow, "pdfow": pdfow}
-
-
 def katalog_po_nazwie(nazwa: str) -> Path | None:
     """Zamienia nazwę z adresu na katalog — z blokadą wyjścia poza `wyniki/`."""
     kandydat = (WYNIKI / nazwa).resolve()

@@ -56,6 +56,17 @@ CREATE TABLE IF NOT EXISTS teryt_stan (
     klucz    TEXT PRIMARY KEY,
     wartosc  TEXT NOT NULL
 );
+
+-- Liczniki pracy programu: ile operatów założono, ile dokumentów wypełniono,
+-- ile PDF-ów złożono danego dnia. Liczymy **w chwili zdarzenia**, bo katalogi
+-- z gotowymi operatami brat przenosi na dysk archiwalny — liczenie plików
+-- na dysku cofałoby licznik po każdej archiwizacji (patrz app/statystyki.py).
+CREATE TABLE IF NOT EXISTS zdarzenia (
+    dzien   TEXT NOT NULL,               -- '2026-08-02'
+    rodzaj  TEXT NOT NULL,               -- operat | dokument | pdf
+    ile     INTEGER NOT NULL DEFAULT 0,
+    PRIMARY KEY (dzien, rodzaj)
+);
 """
 
 
