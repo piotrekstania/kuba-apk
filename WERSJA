@@ -1,2 +1,2 @@
-2026.08.02.2
-Liczniki na dole strony liczą teraz poprawnie: przeniesienie gotowych operatów do archiwum ich nie kasuje, a pliki, które sam dołożysz do katalogu, nie są doliczane jako wygenerowane.
+2026.08.02.3
+Po kliknięciu „Otwórz katalog” okno Eksploratora wychodzi teraz na wierzch, zamiast chować się za oknem przeglądarki i migać na pasku zadań.
