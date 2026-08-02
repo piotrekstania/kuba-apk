@@ -511,9 +511,10 @@ widać było dopiero na obrazku, a nie w liczbach.
    stopka kończąca się w dwóch trzecich szerokości) widać było dopiero na obrazku.
    Orientacja pozioma nie wymaga niczego dodatkowego: szerokości liczą się z rozmiaru
    strony danego pliku. `utworz_wzory_wykazow.py` zostaje jako generator szkieletu.
-2. **Wczytywanie wykazu współrzędnych z pliku** zamiast wklepywania/wklejania — brat pewnie
-   eksportuje dane z programu geodezyjnego (C-Geo, WinKalk, Geonet). Trzeba zapytać o format
-   i dopisać parser.
+2. ~~Wczytywanie wykazu współrzędnych z pliku~~ — **odpada** (ustalone z bratem 02.08.2026).
+   Wykaz robi w C-Geo, generuje z niego PDF i dokłada go do operatu jak każdy inny
+   załącznik. Program nie ma po co znać formatu C-Geo, a pole tabelaryczne w formularzu
+   zostaje dla przypadków, w których wpisuje kilka punktów z ręki.
 2a. Sprawdzanie numeru działki przez ULDK (`GetParcelById`) — dane już są pod ręką, a to
    wyłapałoby literówkę w numerze, zanim operat pójdzie do ośrodka.
 3. **Paczka dla Windowsa.** PyInstaller (`--onedir`) + instalator Inno Setup. Budowanie musi
@@ -530,6 +531,10 @@ widać było dopiero na obrazku, a nie w liczbach.
 ## Pytania otwarte do brata
 
 - Które dokumenty poza operatem technicznym są mu potrzebne?
-- Skąd bierze wykaz współrzędnych — z jakiego programu i w jakim formacie pliku?
-- Ma na komputerze Microsoft Worda (wersję instalowaną, nie przeglądarkową)?
 - Czy numeracja operatów ma być ciągła w roku, czy per rodzaj roboty?
+
+Odpowiedziane:
+
+- ~~Skąd bierze wykaz współrzędnych?~~ — z C-Geo, ale **jako gotowy PDF**, który dokłada
+  do operatu jak każdy załącznik (02.08.2026). Parsera formatów geodezyjnych nie robimy.
+- ~~Ma Microsoft Worda?~~ — tak, Office 16.0; ścieżka przez COM jest sprawdzona.
