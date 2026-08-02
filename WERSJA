@@ -1,2 +1,2 @@
-2026.08.02.6
+2026.08.02.7
 Drobne sprzątanie: przy pierwszym uruchomieniu programu nie powstaje już niepotrzebna kopia pustej bazy w katalogu dane\kopie. Kopie bezpieczeństwa robią się nadal — przed każdą zmianą układu bazy i przed każdą aktualizacją.
