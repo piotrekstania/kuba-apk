@@ -1,2 +1,2 @@
-2026.08.02.1
-Na dole każdej strony widać teraz, ile masz operatów, ile dokumentów Worda i ile złożonych PDF-ów.
+2026.08.02.2
+Liczniki na dole strony liczą teraz poprawnie: przeniesienie gotowych operatów do archiwum ich nie kasuje, a pliki, które sam dołożysz do katalogu, nie są doliczane jako wygenerowane.
