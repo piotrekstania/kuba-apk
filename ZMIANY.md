@@ -3,6 +3,10 @@
 Co doszło w kolejnych wersjach programu. Ten sam opis pokazuje się raz, na stronie
 głównej, zaraz po tym jak program sam się zaktualizuje.
 
+## 2026.08.02.12 — 2026-08-02
+
+Nowość: po wpisaniu numeru działki program sprawdza w ewidencji (ULDK), czy taka działka istnieje w wybranym obrębie, i pisze o tym pod polem. To tylko podpowiedź na literówkę — nigdy nie blokuje wygenerowania dokumentu, a gdy usługa nie odpowiada, nie pisze nic.
+
 ## 2026.08.02.11 — 2026-08-02
 
 Program pamięta teraz, jak poukładałeś operat: gdy złożysz PDF i wrócisz tu później, kolejność kafelków i obroty są takie, jak je zostawiłeś. Pliki dołożone w międzyczasie czekają na końcu listy, więc nic nie przestawia się samo. Ustawienie zapisuje się w katalogu operatu, więc jedzie razem z nim do archiwum.
