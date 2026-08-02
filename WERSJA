@@ -1,2 +1,2 @@
-2026.08.02.5
-Czarne okno programu chowa się teraz samo do paska zadań zaraz po uruchomieniu — przestaje wyskakiwać przed przeglądarkę. Program zamykasz nim tak samo jak dotąd, wystarczy kliknąć je w pasku. Gdyby program się nie uruchomił, okno zostaje otwarte, żeby było widać dlaczego.
+2026.08.02.6
+Drobne sprzątanie: przy pierwszym uruchomieniu programu nie powstaje już niepotrzebna kopia pustej bazy w katalogu dane\kopie. Kopie bezpieczeństwa robią się nadal — przed każdą zmianą układu bazy i przed każdą aktualizacją.
