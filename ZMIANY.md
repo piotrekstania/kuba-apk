@@ -3,6 +3,10 @@
 Co doszło w kolejnych wersjach programu. Ten sam opis pokazuje się raz, na stronie
 głównej, zaraz po tym jak program sam się zaktualizuje.
 
+## 2026.08.02.14 — 2026-08-02
+
+Powierzchnia działki pokazuje się teraz zaokrąglona do dwóch miejsc — „ok. 0,42 ha” zamiast „ok. 0,4159 ha”. Dokładna liczba stoi obok w metrach kwadratowych i ta zostaje bez zmian. Cały komunikat z ewidencji jest grubszy, żeby dało się go złapać wzrokiem bez szukania.
+
 ## 2026.08.02.13 — 2026-08-02
 
 Sprawdzanie działki pokazuje teraz także jej przybliżoną powierzchnię, np. „6002 — ok. 0,4159 ha (4159 m²)”. Warto na nią zerknąć: numer 123/5 wpisany zamiast 123/4 zwykle też istnieje, więc samo „jest taka działka” tego nie wyłapie, a inna wielkość od razu.
