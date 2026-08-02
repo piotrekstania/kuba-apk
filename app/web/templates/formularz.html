@@ -178,7 +178,9 @@
           <input id="p_{{ pole.klucz }}" name="pole__{{ pole.klucz }}"
                  type="{{ 'date' if pole.typ == 'date' else ('number' if pole.typ == 'number' else 'text') }}"
                  {% if pole.typ == 'number' %}step="any"{% endif %}
+                 {% if pole.klucz in POLA_DZIALKI %}data-dzialka="1"{% endif %}
                  value="{{ wartosc }}">
+          {% if pole.klucz in POLA_DZIALKI %}<p class="uldk podpowiedz"></p>{% endif %}
           {% if pole.podpowiedz %}<p class="podpowiedz">{{ pole.podpowiedz }}</p>{% endif %}
         </div>
         {% endif %}
@@ -355,6 +357,60 @@ document.querySelectorAll('.teryt').forEach(blok => {
     if (!d.gmina) return;
     await zaladujObreby(d.gmina, d.obreb);
   })();
+});
+
+// --- podpowiedź: czy ULDK zna taką działkę ---------------------------------
+//
+// To jest wyłącznie podpowiedź. Nigdy nie blokuje wysłania formularza i nigdy nie mówi
+// „zły numer”: ULDK nie zna wszystkich działek (przy pobieraniu obrębów kilkanaście
+// jednostek w ogóle nie odpowiedziało), a fałszywy alarm nauczyłby ignorowania
+// komunikatów — czyli zepsułby też te prawdziwe.
+document.querySelectorAll('input[data-dzialka]').forEach(pole => {
+  const wynik = pole.parentElement.querySelector('.uldk');
+  const obreb = () => document.querySelector('select[data-poziom="obreb"]')?.value || '';
+  let ostatnie = '';
+
+  async function sprawdz() {
+    const numery = pole.value.trim();
+    const podpis = `${obreb()}|${numery}`;
+    if (podpis === ostatnie) return;          // bez powtarzania pytania o to samo
+    ostatnie = podpis;
+    if (!numery) return wynik.textContent = '';
+    if (!obreb()) {
+      wynik.textContent = 'Wybierz obręb, żeby program sprawdził numer w ewidencji.';
+      wynik.className = 'uldk podpowiedz';
+      return;
+    }
+    wynik.textContent = 'Sprawdzam w ewidencji…';
+    wynik.className = 'uldk podpowiedz';
+    try {
+      const odpowiedz = await fetch(`/teryt/dzialka?obreb=${encodeURIComponent(obreb())}`
+                                    + `&numery=${encodeURIComponent(numery)}`);
+      const dane = await odpowiedz.json();
+      const brakujace = dane.wyniki.filter(w => w.stan === 'brak').map(w => w.numer);
+      const sprawdzone = dane.wyniki.filter(w => w.stan !== 'nieznane');
+      if (!sprawdzone.length) {
+        wynik.textContent = '';               // ULDK milczy — udajemy, że nas tu nie było
+      } else if (brakujace.length) {
+        wynik.textContent = brakujace.length === 1
+          ? `Ewidencja nie zna działki ${brakujace[0]} w tym obrębie — sprawdź numer.`
+          : `Ewidencja nie zna działek: ${brakujace.join(', ')} — sprawdź numery.`;
+        wynik.className = 'uldk podpowiedz uwaga';
+      } else {
+        wynik.textContent = sprawdzone.length === 1
+          ? '✓ Jest taka działka w ewidencji.' : '✓ Wszystkie działki są w ewidencji.';
+        wynik.className = 'uldk podpowiedz dobrze';
+      }
+    } catch (e) {
+      wynik.textContent = '';                 // brak sieci nie jest problemem użytkownika
+    }
+  }
+
+  pole.addEventListener('blur', sprawdz);
+  document.querySelector('select[data-poziom="obreb"]')?.addEventListener('change', () => {
+    ostatnie = '';                            // zmiana obrębu unieważnia poprzedni wynik
+    sprawdz();
+  });
 });
 </script>
 

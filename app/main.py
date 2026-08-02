@@ -56,6 +56,9 @@ async def cykl_zycia(_: FastAPI):
 app = FastAPI(title="Generator operatów", lifespan=cykl_zycia)
 app.mount("/static", StaticFiles(directory=WEB / "static"), name="static")
 widoki = Jinja2Templates(directory=str(WEB / "templates"))
+# Formularz sam oznacza pola z numerem działki — skrypt po stronie przeglądarki
+# podpowiada przy nich, czy ULDK zna taką działkę.
+widoki.env.globals["POLA_DZIALKI"] = szablony.POLA_DZIALKI
 
 DZIENNIK_BLEDOW = DANE / "bledy.log"
 
@@ -661,6 +664,19 @@ def teryt_lista(poziom: str, rodzic: str | None = None):
         return JSONResponse({"pozycje": [], "blad": "Nieznany poziom podziału."},
                             status_code=400)
     return JSONResponse({"pozycje": teryt.potomkowie(rodzic or None, poziom)})
+
+
+@app.get("/teryt/dzialka")
+def teryt_dzialka(obreb: str, numery: str):
+    """Czy ULDK zna te działki. `numery` bywa listą: „123/4, 123/5”.
+
+    Podpowiedź, nigdy blokada — dlatego stan „nieznane” (ULDK milczy) jest osobny
+    od „brak” i nie może wyglądać jak błąd numeru.
+    """
+    wyniki = []
+    for numer in [n.strip() for n in numery.replace(";", ",").split(",") if n.strip()][:10]:
+        wyniki.append({"numer": numer, "stan": teryt.sprawdz_dzialke(obreb, numer)})
+    return JSONResponse({"wyniki": wyniki})
 
 
 @app.get("/teryt/obreby")

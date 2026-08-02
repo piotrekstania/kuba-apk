@@ -118,6 +118,44 @@ def _czytaj_terc(paczka: bytes) -> tuple[list[tuple], str]:
     return wiersze, stan_na
 
 
+# Stany sprawdzenia działki. „nieznane” to **nie** to samo co „brak”: usługa mogła nie
+# odpowiedzieć, a wtedy nie wolno sugerować, że numer jest zły.
+DZIALKA_JEST = "jest"
+DZIALKA_BRAK = "brak"
+DZIALKA_NIEZNANE = "nieznane"
+
+
+def sprawdz_dzialke(obreb: str, numer: str, limit_czasu: int = 8) -> str:
+    """Czy ULDK zna działkę `numer` w obrębie `obreb`.
+
+    Identyfikator działki to `<obręb>.<numer>`, np. `120102_2.0001.123/4`.
+    Odpowiedź ULDK zaczyna się od kodu w pierwszej linii: `0` = znaleziona,
+    `-1` = brak wyników. Przy braku ULDK dokłada jeszcze swój wewnętrzny komunikat
+    o „błędnym formacie odpowiedzi XML” — to jego bałagan, a nie nasz błąd, więc
+    patrzymy wyłącznie na kod.
+
+    Krótszy limit czasu niż przy pobieraniu TERC: to jest podpowiedź w formularzu,
+    a nie operacja, na którą ktoś świadomie czeka.
+    """
+    obreb, numer = obreb.strip(), numer.strip()
+    if not obreb or not numer:
+        return DZIALKA_NIEZNANE
+    adres = URL_ULDK + "?" + urllib.parse.urlencode(
+        {"request": "GetParcelById", "id": f"{obreb}.{numer}", "result": "teryt"})
+    try:
+        with urllib.request.urlopen(adres, timeout=limit_czasu) as odpowiedz:
+            tresc = odpowiedz.read().decode("utf-8", "replace")
+    except Exception:
+        return DZIALKA_NIEZNANE          # brak sieci, ULDK nie odpowiada — nie zgadujemy
+
+    pierwsza = (tresc.splitlines() or [""])[0].strip()
+    if pierwsza.startswith("0"):
+        return DZIALKA_JEST
+    if pierwsza.startswith("-1"):
+        return DZIALKA_BRAK
+    return DZIALKA_NIEZNANE
+
+
 def _pobierz_obreby(gmina: str) -> list[tuple[str, str]]:
     """Lista (identyfikator, nazwa) obrębów jednej jednostki ewidencyjnej."""
     adres = URL_ULDK + "?" + urllib.parse.urlencode(

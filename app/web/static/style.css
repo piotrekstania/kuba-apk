@@ -124,6 +124,12 @@ th.waski { width: 220px; }
          border-radius: 999px; padding: 1px 8px; white-space: nowrap; }
 .spoza { font-size: 11px; color: var(--szary); border: 1px solid var(--linia);
          border-radius: 999px; padding: 1px 8px; white-space: nowrap; cursor: help; }
+
+/* Podpowiedź z ewidencji: „uwaga” jest wyraźna, ale nie czerwona jak błąd —
+   to sugestia sprawdzenia numeru, a nie stwierdzenie, że jest zły. */
+.uldk:empty { display: none; }
+.uldk.dobrze { color: #1a7f4b; }
+.uldk.uwaga { color: #9a6700; }
 .akcje a { margin-right: 10px; font-size: 13px; }
 .rzad-pliku { display: flex; gap: 8px; align-items: center; margin-bottom: 8px; }
 

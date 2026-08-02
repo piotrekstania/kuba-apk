@@ -34,6 +34,7 @@ zainstalowania/uruchomienia, bez instalowania Pythona.
 | **Jeden katalog `szablony/`**, wersjonowany w repo i nadpisywany przy aktualizacji | decyzja z 31.07.2026, zmiana wcześniejszej: formatki Worda utrzymuje autor, nie brat, więc podział na „wzorcowe” i „jego” tylko przeszkadzał — poprawka szablonu nie docierała do brata, dopóki nie skasował pliku ręcznie. Stara zawartość i tak ląduje w `dane/kopie/` przed każdą aktualizacją |
 | Historia zmian jako **plik w repozytorium**, generowany z historii `WERSJA` w gicie | u brata nie ma `.git`, więc commity nie są dla niego żadnym źródłem. Opis dla użytkownika i tak powstaje przy każdym wydaniu w pliku `WERSJA` — `zbuduj_zmiany.py` tylko go zbiera, żeby nikt nie przepisywał tego ręcznie i nie pomylił numeru |
 | Menu „Pomoc” na `<details>`, **bez JS-a** | natywny element obsługuje klawiaturę, działa bez skryptów i zamyka się sam przy przejściu na inną stronę. Uwaga: `display: flex` na liście nie psuje ukrywania — przeglądarka i tak nie maluje ani nie klika zawartości zamkniętego `<details>` (sprawdzone `elementFromPoint`) |
+| Sprawdzanie numeru działki w ULDK jest **podpowiedzią, nigdy blokadą** | ULDK nie zna wszystkich działek — przy hurtowym pobieraniu obrębów 13 jednostek w ogóle nie odpowiedziało. Komunikat „zły numer” o poprawnej działce nauczyłby brata ignorowania komunikatów, czyli zepsułby też te prawdziwe. Dlatego stan `nieznane` (usługa milczy, brak sieci) jest osobny od `brak` i **nic nie pokazuje**, a `brak` mówi „ewidencja nie zna — sprawdź numer”, na pomarańczowo, nie na czerwono. Formularz zawsze da się wysłać |
 | **Układ kafelków zapamiętany w `operat.json`** (`uklad`: kolejność + obroty) | brat składa ten sam operat po kilka razy — po dołożeniu skanu, po poprawce spisu treści — a kolejność i obroty ustawia myszą. Powtarzanie tego za każdym razem to była praca do wyrzucenia. Nowe pliki dokładają się **na końcu** listy, bo `sort` jest stabilny. Świadomie **nie** zapamiętujemy plików pominiętych krzyżykiem: plik ukryty na stałe, o którym program milczy, byłby trudniejszy do odnalezienia niż jedno kliknięcie. Zapis idzie dopiero **po udanym** złożeniu, więc nieudana próba nie kasuje poprzedniego ustawienia. Uwaga: `zaloz()` przepisuje `operat.json` od nowa przy każdym poprawianiu operatu i musi ten klucz przenieść — inaczej literówka w formularzu kasowałaby układ |
 | **Jedna lista operatów na stronie głównej**, bez osobnej strony „Złóż PDF” | dwie listy tych samych operatów wyglądały jak pomyłka, a różniły się dokładnie tym, czego nie było widać: strona główna czytała **bazę** i pokazywała **15 najnowszych**, a `/scal` skanował **dysk** i pokazywał **wszystkie**. Scalone: lista bierze historię z bazy i dokłada katalogi z `wyniki/`, których w historii nie ma (znacznik „spoza historii”) — tak wygląda operat przywrócony z archiwum albo skopiowany z innego komputera. Trasa `/scal` została jako przekierowanie na `/`, bo prowadzi do niej kilkanaście przekierowań z obsługi błędów i zakładka w przeglądarce |
 | Wersja schematu bazy w `PRAGMA user_version` + lista `MIGRACJE` | baza u brata to jedyny egzemplarz historii i numeracji; nowy kod na starej bazie musi umieć ją dociągnąć, a nie wywalić się na brakującej kolumnie |
@@ -409,6 +410,15 @@ Pobieranie obrębów dla całej Polski przetestowane w przeglądarce: 3240 jedno
 normalne. Pasek postępu, przerwanie w połowie i „Pobierz brakujące” (wznawia tylko to,
 czego nie ma) działają; drugie kliknięcie w trakcie nie startuje drugiego pobierania.
 
+Sprawdzanie numeru działki działa na żywym ULDK (02.08.2026): `120101_1.0006.6002` →
+„✓ Jest taka działka w ewidencji”, numer zmyślony → pomarańczowe „ewidencja nie zna”,
+kilka numerów w jednym polu (`6002, 999999`) → wskazany ten zły. Formularz przez cały
+czas da się wysłać. Uwaga przy diagnozie: **`GetParcelById` dokłada do „-1 brak wyników”
+własny komunikat o „błędnym formacie odpowiedzi XML”** — to bałagan po stronie GUGiK-u,
+a nie objaw naszego błędu; patrzymy wyłącznie na kod w pierwszej linii. Przykład
+z ich dokumentacji (`141201_1.0001.1/2`) też zwraca „brak wyników”, więc nie nadaje się
+na test poprawności formatu — do sprawdzenia bierz identyfikator z `GetParcelByXY`.
+
 Numer operatu jest **rezerwowany przed wypełnieniem szablonu** (musi wejść do treści
 dokumentu), a po nieudanym generowaniu oddawany przez `db.zwolnij_numer` — warunkowym
 `UPDATE ... WHERE stan = ?`, żeby nie cofnąć licznika, który w międzyczasie ruszył dalej.
@@ -443,6 +453,7 @@ Co pilnują, w kolejności od najbardziej bolesnych doświadczeń:
 | `test_statystyki.py` | że licznik **nie cofa się po archiwizacji** operatu i **nie rośnie** od plików dołożonych przez brata — na tym wyłożyła się pierwsza wersja |
 | `test_uruchom.py` | że konsola chowa się **tylko po udanym starcie** i że obcy serwer na porcie nie uchodzi za nasz program |
 | `test_zmiany.py` | że `ZMIANY.md` **jedzie do brata przy aktualizacji** i że wydana wersja ma swój wpis w historii |
+| `test_uldk.py` | że milczenie ULDK **nie wygląda jak zły numer** — najważniejszy test w tym pliku |
 
 Testy stabilności formatek **pomijają się bez czcionki Calibri/Carlito**
 (`sudo apt install fonts-crosextra-carlito`), bo bez niej `ujednolic_wyglad.py` w ogóle
@@ -515,14 +526,14 @@ widać było dopiero na obrazku, a nie w liczbach.
    Wykaz robi w C-Geo, generuje z niego PDF i dokłada go do operatu jak każdy inny
    załącznik. Program nie ma po co znać formatu C-Geo, a pole tabelaryczne w formularzu
    zostaje dla przypadków, w których wpisuje kilka punktów z ręki.
-2a. Sprawdzanie numeru działki przez ULDK (`GetParcelById`) — dane już są pod ręką, a to
-   wyłapałoby literówkę w numerze, zanim operat pójdzie do ośrodka.
-3. **Paczka dla Windowsa.** PyInstaller (`--onedir`) + instalator Inno Setup. Budowanie musi
-   iść na Windowsie (brak cross-kompilacji) — albo lokalnie, albo GitHub Actions
-   `windows-latest`. `app/config.py` jest już przygotowany na `sys.frozen`.
-   Przy `--onefile` liczyć się z ostrzeżeniem SmartScreen i wolniejszym startem.
-   Uwaga przy pakowaniu: `pywin32` wymaga w PyInstallerze `--hidden-import win32com.client`
-   i `--hidden-import pythoncom`, inaczej konwersja PDF w `.exe` nie ruszy.
+2a. ~~Sprawdzanie numeru działki przez ULDK~~ — **zrobione** 02.08.2026, opis niżej.
+3. ~~Paczka `.exe` dla Windowsa~~ — **odpuszczone** (decyzja z 02.08.2026). Instalacja
+   przez `start.bat` działa i sama się aktualizuje, więc pakowanie w `.exe` rozwiązywałoby
+   problem, którego nie ma, a dokładało ostrzeżenia SmartScreen i osobną ścieżkę budowania.
+   **Python zostaje wymaganiem wstępnym.** Obsługa `sys.frozen` w `app/config.py` zostaje —
+   nie przeszkadza, a gdyby temat wrócił, to gotowy punkt zaczepienia (pamiętaj wtedy
+   o `--hidden-import win32com.client` i `--hidden-import pythoncom`, bez nich konwersja
+   PDF w `.exe` nie ruszy).
 4. Kolejne typy dokumentów (protokół, szkic, sprawozdanie) — każdy to nowy plik w `szablony/`.
 5. Pokrycie testami tego, czego dziś nie ruszają: Word przez COM (potrzebny Windows),
    sieć do GUS-u i ULDK (atrapy odpowiedzi), renderowanie miniatur, układanie

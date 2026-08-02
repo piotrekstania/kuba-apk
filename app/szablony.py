@@ -31,6 +31,12 @@ SUFIKSY_DATY = ("_iso", "_slownie")
 SUFIKSY_WYBORU = ("_pliki",)
 POLA_WYLICZANE = {"data_dzisiaj", "data_dzisiaj_slownie", "rok"}
 
+# Pola, przy których warto podpowiedzieć, czy ULDK zna taką działkę. Rozpoznajemy po
+# kluczu, a nie po wpisie w `.json`: formatki utrzymuje autor, a dopisywanie do nich
+# opcji technicznej po to, żeby program zapytał usługę GUGiK-u, tylko zaśmiecałoby
+# opis pola. Sprawdzenie jest wyłącznie podpowiedzią, więc nietrafienie nic nie psuje.
+POLA_DZIALKI = {"nr_dzialki", "nr_dzialek", "dzialki", "dzialka", "numer_dzialki"}
+
 
 @dataclass
 class Pole:
