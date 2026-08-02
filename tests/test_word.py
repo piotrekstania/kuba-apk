@@ -127,30 +127,37 @@ def test_dwie_konwersje_naraz(tmp_path):
         assert f"Dokument numer {indeks}" in tekst_pdf(wynik)      # żaden nie jest urwany
 
 
-def test_wsad_jednym_uruchomieniem(tmp_path):
-    """Wsad ma być wyraźnie szybszy niż konwersje po kolei — najdroższy jest start Worda.
+def test_wsad_uruchamia_worda_tylko_raz(tmp_path, monkeypatch):
+    """Cały zysk wsadu bierze się stąd, że Word startuje **raz** na komplet dokumentów.
 
-    Asercja z dużym zapasem: to ma łapać regresję „wróciliśmy do startu na dokument”,
-    a nie mierzyć wydajność.
+    Liczymy uruchomienia, a nie czas. Pierwsza wersja porównywała czasy („wsad ma być
+    o 20% szybszy”) i raz na jakiś czas czerwieniała bez żadnej regresji: przy rozgrzanym
+    Wordzie i obciążonej maszynie wyszło 13,95 s wobec 16,97 s, czyli tuż przy progu.
+    Czas zależy od tego, co akurat robi komputer; liczba startów Worda zależy wyłącznie
+    od naszego kodu — i to ją chcemy przypilnować.
     """
-    osobno = [dokument(tmp_path / "osobno" / f"d{i}.docx", f"Dokument {i}") for i in range(4)]
-    wsadowo = [dokument(tmp_path / "wsad" / f"d{i}.docx", f"Dokument {i}") for i in range(4)]
+    import win32com.client
 
-    start = time.perf_counter()
-    for zrodlo in osobno:
-        pdf.docx_na_pdf(zrodlo, zrodlo.with_suffix(".pdf"))
-    czas_osobno = time.perf_counter() - start
+    starty: list[str] = []
+    prawdziwy = win32com.client.DispatchEx
 
+    def liczacy(nazwa, *args, **kwargs):
+        starty.append(nazwa)
+        return prawdziwy(nazwa, *args, **kwargs)
+
+    monkeypatch.setattr(win32com.client, "DispatchEx", liczacy)
+
+    wsadowo = [dokument(tmp_path / f"d{i}.docx", f"Dokument {i}") for i in range(4)]
     start = time.perf_counter()
     zrobione = pdf.docx_na_pdf_wsad([(z, z.with_suffix(".pdf")) for z in wsadowo])
-    czas_wsadu = time.perf_counter() - start
+    czas = time.perf_counter() - start
 
     assert len(zrobione) == 4
     for indeks, zrodlo in enumerate(wsadowo):
         assert f"Dokument {indeks}" in tekst_pdf(zrodlo.with_suffix(".pdf"))
-    assert czas_wsadu < czas_osobno * 0.8, (
-        f"wsad {czas_wsadu:.2f} s, osobno {czas_osobno:.2f} s — "
-        "wygląda, jakby Word startował do każdego dokumentu z osobna")
+    assert starty.count("Word.Application") == 1, (
+        f"Word wystartował {starty.count('Word.Application')} razy zamiast raz — "
+        f"wsad przestał być wsadem (4 dokumenty w {czas:.1f} s)")
 
 
 def test_zakladki_z_naglowkow(tmp_path):

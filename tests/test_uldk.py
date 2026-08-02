@@ -38,24 +38,24 @@ def _podstaw(monkeypatch, tresc: str | Exception, zapamietaj: list | None = None
 
 def test_dzialka_znaleziona(monkeypatch):
     _podstaw(monkeypatch, "0\n120102_2.0001.123/4\n")
-    assert teryt.sprawdz_dzialke("120102_2.0001", "123/4") == teryt.DZIALKA_JEST
+    assert teryt.sprawdz_dzialke("120102_2.0001", "123/4")["stan"] == teryt.DZIALKA_JEST
 
 
 def test_dzialki_nie_ma(monkeypatch):
     """ULDK dokłada do „-1” swój komunikat o błędnym XML-u — patrzymy tylko na kod."""
     _podstaw(monkeypatch, "-1 brak wyników\nbłędny format odpowiedzi XML, usługa zwróciła\n")
-    assert teryt.sprawdz_dzialke("120102_2.0001", "999") == teryt.DZIALKA_BRAK
+    assert teryt.sprawdz_dzialke("120102_2.0001", "999")["stan"] == teryt.DZIALKA_BRAK
 
 
 def test_brak_sieci_to_nie_jest_zly_numer(monkeypatch):
     """Najważniejszy test w tym pliku: milczenie usługi nie może oskarżać użytkownika."""
     _podstaw(monkeypatch, OSError("brak połączenia"))
-    assert teryt.sprawdz_dzialke("120102_2.0001", "123/4") == teryt.DZIALKA_NIEZNANE
+    assert teryt.sprawdz_dzialke("120102_2.0001", "123/4")["stan"] == teryt.DZIALKA_NIEZNANE
 
 
 def test_dziwna_odpowiedz_to_tez_nieznane(monkeypatch):
     _podstaw(monkeypatch, "<html>Serwis przerwa techniczna</html>")
-    assert teryt.sprawdz_dzialke("120102_2.0001", "123/4") == teryt.DZIALKA_NIEZNANE
+    assert teryt.sprawdz_dzialke("120102_2.0001", "123/4")["stan"] == teryt.DZIALKA_NIEZNANE
 
 
 def test_bez_obrebu_nie_pytamy_uldk(monkeypatch):
@@ -63,7 +63,7 @@ def test_bez_obrebu_nie_pytamy_uldk(monkeypatch):
     zapytania: list = []
     _podstaw(monkeypatch, "0\n", zapytania)
 
-    assert teryt.sprawdz_dzialke("", "123/4") == teryt.DZIALKA_NIEZNANE
+    assert teryt.sprawdz_dzialke("", "123/4")["stan"] == teryt.DZIALKA_NIEZNANE
     assert zapytania == []
 
 
@@ -85,7 +85,8 @@ def bez_uldk(monkeypatch):
     odpowiedzi = {"123/4": teryt.DZIALKA_JEST, "999": teryt.DZIALKA_BRAK}
 
     def udawane(obreb, numer, limit_czasu=8):
-        return odpowiedzi.get(numer, teryt.DZIALKA_NIEZNANE)
+        return {"stan": odpowiedzi.get(numer, teryt.DZIALKA_NIEZNANE),
+                "powierzchnia": 4159.0 if numer == "123/4" else None}
 
     from app import main
     monkeypatch.setattr(main.teryt, "sprawdz_dzialke", udawane)
@@ -97,8 +98,8 @@ def test_trasa_sprawdza_kilka_dzialek_naraz(klient, bez_uldk):
 
     assert odpowiedz.status_code == 200
     assert odpowiedz.json()["wyniki"] == [
-        {"numer": "123/4", "stan": "jest"},
-        {"numer": "999", "stan": "brak"},
+        {"numer": "123/4", "stan": "jest", "powierzchnia": 4159.0},
+        {"numer": "999", "stan": "brak", "powierzchnia": None},
     ]
 
 
@@ -118,3 +119,56 @@ def test_formularz_oznacza_pole_z_numerem_dzialki(klient):
 
     assert 'data-dzialka="1"' in tresc
     assert 'class="uldk podpowiedz"' in tresc
+
+
+# --- liczenie powierzchni z obrysu -------------------------------------------
+
+def test_powierzchnia_prostego_wielokata():
+    """PL-1992 jest metryczny, więc pole liczy się wprost ze współrzędnych."""
+    assert teryt.powierzchnia_z_wkt(
+        "SRID=2180;POLYGON((0 0,100 0,100 100,0 100,0 0))") == 10000
+
+
+def test_dziura_w_dzialce_jest_odejmowana():
+    """Enklawa w środku działki nie może zawyżać powierzchni."""
+    assert teryt.powierzchnia_z_wkt(
+        "POLYGON((0 0,100 0,100 100,0 100,0 0),(10 10,60 10,60 60,10 60,10 10))") == 7500
+
+
+def test_dzialka_z_kilku_kawalkow_sumuje_sie():
+    """MULTIPOLYGON wygląda w nawiasach jak wielokąt z dziurą — dlatego typ czytamy
+    z tekstu WKT, a nie zgadujemy po zagnieżdżeniu (na tym poległa pierwsza wersja)."""
+    assert teryt.powierzchnia_z_wkt(
+        "MULTIPOLYGON(((0 0,100 0,100 100,0 100,0 0)),"
+        "((200 0,300 0,300 100,200 100,200 0)))") == 20000
+
+
+def test_kierunek_obrysu_nie_ma_znaczenia():
+    zgodnie = teryt.powierzchnia_z_wkt("POLYGON((0 0,100 0,100 100,0 100,0 0))")
+    przeciwnie = teryt.powierzchnia_z_wkt("POLYGON((0 0,0 100,100 100,100 0,0 0))")
+    assert zgodnie == przeciwnie == 10000
+
+
+def test_polamana_geometria_nie_wywala_sprawdzania():
+    for smiec in ("", "POLYGON", "SRID=2180;POLYGON((niepoprawne", "POLYGON((0 0,1 1))"):
+        assert teryt.powierzchnia_z_wkt(smiec) is None
+
+
+def test_powierzchnia_wraca_ze_sprawdzenia_dzialki(monkeypatch):
+    _podstaw(monkeypatch,
+             "0\n120102_2.0001.123/4|SRID=2180;POLYGON((0 0,100 0,100 100,0 100,0 0))\n")
+
+    wynik = teryt.sprawdz_dzialke("120102_2.0001", "123/4")
+
+    assert wynik["stan"] == teryt.DZIALKA_JEST
+    assert wynik["powierzchnia"] == 10000        # 1 ha
+
+
+def test_brak_geometrii_nie_psuje_odpowiedzi(monkeypatch):
+    """Gdyby ULDK kiedyś przestał oddawać obrys — stan „jest” ma zostać."""
+    _podstaw(monkeypatch, "0\n120102_2.0001.123/4\n")
+
+    wynik = teryt.sprawdz_dzialke("120102_2.0001", "123/4")
+
+    assert wynik["stan"] == teryt.DZIALKA_JEST
+    assert wynik["powierzchnia"] is None

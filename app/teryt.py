@@ -125,8 +125,88 @@ DZIALKA_BRAK = "brak"
 DZIALKA_NIEZNANE = "nieznane"
 
 
-def sprawdz_dzialke(obreb: str, numer: str, limit_czasu: int = 8) -> str:
+def _grupy_nawiasow(tekst: str) -> list:
+    """Zagnieżdżone nawiasy WKT → zagnieżdżone listy; liśćmi są napisy z współrzędnymi."""
+    stos: list = []
+    biezacy: list = []
+    bufor = ""
+    for znak in tekst:
+        if znak == "(":
+            stos.append(biezacy)
+            biezacy, bufor = [], ""
+        elif znak == ")":
+            if bufor.strip():
+                biezacy.append(bufor.strip())
+            bufor = ""
+            if not stos:                      # nawiasy się nie domykają — geometria do kosza
+                return []
+            zamkniety, biezacy = biezacy, stos.pop()
+            biezacy.append(zamkniety)
+        else:
+            bufor += znak
+    return biezacy
+
+
+def _pole_pierscienia(tekst: str) -> float:
+    """Pole wielokąta ze wzoru na sznurowadło (shoelace)."""
+    punkty = []
+    for para in tekst.split(","):
+        czesci = para.split()
+        if len(czesci) >= 2:
+            try:
+                punkty.append((float(czesci[0]), float(czesci[1])))
+            except ValueError:
+                return 0.0
+    if len(punkty) < 3:
+        return 0.0
+    suma = 0.0
+    for i in range(len(punkty)):
+        x1, y1 = punkty[i]
+        x2, y2 = punkty[(i + 1) % len(punkty)]
+        suma += x1 * y2 - x2 * y1
+    return abs(suma) / 2
+
+
+def _pole_wielokata(pierscienie: list) -> float:
+    """Pierwszy pierścień to obrys, kolejne to dziury (enklawy)."""
+    teksty = [p[0] if isinstance(p, list) and p else p for p in pierscienie]
+    teksty = [t for t in teksty if isinstance(t, str)]
+    if not teksty:
+        return 0.0
+    return _pole_pierscienia(teksty[0]) - sum(_pole_pierscienia(t) for t in teksty[1:])
+
+
+def powierzchnia_z_wkt(wkt: str) -> float | None:
+    """Powierzchnia działki w m² z geometrii oddanej przez ULDK.
+
+    ULDK zwraca `SRID=2180;POLYGON((...))`, a PL-1992 jest układem **metrycznym** —
+    pole liczy się więc wprost ze współrzędnych, bez przeliczania układów i bez
+    dodatkowych bibliotek (a `teryt.py` i tak stoi na samej bibliotece standardowej).
+
+    O typ geometrii pytamy wprost w tekście WKT, zamiast zgadywać go po zagnieżdżeniu
+    list: przy zgadywaniu dziura w wielokącie wygląda tak samo jak druga część
+    MULTIPOLYGON-u i pole wychodzi zawyżone zamiast pomniejszone.
+    """
+    geom = wkt.split(";", 1)[-1].strip()
+    if "(" not in geom:
+        return None
+    typ = geom[:geom.index("(")].strip().upper()
+    srodek = _grupy_nawiasow(geom[geom.index("("):])
+    if not srodek:
+        return None
+    struktura = srodek[0]
+    try:
+        pole = (sum(_pole_wielokata(w) for w in struktura) if typ.startswith("MULTI")
+                else _pole_wielokata(struktura))
+    except (TypeError, ValueError, IndexError):
+        return None
+    return pole or None
+
+
+def sprawdz_dzialke(obreb: str, numer: str, limit_czasu: int = 8) -> dict:
     """Czy ULDK zna działkę `numer` w obrębie `obreb`.
+
+    Zwraca `{"stan": ..., "powierzchnia": m² albo None}`.
 
     Identyfikator działki to `<obręb>.<numer>`, np. `120102_2.0001.123/4`.
     Odpowiedź ULDK zaczyna się od kodu w pierwszej linii: `0` = znaleziona,
@@ -139,21 +219,30 @@ def sprawdz_dzialke(obreb: str, numer: str, limit_czasu: int = 8) -> str:
     """
     obreb, numer = obreb.strip(), numer.strip()
     if not obreb or not numer:
-        return DZIALKA_NIEZNANE
+        return {"stan": DZIALKA_NIEZNANE, "powierzchnia": None}
+
+    # Prosimy też o geometrię: powierzchni ULDK nie oddaje osobnym polem (sprawdzone —
+    # `area`, `powierzchnia` i `parcel_area` zwracają pustkę), ale da się ją policzyć
+    # z obrysu. To druga para oczu przy literówce: numer 123/5 zamiast 123/4 też istnieje,
+    # więc samo „jest taka działka” tego nie wyłapie, a inna powierzchnia owszem.
     adres = URL_ULDK + "?" + urllib.parse.urlencode(
-        {"request": "GetParcelById", "id": f"{obreb}.{numer}", "result": "teryt"})
+        {"request": "GetParcelById", "id": f"{obreb}.{numer}", "result": "teryt,geom_wkt"})
     try:
         with urllib.request.urlopen(adres, timeout=limit_czasu) as odpowiedz:
             tresc = odpowiedz.read().decode("utf-8", "replace")
     except Exception:
-        return DZIALKA_NIEZNANE          # brak sieci, ULDK nie odpowiada — nie zgadujemy
+        # brak sieci, ULDK nie odpowiada — nie zgadujemy
+        return {"stan": DZIALKA_NIEZNANE, "powierzchnia": None}
 
-    pierwsza = (tresc.splitlines() or [""])[0].strip()
-    if pierwsza.startswith("0"):
-        return DZIALKA_JEST
+    linie = tresc.splitlines() or [""]
+    pierwsza = linie[0].strip()
     if pierwsza.startswith("-1"):
-        return DZIALKA_BRAK
-    return DZIALKA_NIEZNANE
+        return {"stan": DZIALKA_BRAK, "powierzchnia": None}
+    if not pierwsza.startswith("0"):
+        return {"stan": DZIALKA_NIEZNANE, "powierzchnia": None}
+
+    geometria = next((w for w in linie[1:] if "(" in w), "")
+    return {"stan": DZIALKA_JEST, "powierzchnia": powierzchnia_z_wkt(geometria)}
 
 
 def _pobierz_obreby(gmina: str) -> list[tuple[str, str]]:

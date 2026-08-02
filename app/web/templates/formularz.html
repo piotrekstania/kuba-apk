@@ -397,8 +397,16 @@ document.querySelectorAll('input[data-dzialka]').forEach(pole => {
           : `Ewidencja nie zna działek: ${brakujace.join(', ')} — sprawdź numery.`;
         wynik.className = 'uldk podpowiedz uwaga';
       } else {
-        wynik.textContent = sprawdzone.length === 1
-          ? '✓ Jest taka działka w ewidencji.' : '✓ Wszystkie działki są w ewidencji.';
+        // Powierzchnia to druga para oczu: numer 123/5 zamiast 123/4 też istnieje,
+        // więc samo „jest” tego nie wyłapie, a wielkość odbiegająca od spodziewanej — tak.
+        const hektary = m => (m / 10000).toFixed(4).replace('.', ',');
+        const opisy = sprawdzone
+          .filter(w => w.powierzchnia)
+          .map(w => `${w.numer} — ok. ${hektary(w.powierzchnia)} ha`
+                    + ` (${Math.round(w.powierzchnia)} m²)`);
+        wynik.textContent = (sprawdzone.length === 1
+          ? '✓ Jest taka działka w ewidencji.' : '✓ Wszystkie działki są w ewidencji.')
+          + (opisy.length ? '  ' + opisy.join(';  ') : '');
         wynik.className = 'uldk podpowiedz dobrze';
       }
     } catch (e) {

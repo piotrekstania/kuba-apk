@@ -675,7 +675,7 @@ def teryt_dzialka(obreb: str, numery: str):
     """
     wyniki = []
     for numer in [n.strip() for n in numery.replace(";", ",").split(",") if n.strip()][:10]:
-        wyniki.append({"numer": numer, "stan": teryt.sprawdz_dzialke(obreb, numer)})
+        wyniki.append({"numer": numer, **teryt.sprawdz_dzialke(obreb, numer)})
     return JSONResponse({"wyniki": wyniki})
 
 
