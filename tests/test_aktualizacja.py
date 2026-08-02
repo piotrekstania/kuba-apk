@@ -232,11 +232,17 @@ def test_nowy_plik_dojezdza_juz_przy_tej_aktualizacji(srodowisko, monkeypatch, t
 
 
 def test_lista_z_paczki_nie_wypuszcza_poza_katalog_programu(tmp_path):
-    """Paczka jest z internetu — ścieżka w rodzaju `../..` nie ma prawa przejść."""
+    """Paczka jest z internetu — ścieżka w rodzaju `../..` nie ma prawa przejść.
+
+    Kontrola musi działać tak samo na obu systemach. Pierwsza wersja opierała się na
+    `Path.is_absolute()` i przechodziła na Windowsie, a padała w CI: „C:/Windows” jest
+    na Linuksie ścieżką **względną**, więc filtr ją przepuszczał.
+    """
     kod = tmp_path / "app"
     kod.mkdir()
     (kod / "aktualizacja.py").write_text(
-        "AKTUALIZOWANE = ['app', '../../etc/passwd', 'C:/Windows/System32', 'WERSJA']\n",
+        "AKTUALIZOWANE = ['app', '../../etc/passwd', 'C:/Windows/System32',"
+        " '/etc/passwd', 'C:\\\\Windows', 'app\\\\..\\\\..\\\\gdzies', 'WERSJA']\n",
         encoding="utf-8")
 
     lista = aktualizacja._lista_z_paczki(tmp_path)

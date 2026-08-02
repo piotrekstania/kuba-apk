@@ -129,6 +129,21 @@ def _pobierz_paczke(katalog: Path) -> Path:
     return podkatalogi[0]
 
 
+def _pozycja_zostaje_w_programie(nazwa: str) -> bool:
+    """Czy pozycja z listy w paczce na pewno nie wychodzi poza katalog programu.
+
+    Sprawdzamy znaki, a **nie** `Path.is_absolute()`: ta sama ścieżka „C:/Windows”
+    jest bezwzględna na Windowsie i **względna na Linuksie**, więc kontrola oparta
+    na `Path` przepuszczała ją w CI. Wyszło to czerwonym testem na runnerze —
+    lokalnie na Windowsie przechodził.
+    """
+    if not nazwa or nazwa in {".", ".."}:
+        return False
+    if nazwa[0] in "/\\" or (len(nazwa) > 1 and nazwa[1] == ":"):
+        return False                                  # bezwzględna na którymkolwiek systemie
+    return ".." not in nazwa.replace("\\", "/").split("/")
+
+
 def _lista_z_paczki(nowy_kod: Path) -> list[str]:
     """Co kopiować — według **pobranej** wersji, a nie tej, która już tu siedzi.
 
@@ -150,8 +165,7 @@ def _lista_z_paczki(nowy_kod: Path) -> list[str]:
                 continue
             wartosc = ast.literal_eval(wezel.value)
             if isinstance(wartosc, list) and all(isinstance(x, str) and x for x in wartosc):
-                # Ścieżki muszą zostać w katalogu programu — paczka jest z sieci.
-                return [n for n in wartosc if not Path(n).is_absolute() and ".." not in Path(n).parts]
+                return [n for n in wartosc if _pozycja_zostaje_w_programie(n)]
     except Exception:
         pass
     return AKTUALIZOWANE          # starsza paczka albo nieczytelny plik: robimy jak dotąd
