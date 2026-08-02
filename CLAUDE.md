@@ -300,7 +300,13 @@ też brat. Interfejs w całości po polsku.
    `CabinetWClass` z nazwą katalogu w tytule, podpiąć się `AttachThreadInput` pod wątek
    okna aktywnego i dopiero wtedy `SetForegroundWindow`. Chodzi w osobnym wątku (okno
    pojawia się z opóźnieniem) i **musi być niemy** — wyjątek w wątku wysypałby bratu
-   angielski ślad stosu do konsoli.
+   angielski ślad stosu do konsoli. Skutek uboczny, o którym trzeba pamiętać: skoro
+   o wysunięcie prosi nasz proces, Windows wciąga do kolejki aktywacji **jego konsolę**
+   i po zamknięciu katalogu na wierzch potrafi wyjść czarne okno serwera zamiast
+   przeglądarki. Dlatego zaraz po wysunięciu odsuwamy własną konsolę na spód
+   (`_konsole_na_spod`, `SWP_NOACTIVATE`). Uwaga przy diagnozie: objaw zależy od
+   kolejności okien i od tego, że użytkownik zamyka katalog **myszą** — programowe
+   `WM_CLOSE` w teście wraca do przeglądarki i niczego nie pokaże.
 
 ## Stan na teraz — przetestowane end-to-end
 

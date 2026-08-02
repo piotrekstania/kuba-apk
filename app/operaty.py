@@ -257,6 +257,31 @@ def _okno_katalogu(nazwa: str):
     return znalezione[0] if znalezione else None
 
 
+def _konsole_na_spod(win32gui, win32con) -> None:
+    """Odsuwa czarne okno serwera na sam spód kolejki okien.
+
+    O wysunięcie Eksploratora prosi **nasz** proces, więc Windows wciąga jego konsolę
+    do kolejki aktywacji: po zamknięciu katalogu na wierzch potrafi wyjść czarne okno
+    zamiast przeglądarki, w której brat pracował. Konsola nie jest mu do niczego
+    potrzebna poza zamknięciem programu, więc jej miejsce jest na spodzie.
+
+    `SWP_NOACTIVATE` jest tu istotne: przesuwamy okno w kolejce, ale go nie aktywujemy.
+    """
+    try:
+        import win32console
+        konsola = win32console.GetConsoleWindow()
+    except Exception:
+        return
+    if not konsola:                       # uruchomienie bez konsoli (pythonw, usługa)
+        return
+    try:
+        win32gui.SetWindowPos(
+            konsola, win32con.HWND_BOTTOM, 0, 0, 0, 0,
+            win32con.SWP_NOMOVE | win32con.SWP_NOSIZE | win32con.SWP_NOACTIVATE)
+    except Exception:
+        pass
+
+
 def _na_pierwszy_plan(katalog: Path) -> None:
     """Wyciąga okno otwartego katalogu przed pozostałe okna.
 
@@ -300,6 +325,7 @@ def _na_pierwszy_plan(katalog: Path) -> None:
                 win32gui.ShowWindow(uchwyt, win32con.SW_RESTORE)   # gdy był zminimalizowany
                 win32gui.BringWindowToTop(uchwyt)
                 win32gui.SetForegroundWindow(uchwyt)
+                _konsole_na_spod(win32gui, win32con)
             except Exception:
                 # SetForegroundWindow potrafi odmówić i to nie jest awaria programu —
                 # katalog jest otwarty, tyle że w tle.
