@@ -167,9 +167,6 @@ progress::-moz-progress-bar { background: var(--akcent); }
 .teryt-siatka { display: grid; grid-template-columns: repeat(4, 1fr); gap: 10px; }
 .teryt-siatka label { font-size: 12px; font-weight: 400; color: var(--szary); }
 .teryt-komunikat { min-height: 16px; color: var(--zle); }
-.teryt-tagi { margin-top: 10px; }
-.teryt-tagi summary { cursor: pointer; font-size: 13px; }
-.teryt-tagi table { margin-top: 8px; }
 @media (max-width: 720px) { .teryt-siatka { grid-template-columns: 1fr; } }
 
 /* przyciski */

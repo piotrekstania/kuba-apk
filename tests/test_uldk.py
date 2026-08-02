@@ -121,6 +121,26 @@ def test_formularz_oznacza_pole_z_numerem_dzialki(klient):
     assert 'class="uldk podpowiedz"' in tresc
 
 
+def test_formularz_nie_powtarza_instrukcji_z_pomocy(klient):
+    """Spis znaczników TERYT mieszka w „Pomocy”, nie przy polu w formularzu.
+
+    Formularz jest do wypełniania. Instrukcji, czego użyć w szablonie Worda,
+    potrzeba raz — przy pisaniu szablonu — a stała przy polu, które brat wypełnia
+    przy każdej robocie.
+    """
+    klient.srodowisko.dodaj_szablon(
+        "spis_tresci_wzor", ["{{ polozenie_obreb }} {{ polozenie_obreb_numer }}"],
+        opis={"nazwa": "Operat", "glowny": True,
+              "pola": [{"klucz": "polozenie", "typ": "teryt"}]})
+
+    formularz = klient.get("/nowy/spis_tresci_wzor").text
+    pomoc = klient.get("/pomoc").text
+
+    assert "polozenie_obreb_numer" not in formularz
+    assert "Co z tego wstawić" not in formularz
+    assert "polozenie_obreb_numer" in pomoc, "instrukcja musi zostać w Pomocy"
+
+
 def test_hektary_zaokraglone_do_dwoch_miejsc(klient):
     """Hektary są do rzutu oka, nie do rachunku — 0,42 ha zamiast 0,4159 ha.
 

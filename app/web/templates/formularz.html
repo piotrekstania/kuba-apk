@@ -70,30 +70,13 @@
             </div>
             {% endfor %}
           </div>
+          {# Spis znaczników do Worda stał tutaj i był kopią tabeli z „Pomocy” (#teryt).
+             Formularz jest do wypełniania, nie do czytania instrukcji — przy każdej
+             robocie brat przewijał to samo, czego potrzebuje raz, przy pisaniu szablonu.
+             `podpowiedz` zostaje obsługiwana jak przy każdym innym typie pola: gdy
+             kiedyś będzie tu coś naprawdę potrzebne, wystarczy wpisać to w .json. #}
           <p class="teryt-komunikat podpowiedz"></p>
           {% if pole.podpowiedz %}<p class="podpowiedz">{{ pole.podpowiedz }}</p>{% endif %}
-          <details class="teryt-tagi">
-            <summary class="szary">Co z tego wstawić do szablonu Worda</summary>
-            <table class="lista">
-              <tr><th class="waski">Wpisujesz w Wordzie</th><th>Co się wstawi</th></tr>
-              {% for sufiks, opis in [
-                    ('', 'całość jednym zdaniem: obręb Baczków (120102_2.0001), gmina Bochnia, powiat bocheński, województwo małopolskie'),
-                    ('_obreb', 'nazwa obrębu, np. Baczków'),
-                    ('_obreb_teryt', 'pełny identyfikator obrębu, np. 120102_2.0001'),
-                    ('_obreb_numer', 'sam numer obrębu, np. 0001'),
-                    ('_gmina', 'nazwa jednostki ewidencyjnej, np. Bochnia'),
-                    ('_gmina_teryt', 'identyfikator jednostki ewidencyjnej, np. 120102_2'),
-                    ('_powiat', 'nazwa powiatu, np. bocheński'),
-                    ('_powiat_teryt', 'identyfikator powiatu, np. 1201'),
-                    ('_wojewodztwo', 'nazwa województwa, np. małopolskie'),
-                    ('_wojewodztwo_teryt', 'identyfikator województwa, np. 12')] %}
-              <tr>
-                <td><code>{{ '{{ ' ~ pole.klucz ~ sufiks ~ ' }}' }}</code></td>
-                <td class="szary">{{ opis }}</td>
-              </tr>
-              {% endfor %}
-            </table>
-          </details>
         </div>
 
         {% elif pole.typ == 'textarea' %}

@@ -60,8 +60,7 @@
       "etykieta": "Położenie działki",
       "typ": "teryt",
       "wymagane": true,
-      "grupa": "Położenie",
-      "podpowiedz": "Wybierz z list — do dokumentu trafiają i nazwy, i identyfikatory TERYT."
+      "grupa": "Położenie"
     },
     {
       "klucz": "nr_dzialki",
