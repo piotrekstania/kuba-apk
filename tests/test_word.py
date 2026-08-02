@@ -89,8 +89,15 @@ def test_nie_zostaje_wiszacy_word(tmp_path):
 
     pdf.docx_na_pdf(dokument(tmp_path / "a.docx"), tmp_path / "a.pdf")
 
-    time.sleep(1.5)                     # Word znika z listy procesów chwilę po Quit()
-    assert liczba_wordow() <= przed
+    # Word znika z listy procesów dopiero chwilę po `Quit()` i pod obciążeniem trwa to
+    # dłużej — sztywne czekanie dawało fałszywe alarmy w pełnym przebiegu. Czekamy więc
+    # na warunek, a nie na zegar; asercja zostaje tak samo ostra.
+    koniec = time.monotonic() + 20
+    while liczba_wordow() > przed and time.monotonic() < koniec:
+        time.sleep(0.5)
+
+    assert liczba_wordow() <= przed, (
+        "został proces WINWORD.EXE — bez `Quit()` w `finally` mnożą się w tle")
 
 
 def test_konwersja_z_watku_roboczego(tmp_path):

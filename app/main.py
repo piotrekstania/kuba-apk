@@ -194,7 +194,7 @@ def odczytaj_dane(formularz, szablon: szablony.Szablon) -> dict[str, Any]:
 # --- strony ------------------------------------------------------------------
 
 @app.get("/", response_class=HTMLResponse)
-def strona_glowna(request: Request):
+def strona_glowna(request: Request, blad: str | None = None):
     # Kafelki tylko dla szablonów oznaczonych jako główne: reszta (sprawozdanie,
     # protokoły) sama bez operatu nie istnieje, dokłada się ją checkboxem w formularzu.
     # Gdy nikt nie jest oznaczony, pokazujemy wszystkie — inaczej po dodaniu pierwszego
@@ -203,8 +203,56 @@ def strona_glowna(request: Request):
     glowne = [s for s in wszystkie if s.glowny] or wszystkie
     return _widok(request, "index.html",
                   szablony=glowne,
-                  dokumenty=db.dokumenty(limit=15),
+                  operaty=_lista_operatow(),
+                  blad=blad,
                   co_nowego=aktualizacja.co_nowego())   # pokazuje się raz, po aktualizacji
+
+
+LIMIT_LISTY = 500          # zapas na lata pracy; przy 50 operatach rocznie to długo
+
+
+def _lista_operatow() -> list[dict[str, Any]]:
+    """Jedna lista operatów: historia z bazy **plus** katalogi znalezione w `wyniki/`.
+
+    Sama historia nie wystarcza: operat przywrócony z archiwum na świeżej instalacji
+    (albo po utracie `dane/`) leży na dysku, a wpisu w bazie nie ma — bez tego byłby
+    poza zasięgiem, bo składanie idzie tylko z listy. Sam dysk też nie wystarcza:
+    wpis w historii trzyma dane formularza potrzebne do „Powiel”.
+
+    Wcześniej te dwa źródła miały osobne strony (`/` i `/scal`) i wyglądały jak ta sama
+    lista pokazana dwa razy — a różniły się właśnie tym, czego nie było widać.
+    """
+    wiersze: list[dict[str, Any]] = []
+    znane: set[str] = set()
+
+    for wpis in db.dokumenty(limit=LIMIT_LISTY):
+        katalog = wpis["katalog"] or ""
+        if katalog:
+            znane.add(katalog)
+        wiersze.append({
+            "id": wpis["id"],
+            "nr_operatu": wpis["nr_operatu"] or katalog,
+            "nr_roboty": wpis["tytul"],
+            "katalog": katalog,
+            "utworzono": wpis["utworzono"] or "",
+            "szablon": wpis["szablon"],
+            "w_historii": True,
+        })
+
+    for operat in operaty.lista():
+        if operat["katalog"] in znane:
+            continue
+        wiersze.append({
+            "id": None,
+            "nr_operatu": operat["nr_operatu"],
+            "nr_roboty": operat["nr_roboty"],
+            "katalog": operat["katalog"],
+            "utworzono": operat["utworzono"],
+            "szablon": "",
+            "w_historii": False,
+        })
+
+    return sorted(wiersze, key=lambda w: w["utworzono"], reverse=True)
 
 
 def _szablon_albo_blad(request: Request, identyfikator: str):
@@ -469,10 +517,15 @@ def usun(dokument_id: int):
 # tam swoje mapy i szkice zwykłym Eksploratorem, więc program ma tylko pokazać, co
 # w folderze leży, pozwolić ustawić kolejność myszą i obrócić to, co przyszło bokiem.
 
-@app.get("/scal", response_class=HTMLResponse)
-def scal_lista(request: Request, komunikat: str | None = None, blad: str | None = None):
-    return _widok(request, "scal.html", operaty=operaty.lista(),
-                  komunikat=komunikat, blad=blad)
+@app.get("/scal")
+def scal_lista(blad: str | None = None):
+    """Została po osobnej stronie z listą operatów — dziś lista jest jedna, na `/`.
+
+    Trasy nie kasujemy: prowadzi tu kilkanaście przekierowań z obsługi błędów, zakładka
+    w przeglądarce brata i „Wróć do listy” ze starych stron. Ma po prostu odesłać tam,
+    gdzie ta lista jest teraz, razem z komunikatem, jeśli jakiś był.
+    """
+    return RedirectResponse("/?blad=" + quote(blad) if blad else "/", status_code=303)
 
 
 @app.get("/scal/{nazwa}", response_class=HTMLResponse)

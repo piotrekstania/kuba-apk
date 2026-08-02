@@ -28,24 +28,34 @@
 </div>
 {% endif %}
 
-<h2>Ostatnio wygenerowane</h2>
-{% if dokumenty %}
+<h2>Operaty</h2>
+{% if operaty %}
 <table class="lista">
   <tr><th class="waski">Nr operatu</th><th>Nr roboty</th>
       <th>Data</th><th></th></tr>
-  {% for dokument in dokumenty %}
+  {% for operat in operaty %}
   <tr>
-    <td><a href="/dokument/{{ dokument.id }}"><strong>{{ dokument.nr_operatu
-        or dokument.katalog or '—' }}</strong></a></td>
-    <td>{{ dokument.tytul or '—' }}</td>
-    <td class="szary">{{ dokument.utworzono.replace('T', ' ') }}</td>
+    <td>
+      {% if operat.id %}
+      <a href="/dokument/{{ operat.id }}"><strong>{{ operat.nr_operatu or '—' }}</strong></a>
+      {% else %}
+      <strong>{{ operat.nr_operatu or operat.katalog or '—' }}</strong><br>
+      <span class="spoza" title="Katalog leży w wyniki/, ale nie ma go w historii —
+             tak wygląda operat przywrócony z archiwum albo skopiowany z innego komputera.
+             Złożyć PDF można normalnie.">spoza historii</span>
+      {% endif %}
+    </td>
+    <td>{{ operat.nr_roboty or '—' }}</td>
+    <td class="szary">{{ operat.utworzono.replace('T', ' ') }}</td>
     <td class="akcje">
-      {% if dokument.katalog %}<a href="/scal/{{ dokument.katalog | urlencode }}">Złóż PDF</a>{% endif %}
-      <a href="/nowy/{{ dokument.szablon }}?kopiuj={{ dokument.id }}">Powiel</a>
-      <form method="post" action="/dokument/{{ dokument.id }}/usun"
-            onsubmit="return confirm('Usunąć operat {{ dokument.nr_operatu or dokument.katalog }} wraz z całym katalogiem — także z plikami, które sam tam włożyłeś?')">
+      {% if operat.katalog %}<a href="/scal/{{ operat.katalog | urlencode }}">Złóż PDF</a>{% endif %}
+      {% if operat.id %}
+      <a href="/nowy/{{ operat.szablon }}?kopiuj={{ operat.id }}">Powiel</a>
+      <form method="post" action="/dokument/{{ operat.id }}/usun"
+            onsubmit="return confirm('Usunąć operat {{ operat.nr_operatu or operat.katalog }} wraz z całym katalogiem — także z plikami, które sam tam włożyłeś?')">
         <button type="submit">Usuń</button>
       </form>
+      {% endif %}
     </td>
   </tr>
   {% endfor %}

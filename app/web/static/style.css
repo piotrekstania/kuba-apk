@@ -122,6 +122,8 @@ table.wiersze td { padding: 4px 6px; }
 th.waski { width: 220px; }
 .teraz { font-size: 11px; color: var(--akcent); border: 1px solid var(--akcent);
          border-radius: 999px; padding: 1px 8px; white-space: nowrap; }
+.spoza { font-size: 11px; color: var(--szary); border: 1px solid var(--linia);
+         border-radius: 999px; padding: 1px 8px; white-space: nowrap; cursor: help; }
 .akcje a { margin-right: 10px; font-size: 13px; }
 .rzad-pliku { display: flex; gap: 8px; align-items: center; margin-bottom: 8px; }
 

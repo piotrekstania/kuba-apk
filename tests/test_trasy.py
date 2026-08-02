@@ -46,7 +46,7 @@ def _dodaj_operat(klient):
 
 def test_strony_odpowiadaja(klient):
     _dodaj_operat(klient)
-    for adres in ("/", "/nowy/spis_tresci_wzor", "/scal", "/ustawienia", "/pomoc"):
+    for adres in ("/", "/nowy/spis_tresci_wzor", "/ustawienia", "/pomoc", "/pomoc/historia"):
         odpowiedz = klient.get(adres)
         assert odpowiedz.status_code == 200, f"{adres} -> {odpowiedz.status_code}"
 
@@ -187,3 +187,52 @@ def test_sciezka_z_adresu_nie_wyprowadza_poza_wyniki(klient):
     odpowiedz = klient.get("/scal/..%2F..%2Fetc", follow_redirects=False)
     assert odpowiedz.status_code in (303, 404)
     assert odpowiedz.status_code != 500
+
+
+def test_lista_pokazuje_operat_spoza_historii(klient):
+    """Katalog przywrócony z archiwum ma być do złożenia, choć nie ma go w bazie.
+
+    To był jedyny powód istnienia osobnej strony `/scal`: czytała dysk, a strona
+    główna bazę. Po scaleniu list ta ścieżka nie może zniknąć — inaczej operat
+    przywrócony na świeżej instalacji zostałby poza zasięgiem.
+    """
+    katalog = klient.srodowisko.wyniki / "777.2026"
+    katalog.mkdir(parents=True)
+    (katalog / "operat.json").write_text(
+        json.dumps({"nr_operatu": "777/2026", "nr_roboty": "G.99.2026",
+                    "utworzono": "2026-07-20T08:00:00", "dane": {}}, ensure_ascii=False),
+        encoding="utf-8")
+
+    tresc = klient.get("/").text
+
+    assert "777/2026" in tresc
+    assert "spoza historii" in tresc
+    assert 'href="/scal/777.2026"' in tresc
+
+
+def test_lista_nie_ucina_sie_na_pietnastu_operatach(klient):
+    """Wcześniej strona główna pokazywała 15 najnowszych — reszta była poza zasięgiem
+    składania, bo druga lista (`/scal`) właśnie zniknęła."""
+    _dodaj_operat(klient)
+    for numer in range(18):
+        klient.post("/generuj/spis_tresci_wzor",
+                    data=dict(FORMULARZ, pole__nr_roboty=f"GK.{numer}.2026"),
+                    follow_redirects=False)
+
+    tresc = klient.get("/").text
+
+    assert "GK.0.2026" in tresc, "najstarszy operat wypadł z listy"
+    assert "GK.17.2026" in tresc
+
+
+def test_stara_strona_listy_odsyla_na_dokumenty(klient):
+    """Prowadzi tu kilkanaście przekierowań z obsługi błędów i zakładka brata."""
+    odpowiedz = klient.get("/scal", follow_redirects=False)
+
+    assert odpowiedz.status_code == 303
+    assert odpowiedz.headers["location"] == "/"
+
+
+def test_menu_nie_ma_juz_pozycji_zloz_pdf(klient):
+    tresc = klient.get("/").text
+    assert '<a href="/scal">' not in tresc
