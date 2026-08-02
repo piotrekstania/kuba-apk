@@ -306,7 +306,15 @@ też brat. Interfejs w całości po polsku.
    przeglądarki. Dlatego zaraz po wysunięciu odsuwamy własną konsolę na spód
    (`_konsole_na_spod`, `SWP_NOACTIVATE`). Uwaga przy diagnozie: objaw zależy od
    kolejności okien i od tego, że użytkownik zamyka katalog **myszą** — programowe
-   `WM_CLOSE` w teście wraca do przeglądarki i niczego nie pokaże.
+   `WM_CLOSE` w teście wraca do przeglądarki i niczego nie pokaże. Rozstrzygnął to brat:
+   **przy zminimalizowanej konsoli problem znika**, bo okno w stanie zminimalizowanym
+   nie uczestniczy w kolejce aktywacji. Dlatego `uruchom.py` chowa konsolę sam, po starcie.
+21. **„Czy serwer wstał” nie znaczy „port jest zajęty”.** Konsolę wolno schować dopiero
+   po udanym starcie — przy nieudanym to okno z komunikatem jest jedynym, co brat ma
+   przed oczami. Pierwsza wersja sprawdzała `connect` na port i dała fałszywe „działa”,
+   bo portu pilnowała **zapomniana druga kopia programu**; konsola schowała się mimo
+   że serwer się nie podniósł. Teraz `uruchom.serwer_odpowiada` pobiera stronę i szuka
+   w niej znacznika `Generator operatów`. Pilnuje tego `test_uruchom.py`.
 
 ## Stan na teraz — przetestowane end-to-end
 
@@ -390,6 +398,7 @@ Co pilnują, w kolejności od najbardziej bolesnych doświadczeń:
 | `test_trasy.py` | formularz → operat przez HTTP, polskie strony błędów, brak wyjścia poza `wyniki/` |
 | `test_operaty.py`, `test_pdf.py` | nazwy katalogów i plików, kolejność sklejania, komunikat przy uszkodzonym PDF |
 | `test_statystyki.py` | że licznik **nie cofa się po archiwizacji** operatu i **nie rośnie** od plików dołożonych przez brata — na tym wyłożyła się pierwsza wersja |
+| `test_uruchom.py` | że konsola chowa się **tylko po udanym starcie** i że obcy serwer na porcie nie uchodzi za nasz program |
 
 Testy stabilności formatek **pomijają się bez czcionki Calibri/Carlito**
 (`sudo apt install fonts-crosextra-carlito`), bo bez niej `ujednolic_wyglad.py` w ogóle
