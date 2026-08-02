@@ -30,9 +30,14 @@
   {% block tresc %}{% endblock %}
 </main>
 
-<footer class="szary">
-  Generator operatów — wersja {{ wersja }}.
-  Nowe wersje program pobiera sam przy uruchamianiu.
+<footer>
+  <p class="szary">Generator operatów — wersja {{ wersja }}.
+    Nowe wersje program pobiera sam przy uruchamianiu.</p>
+  <p class="liczniki">
+    <span><strong>{{ statystyki.operatow }}</strong> operatów</span>
+    <span><strong>{{ statystyki.dokumentow }}</strong> dokumentów Worda</span>
+    <span><strong>{{ statystyki.pdfow }}</strong> złożonych PDF-ów</span>
+  </p>
 </footer>
 </body>
 </html>

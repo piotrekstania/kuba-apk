@@ -133,3 +133,28 @@ def test_pdf_nie_jest_konwertowany_ponownie(srodowisko, bez_konwertera):
     mapa = katalog / "mapa.pdf"
     mapa.write_bytes(b"%PDF-1.4\n")
     assert operaty.jako_pdf(mapa) == mapa
+
+
+def test_statystyki_licza_to_co_widac_w_katalogu(srodowisko):
+    """Liczby ze stopki mają się zgadzać z tym, co brat zobaczy w Eksploratorze."""
+    pierwszy, _ = operaty.zaloz("001/2026", "GK.1.2026", "spis_tresci_wzor", {})
+    (pierwszy / "spis_tresci.docx").write_bytes(b"x")
+    (pierwszy / "sprawozdanie.docx").write_bytes(b"x")
+    (pierwszy / operaty.nazwa_wyniku(pierwszy)).write_bytes(b"%PDF-1.4\n")   # złożony
+
+    drugi, _ = operaty.zaloz("002/2026", "GK.2.2026", "spis_tresci_wzor", {})
+    (drugi / "spis_tresci.docx").write_bytes(b"x")                           # bez PDF-a
+
+    (srodowisko.wyniki / "przypadkowy_folder").mkdir()                       # nie operat
+
+    assert operaty.statystyki() == {"operatow": 2, "dokumentow": 3, "pdfow": 1}
+
+
+def test_statystyki_nie_licza_cudzych_pdf_ow_ani_plikow_worda(srodowisko):
+    """Mapa z ośrodka nie jest „wygenerowana”, a `~$` to śmieć po otwartym Wordzie."""
+    katalog, _ = operaty.zaloz("001/2026", "GK.1.2026", "spis_tresci_wzor", {})
+    (katalog / "spis_tresci.docx").write_bytes(b"x")
+    (katalog / "mapa_zasadnicza.pdf").write_bytes(b"%PDF-1.4\n")
+    (katalog / "~$spis_tresci.docx").write_bytes(b"x")
+
+    assert operaty.statystyki() == {"operatow": 1, "dokumentow": 1, "pdfow": 0}

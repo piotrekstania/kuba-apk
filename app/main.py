@@ -59,6 +59,7 @@ DZIENNIK_BLEDOW = DANE / "bledy.log"
 def _widok(request: Request, nazwa: str, **kontekst: Any) -> HTMLResponse:
     kontekst.setdefault("konwerter", pdf.dostepny_konwerter())
     kontekst.setdefault("wersja", aktualizacja.wersja_lokalna()[0])
+    kontekst.setdefault("statystyki", operaty.statystyki())
     return widoki.TemplateResponse(request, nazwa, kontekst)
 
 
