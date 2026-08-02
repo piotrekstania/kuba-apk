@@ -3,6 +3,10 @@
 Co doszło w kolejnych wersjach programu. Ten sam opis pokazuje się raz, na stronie
 głównej, zaraz po tym jak program sam się zaktualizuje.
 
+## 2026.08.02.10 — 2026-08-02
+
+Uproszczone menu: zniknęła osobna strona „Złóż PDF”, bo pokazywała drugi raz tę samą listę operatów. Składanie zaczynasz teraz przy konkretnym operacie — na liście albo na jego stronie. Lista pokazuje wszystkie operaty (wcześniej tylko 15 ostatnich), a także te przywrócone z archiwum, których nie ma już w historii.
+
 ## 2026.08.02.9 — 2026-08-02
 
 Historia wersji w menu „Pomoc” pokazuje już pełną listę zmian — w poprzedniej wersji brakowało samego pliku z historią, więc strona świeciła pustką.
