@@ -121,6 +121,24 @@ def test_formularz_oznacza_pole_z_numerem_dzialki(klient):
     assert 'class="uldk podpowiedz"' in tresc
 
 
+def test_hektary_zaokraglone_do_dwoch_miejsc(klient):
+    """Hektary są do rzutu oka, nie do rachunku — 0,42 ha zamiast 0,4159 ha.
+
+    Dokładna liczba stoi obok w metrach kwadratowych i **ta zostaje bez zaokrąglania**,
+    bo to ona służy do porównania z powierzchnią z dokumentów.
+    """
+    klient.srodowisko.dodaj_szablon(
+        "spis_tresci_wzor", ["{{ nr_roboty }} {{ nr_dzialki }}"],
+        opis={"nazwa": "Operat", "glowny": True,
+              "pola": [{"klucz": "nr_roboty"}, {"klucz": "nr_dzialki"}]})
+
+    tresc = klient.get("/nowy/spis_tresci_wzor").text
+
+    assert "(m / 10000).toFixed(2)" in tresc, "hektary mają być zaokrąglone do 2 miejsc"
+    assert "toFixed(4)" not in tresc
+    assert "Math.round(w.powierzchnia)" in tresc, "metry kwadratowe zostają pełne"
+
+
 # --- liczenie powierzchni z obrysu -------------------------------------------
 
 def test_powierzchnia_prostego_wielokata():

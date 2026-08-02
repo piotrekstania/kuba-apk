@@ -399,7 +399,10 @@ document.querySelectorAll('input[data-dzialka]').forEach(pole => {
       } else {
         // Powierzchnia to druga para oczu: numer 123/5 zamiast 123/4 też istnieje,
         // więc samo „jest” tego nie wyłapie, a wielkość odbiegająca od spodziewanej — tak.
-        const hektary = m => (m / 10000).toFixed(4).replace('.', ',');
+        // Dwa miejsca po przecinku: hektary są tu do rzutu oka („czy to na pewno ta
+        // działka”), a nie do rachunku — 0,42 ha czyta się od razu, 0,4159 ha trzeba
+        // przeliterować. Dokładna liczba stoi obok w metrach.
+        const hektary = m => (m / 10000).toFixed(2).replace('.', ',');
         const opisy = sprawdzone
           .filter(w => w.powierzchnia)
           .map(w => `${w.numer} — ok. ${hektary(w.powierzchnia)} ha`

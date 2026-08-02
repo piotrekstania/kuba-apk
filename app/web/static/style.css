@@ -128,6 +128,10 @@ th.waski { width: 220px; }
 /* Podpowiedź z ewidencji: „uwaga” jest wyraźna, ale nie czerwona jak błąd —
    to sugestia sprawdzenia numeru, a nie stwierdzenie, że jest zły. */
 .uldk:empty { display: none; }
+/* Grubiej niż zwykła podpowiedź — od „Sprawdzam…” po wynik. To jedyna linia
+   w formularzu, która mówi coś o świecie poza programem, więc ma być widoczna
+   bez szukania; rozmiar zostaje mały, żeby nie konkurowała z etykietami pól. */
+.uldk { font-weight: 600; }
 .uldk.dobrze { color: #1a7f4b; }
 .uldk.uwaga { color: #9a6700; }
 .akcje a { margin-right: 10px; font-size: 13px; }
