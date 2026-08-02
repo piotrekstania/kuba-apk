@@ -1,2 +1,2 @@
-2026.08.02.4
-Po zamknięciu okna katalogu na wierzch wraca teraz przeglądarka, a nie czarne okno programu.
+2026.08.02.5
+Czarne okno programu chowa się teraz samo do paska zadań zaraz po uruchomieniu — przestaje wyskakiwać przed przeglądarkę. Program zamykasz nim tak samo jak dotąd, wystarczy kliknąć je w pasku. Gdyby program się nie uruchomił, okno zostaje otwarte, żeby było widać dlaczego.
