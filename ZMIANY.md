@@ -3,6 +3,10 @@
 Co doszło w kolejnych wersjach programu. Ten sam opis pokazuje się raz, na stronie
 głównej, zaraz po tym jak program sam się zaktualizuje.
 
+## 2026.08.02.9 — 2026-08-02
+
+Historia wersji w menu „Pomoc” pokazuje już pełną listę zmian — w poprzedniej wersji brakowało samego pliku z historią, więc strona świeciła pustką.
+
 ## 2026.08.02.8 — 2026-08-02
 
 Nowość: w menu u góry jest teraz „Pomoc”, a w nim — obok instrukcji do szablonów — historia wersji. Zobaczysz w niej, co doszło w każdej kolejnej wersji programu, razem z tą, którą masz w tej chwili.
