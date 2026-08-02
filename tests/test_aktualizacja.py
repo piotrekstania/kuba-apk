@@ -201,3 +201,52 @@ def test_numer_wersji_bierze_sie_z_paczki_a_nie_z_zapowiedzi(srodowisko, monkeyp
 @pytest.mark.parametrize("nazwa", ["app", "szablony", "WERSJA", "requirements.txt"])
 def test_lista_aktualizowanych_obejmuje_to_co_trzeba(nazwa):
     assert nazwa in aktualizacja.AKTUALIZOWANE
+
+
+def test_nowy_plik_dojezdza_juz_przy_tej_aktualizacji(srodowisko, monkeypatch, tmp_path):
+    """Aktualizację wykonuje kod, który brat ma u siebie — czyli **stary**.
+
+    Jego lista `AKTUALIZOWANE` nie zna plików dołożonych w nowym wydaniu, więc nowy
+    plik nie dojeżdżał przy tej aktualizacji, która go wprowadza, tylko przy następnej.
+    Kosztowało to `ZMIANY.md`: brat dostał wersję 2026.08.02.8 z menu „Historia wersji”
+    i komunikatem, że pliku z historią nie ma. Dlatego listę czytamy z paczki.
+    """
+    _instalacja(srodowisko, "2026.01.01.1")
+    # stara lista — dokładnie taka, jaka jechała w wydaniu sprzed ZMIANY.md
+    monkeypatch.setattr(aktualizacja, "AKTUALIZOWANE",
+                        ["app", "szablony", "uruchom.py", "WERSJA"])
+    nowa_lista = ("AKTUALIZOWANE = [\n"
+                  "    'app', 'szablony', 'uruchom.py', 'WERSJA', 'ZMIANY.md',\n"
+                  "]\n")
+    paczka = _paczka(tmp_path, "2026.09.09.9\nNowości.", {
+        "app/aktualizacja.py": nowa_lista,
+        "ZMIANY.md": "# Historia zmian\n\n## 2026.09.09.9 — 2026-09-09\n\nNowości.\n",
+    })
+    _podstaw_github(monkeypatch, tmp_path, "2026.09.09.9\nNowości.", paczka)
+
+    assert aktualizacja.sprawdz_i_zaktualizuj() is True
+
+    plik = srodowisko.katalog / "ZMIANY.md"
+    assert plik.exists(), "nowy plik nie dojechał — brat zobaczy pustą stronę historii"
+    assert "2026.09.09.9" in plik.read_text(encoding="utf-8")
+
+
+def test_lista_z_paczki_nie_wypuszcza_poza_katalog_programu(tmp_path):
+    """Paczka jest z internetu — ścieżka w rodzaju `../..` nie ma prawa przejść."""
+    kod = tmp_path / "app"
+    kod.mkdir()
+    (kod / "aktualizacja.py").write_text(
+        "AKTUALIZOWANE = ['app', '../../etc/passwd', 'C:/Windows/System32', 'WERSJA']\n",
+        encoding="utf-8")
+
+    lista = aktualizacja._lista_z_paczki(tmp_path)
+
+    assert lista == ["app", "WERSJA"]
+
+
+def test_nieczytelna_lista_w_paczce_nie_wywraca_aktualizacji(tmp_path):
+    kod = tmp_path / "app"
+    kod.mkdir()
+    (kod / "aktualizacja.py").write_text("to nie jest ( poprawny python", encoding="utf-8")
+
+    assert aktualizacja._lista_z_paczki(tmp_path) == aktualizacja.AKTUALIZOWANE

@@ -1,4 +1,4 @@
-"""Aktualizacja programu z GitHuba — bez gita i bez pytania programisty.
+﻿"""Aktualizacja programu z GitHuba — bez gita i bez pytania programisty.
 
 Brat uruchamia `start.bat`; ten przed startem serwera woła `python -m app.aktualizacja`.
 Moduł porównuje plik `WERSJA` u siebie z tym na GitHubie i jeśli jest nowszy, pobiera
@@ -14,6 +14,7 @@ dokłada zależności, których w `.venv` jeszcze nie ma.
 """
 from __future__ import annotations
 
+import ast
 import os
 import shutil
 import sys
@@ -102,6 +103,8 @@ def _kopia_zapasowa(wersja: str) -> Path:
     katalog.mkdir(parents=True, exist_ok=True)
     if BAZA_DANYCH.exists():
         shutil.copy2(BAZA_DANYCH, katalog / BAZA_DANYCH.name)
+    # Kopię robimy z **naszej** listy, nie z listy z paczki: zabezpieczamy to,
+    # co jest tutaj na dysku, zanim zostanie nadpisane.
     for nazwa in AKTUALIZOWANE:
         zrodlo = BAZA / nazwa
         if zrodlo.is_dir():
@@ -126,8 +129,36 @@ def _pobierz_paczke(katalog: Path) -> Path:
     return podkatalogi[0]
 
 
+def _lista_z_paczki(nowy_kod: Path) -> list[str]:
+    """Co kopiować — według **pobranej** wersji, a nie tej, która już tu siedzi.
+
+    Aktualizację wykonuje kod, który użytkownik ma u siebie, czyli stary. Jego lista
+    nie zna plików dołożonych w nowym wydaniu, więc nowy plik nie dojeżdżał przy tej
+    aktualizacji, która go wprowadza — dopiero przy następnej. Kosztowało to `ZMIANY.md`:
+    brat dostał wersję 2026.08.02.8 z menu „Historia wersji” i komunikatem, że pliku
+    z historią nie ma.
+
+    Listę czytamy **bez uruchamiania** kodu z archiwum (`ast`), bo to plik z internetu.
+    """
+    try:
+        zrodlo = (nowy_kod / "app" / "aktualizacja.py").read_text(encoding="utf-8")
+        for wezel in ast.parse(zrodlo).body:
+            if not isinstance(wezel, ast.Assign):
+                continue
+            if not any(isinstance(cel, ast.Name) and cel.id == "AKTUALIZOWANE"
+                       for cel in wezel.targets):
+                continue
+            wartosc = ast.literal_eval(wezel.value)
+            if isinstance(wartosc, list) and all(isinstance(x, str) and x for x in wartosc):
+                # Ścieżki muszą zostać w katalogu programu — paczka jest z sieci.
+                return [n for n in wartosc if not Path(n).is_absolute() and ".." not in Path(n).parts]
+    except Exception:
+        pass
+    return AKTUALIZOWANE          # starsza paczka albo nieczytelny plik: robimy jak dotąd
+
+
 def zastosuj(nowy_kod: Path) -> None:
-    for nazwa in AKTUALIZOWANE:
+    for nazwa in _lista_z_paczki(nowy_kod):
         zrodlo = nowy_kod / nazwa
         if not zrodlo.exists():
             continue

@@ -199,6 +199,16 @@ też brat. Interfejs w całości po polsku.
    bo `raw.githubusercontent` podawał go z cache jeszcze 3,5 minuty po pushu — paczka
    `.zip` miała już wtedy nowy kod, więc program ogłaszał „wersja aktualna”, mając
    nieaktualną. `raw` został jako zapas na wyczerpany limit API.
+7b. **Aktualizację wykonuje kod, który użytkownik ma u siebie — czyli stary.** Jego lista
+   `AKTUALIZOWANE` nie zna plików dołożonych w nowym wydaniu, więc **nowy plik nie
+   dojeżdża przy tej aktualizacji, która go wprowadza**, tylko przy następnej. Kosztowało
+   to `ZMIANY.md`: brat dostał wersję `2026.08.02.8` z gotowym menu „Historia wersji”
+   i komunikatem, że pliku z historią nie ma. Test sprawdzający „czy nazwa jest na
+   liście” tego nie łapie — patrzy na **nowy** kod, a winny jest stary. Stąd
+   `_lista_z_paczki`: listę czytamy z pobranego archiwum (`ast`, bez uruchamiania kodu
+   z sieci), a nie z siebie. Kopię zapasową robimy nadal z własnej listy, bo
+   zabezpieczamy to, co leży tutaj. Pilnuje tego
+   `test_nowy_plik_dojezdza_juz_przy_tej_aktualizacji`.
 8. **Aktualizator nie może importować niczego spoza stdlib.** Chodzi z `.venv`, w którym
    nowych zależności jeszcze nie ma — `start.bat` woła go *przed* `pip install`, właśnie
    po to, żeby nowa wersja mogła dokładać biblioteki.
