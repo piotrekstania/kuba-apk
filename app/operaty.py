@@ -85,13 +85,21 @@ def zaloz(nr_operatu: str, nr_roboty: str, szablon: str, dane: dict[str, Any],
     katalog = WYNIKI / nazwa
     katalog.mkdir(parents=True, exist_ok=True)
 
-    (katalog / PLIK_OPISU).write_text(json.dumps({
+    poprzedni = opis(katalog)          # przy poprawianiu operatu plik już tu jest
+    nowy = {
         "nr_operatu": nr_operatu,
         "nr_roboty": nr_roboty,
         "szablon": szablon,
         "utworzono": datetime.now().isoformat(timespec="seconds"),
         "dane": dane,
-    }, ensure_ascii=False, indent=2), encoding="utf-8")
+    }
+    # Układ kafelków zostaje: poprawianie operatu przepisuje ten plik od nowa, a brat
+    # ustawiał kolejność i obroty myszą — skasowanie tego przy literówce w formularzu
+    # byłoby dla niego niezrozumiałe.
+    if poprzedni.get("uklad"):
+        nowy["uklad"] = poprzedni["uklad"]
+    (katalog / PLIK_OPISU).write_text(json.dumps(nowy, ensure_ascii=False, indent=2),
+                                      encoding="utf-8")
 
     # Przy poprawianiu operatu numer roboty mógł się zmienić — stary pusty znacznik
     # trzeba sprzątnąć, żeby w katalogu nie leżały dwa numery naraz.
@@ -185,6 +193,52 @@ def pliki(katalog: Path) -> list[Path]:
         and not p.name.startswith("~$")
     ]
     return sorted(znalezione, key=lambda p: (p.name != SPIS_TRESCI, p.name.lower()))
+
+
+def uklad(katalog: Path) -> dict[str, Any]:
+    """Zapamiętany układ kafelków: `{"kolejnosc": [...], "obroty": {nazwa: kąt}}`."""
+    zapisany = opis(katalog).get("uklad")
+    return zapisany if isinstance(zapisany, dict) else {}
+
+
+def zapisz_uklad(katalog: Path, kolejnosc: list[str], obroty: dict[str, int]) -> None:
+    """Zapamiętuje ustawienie kafelków po udanym złożeniu PDF-a.
+
+    Brat układa kolejność myszą i obraca skany, które przyszły bokiem — przy drugim
+    składaniu tego samego operatu (a poprawia je regularnie) nie ma powodu, żeby
+    robił to od nowa.
+
+    Świadomie **nie** zapamiętujemy plików pominiętych krzyżykiem: plik ukryty na stałe,
+    o którym program milczy, byłby trudniejszy do odnalezienia niż jedno kliknięcie.
+    Pominięty pokaże się więc znowu, na końcu listy — jak każdy nowy.
+    """
+    dane = opis(katalog)
+    if not dane:                       # katalog bez operat.json to nie jest nasz operat
+        return
+    dane["uklad"] = {
+        "kolejnosc": list(kolejnosc),
+        "obroty": {nazwa: int(kat) % 360 for nazwa, kat in obroty.items()
+                   if int(kat) % 360},
+        "zapisano": datetime.now().isoformat(timespec="seconds"),
+    }
+    (katalog / PLIK_OPISU).write_text(json.dumps(dane, ensure_ascii=False, indent=2),
+                                      encoding="utf-8")
+
+
+def pliki_ulozone(katalog: Path) -> list[tuple[Path, int]]:
+    """Pliki w zapamiętanej kolejności, każdy ze swoim obrotem; nowe na końcu.
+
+    `sort` jest stabilny, więc pliki, których nie było przy poprzednim składaniu,
+    zachowują między sobą kolejność z `pliki()` (spis treści pierwszy, potem alfabet)
+    i lądują za tymi, które brat już ustawił.
+    """
+    zapamietany = uklad(katalog)
+    miejsca = {nazwa: numer for numer, nazwa in enumerate(zapamietany.get("kolejnosc") or [])}
+    obroty = zapamietany.get("obroty") or {}
+
+    pozycje = pliki(katalog)
+    pozycje.sort(key=lambda p: miejsca.get(p.name, len(miejsca)))
+    return [(p, int(obroty.get(p.name, 0)) % 360) for p in pozycje]
 
 
 def _aktualny(cel: Path, zrodlo: Path) -> bool:

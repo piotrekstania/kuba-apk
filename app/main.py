@@ -536,8 +536,9 @@ def scal_katalog(request: Request, nazwa: str, blad: str | None = None,
         return RedirectResponse("/scal", status_code=303)
     # liczby stron nie liczymy: dla plików Worda wymagałaby konwersji całej listy,
     # a miniatury i tak dociągają się leniwie, dopiero gdy przeglądarka o nie poprosi
-    pozycje = [{"nazwa": p.name, "word": p.suffix.lower() != ".pdf"}
-               for p in operaty.pliki(katalog)]
+    # Kolejność i obroty zapamiętane przy poprzednim składaniu; nowe pliki na końcu.
+    pozycje = [{"nazwa": p.name, "word": p.suffix.lower() != ".pdf", "obrot": kat}
+               for p, kat in operaty.pliki_ulozone(katalog)]
     nazwa_pliku = operaty.nazwa_wyniku(katalog)
     return _widok(request, "scal_katalog.html", katalog=katalog.name,
                   opis=operaty.opis(katalog), pozycje=pozycje,
@@ -594,6 +595,8 @@ async def scal_wykonaj(request: Request, nazwa: str):
     wybrane: list[Path] = []
     obroty: dict[Path, int] = {}
     etykiety: dict[Path, str] = {}
+    uklad_kolejnosc: list[str] = []          # do zapamiętania w operat.json
+    uklad_obroty: dict[str, int] = {}
     for pozycja in kolejnosc:
         zrodlo = dostepne.get(pozycja)
         if zrodlo is None:
@@ -613,6 +616,8 @@ async def scal_wykonaj(request: Request, nazwa: str):
             obroty[gotowy] = int(formularz_danych.get(f"obrot__{pozycja}") or 0)
         except ValueError:
             obroty[gotowy] = 0
+        uklad_kolejnosc.append(zrodlo.name)
+        uklad_obroty[zrodlo.name] = obroty[gotowy]
 
     if not wybrane:
         return niepowodzenie("Nie wybrano żadnych plików do połączenia.")
@@ -623,6 +628,9 @@ async def scal_wykonaj(request: Request, nazwa: str):
     except pdf.BladPliku as blad:
         return niepowodzenie(str(blad))
     statystyki.zlicz(statystyki.PDF)      # dopiero tutaj: PDF naprawdę leży na dysku
+    # Układ zapamiętujemy po udanym złożeniu — nieudana próba nie ma prawa nadpisać
+    # tego, co brat ustawił poprzednio.
+    operaty.zapisz_uklad(katalog, uklad_kolejnosc, uklad_obroty)
     # Nie odsyłamy pliku prosto w odpowiedzi na POST: formularz z target="_blank" bywa
     # blokowany i wtedy kliknięcie „Złóż PDF” nie robi *nic*, co dla brata wygląda jak
     # zepsuty program. Wracamy więc na stronę układania z potwierdzeniem, a gotowy PDF

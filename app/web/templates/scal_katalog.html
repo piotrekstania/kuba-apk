@@ -32,10 +32,14 @@
   <div class="kafelki" id="kafelki">
     {% for pozycja in pozycje %}
     <div class="kafelek" draggable="true" data-nazwa="{{ pozycja.nazwa }}">
-      <div class="kafelek-podglad">
+      {# obrót zapamiętany przy poprzednim składaniu nakładamy od razu, tym samym
+         sposobem co skrypt po kliknięciu strzałki — inaczej kafelek pokazywałby
+         co innego niż pole obok niego #}
+      <div class="kafelek-podglad{% if pozycja.obrot % 180 %} bokiem{% endif %}">
         {# bez loading="lazy": kafelki są treścią tej strony, a odkładanie ich do momentu
            przewinięcia odkładałoby też konwersję dokumentu Worda — czyli to, co trwa #}
         <img alt="{{ pozycja.nazwa }}"
+             {% if pozycja.obrot %}style="transform: rotate({{ pozycja.obrot }}deg)"{% endif %}
              src="/miniatura/{{ katalog | urlencode }}/{{ pozycja.nazwa | urlencode }}">
       </div>
       <p class="kafelek-nazwa" title="{{ pozycja.nazwa }}">{{ pozycja.nazwa }}</p>
@@ -45,7 +49,7 @@
         <button type="button" class="pomin" title="Nie dołączaj tego pliku">×</button>
       </div>
       <input type="hidden" name="plik" value="{{ pozycja.nazwa }}">
-      <input type="hidden" name="obrot__{{ pozycja.nazwa }}" value="0">
+      <input type="hidden" name="obrot__{{ pozycja.nazwa }}" value="{{ pozycja.obrot }}">
     </div>
     {% endfor %}
   </div>

@@ -35,6 +35,20 @@ FORMULARZ = {
 }
 
 
+def _prawdziwy_pdf(sciezka):
+    """Jednostronicowy PDF, który przejdzie przez pypdf.
+
+    Zaślepka `b"%PDF-1.4"` wygląda na PDF, ale sklejanie na niej pada — i wtedy test
+    sprawdza obsługę błędu zamiast tego, o co go pytamy.
+    """
+    from pypdf import PdfWriter
+    zapis = PdfWriter()
+    zapis.add_blank_page(width=595, height=842)
+    with open(sciezka, "wb") as wyjscie:
+        zapis.write(wyjscie)
+    return sciezka
+
+
 def _dodaj_operat(klient):
     klient.srodowisko.dodaj_szablon(
         "spis_tresci_wzor",
@@ -236,3 +250,37 @@ def test_stara_strona_listy_odsyla_na_dokumenty(klient):
 def test_menu_nie_ma_juz_pozycji_zloz_pdf(klient):
     tresc = klient.get("/").text
     assert '<a href="/scal">' not in tresc
+
+
+def test_skladanie_zapamietuje_kolejnosc_i_obrot(klient):
+    """Drugie wejście na stronę składania ma zaczynać tam, gdzie brat skończył."""
+    _dodaj_operat(klient)
+    klient.post("/generuj/spis_tresci_wzor", data=FORMULARZ, follow_redirects=False)
+    katalog = next(k for k in klient.srodowisko.wyniki.iterdir() if k.is_dir())
+    _prawdziwy_pdf(katalog / "mapa.pdf")
+
+    klient.post(f"/scal/{katalog.name}",
+                data={"plik": ["mapa.pdf", "spis_tresci.docx"], "obrot__mapa.pdf": "90"},
+                follow_redirects=False)
+
+    zapisany = operaty.uklad(katalog)
+    assert zapisany["kolejnosc"] == ["mapa.pdf", "spis_tresci.docx"]
+    assert zapisany["obroty"] == {"mapa.pdf": 90}
+
+    tresc = klient.get(f"/scal/{katalog.name}").text
+    assert tresc.index("mapa.pdf") < tresc.index("spis_tresci.docx")   # kolejność wróciła
+    assert 'name="obrot__mapa.pdf" value="90"' in tresc                # i obrót też
+
+
+def test_nieudane_skladanie_nie_nadpisuje_ukladu(klient):
+    """Pomyłka („nie wybrano plików”) nie może skasować ustawionego wcześniej układu."""
+    _dodaj_operat(klient)
+    klient.post("/generuj/spis_tresci_wzor", data=FORMULARZ, follow_redirects=False)
+    katalog = next(k for k in klient.srodowisko.wyniki.iterdir() if k.is_dir())
+    _prawdziwy_pdf(katalog / "mapa.pdf")
+    klient.post(f"/scal/{katalog.name}",
+                data={"plik": ["mapa.pdf", "spis_tresci.docx"]}, follow_redirects=False)
+
+    klient.post(f"/scal/{katalog.name}", data={}, follow_redirects=False)
+
+    assert operaty.uklad(katalog)["kolejnosc"] == ["mapa.pdf", "spis_tresci.docx"]

@@ -155,3 +155,59 @@ def test_otwarcie_katalogu_przezywa_awarie_wysuwania_okna(srodowisko, monkeypatc
     operaty.otworz_w_systemie(katalog)
 
     assert otwarte == [katalog]
+
+
+# --- zapamiętany układ kafelków ---------------------------------------------
+
+def test_zapamietany_uklad_wraca_przy_nastepnym_skladaniu(srodowisko):
+    katalog, _ = operaty.zaloz("001/2026", "GK.1.2026", "spis_tresci_wzor", {})
+    for nazwa in ("spis_tresci.docx", "mapa.pdf", "szkic.pdf"):
+        (katalog / nazwa).write_bytes(b"x")
+
+    operaty.zapisz_uklad(katalog, ["mapa.pdf", "spis_tresci.docx", "szkic.pdf"],
+                         {"mapa.pdf": 90})
+
+    ulozone = operaty.pliki_ulozone(katalog)
+    assert [p.name for p, _ in ulozone] == ["mapa.pdf", "spis_tresci.docx", "szkic.pdf"]
+    assert dict((p.name, kat) for p, kat in ulozone)["mapa.pdf"] == 90
+
+
+def test_nowy_plik_ladnie_na_koncu_a_nie_w_srodku(srodowisko):
+    """Brat dokłada skany Eksploratorem — nie mogą rozbijać ustawionej kolejności."""
+    katalog, _ = operaty.zaloz("001/2026", "GK.1.2026", "spis_tresci_wzor", {})
+    for nazwa in ("spis_tresci.docx", "mapa.pdf"):
+        (katalog / nazwa).write_bytes(b"x")
+    operaty.zapisz_uklad(katalog, ["mapa.pdf", "spis_tresci.docx"], {})
+
+    (katalog / "aaa_dolozony_pozniej.pdf").write_bytes(b"x")   # alfabetycznie pierwszy
+
+    assert [p.name for p, _ in operaty.pliki_ulozone(katalog)] == [
+        "mapa.pdf", "spis_tresci.docx", "aaa_dolozony_pozniej.pdf"]
+
+
+def test_znikniety_plik_nie_psuje_ukladu(srodowisko):
+    katalog, _ = operaty.zaloz("001/2026", "GK.1.2026", "spis_tresci_wzor", {})
+    (katalog / "spis_tresci.docx").write_bytes(b"x")
+    operaty.zapisz_uklad(katalog, ["mapa.pdf", "spis_tresci.docx"], {"mapa.pdf": 180})
+
+    assert [p.name for p, _ in operaty.pliki_ulozone(katalog)] == ["spis_tresci.docx"]
+
+
+def test_poprawienie_operatu_nie_kasuje_ukladu(srodowisko):
+    """`zaloz()` przepisuje operat.json od nowa — układ ustawiony myszą ma to przeżyć."""
+    katalog, _ = operaty.zaloz("001/2026", "GK.1.2026", "spis_tresci_wzor", {})
+    (katalog / "spis_tresci.docx").write_bytes(b"x")
+    (katalog / "mapa.pdf").write_bytes(b"x")
+    operaty.zapisz_uklad(katalog, ["mapa.pdf", "spis_tresci.docx"], {"mapa.pdf": 270})
+
+    operaty.zaloz("001/2026", "GK.1.2026", "spis_tresci_wzor", {"uwagi": "poprawione"})
+
+    assert [p.name for p, _ in operaty.pliki_ulozone(katalog)] == [
+        "mapa.pdf", "spis_tresci.docx"]
+    assert operaty.uklad(katalog)["obroty"] == {"mapa.pdf": 270}
+
+
+def test_obroty_zerowe_nie_smieca_w_pliku(srodowisko):
+    katalog, _ = operaty.zaloz("001/2026", "GK.1.2026", "spis_tresci_wzor", {})
+    operaty.zapisz_uklad(katalog, ["a.pdf", "b.pdf"], {"a.pdf": 0, "b.pdf": 360})
+    assert operaty.uklad(katalog)["obroty"] == {}
