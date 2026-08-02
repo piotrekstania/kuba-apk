@@ -315,6 +315,26 @@ też brat. Interfejs w całości po polsku.
    bo portu pilnowała **zapomniana druga kopia programu**; konsola schowała się mimo
    że serwer się nie podniósł. Teraz `uruchom.serwer_odpowiada` pobiera stronę i szuka
    w niej znacznika `Generator operatów`. Pilnuje tego `test_uruchom.py`.
+22. **Test, który liczy pliki, liczy też to, co zostawiła po sobie fixture.**
+   `test_migracja_zostawia_kopie_bazy` padał raz na kilkanaście przebiegów, i to nie
+   na „zero kopii”, jak sugerował komunikat, tylko na **dwie** — `assert len(kopie) == 1`
+   pokazuje własny opis w obie strony. Druga kopia była z `db.init()` w fixture
+   `srodowisko`: `SCHEMAT` to schemat 1, kolumny `katalog` i `nr_operatu` dokładają
+   migracje, więc **świeżo założona baza też przechodziła migrację** i też dostawała
+   kopię. Zwykle obie kopie powstawały w tej samej sekundzie, a nazwa ma rozdzielczość
+   sekundy — druga nadpisywała pierwszą i wychodziło „jedna”. Gdy trafiły w różne
+   sekundy, test padał. Poprawka jest w `db.init()` (świeżej bazy nie ma po co
+   kopiować — nie ma w niej czego ratować), a nie w asercji. Wniosek na przyszłość:
+   **przy losowym padnięciu sprawdź, czy nie ma wyścigu z zegarem** — nazwa z datą
+   co do sekundy zachowuje się inaczej w zależności od tego, kiedy zaczął się test.
+   Odtworzenie: pętla po samym teście, ok. 3 padnięcia na 40 przebiegów.
+23. **Wątki demoniczne z testu przeżywają test.** `cykl_zycia` startuje pobieranie
+   TERYT-u, `/generuj` — przygotowanie podglądów; oba czytają `db.BAZA_DANYCH`
+   i `operaty.WYNIKI` **w chwili wywołania**, więc taki wątek po sprzątnięciu
+   monkeypatcha pisze do prawdziwych `dane/` i `wyniki/` autora, i to po cichu, bo oba
+   łykają każdy wyjątek. Fixture `srodowisko` czeka teraz na nie w swoim sprzątaniu
+   (`_zaczekaj_na_watki`), póki podmienione ścieżki jeszcze stoją. Czeka w `srodowisko`,
+   a nie w `klient`, bo własny TestClient stawia też `test_word.py`.
 
 ## Stan na teraz — przetestowane end-to-end
 
@@ -393,7 +413,7 @@ Co pilnują, w kolejności od najbardziej bolesnych doświadczeń:
 | `test_szablony.py` | że każda formatka daje się wczytać, nic nie wpada do „Pozostałych pól”, a **dokumenty dodatkowe nie używają znaczników, których formularz nie zbiera** (to najcichszy sposób zepsucia operatu: puste miejsce zamiast błędu) |
 | `test_generator.py` | numeracja bez dziur, poprawianie nieznużywające numeru, formaty dat, brak `{{ }}` w gotowym pliku |
 | `test_aktualizacja.py` | że `dane/` i `wyniki/` przeżywają, szablony są lustrzane, a nieudana aktualizacja zostawia działający program (GitHub podstawiony przez `file://`) |
-| `test_db.py` | migracje starej bazy bez utraty historii i licznika; że połączenie **zamyka plik** (inaczej Windows blokuje bazę) |
+| `test_db.py` | migracje starej bazy bez utraty historii i licznika; że kopia powstaje **przed** migracją i tylko wtedy, a nie przy zakładaniu bazy od zera; że połączenie **zamyka plik** (inaczej Windows blokuje bazę) |
 | `test_word.py` | ścieżka przez Worda (COM) — tylko Windows z Office, nigdy w CI; opis niżej |
 | `test_trasy.py` | formularz → operat przez HTTP, polskie strony błędów, brak wyjścia poza `wyniki/` |
 | `test_operaty.py`, `test_pdf.py` | nazwy katalogów i plików, kolejność sklejania, komunikat przy uszkodzonym PDF |

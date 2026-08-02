@@ -8,6 +8,8 @@ fixture `srodowisko`, dzięki czemu żaden test nie dotyka prawdziwych `wyniki/`
 from __future__ import annotations
 
 import sys
+import threading
+import time
 from pathlib import Path
 
 import pytest
@@ -16,6 +18,36 @@ from docx.shared import Pt
 
 KORZEN = Path(__file__).resolve().parent.parent
 sys.path.insert(0, str(KORZEN))
+
+# Ile czekamy na wątki tła przy sprzątaniu testu. Limit jest z zapasem, bo czekanie
+# kosztuje tylko wtedy, gdy coś naprawdę wisi: w większości testów konwerter jest
+# atrapą i wątki kończą się w ułamku sekundy, ale `test_word.py` puszcza prawdziwego
+# Worda przez komplet dokumentów operatu. Strażnik ma łapać wątki, które przeżyły test,
+# a nie zamieniać się w nowe źródło losowych padnięć.
+LIMIT_WATKOW = 60.0
+
+
+def _zaczekaj_na_watki(wczesniejsze: set[threading.Thread]) -> None:
+    """Czeka na wątki tła wystartowane w trakcie testu — zanim znikną podmienione ścieżki.
+
+    Program startuje w tle dwie rzeczy: pierwsze pobranie TERYT-u (`cykl_zycia`)
+    i przygotowanie podglądów PDF po wygenerowaniu operatu (`/generuj`). Oba wątki
+    są demoniczne, więc test kończy się, nie oglądając się na nie, a one czytają
+    `db.BAZA_DANYCH`, `operaty.WYNIKI` i resztę **w chwili wywołania**, nie startu.
+    Wątek, który dożyje sprzątnięcia monkeypatcha, dostaje do ręki prawdziwe `dane/`
+    i `wyniki/` autora albo katalogi kolejnego testu — i pisze tam po cichu, bo oba
+    te wątki łykają każdy wyjątek. Dlatego czekamy na nie, póki podmiana jeszcze stoi.
+    """
+    koniec = time.monotonic() + LIMIT_WATKOW
+    obce = lambda: [w for w in threading.enumerate()                      # noqa: E731
+                    if w not in wczesniejsze and w is not threading.current_thread()]
+    for watek in obce():
+        watek.join(max(0.0, koniec - time.monotonic()))
+    zostaly = [w.name for w in obce() if w.is_alive()]
+    if zostaly:
+        pytest.fail("wątki w tle nie skończyły się przed sprzątnięciem ścieżek testu "
+                    f"(po {LIMIT_WATKOW:.0f} s żyją: {', '.join(zostaly)}) — dopóki żyją, "
+                    "piszą tam, gdzie akurat pokazują ścieżki modułów")
 
 
 # --- pomocnicze budowanie dokumentów -----------------------------------------
@@ -51,8 +83,16 @@ def srodowisko(tmp_path, monkeypatch):
     """Izolowana instalacja programu: własne szablony/, wyniki/, dane/ i baza.
 
     Zwraca obiekt z gotowymi ścieżkami i skrótem `dodaj_szablon`.
+
+    Sprzątając, czeka na wątki tła wystartowane w trakcie testu (`_zaczekaj_na_watki`).
+    Robi to **tutaj**, a nie w `klient`, bo własny TestClient stawia też `test_word.py`,
+    a wątki startują nie tylko z cyklu życia aplikacji. Kolejność jest bezpieczna:
+    `monkeypatch` powstaje przed tą fixture, więc jego sprzątanie idzie po naszym
+    i przez cały czas oczekiwania ścieżki są jeszcze podmienione.
     """
     from app import aktualizacja, config, db, generator, main, operaty, pdf, szablony
+
+    watki_przed = set(threading.enumerate())
 
     szablony_kat = tmp_path / "szablony"
     wyniki_kat = tmp_path / "wyniki"
@@ -106,7 +146,8 @@ def srodowisko(tmp_path, monkeypatch):
     # oddaje puste napisy i to nam w testach wystarczy.
     monkeypatch.setattr(generator.teryt, "jednostka", lambda identyfikator: None)
     monkeypatch.setattr(generator.teryt, "obreb", lambda identyfikator: None)
-    return Srodowisko
+    yield Srodowisko
+    _zaczekaj_na_watki(watki_przed)
 
 
 @pytest.fixture

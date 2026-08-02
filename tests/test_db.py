@@ -33,7 +33,7 @@ def test_polaczenie_zamyka_plik_bazy(srodowisko):
 
 
 def test_swieza_baza_jest_w_najnowszym_schemacie(srodowisko):
-    with db.polacz() as con:
+    with db.polaczenie() as con:                 # `polacz()` zostawiłby otwarty plik
         assert int(con.execute("PRAGMA user_version").fetchone()[0]) == db.WERSJA_SCHEMATU
     assert {"katalog", "nr_operatu"} <= _kolumny("dokumenty")
 
@@ -41,7 +41,8 @@ def test_swieza_baza_jest_w_najnowszym_schemacie(srodowisko):
 def test_stara_baza_dociaga_sie_bez_utraty_danych(srodowisko):
     """Baza w schemacie 1 (bez `katalog` i `nr_operatu`) ma przeżyć aktualizację."""
     srodowisko.baza_danych.unlink()
-    with sqlite3.connect(srodowisko.baza_danych) as con:
+    con = sqlite3.connect(srodowisko.baza_danych)
+    with con:                    # zatwierdza, ale pliku nie zamyka — `close()` niżej
         con.executescript("""
             CREATE TABLE dokumenty (
                 id INTEGER PRIMARY KEY AUTOINCREMENT, szablon TEXT NOT NULL,
@@ -54,11 +55,12 @@ def test_stara_baza_dociaga_sie_bez_utraty_danych(srodowisko):
             INSERT INTO liczniki (nazwa, rok, stan) VALUES ('operat', 2025, 17);
             PRAGMA user_version = 1;
         """)
+    con.close()
 
     db.init()
 
     assert {"katalog", "nr_operatu"} <= _kolumny("dokumenty")
-    with db.polacz() as con:
+    with db.polaczenie() as con:                 # `polacz()` zostawiłby otwarty plik
         assert int(con.execute("PRAGMA user_version").fetchone()[0]) == db.WERSJA_SCHEMATU
     wiersze = db.dokumenty()
     assert len(wiersze) == 1
@@ -66,14 +68,49 @@ def test_stara_baza_dociaga_sie_bez_utraty_danych(srodowisko):
     assert db.podglad_numeru("operat", 2025) == 18          # licznik nietknięty
 
 
-def test_migracja_zostawia_kopie_bazy(srodowisko):
+def _kopie(srodowisko) -> list:
+    return sorted((srodowisko.dane / "kopie").glob("*.sqlite3"))
+
+
+def _zaloz_baze_w_schemacie_1(srodowisko) -> None:
+    """Baza w stanie sprzed migracji — z danymi, po których poznamy kopię."""
     srodowisko.baza_danych.unlink()
-    with sqlite3.connect(srodowisko.baza_danych) as con:
+    con = sqlite3.connect(srodowisko.baza_danych)
+    with con:                    # zatwierdza, ale pliku nie zamyka — `close()` niżej
         con.executescript("CREATE TABLE liczniki (nazwa TEXT, rok INTEGER, stan INTEGER);"
+                          "INSERT INTO liczniki VALUES ('operat', 2025, 17);"
                           "PRAGMA user_version = 1;")
+    con.close()
+
+
+def test_swieza_baza_nie_zostawia_kopii(srodowisko):
+    """Baza założona przed sekundą nie ma czego ratować — kopia byłaby kopią pustki.
+
+    To nie jest kosmetyka. Dopóki `init()` robił kopię także świeżej bazy, każdy test
+    zaczynał z jednym plikiem w `dane/kopie/`, a nazwa kopii ma rozdzielczość jednej
+    sekundy — więc kopia z migracji zwykle nadpisywała tamtą i wychodziło „jedna”.
+    Gdy tylko obie trafiły w różne sekundy, `test_migracja_zostawia_kopie_bazy` padał
+    na dwie kopie. Wychodziło mniej więcej raz na kilkanaście przebiegów.
+    """
+    assert _kopie(srodowisko) == [], "kopia bazy przy zakładaniu jej od zera"
+
+
+def test_migracja_zostawia_kopie_bazy(srodowisko):
+    _zaloz_baze_w_schemacie_1(srodowisko)
+
     db.init()
-    kopie = list((srodowisko.dane / "kopie").glob("*.sqlite3"))
+
+    kopie = _kopie(srodowisko)
     assert len(kopie) == 1, "przed migracją nie powstała kopia bazy"
+    # ...i to kopia sprzed migracji, a nie zdublowany plik po niej
+    assert "schemat1" in kopie[0].name
+    kopia = sqlite3.connect(kopie[0])
+    try:
+        assert int(kopia.execute("PRAGMA user_version").fetchone()[0]) == 1
+        assert kopia.execute(
+            "SELECT stan FROM liczniki WHERE nazwa = 'operat'").fetchone()[0] == 17
+    finally:
+        kopia.close()
 
 
 def test_powtorne_init_nic_nie_psuje(srodowisko):

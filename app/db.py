@@ -123,6 +123,10 @@ def _kopia_przed_migracja(wersja: int) -> None:
 
 def init() -> None:
     with polaczenie() as con:
+        # Czy to my zakładamy tę bazę w tej chwili? Sprawdzamy **przed** `SCHEMAT`,
+        # bo po nim tabele są już zawsze.
+        swieza = not int(con.execute(
+            "SELECT COUNT(*) AS ile FROM sqlite_master WHERE type = 'table'").fetchone()["ile"])
         con.executescript(SCHEMAT)
         wersja = int(con.execute("PRAGMA user_version").fetchone()[0])
         if wersja == 0:
@@ -134,7 +138,14 @@ def init() -> None:
     if wersja >= WERSJA_SCHEMATU:
         return
 
-    _kopia_przed_migracja(wersja)
+    # `SCHEMAT` opisuje schemat 1 — kolumny `katalog` i `nr_operatu` dokładają dopiero
+    # migracje. Przez ten sam kod przechodzi więc i baza brata sprzed roku, i baza
+    # założona przed sekundą. Kopię robimy tylko tej pierwszej: w bazie, która powstała
+    # w tym samym wywołaniu, nie ma czego ratować, a plik w `dane/kopie/` po każdej
+    # świeżej instalacji tylko myli — jego to co najwyżej zdziwi, ale testom podkładał
+    # nogę na serio (patrz `test_migracja_zostawia_kopie_bazy`).
+    if not swieza:
+        _kopia_przed_migracja(wersja)
     with polaczenie() as con:
         for nastepna in range(wersja + 1, WERSJA_SCHEMATU + 1):
             for polecenie in MIGRACJE.get(nastepna, []):
