@@ -3,6 +3,10 @@
 Co doszło w kolejnych wersjach programu. Ten sam opis pokazuje się raz, na stronie
 głównej, zaraz po tym jak program sam się zaktualizuje.
 
+## 2026.08.02.8 — 2026-08-02
+
+Nowość: w menu u góry jest teraz „Pomoc”, a w nim — obok instrukcji do szablonów — historia wersji. Zobaczysz w niej, co doszło w każdej kolejnej wersji programu, razem z tą, którą masz w tej chwili.
+
 ## 2026.08.02.7 — 2026-08-02
 
 Drobne sprzątanie: przy pierwszym uruchomieniu programu nie powstaje już niepotrzebna kopia pustej bazy w katalogu dane\kopie. Kopie bezpieczeństwa robią się nadal — przed każdą zmianą układu bazy i przed każdą aktualizacją.
