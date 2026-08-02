@@ -3,6 +3,10 @@
 Co doszło w kolejnych wersjach programu. Ten sam opis pokazuje się raz, na stronie
 głównej, zaraz po tym jak program sam się zaktualizuje.
 
+## 2026.08.02.15 — 2026-08-02
+
+Przy polu położenia zniknął rozwijany spis znaczników do Worda i podpowiedź nad listami — to samo jest w Pomocy, a formularz ma być do wypełniania, nie do czytania instrukcji.
+
 ## 2026.08.02.14 — 2026-08-02
 
 Powierzchnia działki pokazuje się teraz zaokrąglona do dwóch miejsc — „ok. 0,42 ha” zamiast „ok. 0,4159 ha”. Dokładna liczba stoi obok w metrach kwadratowych i ta zostaje bez zmian. Cały komunikat z ewidencji jest grubszy, żeby dało się go złapać wzrokiem bez szukania.
