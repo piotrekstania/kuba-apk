@@ -48,7 +48,7 @@ ZNACZNIK_NOWOSCI = DANE / "co_nowego.txt"   # czyta go strona główna, żeby po
 AKTUALIZOWANE = [
     "app", "narzedzia", "szablony",
     "requirements.txt", "start.bat", "start.sh", "uruchom.py",
-    "WERSJA", "README.md", "CLAUDE.md",
+    "WERSJA", "ZMIANY.md", "README.md", "CLAUDE.md",
 ]
 
 # Katalogi odwzorowywane jeden do jednego: plik, którego nie ma już w repozytorium,

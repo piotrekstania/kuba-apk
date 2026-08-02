@@ -15,7 +15,15 @@
     <a href="/">Dokumenty</a>
     <a href="/scal">Złóż PDF</a>
     <a href="/ustawienia">Ustawienia</a>
-    <a href="/pomoc">Jak edytować szablon</a>
+    {# <details> robi wysuwane menu bez jednej linii JS-a: obsługuje klawiaturę,
+       działa po wyłączeniu skryptów i zamyka się samo przy przejściu na inną stronę #}
+    <details class="rozwijane">
+      <summary>Pomoc</summary>
+      <div class="rozwijane-lista">
+        <a href="/pomoc">Jak edytować szablon</a>
+        <a href="/pomoc/historia">Historia wersji</a>
+      </div>
+    </details>
   </nav>
   <a class="konwerter {{ 'ok' if konwerter != 'brak' else 'zle' }}" href="/pomoc#pdf"
      title="Program używany do robienia PDF-ów">

@@ -1,0 +1,28 @@
+{% extends "base.html" %}
+{% block tytul %}Historia wersji{% endblock %}
+{% block tresc %}
+
+<h1>Historia wersji</h1>
+<p class="szary">Co doszło w kolejnych wersjach programu. Nowe wersje pobierają się same
+  przy uruchamianiu — nic nie trzeba instalować.</p>
+
+{% if wpisy %}
+<table class="lista">
+  <tr><th class="waski">Wersja</th><th class="waski">Data</th><th>Co się zmieniło</th></tr>
+  {% for wpis in wpisy %}
+  <tr>
+    <td>
+      <strong>{{ wpis.wersja }}</strong>
+      {% if wpis.wersja == wersja %}<br><span class="teraz">masz tę wersję</span>{% endif %}
+    </td>
+    <td class="szary">{{ wpis.data }}</td>
+    <td>{{ wpis.opis }}</td>
+  </tr>
+  {% endfor %}
+</table>
+{% else %}
+<div class="komunikat">Brak pliku z historią zmian (<code>ZMIANY.md</code>). Program
+  działa normalnie — to tylko ta strona nie ma czego pokazać.</div>
+{% endif %}
+
+{% endblock %}

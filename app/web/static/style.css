@@ -35,9 +35,25 @@ header {
   z-index: 5;
 }
 .logo { font-weight: 700; text-decoration: none; color: var(--tekst); font-size: 17px; }
-nav { display: flex; gap: 18px; }
+nav { display: flex; gap: 18px; align-items: center; }
 nav a { color: var(--szary); text-decoration: none; }
 nav a:hover { color: var(--akcent); }
+
+/* Wysuwane menu na <details> — bez JS-a. */
+.rozwijane { position: relative; }
+.rozwijane > summary { color: var(--szary); cursor: pointer; list-style: none;
+                       user-select: none; }
+.rozwijane > summary::-webkit-details-marker { display: none; }   /* własna strzałka niżej */
+.rozwijane > summary::after { content: " ▾"; font-size: 11px; }
+.rozwijane[open] > summary, .rozwijane > summary:hover { color: var(--akcent); }
+.rozwijane-lista {
+  position: absolute; top: calc(100% + 10px); left: -12px; z-index: 10;
+  display: flex; flex-direction: column; min-width: 190px; padding: 6px 0;
+  background: var(--panel); border: 1px solid var(--linia); border-radius: 8px;
+  box-shadow: 0 8px 20px rgba(0, 0, 0, .10);
+}
+.rozwijane-lista a { padding: 7px 14px; white-space: nowrap; }
+.rozwijane-lista a:hover { background: var(--tlo); }
 .konwerter { margin-left: auto; font-size: 12px; color: var(--szary); text-decoration: none;
              border: 1px solid var(--linia); border-radius: 999px; padding: 3px 10px; }
 .konwerter.zle { color: var(--zle); border-color: #f2c3bf; background: #fdeceb; }
@@ -104,6 +120,8 @@ table.lista th { background: #f0f2f5; font-size: 13px; }
 table.wiersze th { background: #f0f2f5; font-size: 12px; color: var(--szary); }
 table.wiersze td { padding: 4px 6px; }
 th.waski { width: 220px; }
+.teraz { font-size: 11px; color: var(--akcent); border: 1px solid var(--akcent);
+         border-radius: 999px; padding: 1px 8px; white-space: nowrap; }
 .akcje a { margin-right: 10px; font-size: 13px; }
 .rzad-pliku { display: flex; gap: 8px; align-items: center; margin-bottom: 8px; }
 

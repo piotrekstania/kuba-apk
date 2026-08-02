@@ -25,7 +25,7 @@ from fastapi.templating import Jinja2Templates
 from starlette.exceptions import HTTPException as BladHTTP
 
 from . import (aktualizacja, db, generator, miniatury, operaty, pdf, statystyki,
-               szablony, teryt)
+               szablony, teryt, zmiany)
 from .config import DANE, WEB, WYNIKI
 
 
@@ -660,3 +660,8 @@ def teryt_zapomnij_obreby():
 @app.get("/pomoc", response_class=HTMLResponse)
 def pomoc(request: Request):
     return _widok(request, "pomoc.html")
+
+
+@app.get("/pomoc/historia", response_class=HTMLResponse)
+def historia_wersji(request: Request):
+    return _widok(request, "historia.html", wpisy=zmiany.wpisy())

@@ -32,6 +32,8 @@ zainstalowania/uruchomienia, bez instalowania Pythona.
 | Aktualizacje: program sam pobiera `.zip` z GitHuba przy starcie | brat nie jest programistą; nie ma mowy o `git pull` ani o ręcznym rozpakowywaniu paczek na wierzch, bo prędzej czy później nadpisałby sobie szablony |
 | `szablony/` jest **lustrzane**: plik usunięty z repozytorium znika też u brata (`LUSTRZANE` w `aktualizacja.py`) | bez tego szablon po zmianie nazwy zostawał u niego na zawsze i straszył na liście jako pozycja, której nikt już nie utrzymuje — dokładnie to się stało przy `operat_wzor` → `spis_tresci_wzor`. `app/` celowo nie jest lustrzane: kasowanie plików działającego procesu to proszenie się o kłopoty |
 | **Jeden katalog `szablony/`**, wersjonowany w repo i nadpisywany przy aktualizacji | decyzja z 31.07.2026, zmiana wcześniejszej: formatki Worda utrzymuje autor, nie brat, więc podział na „wzorcowe” i „jego” tylko przeszkadzał — poprawka szablonu nie docierała do brata, dopóki nie skasował pliku ręcznie. Stara zawartość i tak ląduje w `dane/kopie/` przed każdą aktualizacją |
+| Historia zmian jako **plik w repozytorium**, generowany z historii `WERSJA` w gicie | u brata nie ma `.git`, więc commity nie są dla niego żadnym źródłem. Opis dla użytkownika i tak powstaje przy każdym wydaniu w pliku `WERSJA` — `zbuduj_zmiany.py` tylko go zbiera, żeby nikt nie przepisywał tego ręcznie i nie pomylił numeru |
+| Menu „Pomoc” na `<details>`, **bez JS-a** | natywny element obsługuje klawiaturę, działa bez skryptów i zamyka się sam przy przejściu na inną stronę. Uwaga: `display: flex` na liście nie psuje ukrywania — przeglądarka i tak nie maluje ani nie klika zawartości zamkniętego `<details>` (sprawdzone `elementFromPoint`) |
 | Wersja schematu bazy w `PRAGMA user_version` + lista `MIGRACJE` | baza u brata to jedyny egzemplarz historii i numeracji; nowy kod na starej bazie musi umieć ją dociągnąć, a nie wywalić się na brakującej kolumnie |
 | **Żaden błąd nie wychodzi do przeglądarki po angielsku** — globalne uchwyty w `app/main.py` + `blad.html`, ślad do `dane/bledy.log` | brat nie odróżni `AttributeError` od awarii dysku; ma zobaczyć, co się stało, że jego dane są całe i co ma zrobić. Log to jedyny ślad po awarii, bo okno konsoli zamyka razem z programem |
 | TERYT: plik `TERC_Urzedowy` z GUS + obręby z ULDK, **wszystko cache'owane w SQLite** | oficjalna usługa GUS (TERYT ws1) wymaga rejestracji i hasła wysyłanego pocztą przez Urząd Statystyczny — u brata to dyskwalifikacja. Cache jest obowiązkowy, bo w terenie nie ma internetu |
@@ -137,6 +139,9 @@ starą wersję (autor się na to nadział).
 | `app/pdf.py` | wykrywanie konwertera, DOCX→PDF, łączenie PDF-ów |
 | `app/aktualizacja.py` | pobieranie nowej wersji z GitHuba; **tylko biblioteka standardowa**, bo działa zanim `pip install` dołoży nowe zależności |
 | `WERSJA` | 1. linia = numer porównywany z GitHubem, reszta = opis pokazywany bratu raz po aktualizacji |
+| `ZMIANY.md` | historia wydań pokazywana na `/pomoc/historia`; **generowana**, nie pisana ręcznie |
+| `app/zmiany.py` | czyta `ZMIANY.md` (parser na trzech liniach, format do poprawienia w Notatniku) |
+| `narzedzia/zbuduj_zmiany.py` | buduje `ZMIANY.md` z historii pliku `WERSJA` w gicie |
 | `app/db.py` | SQLite: `dokumenty`, `liczniki`, `zdarzenia`, `teryt_*` (`ustawienia` bez interfejsu) |
 | `app/statystyki.py` | liczniki do stopki: operaty, dokumenty, złożone PDF-y; zliczane w chwili zdarzenia |
 | `app/teryt.py` | jednostki TERYT z GUS + obręby z ULDK; **tylko biblioteka standardowa** |
@@ -181,6 +186,12 @@ też brat. Interfejs w całości po polsku.
    wydania szły już 1 sierpnia. Nic się przez to nie psuje — porównanie jest wyłącznie
    na równość (`numer == lokalna`), nigdy „na większy”, więc licznik może wrócić do 1
    przy nowej dacie — ale numer przestaje mówić, kiedy brat co dostał.
+7a. **Po podbiciu `WERSJA` uruchom `python narzedzia/zbuduj_zmiany.py --zapisz`.**
+   Historia wydań na `/pomoc/historia` jedzie do brata jako plik `ZMIANY.md`, bo on
+   nie ma gita — ma rozpakowany `.zip`. Skrypt buduje ją z opisów, które i tak
+   powstają w `WERSJA` przy każdym wydaniu, więc nie pisze się tego dwa razy.
+   Pilnuje tego `test_wydana_wersja_ma_wpis_w_historii`: podbita wersja bez wpisu
+   w historii = czerwony test, zanim brat zobaczy „co nowego” i pustą stronę.
 7. **Wydanie = podbicie `WERSJA` + push.** Sam commit nic bratu nie wyśle — porównywany
    jest wyłącznie pierwszy wiersz pliku `WERSJA`. To celowe: decydujesz, kiedy dostaje
    nową wersję. Odwrotna pułapka: podbicie `WERSJA` bez wypchnięcia reszty kodu wyśle
@@ -419,6 +430,7 @@ Co pilnują, w kolejności od najbardziej bolesnych doświadczeń:
 | `test_operaty.py`, `test_pdf.py` | nazwy katalogów i plików, kolejność sklejania, komunikat przy uszkodzonym PDF |
 | `test_statystyki.py` | że licznik **nie cofa się po archiwizacji** operatu i **nie rośnie** od plików dołożonych przez brata — na tym wyłożyła się pierwsza wersja |
 | `test_uruchom.py` | że konsola chowa się **tylko po udanym starcie** i że obcy serwer na porcie nie uchodzi za nasz program |
+| `test_zmiany.py` | że `ZMIANY.md` **jedzie do brata przy aktualizacji** i że wydana wersja ma swój wpis w historii |
 
 Testy stabilności formatek **pomijają się bez czcionki Calibri/Carlito**
 (`sudo apt install fonts-crosextra-carlito`), bo bez niej `ujednolic_wyglad.py` w ogóle
