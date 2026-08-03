@@ -3,6 +3,10 @@
 Co doszło w kolejnych wersjach programu. Ten sam opis pokazuje się raz, na stronie
 głównej, zaraz po tym jak program sam się zaktualizuje.
 
+## 2026.08.03.3 — 2026-08-03
+
+Program wysyła teraz bratu trzy liczby ze stopki — ile operatów, dokumentów Worda i złożonych PDF-ów zrobiłeś — razem z numerem wersji. Dzięki temu wie, że wszystko u Ciebie działa, bez dopytywania. Nic z Twoich operatów nie wychodzi: ani numerów działek, ani nazwisk, ani numerów ksiąg wieczystych. Szczegóły są w Pomocy, w sekcji „Co program o sobie wysyła”.
+
 ## 2026.08.03.2 — 2026-08-03
 
 Na liście operatów doszedł przycisk „Popraw” — obok „Złóż PDF” i „Powiel”. Wcześniej, żeby poprawić literówkę w gotowym operacie, trzeba było najpierw wejść w niego i dopiero tam kliknąć; teraz jest to jedno kliknięcie z listy. „Popraw” wraca do tego samego operatu i nie zużywa kolejnego numeru, a „Powiel” zakłada nowy z tymi samymi danymi.
