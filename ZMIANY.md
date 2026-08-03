@@ -3,6 +3,10 @@
 Co doszło w kolejnych wersjach programu. Ten sam opis pokazuje się raz, na stronie
 głównej, zaraz po tym jak program sam się zaktualizuje.
 
+## 2026.08.03.2 — 2026-08-03
+
+Na liście operatów doszedł przycisk „Popraw” — obok „Złóż PDF” i „Powiel”. Wcześniej, żeby poprawić literówkę w gotowym operacie, trzeba było najpierw wejść w niego i dopiero tam kliknąć; teraz jest to jedno kliknięcie z listy. „Popraw” wraca do tego samego operatu i nie zużywa kolejnego numeru, a „Powiel” zakłada nowy z tymi samymi danymi.
+
 ## 2026.08.03.1 — 2026-08-03
 
 Ta wersja nie zmienia niczego w samym programie. Jedna rzecz warta zapamiętania: robiąc kopię zapasową, kopiuj oba katalogi — „wyniki” i „dane”. W „wyniki” leżą całe operaty razem z mapami, szkicami i skanami, które sam do nich dokładasz, a tego nie da się odtworzyć z niczego innego.
