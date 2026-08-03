@@ -50,6 +50,9 @@
     <td class="akcje">
       {% if operat.katalog %}<a href="/scal/{{ operat.katalog | urlencode }}">Złóż PDF</a>{% endif %}
       {% if operat.id %}
+      {# ten sam komplet co na stronie operatu — poprawka literówki nie ma wymagać
+         wchodzenia w dokument tylko po to, żeby kliknąć drugi raz #}
+      <a href="/nowy/{{ operat.szablon }}?edytuj={{ operat.id }}">Popraw</a>
       <a href="/nowy/{{ operat.szablon }}?kopiuj={{ operat.id }}">Powiel</a>
       <form method="post" action="/dokument/{{ operat.id }}/usun"
             onsubmit="return confirm('Usunąć operat {{ operat.nr_operatu or operat.katalog }} wraz z całym katalogiem — także z plikami, które sam tam włożyłeś?')">

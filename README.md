@@ -65,6 +65,17 @@ pliku ręcznie.
 Commit bez zmiany `WERSJA` nikomu się nie zainstaluje — i o to chodzi, bo to Ty decydujesz,
 kiedy brat dostaje nową wersję.
 
+Numer ma postać `rok.miesiąc.dzień.licznik`, z datą **dnia wydania** i licznikiem
+liczącym wydania tego dnia od 1. Zaraz po podbiciu uruchom:
+
+```bash
+python narzedzia/zbuduj_zmiany.py --zapisz
+```
+
+— to zbiera historię wydań do `ZMIANY.md`, którą brat ogląda w menu „Pomoc". Bez tego
+kroku dostanie komunikat o nowej wersji i pustą stronę historii; pilnuje tego
+`test_wydana_wersja_ma_wpis_w_historii`.
+
 W **kopii roboczej gita aktualizator się nie uruchamia** (wykrywa katalog `.git`) — inaczej
 `./start.sh` nadpisałby niezacommitowane zmiany plikami z GitHuba. Tam obowiązuje `git pull`.
 Żeby zobaczyć to, co zobaczy użytkownik, zrób instalację testową bez `.git`:
@@ -91,15 +102,23 @@ sama się doprowadzi do porządku (po uprzednim zrobieniu kopii).
 | --- | --- |
 | `szablony/` | pliki `.docx` z tagami `{{ }}` — wygląd dokumentów; **wersjonowane w repo**, aktualizacja je podmienia |
 | `szablony/*.json` | nieobowiązkowy opis pól: etykiety, typy, kolejność, grupy |
-| `wyniki/` | wygenerowane dokumenty i PDF-y |
+| `wyniki/` | operaty — po jednym katalogu na robotę, razem z plikami dokładanymi ręcznie |
 | `dane/operaty.sqlite3` | historia, liczniki numeracji, jednostki TERYT i obręby |
+| `app/config.py` | ścieżki; działa też, gdy program siedzi w spakowanym `.exe` |
 | `app/szablony.py` | czyta szablon i buduje z niego formularz |
 | `app/generator.py` | wypełnia szablon danymi |
-| `app/pdf.py` | konwersja DOCX→PDF i łączenie PDF-ów |
+| `app/operaty.py` | katalog operatu: zakładanie, `operat.json`, lista plików do sklejenia |
+| `app/pdf.py` | konwersja DOCX→PDF (Word przez COM albo LibreOffice) i łączenie PDF-ów |
+| `app/miniatury.py` | podglądy stron do układania kolejności przed sklejeniem |
+| `app/teryt.py` | jednostki TERYT z GUS-u, obręby i sprawdzanie działek w ULDK |
+| `app/statystyki.py` | liczniki w stopce: operaty, dokumenty, złożone PDF-y |
+| `app/zmiany.py` | historia wersji pokazywana w programie (czyta `ZMIANY.md`) |
 | `app/aktualizacja.py` | pobieranie nowej wersji z GitHuba, kopie zapasowe |
 | `WERSJA` | numer wersji + opis zmian; podbijasz go, wydając nową wersję |
+| `ZMIANY.md` | historia wydań dla użytkownika — **generowana**, nie pisana ręcznie |
 | `app/main.py` | strony i obsługa formularzy |
 | `narzedzia/utworz_wzor_szablonu.py` | generuje przykładowy szablon do testów |
+| `narzedzia/zbuduj_zmiany.py` | składa `ZMIANY.md` z opisów w historii pliku `WERSJA` |
 | `narzedzia/ujednolic_wyglad.py` | nakłada wspólny wygląd na wszystkie formatki — krój, logo, stopka, hierarchia nagłówków, wyrównanie kolumn; **nie rusza treści, pogrubień ani czerwieni**. Puszczaj po każdej podmianie `.docx` |
 | `narzedzia/popraw_szablon.py` | drobiazgi, których nie da się wyklikać na stałe: tabulator i wcięcie wiszące w spisie treści, podpis przypięty do dołu strony |
 | `narzedzia/instalacja_testowa.py` | odtwarza instalację brata — zip z GitHuba, bez `.git` |
@@ -114,23 +133,38 @@ jest w samej aplikacji, w zakładce „Jak edytować szablon”.
 `auto_numer` (wzorzec `{numer3}/{rok}` daje `001/2026`; katalog operatu nazywa się
 wtedy `001.2026`, bo ukośnika w nazwie folderu być nie może),
 `teryt` (kaskada województwo → powiat → jednostka ewidencyjna → obręb; do dokumentu
-wchodzą nazwy i identyfikatory TERYT osobnymi znacznikami).
+wchodzą nazwy i identyfikatory TERYT osobnymi znacznikami),
+`wybor_wielokrotny` (lista z checkboxami; `zawsze` to pozycje obowiązkowe, a `wzor_wartosci`
+przepuszcza zaznaczenia przez wzorzec — tak powstaje lista plików GML dla ośrodka),
+`dokumenty` (które dodatkowe pliki Worda wygenerować razem z operatem; lista bierze się
+z zawartości `szablony/`, a `tylko` decyduje, które pozycje trafiają do którego pola).
 
 Dane, które nie zmieniają się między robotami — nazwisko geodety, numer uprawnień,
 pieczątka firmy — wpisuje się na stałe w szablon Worda, a nie w program.
 
-## Zrobienie pliku .exe (opcjonalnie)
-
-Żeby brat nie musiał instalować Pythona:
+## Testy
 
 ```bash
-.venv/bin/pip install pyinstaller
-.venv/bin/pyinstaller --name GeneratorOperatow --onefile --add-data "app/web:app/web" uruchom.py
+.venv/bin/pip install -r requirements-dev.txt
+.venv/bin/pytest
 ```
 
-Katalogi `szablony/`, `wyniki/` i `dane/` zostają obok `.exe`. Przy pakowaniu pamiętaj
-o `--hidden-import win32com.client`, `--hidden-import pythoncom` (Word przez COM)
-oraz o tym, że `pypdfium2` wnosi własną bibliotekę binarną.
+Chodzą kilkanaście sekund, bez sieci i bez Worda. Testy ścieżki wordowej stoją za markerem
+`word` i uruchamia się je ręcznie na Windowsie z Office (`pytest -m word`) — na runnerze
+GitHuba nie ma czym ich wykonać. Reszta jedzie automatycznie przy każdym pushu.
+
+Zasada: **żadna zmiana kodu bez zielonego `pytest`**, nowa funkcja przychodzi z testem
+w tym samym commicie. Szczegóły i przepis na testy Worda są w [CLAUDE.md](CLAUDE.md).
+
+## Pakowanie do .exe — odpuszczone
+
+Rozważane i **porzucone 02.08.2026**: instalacja przez `start.bat` działa i sama się
+aktualizuje, więc `.exe` rozwiązywałoby problem, którego nie ma, a dokładało ostrzeżenia
+SmartScreen i osobną ścieżkę budowania. **Python zostaje wymaganiem wstępnym.**
+
+Obsługa `sys.frozen` w `app/config.py` zostaje jako punkt zaczepienia, gdyby temat wrócił —
+wtedy pamiętaj o `--hidden-import win32com.client` i `--hidden-import pythoncom` (bez nich
+konwersja przez Worda nie ruszy) oraz o tym, że `pypdfium2` wnosi własną bibliotekę binarną.
 
 ## Kopia zapasowa
 

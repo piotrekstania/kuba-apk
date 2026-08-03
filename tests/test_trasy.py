@@ -252,6 +252,28 @@ def test_menu_nie_ma_juz_pozycji_zloz_pdf(klient):
     assert '<a href="/scal">' not in tresc
 
 
+def test_lista_ma_komplet_akcji_co_strona_operatu(klient):
+    """Na liście ma być to samo, co po wejściu w operat — w tym „Popraw”.
+
+    Bez tego poprawka literówki wymagała wejścia w dokument tylko po to, żeby
+    kliknąć drugi raz. „Popraw” wraca do tego samego operatu (`?edytuj=`),
+    a „Powiel” zakłada nowy z tymi samymi danymi (`?kopiuj=`) — to są dwie
+    różne rzeczy i obie muszą być pod ręką.
+    """
+    _dodaj_operat(klient)
+    klient.post("/generuj/spis_tresci_wzor", data=FORMULARZ, follow_redirects=False)
+    wpis = db.dokumenty()[0]
+
+    lista = klient.get("/").text
+    strona_operatu = klient.get(f"/dokument/{wpis['id']}").text
+
+    for adres in (f'href="/scal/{wpis["katalog"]}"',
+                  f'href="/nowy/spis_tresci_wzor?edytuj={wpis["id"]}"',
+                  f'href="/nowy/spis_tresci_wzor?kopiuj={wpis["id"]}"'):
+        assert adres in lista, f"brakuje na liście: {adres}"
+        assert adres in strona_operatu, f"brakuje na stronie operatu: {adres}"
+
+
 def test_skladanie_zapamietuje_kolejnosc_i_obrot(klient):
     """Drugie wejście na stronę składania ma zaczynać tam, gdzie brat skończył."""
     _dodaj_operat(klient)

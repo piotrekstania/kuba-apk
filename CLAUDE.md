@@ -180,10 +180,11 @@ też brat. Interfejs w całości po polsku.
    działała także wtedy, gdy użytkownik ma otwarty zwykły LibreOffice.
 5. `domyslnie` przy polu typu `auto_numer` to **wzorzec numeru** (`{numer3}/{rok}`), a nie
    wartość startowa — nie wolno go wstawiać do formularza jako `value`.
-6. **COM trzeba zainicjować w każdym wątku.** Trasy FastAPI zapisane jako `def` (a takie są
-   `/pobierz/*/pdf` i `/scal`) wykonują się w puli wątków, nie w głównym — bez
-   `pythoncom.CoInitialize()` leci `CoInitialize has not been called`. Stąd `_com()`
-   w `app/pdf.py`.
+6. **COM trzeba zainicjować w każdym wątku.** Konwersja jedzie z trzech miejsc i żadne
+   nie jest głównym wątkiem: trasa `/miniatura/...` (zapisana jako `def`, więc FastAPI
+   puszcza ją w puli wątków), przygotowanie podglądów w tle (`threading.Thread`
+   w `/generuj`) i `POST /scal/{nazwa}`. Bez `pythoncom.CoInitialize()` leci
+   `CoInitialize has not been called` — stąd `_com()` w `app/pdf.py`.
 7a. **Numer wersji to `rok.miesiąc.dzień.licznik` — data ma być z dnia wydania,
    a licznik liczy wydania tego dnia i zaczyna się od 1.** Łatwo o tym zapomnieć przy
    serii poprawek ciągnącej się po północy: numery doszły do `2026.07.31.40`, choć
@@ -387,7 +388,7 @@ Wykrywanie konwertera PDF: Word (COM) → LibreOffice zainstalowany → LibreOff
 w katalogu `libreoffice/` obok programu. Stan widać w prawym górnym rogu aplikacji.
 
 Ścieżka wordowa sprawdzona na Windows 11 + Office 16.0 (Python 3.14): formularz → `.docx` →
-PDF przez trasę `/pobierz/{id}/pdf` (ok. 1,5 s) → `/scal`. Po konwersji nie zostaje proces
+PDF (ok. 1,5 s na dokument) → złożenie operatu przez `POST /scal/{katalog}`. Po konwersji nie zostaje proces
 `WINWORD.EXE`. Gdy Word wywali się w trakcie, kod próbuje jeszcze LibreOffice’em (jeśli jest),
 a jak go nie ma — pokazuje po polsku, że Word czeka pewnie z otwartym oknem dialogowym.
 
