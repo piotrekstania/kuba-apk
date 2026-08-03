@@ -50,6 +50,18 @@ def _zaczekaj_na_watki(wczesniejsze: set[threading.Thread]) -> None:
                     "piszą tam, gdzie akurat pokazują ścieżki modułów")
 
 
+@pytest.fixture(autouse=True)
+def bez_wysylki_statystyk(monkeypatch):
+    """Żaden test nie wysyła niczego do arkusza autora.
+
+    Autouse i przez **ten sam wyłącznik co w programie**, więc chroni wszystkie testy
+    naraz — także te, które stawiają własny TestClient (`test_word.py`) i przez to
+    uruchamiają cykl życia aplikacji razem z wątkiem wysyłki.
+    """
+    from app import raport
+    monkeypatch.setenv(raport.WYLACZNIK, "1")
+
+
 # --- pomocnicze budowanie dokumentów -----------------------------------------
 
 def zbuduj_docx(sciezka: Path, akapity: list[str | tuple], **kwargs) -> Path:
@@ -90,7 +102,7 @@ def srodowisko(tmp_path, monkeypatch):
     `monkeypatch` powstaje przed tą fixture, więc jego sprzątanie idzie po naszym
     i przez cały czas oczekiwania ścieżki są jeszcze podmienione.
     """
-    from app import aktualizacja, config, db, generator, main, operaty, pdf, szablony
+    from app import aktualizacja, config, db, generator, main, operaty, pdf, raport, szablony
 
     watki_przed = set(threading.enumerate())
 
@@ -120,6 +132,10 @@ def srodowisko(tmp_path, monkeypatch):
     monkeypatch.setattr(aktualizacja, "BAZA", tmp_path)
     monkeypatch.setattr(aktualizacja, "DANE", dane_kat)
     monkeypatch.setattr(aktualizacja, "BAZA_DANYCH", baza)
+    monkeypatch.setattr(raport, "BAZA", tmp_path)
+    monkeypatch.setattr(raport, "DANE", dane_kat)
+    monkeypatch.setattr(raport, "PLIK_ID", dane_kat / "instalacja.txt")
+    monkeypatch.setattr(raport, "PLIK_ETYKIETY", dane_kat / "etykieta.txt")
     monkeypatch.setattr(aktualizacja, "PLIK_WERSJI", tmp_path / "WERSJA")
     monkeypatch.setattr(aktualizacja, "KOPIE", dane_kat / "kopie")
     monkeypatch.setattr(aktualizacja, "ZNACZNIK_NOWOSCI", dane_kat / "co_nowego.txt")

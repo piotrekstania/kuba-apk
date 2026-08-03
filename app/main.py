@@ -24,8 +24,8 @@ from fastapi.staticfiles import StaticFiles
 from fastapi.templating import Jinja2Templates
 from starlette.exceptions import HTTPException as BladHTTP
 
-from . import (aktualizacja, db, generator, miniatury, operaty, pdf, statystyki,
-               szablony, teryt, zmiany)
+from . import (aktualizacja, db, generator, miniatury, operaty, pdf, raport,
+               statystyki, szablony, teryt, zmiany)
 from .config import DANE, WEB, WYNIKI
 
 
@@ -43,6 +43,19 @@ def _pierwsze_pobranie_teryt() -> None:
         pass
 
 
+def _wyslij_statystyki() -> None:
+    """Trzy liczby do arkusza autora — raz na uruchomienie, w tle i po cichu.
+
+    W osobnym wątku z tego samego powodu co pobieranie TERYT-u: start programu nie
+    ma prawa czekać na cudzy serwer. Wyjątek połykamy tutaj, a nie tylko w `raport`,
+    żeby żaden ślad stosu nie wyszedł bratu do konsoli.
+    """
+    try:
+        raport.wyslij(aktualizacja.wersja_lokalna()[0], statystyki.podsumowanie())
+    except Exception:
+        pass
+
+
 @asynccontextmanager
 async def cykl_zycia(_: FastAPI):
     db.init()
@@ -50,6 +63,7 @@ async def cykl_zycia(_: FastAPI):
     # zobaczyłby „0 operatów”, mając ich pięćdziesiąt. Robi się to raz.
     statystyki.zasiej_z_historii()
     threading.Thread(target=_pierwsze_pobranie_teryt, daemon=True).start()
+    threading.Thread(target=_wyslij_statystyki, daemon=True).start()
     yield
 
 
