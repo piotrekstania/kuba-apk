@@ -3,6 +3,10 @@
 Co doszło w kolejnych wersjach programu. Ten sam opis pokazuje się raz, na stronie
 głównej, zaraz po tym jak program sam się zaktualizuje.
 
+## 2026.08.03.4 — 2026-08-03
+
+Uzupełnienie poprzedniej wersji: razem z trzema liczbami program wysyła teraz także nazwę tego komputera — po niej brat odróżnia Twoje uruchomienia od swoich testowych. Jeśli wolisz, żeby wysyłał co innego, wpisz dowolny tekst do pliku dane\etykieta.txt. Z Twoich operatów nadal nie wychodzi nic.
+
 ## 2026.08.03.3 — 2026-08-03
 
 Program wysyła teraz bratu trzy liczby ze stopki — ile operatów, dokumentów Worda i złożonych PDF-ów zrobiłeś — razem z numerem wersji. Dzięki temu wie, że wszystko u Ciebie działa, bez dopytywania. Nic z Twoich operatów nie wychodzi: ani numerów działek, ani nazwisk, ani numerów ksiąg wieczystych. Szczegóły są w Pomocy, w sekcji „Co program o sobie wysyła”.

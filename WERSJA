@@ -1,2 +1,2 @@
-2026.08.03.3
-Program wysyła teraz bratu trzy liczby ze stopki — ile operatów, dokumentów Worda i złożonych PDF-ów zrobiłeś — razem z numerem wersji. Dzięki temu wie, że wszystko u Ciebie działa, bez dopytywania. Nic z Twoich operatów nie wychodzi: ani numerów działek, ani nazwisk, ani numerów ksiąg wieczystych. Szczegóły są w Pomocy, w sekcji „Co program o sobie wysyła”.
+2026.08.03.4
+Uzupełnienie poprzedniej wersji: razem z trzema liczbami program wysyła teraz także nazwę tego komputera — po niej brat odróżnia Twoje uruchomienia od swoich testowych. Jeśli wolisz, żeby wysyłał co innego, wpisz dowolny tekst do pliku dane\etykieta.txt. Z Twoich operatów nadal nie wychodzi nic.
