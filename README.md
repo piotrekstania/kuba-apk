@@ -134,5 +134,20 @@ oraz o tym, że `pypdfium2` wnosi własną bibliotekę binarną.
 
 ## Kopia zapasowa
 
-Wystarczy skopiować `dane/` — siedzi tam historia, numeracja i pobrane dane TERYT.
-Szablony i kod odtwarzają się z repozytorium.
+Kopiuj **`wyniki/` i `dane/`** — oba są nie do odtworzenia.
+
+**`wyniki/` to same operaty i to jest najważniejszy katalog w całym programie.**
+Leżą w nim nie tylko pliki wygenerowane z formularza: do katalogu operatu dokłada się
+mapy, szkice, skany, wypisy i wykaz współrzędnych z C-Geo. Tych plików program nigdy
+nie widział i nie ma ich skąd wziąć. W środku siedzi też `operat.json` — dane roboty
+i zapamiętany układ kafelków przy składaniu PDF-a.
+
+**`dane/`** to historia, licznik numeracji i pobrane dane TERYT. Bez niego program
+działa dalej, ale numeracja operatów zaczyna się od nowa, a listy TERYT trzeba
+ściągnąć jeszcze raz.
+
+Odtwarzalne z repozytorium są **tylko kod i szablony**. Nie licz na odtworzenie
+dokumentów z historii w bazie: baza pamięta, co było wpisane w formularzu, ale formatki
+Worda są nadpisywane przy każdej aktualizacji, więc dokument wygenerowany ponownie za rok
+może wyglądać inaczej niż ten, który poszedł do ośrodka. Operat ma zostać taki, jaki
+został złożony.
