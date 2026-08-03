@@ -1,9 +1,12 @@
 """Wysyłka trzech liczb do arkusza autora — żeby wiedział, czy program żyje.
 
-Co wychodzi z komputera brata: identyfikator instalacji, etykieta, numer wersji
-i **trzy sumy** (operaty, dokumenty, złożone PDF-y). Nic więcej. Ani numeru operatu,
-ani działki, ani nazwiska, ani nazwy pliku, ani ścieżki — po tym, co wysyłamy, nie da
-się powiedzieć nic o żadnej robocie. Brat wie, że to się dzieje; jest o tym w pomocy.
+Co wychodzi z komputera brata: identyfikator instalacji, etykieta (domyślnie **nazwa
+komputera**), numer wersji i **trzy sumy** (operaty, dokumenty, złożone PDF-y). Nic
+więcej. Ani numeru operatu, ani działki, ani nazwiska klienta, ani nazwy pliku, ani
+ścieżki — po tym, co wysyłamy, nie da się powiedzieć nic o żadnej robocie.
+
+Nazwa komputera bywa imieniem właściciela (`Kuba-PC`), więc jest daną osobową — brat
+musi o niej wiedzieć, a nie się domyślić. Jest o tym w pomocy i w opisie wydania.
 
 Dwie decyzje, które zdejmują większość problemów:
 
@@ -18,6 +21,7 @@ Stoi na samej bibliotece standardowej — tak jak `teryt.py` i `aktualizacja.py`
 from __future__ import annotations
 
 import os
+import platform
 import urllib.parse
 import urllib.request
 import uuid
@@ -63,9 +67,17 @@ def identyfikator() -> str:
 def etykieta() -> str:
     """Opis instalacji: z pliku, a gdy go nie ma — rozpoznany automatycznie.
 
-    Kopię roboczą gita poznajemy po katalogu `.git` obok programu. Dzięki temu maszyna
-    deweloperska oznacza się sama i nie trzeba pamiętać o wpisywaniu etykiet tam, gdzie
-    i tak wszystko się zmienia.
+    Kolejność jest celowa:
+
+    1. `dane/etykieta.txt`, jeśli ktoś wpisał coś ręcznie — zawsze wygrywa,
+    2. **nazwa komputera** (`Kuba-PC`), bo bez niej wszystkie nieopisane instalacje
+       wyglądają w arkuszu tak samo i trzeba je rozróżniać po identyfikatorze,
+    3. dopisek „kopia robocza”, gdy obok programu jest katalog `.git` — maszyna
+       deweloperska oznacza się sama, bez pamiętania o etykietach.
+
+    Nazwa komputera zwykle zawiera imię właściciela, więc **jest to dana osobowa** —
+    dlatego mówimy o niej wprost w pomocy (sekcja „Co program o sobie wysyła”)
+    i w opisie wydania, a nie tylko w kodzie.
     """
     try:
         wpisana = PLIK_ETYKIETY.read_text(encoding="utf-8").strip()
@@ -73,7 +85,16 @@ def etykieta() -> str:
             return wpisana[:60]
     except OSError:
         pass
-    return "kopia-robocza" if (BAZA / ".git").exists() else ""
+
+    try:
+        # platform.node() bierze nazwę z systemu i — w odróżnieniu od socket.getfqdn() —
+        # nie odpytuje przy tym DNS-u, więc nie zawiesi się przy kiepskiej sieci
+        nazwa = platform.node().strip()
+    except Exception:
+        nazwa = ""
+    if (BAZA / ".git").exists():
+        return (f"{nazwa} (kopia robocza)" if nazwa else "kopia robocza")[:60]
+    return nazwa[:60]
 
 
 def wyslij(wersja: str, podsumowanie: dict[str, int]) -> bool:

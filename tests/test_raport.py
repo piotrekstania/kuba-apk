@@ -85,19 +85,39 @@ def test_identyfikator_nie_zdradza_komputera(srodowisko):
     assert identyfikator.isalnum() and 8 <= len(identyfikator) <= 32
 
 
-def test_kopia_robocza_gita_oznacza_sie_sama(srodowisko):
-    """Instalacja deweloperska ma się wyróżnić bez pamiętania o etykietach."""
-    assert raport.etykieta() == ""
+def test_nieopisana_instalacja_podaje_nazwe_komputera(srodowisko, monkeypatch):
+    """Bez tego wszystkie nieopisane instalacje wyglądają w arkuszu tak samo."""
+    monkeypatch.setattr(raport.platform, "node", lambda: "Kuba-PC")
 
+    assert raport.etykieta() == "Kuba-PC"
+
+
+def test_kopia_robocza_gita_oznacza_sie_sama(srodowisko, monkeypatch):
+    """Maszyna deweloperska ma się wyróżnić bez pamiętania o etykietach."""
+    monkeypatch.setattr(raport.platform, "node", lambda: "PIOTR-PC")
     (srodowisko.katalog / ".git").mkdir()
-    assert raport.etykieta() == "kopia-robocza"
+
+    assert raport.etykieta() == "PIOTR-PC (kopia robocza)"
 
 
-def test_wpisana_etykieta_ma_pierwszenstwo(srodowisko):
+def test_wpisana_etykieta_ma_pierwszenstwo(srodowisko, monkeypatch):
+    monkeypatch.setattr(raport.platform, "node", lambda: "Kuba-PC")
     (srodowisko.katalog / ".git").mkdir()
     raport.PLIK_ETYKIETY.write_text("  test-piotr\n", encoding="utf-8")
 
     assert raport.etykieta() == "test-piotr"
+
+
+def test_brak_nazwy_komputera_nie_wywala_wysylki(srodowisko, monkeypatch):
+    """`platform.node()` potrafi oddać pustkę albo rzucić — to nie jest powód do awarii."""
+    monkeypatch.setattr(raport.platform, "node", lambda: "")
+    assert raport.etykieta() == ""
+
+    def wybuchnij():
+        raise OSError("brak nazwy")
+
+    monkeypatch.setattr(raport.platform, "node", wybuchnij)
+    assert raport.etykieta() == ""
 
 
 # --- nic nie może przewrócić programu ---------------------------------------
