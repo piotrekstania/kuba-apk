@@ -3,6 +3,10 @@
 Co doszło w kolejnych wersjach programu. Ten sam opis pokazuje się raz, na stronie
 głównej, zaraz po tym jak program sam się zaktualizuje.
 
+## 2026.08.03.1 — 2026-08-03
+
+Ta wersja nie zmienia niczego w samym programie. Jedna rzecz warta zapamiętania: robiąc kopię zapasową, kopiuj oba katalogi — „wyniki” i „dane”. W „wyniki” leżą całe operaty razem z mapami, szkicami i skanami, które sam do nich dokładasz, a tego nie da się odtworzyć z niczego innego.
+
 ## 2026.08.02.15 — 2026-08-02
 
 Przy polu położenia zniknął rozwijany spis znaczników do Worda i podpowiedź nad listami — to samo jest w Pomocy, a formularz ma być do wypełniania, nie do czytania instrukcji.
