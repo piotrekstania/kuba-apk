@@ -256,3 +256,43 @@ def test_nieczytelna_lista_w_paczce_nie_wywraca_aktualizacji(tmp_path):
     (kod / "aktualizacja.py").write_text("to nie jest ( poprawny python", encoding="utf-8")
 
     assert aktualizacja._lista_z_paczki(tmp_path) == aktualizacja.AKTUALIZOWANE
+
+
+def test_stare_kopie_znikaja_a_najnowsze_zostaja(srodowisko, monkeypatch):
+    """Kopia powstaje przed KAŻDĄ aktualizacją, a wydań bywa kilkanaście dziennie.
+
+    Jedna waży ~1 MB, u brata z obrębami całej Polski ~5 MB — bez sprzątania katalog
+    `dane/kopie/` rósłby bez końca. Ratunkowa jest ostatnia: gdy aktualizacja coś
+    zepsuje, widać to od razu.
+    """
+    monkeypatch.setattr(aktualizacja, "ILE_KOPII", 3)
+    (srodowisko.katalog / "uruchom.py").write_text("# kod", encoding="utf-8")
+
+    for numer in range(1, 7):                       # sześć aktualizacji pod rząd
+        katalog = aktualizacja.KOPIE / f"2026080{numer}-100000-przed-2026.08.0{numer}"
+        katalog.mkdir(parents=True)
+        (katalog / "uruchom.py").write_text(f"# wersja {numer}", encoding="utf-8")
+    aktualizacja._sprzataj_kopie()
+
+    zostaly = sorted(k.name for k in aktualizacja.KOPIE.iterdir() if k.is_dir())
+    assert len(zostaly) == 3
+    assert zostaly[-1].endswith("2026.08.06"), "skasowana została najnowsza kopia"
+    assert not any("2026.08.01" in n for n in zostaly), "najstarsza miała zniknąć"
+
+
+def test_sprzatanie_nie_rusza_kopii_bazy_z_migracji(srodowisko, monkeypatch):
+    """W tym samym katalogu leżą pojedyncze pliki .sqlite3 sprzed migracji schematu —
+    sprząta je `db`, po swojemu, i aktualizator nie ma prawa ich tknąć."""
+    monkeypatch.setattr(aktualizacja, "ILE_KOPII", 1)
+    aktualizacja.KOPIE.mkdir(parents=True, exist_ok=True)
+    (aktualizacja.KOPIE / "operaty-schemat1-20260801-100000.sqlite3").write_bytes(b"baza")
+    for numer in (1, 2):
+        (aktualizacja.KOPIE / f"2026080{numer}-100000-przed-2026.08.0{numer}").mkdir()
+
+    aktualizacja._sprzataj_kopie()
+
+    assert (aktualizacja.KOPIE / "operaty-schemat1-20260801-100000.sqlite3").exists()
+
+
+def test_brak_katalogu_kopii_nie_wywala_sprzatania(srodowisko):
+    aktualizacja._sprzataj_kopie()          # katalogu jeszcze nie ma — ma przejść cicho

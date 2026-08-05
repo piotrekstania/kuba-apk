@@ -40,6 +40,7 @@ LIMIT_CZASU = 10                       # s — offline nie może blokować start
 
 PLIK_WERSJI = BAZA / "WERSJA"
 KOPIE = DANE / "kopie"
+ILE_KOPII = 5                          # tyle ostatnich kopii sprzed aktualizacji zostaje
 ZNACZNIK_NOWOSCI = DANE / "co_nowego.txt"   # czyta go strona główna, żeby pokazać komunikat
 
 # Co podmieniamy przy aktualizacji: kod i szablony. `szablony` są na tej liście
@@ -97,6 +98,26 @@ def wersja_zdalna() -> tuple[str, str] | None:
     return None
 
 
+def _sprzataj_kopie() -> None:
+    """Zostawia `ILE_KOPII` ostatnich kopii sprzed aktualizacji, starsze kasuje.
+
+    Bez tego katalog rośnie bez końca, bo kopia powstaje **przed każdą** aktualizacją.
+    Jedna waży ~1 MB (kod, formatki, baza), a u kogoś, kto pobrał obręby całej Polski,
+    ~5 MB — baza rośnie wtedy do 4,7 MB. Trzynaście wydań jednego dnia (a tyle się
+    zdarzyło) to kilkanaście megabajtów, których nikt nigdy nie ogląda.
+
+    Kasujemy najstarsze, bo ratunkowa jest zawsze ta ostatnia: gdy aktualizacja coś
+    zepsuje, widać to od razu, a nie po dziesięciu wydaniach. Nazwa zaczyna się od
+    znacznika czasu `%Y%m%d-%H%M%S`, więc sortowanie po nazwie jest chronologiczne.
+    """
+    try:
+        kopie = sorted(k for k in KOPIE.iterdir() if k.is_dir() and "-przed-" in k.name)
+    except OSError:
+        return
+    for stara in kopie[:-ILE_KOPII]:
+        shutil.rmtree(stara, ignore_errors=True)
+
+
 def _kopia_zapasowa(wersja: str) -> Path:
     """Baza + obecny kod lądują w dane/kopie/ — jest z czego wrócić, gdy coś padnie."""
     katalog = KOPIE / f"{datetime.now():%Y%m%d-%H%M%S}-przed-{wersja}"
@@ -112,6 +133,7 @@ def _kopia_zapasowa(wersja: str) -> Path:
                             ignore=shutil.ignore_patterns("__pycache__"))
         elif zrodlo.exists():
             shutil.copy2(zrodlo, katalog / nazwa)
+    _sprzataj_kopie()
     return katalog
 
 

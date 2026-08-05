@@ -112,6 +112,9 @@ def polaczenie():
         con.close()
 
 
+ILE_KOPII_BAZY = 5      # tyle ostatnich kopii sprzed migracji zostaje w dane/kopie/
+
+
 def _kopia_przed_migracja(wersja: int) -> None:
     if not BAZA_DANYCH.exists():
         return
@@ -119,6 +122,15 @@ def _kopia_przed_migracja(wersja: int) -> None:
     katalog.mkdir(parents=True, exist_ok=True)
     shutil.copy2(BAZA_DANYCH,
                  katalog / f"operaty-schemat{wersja}-{datetime.now():%Y%m%d-%H%M%S}.sqlite3")
+
+    # Starsze kasujemy — inaczej `dane/kopie/` rośnie bez końca, a u brata baza
+    # z obrębami całej Polski waży ~4,7 MB. Ratunkowa jest ta ostatnia: gdyby migracja
+    # coś zepsuła, widać to przy pierwszym uruchomieniu, a nie po pięciu kolejnych.
+    # Nazwa ma na końcu znacznik czasu, a numer schematu tylko rośnie, więc sortowanie
+    # po nazwie jest chronologiczne.
+    stare = sorted(katalog.glob("operaty-schemat*.sqlite3"))[:-ILE_KOPII_BAZY]
+    for kopia in stare:
+        kopia.unlink(missing_ok=True)
 
 
 def init() -> None:

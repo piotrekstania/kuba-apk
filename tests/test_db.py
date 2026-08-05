@@ -143,3 +143,18 @@ def test_ustawienia_zapominaja_skasowane_klucze(srodowisko):
     db.zastap_ustawienia({"a": "1", "b": "2"})
     db.zastap_ustawienia({"a": "3"})
     assert db.wczytaj_ustawienia() == {"a": "3"}
+
+
+def test_stare_kopie_bazy_znikaja(srodowisko, monkeypatch):
+    """Kopie sprzed migracji też nie mogą rosnąć bez końca — baza brata to ~4,7 MB."""
+    monkeypatch.setattr(db, "ILE_KOPII_BAZY", 2)
+    katalog = srodowisko.dane / "kopie"
+    katalog.mkdir(parents=True, exist_ok=True)
+    for numer in range(1, 5):
+        (katalog / f"operaty-schemat{numer}-2026080{numer}-100000.sqlite3").write_bytes(b"x")
+
+    db._kopia_przed_migracja(9)                      # piąta kopia, robiona na żywo
+
+    zostaly = sorted(p.name for p in katalog.glob("operaty-schemat*.sqlite3"))
+    assert len(zostaly) == 2
+    assert zostaly[-1].startswith("operaty-schemat9-"), "świeża kopia została skasowana"

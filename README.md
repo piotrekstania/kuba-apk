@@ -77,6 +77,12 @@ Nietykalne przy aktualizacji: `dane/` (historia, liczniki numeracji, pobrane dan
 **i własne formatki użytkownika**) oraz `wyniki/` (gotowe dokumenty). Przed każdą podmianą
 leci kopia bazy i poprzedniej zawartości do `dane/kopie/`.
 
+W `dane/kopie/` zostaje **pięć ostatnich** kopii (`ILE_KOPII` w [app/aktualizacja.py](app/aktualizacja.py)),
+starsze kasują się same przy kolejnej aktualizacji. Bez tego katalog rósłby bez końca:
+jedna kopia to około 1 MB, a u kogoś z pobranymi obrębami całej Polski około 5 MB —
+przy kilkunastu wydaniach dziennie robią się z tego dziesiątki megabajtów, których nikt
+nigdy nie ogląda. Ratunkowa i tak jest zawsze ta ostatnia.
+
 **Szablony jadą razem z kodem.** Jest jeden katalog `szablony/`, wersjonowany w repozytorium
 i nadpisywany przy każdej aktualizacji — formatki Worda utrzymuje autor, nie użytkownik,
 więc poprawka w szablonie dociera do brata tak samo zwyczajnie jak poprawka w programie.
