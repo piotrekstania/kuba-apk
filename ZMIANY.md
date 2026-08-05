@@ -3,6 +3,10 @@
 Co doszło w kolejnych wersjach programu. Ten sam opis pokazuje się raz, na stronie
 głównej, zaraz po tym jak program sam się zaktualizuje.
 
+## 2026.08.06.3 — 2026-08-06
+
+Naprawione: poprawianie operatu przeniesionego wcześniej do archiwum zakładało nowy katalog o kolejnym numerze — poprawiasz 055, a robi się 060. Teraz wraca do tego samego numeru i odtwarza katalog pod starą nazwą, a licznik nie przeskakuje. Uwaga: numery, które już przeskoczyły, zostają jak są.
+
 ## 2026.08.06.2 — 2026-08-06
 
 Operat przeniesiony do archiwum jest teraz na liście oznaczony jako „w archiwum” i nie ma przy nim przycisku „Złóż PDF” — wcześniej przycisk był, ale po kliknięciu nic się nie działo. Zniknęły też podglądy PDF po operatach, których nie ma już w katalogu wyniki; wcześniej zostawały tam na zawsze po każdej archiwizacji.
