@@ -3,6 +3,10 @@
 Co doszło w kolejnych wersjach programu. Ten sam opis pokazuje się raz, na stronie
 głównej, zaraz po tym jak program sam się zaktualizuje.
 
+## 2026.08.06.1 — 2026-08-06
+
+Poprawka do poprzedniej wersji: sprzątanie starych kopii w katalogu dane\kopie faktycznie się teraz odbywa. Poprzednio kod trafiał do Ciebie, ale uruchamiał się dopiero przy kolejnej aktualizacji, więc katalog dalej rósł. Teraz porządki robią się przy każdym uruchomieniu programu — nadmiarowe kopie znikną same przy tym starcie.
+
 ## 2026.08.05.6 — 2026-08-05
 
 Porządki na dysku: w katalogu dane\kopie zostaje teraz pięć ostatnich kopii bezpieczeństwa, a starsze kasują się same. Wcześniej przybywała jedna przy każdej aktualizacji i nic ich nie usuwało — po kilkudziesięciu wersjach uzbierałyby się setki megabajtów. Kopie robią się nadal tak samo, przed każdą aktualizacją i przed każdą zmianą układu bazy.
