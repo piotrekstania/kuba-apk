@@ -7,10 +7,15 @@
   {# numer wersji w adresie: po aktualizacji przeglądarka pobiera nowy arkusz,
      zamiast trzymać stary z cache'u — brat nie będzie robił Ctrl+F5 #}
   <link rel="stylesheet" href="/static/style.css?v={{ wersja }}">
+  {# Ten sam plik służy za ikonę karty i za znak w nagłówku — jedno źródło, więc
+     nie da się ich rozjechać. SVG, bo skaluje się do każdego rozmiaru ikony. #}
+  <link rel="icon" type="image/svg+xml" href="/static/logo.svg?v={{ wersja }}">
 </head>
 <body>
 <header>
-  <a class="logo" href="/">Generator operatów</a>
+  <a class="logo" href="/">
+    <img src="/static/logo.svg?v={{ wersja }}" alt="" width="26" height="26">
+    Generator operatów</a>
   <nav>
     {# „Złóż PDF” nie ma tu własnej pozycji: to była druga lista tych samych operatów.
        Składanie zaczyna się przy konkretnym operacie — na liście albo na jego stronie. #}

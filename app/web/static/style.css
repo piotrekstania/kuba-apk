@@ -34,7 +34,9 @@ header {
   top: 0;
   z-index: 5;
 }
-.logo { font-weight: 700; text-decoration: none; color: var(--tekst); font-size: 17px; }
+.logo { font-weight: 700; text-decoration: none; color: var(--tekst); font-size: 17px;
+        display: flex; align-items: center; gap: 9px; }
+.logo img { display: block; }        /* bez tego linia bazowa tekstu dokłada pod ikoną odstęp */
 nav { display: flex; gap: 18px; align-items: center; }
 nav a { color: var(--szary); text-decoration: none; }
 nav a:hover { color: var(--akcent); }

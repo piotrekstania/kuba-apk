@@ -1,0 +1,20 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 32 32" role="img"
+     aria-label="Generator operatów">
+  <title>Generator operatów</title>
+  <!--
+    Znak punktu geodezyjnego: trójkąt z kropką w środku ciężkości. To symbol, który
+    geodeta rozpoznaje bez tłumaczenia, a przy tym składa się z dwóch kształtów —
+    dzięki temu czyta się także jako favicon w rozmiarze 16 px, gdzie wszystko
+    bardziej szczegółowe zlewa się w plamę.
+
+    Kolor to ten sam akcent co w interfejsie (zmienna „akcent” w style.css), żeby
+    ikona i program wyglądały na jedno. Uwaga: w komentarzu XML nie wolno użyć
+    dwóch myślników pod rząd — przeglądarka odmawia wtedy wyświetlenia całego pliku,
+    mówiąc tylko „nie da się zdekodować obrazu”.
+  -->
+  <rect width="32" height="32" rx="7" fill="#1f6feb"/>
+  <path d="M16 7.4 L26.2 24.8 L5.8 24.8 Z"
+        fill="none" stroke="#fff" stroke-width="2.6"
+        stroke-linejoin="round"/>
+  <circle cx="16" cy="19" r="2.4" fill="#fff"/>
+</svg>

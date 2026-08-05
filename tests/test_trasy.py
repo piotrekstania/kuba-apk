@@ -247,6 +247,30 @@ def test_stara_strona_listy_odsyla_na_dokumenty(klient):
     assert odpowiedz.headers["location"] == "/"
 
 
+def test_logo_jest_poprawnym_plikiem_svg():
+    """SVG to XML — plik z błędem składni przeglądarka pokazuje jako pustą ramkę.
+
+    Komunikat, który przy tym daje („nie da się zdekodować obrazu”), nie mówi nic
+    o przyczynie. Najłatwiej o to w komentarzu: dwa myślniki pod rząd są w XML-u
+    zabronione i wywracają cały plik. Parser wyłapie to w ułamku sekundy.
+    """
+    import xml.etree.ElementTree as ET
+
+    from app.config import WEB
+    drzewo = ET.parse(WEB / "static" / "logo.svg")
+    assert drzewo.getroot().tag.endswith("svg")
+
+
+def test_strona_ma_logo_i_ikone_karty(klient):
+    odpowiedz = klient.get("/static/logo.svg")
+    assert odpowiedz.status_code == 200
+    assert "svg" in odpowiedz.headers["content-type"]
+
+    strona = klient.get("/").text
+    assert 'rel="icon"' in strona and "logo.svg" in strona
+    assert '<img src="/static/logo.svg' in strona
+
+
 def test_menu_nie_ma_juz_pozycji_zloz_pdf(klient):
     tresc = klient.get("/").text
     assert '<a href="/scal">' not in tresc
