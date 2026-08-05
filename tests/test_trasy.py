@@ -380,3 +380,37 @@ def test_otwarcie_katalogu_archiwalnego_operatu_tlumaczy_dlaczego(klient):
 
     assert "blad=" in odpowiedz.headers["location"]
     assert "archiwum" in unquote(odpowiedz.headers["location"])
+
+
+def test_poprawienie_operatu_z_archiwum_wraca_do_tego_samego_numeru(klient):
+    """Zgłoszone z użytkowania: „poprawiam 055, a robi się 060”.
+
+    Numer przy poprawianiu brał się z `operat.json` **leżącego w folderze**, a ten
+    pojechał do archiwum razem z katalogiem. Program uznawał więc poprawkę za nowy
+    operat: zakładał katalog obok i **zjadał kolejny numer z licznika** — czyli robił
+    dziurę w numeracji, której już nikt nie odzyska. Numer cały czas jest w historii.
+    """
+    import shutil
+
+    _dodaj_operat(klient)
+    klient.post("/generuj/spis_tresci_wzor", data=FORMULARZ, follow_redirects=False)
+    pierwszy = db.dokumenty()[0]
+    numer, katalog = pierwszy["nr_operatu"], pierwszy["katalog"]
+    shutil.rmtree(klient.srodowisko.wyniki / katalog)          # „przeniósł do archiwum”
+
+    klient.post(f"/generuj/spis_tresci_wzor?edytuj={pierwszy['id']}",
+                data=dict(FORMULARZ, pole__uwagi="poprawka"), follow_redirects=False)
+
+    wiersze = db.dokumenty()
+    assert len(wiersze) == 1, "poprawka założyła drugi wpis w historii"
+    assert wiersze[0]["nr_operatu"] == numer, "poprawka zmieniła numer operatu"
+    assert wiersze[0]["katalog"] == katalog
+    assert (klient.srodowisko.wyniki / katalog).is_dir(), \
+        "katalog nie został odtworzony pod starą nazwą"
+
+    # ...a licznik stoi w miejscu: następny nowy operat bierze kolejny numer, nie dalszy
+    klient.post("/generuj/spis_tresci_wzor", data=dict(FORMULARZ, pole__nr_roboty="GK.2.2026"),
+                follow_redirects=False)
+    nowy = [w for w in db.dokumenty() if w["nr_operatu"] != numer][0]
+    assert nowy["nr_operatu"].startswith("002/"), \
+        f"poprawka zjadła numer z licznika — nowy operat dostał {nowy['nr_operatu']}"

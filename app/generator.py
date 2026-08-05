@@ -167,9 +167,11 @@ def generuj(szablon: Szablon, dane: dict[str, Any], ustawienia: dict[str, str],
             poprzedni: dict[str, Any] | None = None) -> tuple[Path, dict, list[str]]:
     """Zakłada katalog operatu i wkłada do niego dokument główny.
 
-    `poprzedni` = opis operatu, który poprawiamy (z `operat.json`). Wtedy numer operatu
-    bierze się stamtąd, a nie z licznika, i wszystko ląduje w tym samym katalogu —
-    poprawianie dokumentu nie może zjadać kolejnych numerów.
+    `poprzedni` = opis operatu, który poprawiamy — zwykle z `operat.json`, a gdy folder
+    pojechał do archiwum, złożony z wpisu w historii (patrz `main.generuj`). Wtedy numer
+    operatu bierze się stamtąd, a nie z licznika, i wszystko ląduje w tym samym katalogu —
+    poprawianie dokumentu nie może zjadać kolejnych numerów. Wystarczą dwa klucze:
+    `nr_operatu` i `nr_roboty`.
 
     Zwraca (plik .docx, kontekst, ostrzeżenia do pokazania użytkownikowi).
     """

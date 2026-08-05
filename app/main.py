@@ -466,6 +466,13 @@ async def generuj(request: Request, identyfikator: str, edytuj: int | None = Non
     if poprawiany:
         katalog_poprzedni = operaty.katalog_po_nazwie(poprawiany["katalog"] or "")
         poprzedni_opis = operaty.opis(katalog_poprzedni) if katalog_poprzedni else None
+        if not (poprzedni_opis or {}).get("nr_operatu"):
+            # Operat przeniesiony do archiwum: `operat.json` pojechał razem z folderem,
+            # ale numer i tak znamy — siedzi w historii. Bez tego poprawka brała kolejny
+            # numer z licznika i zakładała nowy katalog obok: „poprawiam 055, a robi się
+            # 060”. Zjadała przy tym numer, którego już nikt nie odzyska.
+            poprzedni_opis = {"nr_operatu": poprawiany["nr_operatu"] or "",
+                              "nr_roboty": poprawiany["tytul"] or ""}
 
     try:
         plik, kontekst, ostrzezenia = generator.generuj(
