@@ -7,3 +7,6 @@ build/
 dist/
 *.spec
 ~$*
+# skrót z ikoną zakłada sobie start.bat przy pierwszym uruchomieniu — u każdego
+# wskazuje na jego własną ścieżkę, więc do repozytorium nie ma czego wrzucać
+*.lnk
