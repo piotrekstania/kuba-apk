@@ -69,6 +69,10 @@ footer p { margin: 4px 0; }
 
 h1 { font-size: 24px; margin: 0 0 6px; }
 h2 { font-size: 17px; margin: 32px 0 10px; }
+/* Podsekcja wewnątrz karty (`fieldset`) — np. dwie części karty TERYT. Mniejsza
+   od nagłówka strony, bo kartę nazywa już jej `legend`. */
+h3 { font-size: 15px; margin: 26px 0 8px; }
+fieldset > h3:first-of-type { margin-top: 4px; }
 p { margin: 6px 0; }
 .szary { color: var(--szary); }
 code { background: #eceff3; padding: 1px 5px; border-radius: 4px; font-size: 13px; }

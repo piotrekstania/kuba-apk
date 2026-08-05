@@ -263,6 +263,24 @@ def test_listy_formatek_nazywaja_dokument_a_nie_szablon(klient):
     assert ">Operat</option>" not in ustawienia
 
 
+def test_ustawienia_dziela_sie_na_karty(klient):
+    """Strona ma czytelne karty tematyczne, tak jak formularz operatu.
+
+    Kotwice `#formatki` i `#teryt` muszą zostać na kartach — prowadzą do nich linki
+    z Pomocy i z tabelki formatek w formularzu, a odesłanie w próżnię jest gorsze
+    niż brak odsyłacza.
+    """
+    _kategoria(klient.srodowisko)
+
+    strona = klient.get("/ustawienia").text
+
+    assert '<fieldset id="formatki">' in strona
+    assert "<legend>Własne formatki</legend>" in strona
+    assert '<fieldset id="teryt">' in strona
+    assert "<h3>Jednostki ewidencyjne</h3>" in strona
+    assert "<h3>Obręby dla całej Polski</h3>" in strona
+
+
 def test_wgranie_przez_formularz(klient):
     kategoria = _kategoria(klient.srodowisko)
     zrodlo = zbuduj_docx(klient.srodowisko.katalog / "z_dysku.docx",

@@ -4,7 +4,12 @@
 
 <h1>Ustawienia</h1>
 
-<h2 id="formatki">Własne formatki</h2>
+{# Karty jak w formularzu operatu: jeden `fieldset` na jeden temat. Kotwice
+   `#formatki` i `#teryt` zostają na kartach, bo prowadzą do nich linki z Pomocy
+   i z formularza. #}
+<fieldset id="formatki">
+  <legend>Własne formatki</legend>
+
 <p class="szary">Do każdego rodzaju dokumentu możesz dołożyć własne pliki Worda — choćby
   kilka — i przy każdym operacie wybrać, z którego skorzystać. Wybór zapamiętuje się
   do następnego razu. Formatki leżą w katalogu <code>dane\szablony</code>, więc
@@ -54,7 +59,12 @@
 <p class="szary">Nie masz jeszcze własnych formatek — program używa standardowych.</p>
 {% endif %}
 
-<h2 id="teryt">Jednostki ewidencyjne (TERYT)</h2>
+</fieldset>
+
+<fieldset id="teryt">
+  <legend>TERYT — jednostki ewidencyjne i obręby</legend>
+
+<h3>Jednostki ewidencyjne</h3>
 <p class="szary">Lista województw, powiatów i jednostek ewidencyjnych pochodzi z rejestru
   TERYT prowadzonego przez GUS, a obręby — z serwisu ULDK Głównego Urzędu Geodezji
   i Kartografii. Program pobiera ją sam przy pierwszym uruchomieniu i trzyma u siebie,
@@ -90,7 +100,7 @@
   </form>
 </div>
 
-<h2>Obręby dla całej Polski</h2>
+<h3>Obręby dla całej Polski</h3>
 <p class="szary">Normalnie obręby dociągają się same, gdy pierwszy raz wybierzesz daną gminę —
   trwa to ułamek sekundy i nic nie trzeba klikać. Tutaj możesz pobrać je
   <strong>z góry dla wszystkich jednostek ewidencyjnych w kraju</strong>, żeby potem
@@ -106,6 +116,8 @@
   <progress id="postep-pasek" value="0" max="100" hidden></progress>
   <p id="postep-opis" class="podpowiedz"></p>
 </div>
+
+</fieldset>
 
 <script>
 const pasek = document.getElementById('postep-pasek');
