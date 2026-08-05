@@ -211,3 +211,54 @@ def test_obroty_zerowe_nie_smieca_w_pliku(srodowisko):
     katalog, _ = operaty.zaloz("001/2026", "GK.1.2026", "spis_tresci_wzor", {})
     operaty.zapisz_uklad(katalog, ["a.pdf", "b.pdf"], {"a.pdf": 0, "b.pdf": 360})
     assert operaty.uklad(katalog)["obroty"] == {}
+
+
+# --- podglądy po operatach, których już nie ma -------------------------------
+
+def test_podglady_znikaja_gdy_operat_przeniesiony_do_archiwum(srodowisko, bez_konwertera):
+    """Brat archiwizuje operaty Eksploratorem — program się o tym nie dowiaduje.
+
+    Podglądy zostawały wtedy na zawsze: `dane/podglad/` rósł mimo znikających operatów.
+    Kasowanie przyciskiem w programie sprzątało po sobie, ale on tego przycisku
+    do archiwizacji nie używa.
+    """
+    import shutil
+
+    katalog, _ = operaty.zaloz("001/2026", "GK.1.2026", "spis_tresci_wzor", {})
+    (katalog / "spis_tresci.docx").write_bytes(b"x")
+    operaty.jako_pdf(katalog / "spis_tresci.docx")
+    podglad = operaty.PODGLADY / katalog.name
+    assert podglad.is_dir(), "podgląd w ogóle nie powstał — test sprawdza co innego"
+
+    shutil.rmtree(katalog)                       # „przeniósł do archiwum”
+
+    assert operaty.sprzataj_podglady() == 1
+    assert not podglad.exists()
+
+
+def test_sprzatanie_nie_rusza_podgladow_zywych_operatow(srodowisko, bez_konwertera):
+    katalog, _ = operaty.zaloz("001/2026", "GK.1.2026", "spis_tresci_wzor", {})
+    (katalog / "spis_tresci.docx").write_bytes(b"x")
+    operaty.jako_pdf(katalog / "spis_tresci.docx")
+
+    assert operaty.sprzataj_podglady() == 0
+    assert (operaty.PODGLADY / katalog.name).is_dir()
+
+
+def test_usuniecie_operatu_bez_katalogu_tez_kasuje_podglady(klient):
+    """Operat skasowany z historii, gdy jego folder już wcześniej zniknął z dysku."""
+    import shutil
+
+    from app import db
+
+    katalog, _ = operaty.zaloz("001/2026", "GK.1.2026", "spis_tresci_wzor", {})
+    (operaty.PODGLADY / katalog.name).mkdir(parents=True)
+    (operaty.PODGLADY / katalog.name / "spis_tresci.pdf").write_bytes(b"%PDF-1.4\n")
+    identyfikator = db.zapisz_dokument("spis_tresci_wzor", "GK.1.2026",
+                                       f"{katalog.name}/spis_tresci.docx", {},
+                                       katalog.name, "001/2026")
+    shutil.rmtree(katalog)                       # folder już przeniesiony do archiwum
+
+    klient.post(f"/dokument/{identyfikator}/usun", follow_redirects=False)
+
+    assert not (operaty.PODGLADY / "001.2026").exists()

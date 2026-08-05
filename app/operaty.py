@@ -286,9 +286,40 @@ def przygotuj_podglady(katalog: Path) -> int:
         return len(pdf.docx_na_pdf_wsad(do_zrobienia))
 
 
-def usun_podglady(katalog: Path) -> None:
+def usun_podglady(katalog: Path | str) -> None:
+    """Kasuje podglądy jednego operatu. Przyjmuje katalog albo samą jego nazwę.
+
+    Nazwa jest tu potrzebna, bo operat bywa kasowany z historii wtedy, gdy jego
+    katalogu już nie ma — a podglądy zostają i nikt po nich nie sprząta.
+    """
     import shutil
-    shutil.rmtree(PODGLADY / katalog.name, ignore_errors=True)
+    nazwa = katalog.name if isinstance(katalog, Path) else str(katalog)
+    if nazwa:
+        shutil.rmtree(PODGLADY / nazwa, ignore_errors=True)
+
+
+def sprzataj_podglady() -> int:
+    """Kasuje podglądy operatów, których już nie ma w `wyniki/`. Zwraca ile usunięto.
+
+    Program sprząta podglądy, gdy operat kasuje się przyciskiem — ale brat **przenosi
+    gotowe operaty na dysk archiwalny Eksploratorem**, a o tym program się nie dowiaduje.
+    PDF-y podglądów zostawały wtedy na zawsze: katalog `dane/podglad/` rósł mimo
+    znikających operatów.
+
+    Wołane przy każdym starcie programu, z tego samego powodu co sprzątanie kopii:
+    ma działać u kogoś, kto niczego nie kasuje w programie, tylko robi porządki
+    w Eksploratorze.
+
+    Podgląd odtwarza się sam przy następnym wejściu na stronę składania, więc jedyne
+    ryzyko pomyłki to jedna konwersja więcej — nie utrata danych.
+    """
+    import shutil
+    usuniete = 0
+    for katalog in PODGLADY.iterdir() if PODGLADY.is_dir() else []:
+        if katalog.is_dir() and not (WYNIKI / katalog.name).is_dir():
+            shutil.rmtree(katalog, ignore_errors=True)
+            usuniete += 1
+    return usuniete
 
 
 def _okno_katalogu(nazwa: str):

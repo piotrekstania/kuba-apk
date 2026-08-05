@@ -44,11 +44,17 @@ def _pierwsze_pobranie_teryt() -> None:
         pass
 
 
-def _sprzataj_kopie() -> None:
-    """Kasuje najstarsze kopie zapasowe — kodu i bazy. Nigdy nie blokuje startu."""
+def _porzadki() -> None:
+    """Sprzątanie po sobie przy starcie: stare kopie zapasowe i osierocone podglądy.
+
+    Wszystko tutaj jest samonaprawcze i nic nie blokuje startu — to porządki, a nie
+    funkcja programu. Wisi na starcie, a nie na aktualizacji, bo działać ma także
+    u kogoś, kto akurat niczego nie aktualizuje (patrz pułapka 7b).
+    """
     try:
         aktualizacja.sprzataj_kopie()
         db.sprzataj_kopie_bazy()
+        operaty.sprzataj_podglady()
     except Exception:
         pass
 
@@ -75,10 +81,7 @@ async def cykl_zycia(_: FastAPI):
     # Porządki w `dane/kopie/` przy każdym starcie, a nie tylko przy aktualizacji:
     # aktualizację wykonuje kod, który użytkownik już ma, więc sprzątanie wpięte
     # w nią zaczynałoby działać dopiero przy następnej (patrz pułapka 7b).
-    # Porządki w `dane/kopie/` przy każdym starcie, a nie tylko przy aktualizacji:
-    # aktualizację wykonuje kod, który użytkownik już ma, więc sprzątanie wpięte
-    # w nią zaczynałoby działać dopiero przy następnej (patrz pułapka 7b).
-    _sprzataj_kopie()
+    _porzadki()
     threading.Thread(target=_pierwsze_pobranie_teryt, daemon=True).start()
     threading.Thread(target=_wyslij_statystyki, daemon=True).start()
     yield
@@ -586,8 +589,11 @@ def usun(dokument_id: int):
     wiersz = db.dokument(dokument_id)
     if wiersz:
         katalog = operaty.katalog_po_nazwie(wiersz["katalog"] or "")
+        # Podglądy kasujemy po nazwie, nie po katalogu: operat bywa usuwany z historii
+        # wtedy, gdy jego folder brat już przeniósł do archiwum — a wtedy `katalog`
+        # jest `None` i podglądy zostawałyby na zawsze.
+        operaty.usun_podglady(wiersz["katalog"] or "")
         if katalog is not None:
-            operaty.usun_podglady(katalog)
             shutil.rmtree(katalog, ignore_errors=True)
         else:
             for nazwa in (wiersz["plik_docx"], wiersz["plik_pdf"]):
