@@ -349,7 +349,7 @@ def _warianty_pozycji(szablon: szablony.Szablon) -> list[dict[str, Any]]:
     pokazuje; gdy nie ma ich nigdzie, tabelka znika w całości. Formularz ma być
     do wypełniania, a nie do oglądania list z jedną pozycją.
     """
-    kolejnosc = [{"id": szablon.id, "nazwa": szablon.nazwa}]
+    kolejnosc = [{"id": szablon.id, "nazwa_dokumentu": szablon.nazwa_dokumentu}]
     kolejnosc += [dokument for lista in _listy_dokumentow(szablon).values()
                   for dokument in lista]
 

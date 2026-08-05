@@ -64,6 +64,11 @@ class Szablon:
     id: str                     # nazwa pliku bez rozszerzenia
     plik: Path
     nazwa: str
+    # Nazwa **samego dokumentu**, gdy różni się od nazwy szablonu. Kafelek na stronie
+    # głównej i tytuł formularza mówią „Operat”, bo tam zaczyna się cała robota,
+    # ale plik, który z tego szablonu powstaje, to spis treści — i tak ma się nazywać
+    # na listach formatek. Puste = ta sama nazwa co szablonu.
+    nazwa_dokumentu: str = ""
     opis: str = ""
     wzor_nazwy: str = "{id_szablonu}"
     licznik: str = ""           # nazwa licznika dla pola typu "auto_numer"
@@ -108,6 +113,8 @@ def wczytaj_szablon(plik: Path) -> Szablon:
         id=plik.stem,
         plik=plik,
         nazwa=meta.get("nazwa", _etykieta_z_klucza(plik.stem)),
+        nazwa_dokumentu=meta.get("nazwa_dokumentu", "") or meta.get(
+            "nazwa", _etykieta_z_klucza(plik.stem)),
         opis=meta.get("opis", ""),
         wzor_nazwy=meta.get("wzor_nazwy", plik.stem + "_{data_dokumentu}"),
         licznik=meta.get("licznik", ""),
@@ -164,14 +171,16 @@ def lista_skrocona() -> list[dict[str, str]]:
     for plik in sorted(SZABLONY.glob("*.docx")):
         if plik.name.startswith("~$"):
             continue
-        nazwa = _etykieta_z_klucza(plik.stem)
+        nazwa = nazwa_dokumentu = _etykieta_z_klucza(plik.stem)
         opis_json = plik.with_suffix(".json")
         if opis_json.exists():
             try:
-                nazwa = json.loads(opis_json.read_text(encoding="utf-8")).get("nazwa", nazwa)
+                meta = json.loads(opis_json.read_text(encoding="utf-8"))
+                nazwa = meta.get("nazwa", nazwa)
+                nazwa_dokumentu = meta.get("nazwa_dokumentu", "") or nazwa
             except ValueError:
                 pass
-        wynik.append({"id": plik.stem, "nazwa": nazwa})
+        wynik.append({"id": plik.stem, "nazwa": nazwa, "nazwa_dokumentu": nazwa_dokumentu})
     return wynik
 
 

@@ -238,7 +238,29 @@ def test_ustawienia_pokazuja_wgrane_formatki(klient):
     strona = klient.get("/ustawienia").text
 
     assert wariant["nazwa"] in strona
-    assert szablony.szablon_po_id(kategoria).nazwa in strona
+    assert szablony.szablon_po_id(kategoria).nazwa_dokumentu in strona
+
+
+def test_listy_formatek_nazywaja_dokument_a_nie_szablon(klient):
+    """Szablon nazywa się „Operat”, ale plik, który z niego powstaje, to spis treści.
+
+    Kafelek na stronie głównej i tytuł formularza mają zostać przy „Operacie” — tam
+    zaczyna się cała robota. Na listach formatek chodzi już o konkretny dokument.
+    """
+    klient.srodowisko.dodaj_szablon(
+        "spis_tresci_wzor", ["{{ nr_roboty }}"],
+        opis={**OPIS_OPERATU, "nazwa": "Operat", "nazwa_dokumentu": "Spis treści"})
+    _wgraj(klient.srodowisko, "spis_tresci_wzor")
+
+    strona_glowna = klient.get("/").text
+    formularz = klient.get("/nowy/spis_tresci_wzor").text
+    ustawienia = klient.get("/ustawienia").text
+
+    assert "Operat" in strona_glowna                    # kafelek zostaje operatem
+    assert "<h1>Operat</h1>" in formularz
+    assert "<td>Spis treści</td>" in formularz          # ...ale w tabelce formatek
+    assert "Spis treści" in ustawienia
+    assert ">Operat</option>" not in ustawienia
 
 
 def test_wgranie_przez_formularz(klient):

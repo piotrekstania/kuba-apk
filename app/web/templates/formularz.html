@@ -185,7 +185,7 @@
       <tr><th class="waski">Dokument</th><th>Formatka</th></tr>
       {% for pozycja in warianty_pozycji %}
       <tr>
-        <td>{{ pozycja.nazwa }}</td>
+        <td>{{ pozycja.nazwa_dokumentu }}</td>
         <td>
           <select name="wariant__{{ pozycja.id }}">
             <option value="">standardowa</option>

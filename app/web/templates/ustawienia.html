@@ -16,7 +16,7 @@
       <label for="kategoria">Rodzaj dokumentu</label>
       <select id="kategoria" name="kategoria">
         {% for rodzaj in rodzaje %}
-        <option value="{{ rodzaj.id }}">{{ rodzaj.nazwa }}</option>
+        <option value="{{ rodzaj.id }}">{{ rodzaj.nazwa_dokumentu }}</option>
         {% endfor %}
       </select>
     </div>
@@ -37,7 +37,7 @@
   {% for rodzaj in rodzaje %}
   {% for wariant in wlasne_formatki.get(rodzaj.id, []) %}
   <tr>
-    <td class="szary">{{ rodzaj.nazwa if loop.first else '' }}</td>
+    <td class="szary">{{ rodzaj.nazwa_dokumentu if loop.first else '' }}</td>
     <td>{{ wariant.nazwa }}</td>
     <td class="akcje">
       <form method="post" action="/ustawienia/formatki/usun"

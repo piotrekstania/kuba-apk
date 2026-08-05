@@ -3,8 +3,26 @@
 Lokalna aplikacja dla geodety: wypełniasz formularz w przeglądarce → dostajesz gotowy
 dokument Word, w razie potrzeby PDF, a PDF-y można ze sobą połączyć (mapy, skany, załączniki).
 
-Wszystko działa na jednym komputerze — serwer nasłuchuje tylko na `127.0.0.1`, nic nie
-wychodzi do internetu, dane właścicieli i numery KW nie lądują na żadnym hostingu.
+Serwer nasłuchuje tylko na `127.0.0.1`, a **dane z operatów nie opuszczają komputera** —
+nazwiska właścicieli i numery ksiąg wieczystych nie lądują na żadnym hostingu ani w chmurze.
+Dokumenty powstają lokalnie i lokalnie zostają.
+
+Program łączy się z siecią w czterech miejscach i tylko w tych czterech:
+
+| Kiedy | Co wychodzi |
+| --- | --- |
+| przy starcie — sprawdzenie aktualizacji | nic; pobierany jest plik `WERSJA`, a przy nowej wersji paczka `.zip` z GitHuba |
+| przy starcie — [raport do autora](app/raport.py) | trzy liczby ze stopki (ile operatów, dokumentów, złożonych PDF-ów), numer wersji, losowy identyfikator instalacji i **nazwa komputera** |
+| pierwsze uruchomienie — listy TERYT | nic; pobierany jest plik z GUS-u |
+| wybranie obrębu i sprawdzanie numeru działki | identyfikator jednostki i **numer działki** idą do ULDK (GUGiK) jako zapytanie |
+
+Nazwa komputera bywa imieniem właściciela (`Kuba-PC`), więc jest daną osobową — użytkownik
+ma o tym wiedzieć, a nie się domyślić. Jest o tym osobna sekcja w Pomocy w programie,
+nazwę można podmienić plikiem `dane/etykieta.txt`, a cały raport wyłączyć zmienną
+środowiskową `GENERATOR_BEZ_STATYSTYK=1`.
+
+Bez internetu wszystkie cztery ścieżki kończą się po cichu i program działa dalej —
+to warunek pracy w terenie.
 
 ## Uruchomienie
 
@@ -113,6 +131,7 @@ sama się doprowadzi do porządku (po uprzednim zrobieniu kopii).
 | `app/miniatury.py` | podglądy stron do układania kolejności przed sklejeniem |
 | `app/teryt.py` | jednostki TERYT z GUS-u, obręby i sprawdzanie działek w ULDK |
 | `app/statystyki.py` | liczniki w stopce: operaty, dokumenty, złożone PDF-y |
+| `app/raport.py` | wysyłka tych trzech liczb do arkusza autora (patrz wyżej) |
 | `app/zmiany.py` | historia wersji pokazywana w programie (czyta `ZMIANY.md`) |
 | `app/aktualizacja.py` | pobieranie nowej wersji z GitHuba, kopie zapasowe |
 | `WERSJA` | numer wersji + opis zmian; podbijasz go, wydając nową wersję |

@@ -1,5 +1,6 @@
 {
   "nazwa": "Operat",
+  "nazwa_dokumentu": "Spis treści",
   "opis": "Strona tytułowa i spis treści. Pozostałe dokumenty dokładają się do niego.",
   "glowny": true,
   "wzor_nazwy": "Operat_{nr_roboty}",
