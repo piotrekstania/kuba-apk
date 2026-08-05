@@ -3,6 +3,10 @@
 Co doszło w kolejnych wersjach programu. Ten sam opis pokazuje się raz, na stronie
 głównej, zaraz po tym jak program sam się zaktualizuje.
 
+## 2026.08.05.5 — 2026-08-05
+
+Program dostał ikonę także poza przeglądarką: przy pierwszym uruchomieniu obok „start.bat” powstaje skrót „Generator operatow” ze znakiem programu. Przeciągnij go na pulpit albo przypnij do paska zadań — uruchamiany z niego program pokazuje swój znak zamiast czarnej ikonki wiersza poleceń.
+
 ## 2026.08.05.4 — 2026-08-05
 
 Program ma swój znak: trójkąt z kropką, czyli symbol punktu geodezyjnego. Widać go w lewym górnym rogu obok nazwy i na karcie przeglądarki — łatwiej trafić w okno programu, gdy masz otwarte kilkanaście zakładek.
