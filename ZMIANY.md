@@ -3,6 +3,10 @@
 Co doszło w kolejnych wersjach programu. Ten sam opis pokazuje się raz, na stronie
 głównej, zaraz po tym jak program sam się zaktualizuje.
 
+## 2026.08.05.3 — 2026-08-05
+
+Ustawienia podzielone na karty tematyczne, tak jak formularz operatu: „Własne formatki” i „TERYT”, a w tej drugiej jednostki ewidencyjne i pobieranie obrębów dla całej Polski. Nic nie zmieniło się w działaniu — chodzi tylko o to, żeby dało się to objąć wzrokiem.
+
 ## 2026.08.05.2 — 2026-08-05
 
 Formatka spisu treści nazywa się teraz „Spis treści”, a nie „Operat” — na listach w Ustawieniach i w tabelce na dole formularza. Kafelek na stronie głównej zostaje „Operatem”, bo tam zaczyna się cała robota.
