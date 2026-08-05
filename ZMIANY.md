@@ -3,6 +3,10 @@
 Co doszło w kolejnych wersjach programu. Ten sam opis pokazuje się raz, na stronie
 głównej, zaraz po tym jak program sam się zaktualizuje.
 
+## 2026.08.05.6 — 2026-08-05
+
+Porządki na dysku: w katalogu dane\kopie zostaje teraz pięć ostatnich kopii bezpieczeństwa, a starsze kasują się same. Wcześniej przybywała jedna przy każdej aktualizacji i nic ich nie usuwało — po kilkudziesięciu wersjach uzbierałyby się setki megabajtów. Kopie robią się nadal tak samo, przed każdą aktualizacją i przed każdą zmianą układu bazy.
+
 ## 2026.08.05.5 — 2026-08-05
 
 Program dostał ikonę także poza przeglądarką: przy pierwszym uruchomieniu obok „start.bat” powstaje skrót „Generator operatow” ze znakiem programu. Przeciągnij go na pulpit albo przypnij do paska zadań — uruchamiany z niego program pokazuje swój znak zamiast czarnej ikonki wiersza poleceń.
