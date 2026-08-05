@@ -38,6 +38,11 @@
     <td>
       {% if operat.id %}
       <a href="/dokument/{{ operat.id }}"><strong>{{ operat.nr_operatu or '—' }}</strong></a>
+      {% if not operat.na_dysku %}<br>
+      <span class="spoza" title="Tego operatu nie ma już w katalogu wyniki — pewnie
+             przeniesiony do archiwum. Wpis w historii zostaje, ale żeby złożyć PDF,
+             trzeba skopiować folder z powrotem.">w archiwum</span>
+      {% endif %}
       {% else %}
       <strong>{{ operat.nr_operatu or operat.katalog or '—' }}</strong><br>
       <span class="spoza" title="Katalog leży w wyniki/, ale nie ma go w historii —
@@ -48,7 +53,10 @@
     <td>{{ operat.nr_roboty or '—' }}</td>
     <td class="szary">{{ operat.utworzono.replace('T', ' ') }}</td>
     <td class="akcje">
-      {% if operat.katalog %}<a href="/scal/{{ operat.katalog | urlencode }}">Złóż PDF</a>{% endif %}
+      {# przy operacie w archiwum nie ma czego składać — przycisk, który po cichu
+         odsyła z powrotem na listę, jest gorszy niż brak przycisku #}
+      {% if operat.katalog and operat.na_dysku %}
+      <a href="/scal/{{ operat.katalog | urlencode }}">Złóż PDF</a>{% endif %}
       {% if operat.id %}
       {# ten sam komplet co na stronie operatu — poprawka literówki nie ma wymagać
          wchodzenia w dokument tylko po to, żeby kliknąć drugi raz #}

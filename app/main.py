@@ -284,6 +284,10 @@ def _lista_operatow() -> list[dict[str, Any]]:
             "utworzono": wpis["utworzono"] or "",
             "szablon": wpis["szablon"],
             "w_historii": True,
+            # Operat przeniesiony do archiwum zostaje w historii, ale jego katalogu
+            # już nie ma — nie ma więc czego składać. Lista musi to pokazać, zamiast
+            # oferować przycisk, który po cichu odsyła z powrotem na listę.
+            "na_dysku": bool(katalog) and (WYNIKI / katalog).is_dir(),
         })
 
     for operat in operaty.lista():
@@ -297,6 +301,7 @@ def _lista_operatow() -> list[dict[str, Any]]:
             "utworzono": operat["utworzono"],
             "szablon": "",
             "w_historii": False,
+            "na_dysku": True,          # ta lista bierze się właśnie ze skanu `wyniki/`
         })
 
     return sorted(wiersze, key=lambda w: w["utworzono"], reverse=True)
@@ -553,7 +558,10 @@ def otworz_katalog_dokumentu(request: Request, dokument_id: int):
     wiersz = db.dokument(dokument_id)
     katalog = operaty.katalog_po_nazwie(wiersz["katalog"] or "") if wiersz else None
     if katalog is None:
-        return RedirectResponse("/", status_code=303)
+        return RedirectResponse(f"/dokument/{dokument_id}?blad=" + quote(
+            "Katalogu tego operatu nie ma już w wyniki — pewnie przeniesiony "
+            "do archiwum. Wpis w historii zostaje, ale nie ma czego otworzyć."),
+            status_code=303)
     return _otworz(request, katalog, f"/dokument/{dokument_id}")
 
 
@@ -561,7 +569,9 @@ def otworz_katalog_dokumentu(request: Request, dokument_id: int):
 def otworz_katalog_operatu(request: Request, nazwa: str):
     katalog = operaty.katalog_po_nazwie(nazwa)
     if katalog is None:
-        return RedirectResponse("/scal", status_code=303)
+        return RedirectResponse("/?blad=" + quote(
+            f"Katalogu operatu „{nazwa}” nie ma już w wyniki — pewnie przeniesiony "
+            "do archiwum."), status_code=303)
     return _otworz(request, katalog, f"/scal/{quote(nazwa)}")
 
 
@@ -625,7 +635,12 @@ def scal_katalog(request: Request, nazwa: str, blad: str | None = None,
                  zlozono: bool = False):
     katalog = operaty.katalog_po_nazwie(nazwa)
     if katalog is None:
-        return RedirectResponse("/scal", status_code=303)
+        # Zwykle: operat przeniesiony do archiwum, a brat wszedł tu z zakładki albo
+        # ze starego adresu. Odesłanie bez słowa wygląda jak zepsuty program.
+        return RedirectResponse("/?blad=" + quote(
+            f"Operatu „{nazwa}” nie ma już w katalogu wyniki — pewnie przeniesiony "
+            "do archiwum. Żeby złożyć z niego PDF, skopiuj folder z powrotem."),
+            status_code=303)
     # liczby stron nie liczymy: dla plików Worda wymagałaby konwersji całej listy,
     # a miniatury i tak dociągają się leniwie, dopiero gdy przeglądarka o nie poprosi
     # Kolejność i obroty zapamiętane przy poprzednim składaniu; nowe pliki na końcu.

@@ -330,3 +330,53 @@ def test_nieudane_skladanie_nie_nadpisuje_ukladu(klient):
     klient.post(f"/scal/{katalog.name}", data={}, follow_redirects=False)
 
     assert operaty.uklad(katalog)["kolejnosc"] == ["mapa.pdf", "spis_tresci.docx"]
+
+
+# --- operat przeniesiony do archiwum ----------------------------------------
+
+def test_operat_z_archiwum_zostaje_na_liscie_ale_bez_skladania(klient):
+    """Brat przenosi gotowe operaty na dysk archiwalny — wpis w historii zostaje.
+
+    To jest w porządku: widzi, że taki operat istniał. Ale nie ma czego składać,
+    więc przycisk „Złóż PDF” nie może tam stać. Kliknięty odsyłał po cichu na listę,
+    a „nic się nie stało” to najgorszy objaw dla użytkownika.
+    """
+    import shutil
+
+    _dodaj_operat(klient)
+    klient.post("/generuj/spis_tresci_wzor", data=FORMULARZ, follow_redirects=False)
+    katalog = klient.srodowisko.wyniki / db.dokumenty()[0]["katalog"]
+    shutil.rmtree(katalog)                       # „przeniósł do archiwum”
+
+    tresc = klient.get("/").text
+
+    assert db.dokumenty()[0]["nr_operatu"] in tresc, "operat zniknął z historii"
+    assert "w archiwum" in tresc
+    assert f'href="/scal/{katalog.name}"' not in tresc, \
+        "przycisk składania stoi przy operacie, którego nie ma na dysku"
+
+
+def test_wejscie_na_skladanie_archiwalnego_operatu_tlumaczy_dlaczego(klient):
+    """Z zakładki albo starego adresu — ma być wyjaśnienie, nie ciche odesłanie."""
+    odpowiedz = klient.get("/scal/999.2026", follow_redirects=False)
+
+    assert odpowiedz.status_code == 303
+    adres = odpowiedz.headers["location"]
+    assert adres.startswith("/?blad="), f"odesłanie bez wyjaśnienia: {adres}"
+    from urllib.parse import unquote
+    assert "archiwum" in unquote(adres)
+
+
+def test_otwarcie_katalogu_archiwalnego_operatu_tlumaczy_dlaczego(klient):
+    import shutil
+    from urllib.parse import unquote
+
+    _dodaj_operat(klient)
+    klient.post("/generuj/spis_tresci_wzor", data=FORMULARZ, follow_redirects=False)
+    wpis = db.dokumenty()[0]
+    shutil.rmtree(klient.srodowisko.wyniki / wpis["katalog"])
+
+    odpowiedz = klient.post(f"/dokument/{wpis['id']}/otworz-katalog", follow_redirects=False)
+
+    assert "blad=" in odpowiedz.headers["location"]
+    assert "archiwum" in unquote(odpowiedz.headers["location"])
