@@ -3,6 +3,10 @@
 Co doszło w kolejnych wersjach programu. Ten sam opis pokazuje się raz, na stronie
 głównej, zaraz po tym jak program sam się zaktualizuje.
 
+## 2026.08.06.2 — 2026-08-06
+
+Operat przeniesiony do archiwum jest teraz na liście oznaczony jako „w archiwum” i nie ma przy nim przycisku „Złóż PDF” — wcześniej przycisk był, ale po kliknięciu nic się nie działo. Zniknęły też podglądy PDF po operatach, których nie ma już w katalogu wyniki; wcześniej zostawały tam na zawsze po każdej archiwizacji.
+
 ## 2026.08.06.1 — 2026-08-06
 
 Poprawka do poprzedniej wersji: sprzątanie starych kopii w katalogu dane\kopie faktycznie się teraz odbywa. Poprzednio kod trafiał do Ciebie, ale uruchamiał się dopiero przy kolejnej aktualizacji, więc katalog dalej rósł. Teraz porządki robią się przy każdym uruchomieniu programu — nadmiarowe kopie znikną same przy tym starcie.
