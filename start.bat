@@ -37,5 +37,14 @@ if errorlevel 1 (
   copy /y requirements.txt .venv\zainstalowane.txt >nul
 )
 
+rem Plik .bat nie ma wlasnej ikony - Windows rysuje mu systemowa ikonke wiersza
+rem polecen i nie da sie tego zmienic z jego wnetrza. Ikone niesie dopiero skrot,
+rem wiec zakladamy go raz, obok programu. Uruchamiany z niego program pokazuje
+rem nasz znak na pasku zadan i w oknie konsoli. Skrot mozna przeciagnac na pulpit
+rem albo przypiac do paska zadan.
+rem Nazwa bez polskich znakow celowo: pliki .bat czytaja sie w stronie kodowej
+rem konsoli i "ó" potrafi zamienic sie w krzaka razem z cala linia.
+if not exist "Generator operatow.lnk" powershell -NoProfile -ExecutionPolicy Bypass -Command "$k=(Get-Location).Path; $s=(New-Object -ComObject WScript.Shell).CreateShortcut((Join-Path $k 'Generator operatow.lnk')); $s.TargetPath=(Join-Path $k 'start.bat'); $s.WorkingDirectory=$k; $s.IconLocation=(Join-Path $k 'app\web\static\logo.ico'); $s.Description='Generator operatow'; $s.Save()" >nul 2>&1
+
 .venv\Scripts\python uruchom.py
 pause

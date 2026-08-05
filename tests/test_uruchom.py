@@ -8,8 +8,11 @@ from __future__ import annotations
 
 import http.server
 import threading
+from pathlib import Path
 
 import uruchom
+
+KORZEN = Path(__file__).resolve().parent.parent
 
 
 def _mikroserwer(tresc: str):
@@ -82,3 +85,44 @@ def test_udany_start_otwiera_przegladarke_i_chowa_konsole(monkeypatch):
 
     # kolejność ma znaczenie: najpierw przeglądarka bierze pierwszy plan, potem chowamy okno
     assert zrobione == ["przeglądarka", "schowana"]
+
+
+# --- ikona programu na Windowsie ---------------------------------------------
+
+def test_ikona_ma_rozmiary_ktorych_szuka_windows():
+    """16 px na pasku zadań, 32 i 48 na pulpicie, 256 w podglądzie dużych ikon."""
+    from PIL import Image
+
+    from app.config import WEB
+    with Image.open(WEB / "static" / "logo.ico") as ikona:
+        rozmiary = set(ikona.ico.sizes())
+    assert {(16, 16), (32, 32), (48, 48), (256, 256)} <= rozmiary
+
+
+def test_ikona_zgadza_sie_ze_skryptem(tmp_path):
+    """Plik w repozytorium musi być tym, co wypluwa `narzedzia/utworz_ikone.py`.
+
+    Oba pliki znaku — `logo.svg` i `logo.ico` — opisują tę samą geometrię dwa razy,
+    bo Pillow nie czyta SVG. Rozjazd między nimi byłby niewidoczny do chwili, w której
+    ktoś zobaczyłby na pasku zadań co innego niż na stronie.
+    """
+    import sys
+
+    sys.path.insert(0, str(KORZEN / "narzedzia"))
+    import utworz_ikone
+
+    from app.config import WEB
+    swiezy = utworz_ikone.zapisz(tmp_path / "logo.ico")
+    assert swiezy.read_bytes() == (WEB / "static" / "logo.ico").read_bytes(), \
+        "uruchom `python narzedzia/utworz_ikone.py` i zacommituj wynik"
+
+
+def test_start_bat_zaklada_skrot_z_ikona():
+    """Skrót jest jedynym sposobem, żeby program miał na Windowsie własną ikonę."""
+    tresc = (KORZEN / "start.bat").read_text(encoding="utf-8")
+
+    assert "Generator operatow.lnk" in tresc
+    assert "logo.ico" in tresc
+    assert 'if not exist "Generator operatow.lnk"' in tresc, \
+        "skrót ma powstać raz — inaczej każdy start kasowałby zmiany użytkownika"
+    assert ">nul 2>&1" in tresc, "nieudane tworzenie skrótu nie może zatrzymać startu"

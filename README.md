@@ -38,6 +38,12 @@ Linux / macOS:
 
 Przeglądarka otworzy się sama na `http://127.0.0.1:8000`.
 
+Przy pierwszym uruchomieniu obok programu powstaje skrót `Generator operatow.lnk`
+z ikoną — można go przeciągnąć na pulpit albo przypiąć do paska zadań. Sam plik `.bat`
+ikony mieć nie może (Windows rysuje mu systemową ikonkę wiersza poleceń i nie da się
+tego zmienić z jego wnętrza), więc niesie ją dopiero skrót — i to on sprawia, że program
+pokazuje swój znak na pasku zadań.
+
 ## Do zrobienia PDF-ów
 
 Potrzebny jest jeden z dwóch programów — aplikacja wykrywa je sama i pokazuje w prawym

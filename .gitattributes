@@ -2,3 +2,5 @@
 *.bat text eol=crlf
 *.docx binary
 *.pdf binary
+*.ico binary
+*.png binary

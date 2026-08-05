@@ -165,6 +165,7 @@ starą wersję (autor się na to nadział).
 | `narzedzia/utworz_wzory_wykazow.py` | szkielety obu wykazów zmian danych ewidencyjnych |
 | `narzedzia/ujednolic_wyglad.py` | **puść po każdej podmianie formatki**, przed `popraw_szablon.py` — jeden krój, jedno logo, jedna hierarchia we wszystkich dokumentach operatu; nie rusza treści ani czerwieni numeru roboty |
 | `narzedzia/popraw_szablon.py` | **puść po każdej podmianie formatki od brata** — nakłada tabulator i wcięcie wiszące w spisie treści oraz przypina podpis do dołu strony |
+| `narzedzia/utworz_ikone.py` | robi `app/web/static/logo.ico` z tej samej geometrii co `logo.svg`; Pillow nie czyta SVG, więc kształt jest opisany dwa razy i pilnuje tego test |
 | `narzedzia/instalacja_testowa.py` | odtwarza instalację brata (zip z GitHuba, bez `.git`), opcja `--stara-wersja` wymusza aktualizację przy starcie |
 | `szablony/` | formatki Worda, wersjonowane w repo; aktualizacja je podmienia |
 | `wyniki/`, `dane/` | dane użytkownika, w `.gitignore` |
