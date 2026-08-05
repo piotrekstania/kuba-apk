@@ -100,21 +100,37 @@ def test_ikona_ma_rozmiary_ktorych_szuka_windows():
 
 
 def test_ikona_zgadza_sie_ze_skryptem(tmp_path):
-    """Plik w repozytorium musi być tym, co wypluwa `narzedzia/utworz_ikone.py`.
+    """Plik w repozytorium musi pokazywać to, co rysuje `narzedzia/utworz_ikone.py`.
 
     Oba pliki znaku — `logo.svg` i `logo.ico` — opisują tę samą geometrię dwa razy,
     bo Pillow nie czyta SVG. Rozjazd między nimi byłby niewidoczny do chwili, w której
     ktoś zobaczyłby na pasku zadań co innego niż na stronie.
+
+    Porównujemy **piksele, nie bajty pliku**. Pierwsza wersja sprawdzała bajty i padała
+    na Windowsie, choć obrazek był co do piksela ten sam: `.ico` to spakowane PNG-i,
+    a różne wersje Pillow pakują je inaczej (zmierzone: 27 092 B na Linuksie wobec
+    26 298 B na Windowsie, przy identycznej treści we wszystkich sześciu rozmiarach).
+    Bajtowa równość mówiła więc o wersji biblioteki, a nie o znaku — i blokowała pracę
+    na drugim systemie.
     """
     import sys
+
+    from PIL import Image
 
     sys.path.insert(0, str(KORZEN / "narzedzia"))
     import utworz_ikone
 
     from app.config import WEB
     swiezy = utworz_ikone.zapisz(tmp_path / "logo.ico")
-    assert swiezy.read_bytes() == (WEB / "static" / "logo.ico").read_bytes(), \
-        "uruchom `python narzedzia/utworz_ikone.py` i zacommituj wynik"
+
+    with Image.open(swiezy) as nowa, Image.open(WEB / "static" / "logo.ico") as z_repo:
+        assert sorted(nowa.ico.sizes()) == sorted(z_repo.ico.sizes()), \
+            "uruchom `python narzedzia/utworz_ikone.py` i zacommituj wynik"
+        for rozmiar in sorted(nowa.ico.sizes()):
+            assert (nowa.ico.getimage(rozmiar).convert("RGBA").tobytes()
+                    == z_repo.ico.getimage(rozmiar).convert("RGBA").tobytes()), \
+                (f"znak w rozmiarze {rozmiar} różni się od tego, co rysuje skrypt — "
+                 "uruchom `python narzedzia/utworz_ikone.py` i zacommituj wynik")
 
 
 def test_start_bat_zaklada_skrot_z_ikona():
