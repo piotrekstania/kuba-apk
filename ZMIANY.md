@@ -3,6 +3,10 @@
 Co doszło w kolejnych wersjach programu. Ten sam opis pokazuje się raz, na stronie
 głównej, zaraz po tym jak program sam się zaktualizuje.
 
+## 2026.08.05.4 — 2026-08-05
+
+Program ma swój znak: trójkąt z kropką, czyli symbol punktu geodezyjnego. Widać go w lewym górnym rogu obok nazwy i na karcie przeglądarki — łatwiej trafić w okno programu, gdy masz otwarte kilkanaście zakładek.
+
 ## 2026.08.05.3 — 2026-08-05
 
 Ustawienia podzielone na karty tematyczne, tak jak formularz operatu: „Własne formatki” i „TERYT”, a w tej drugiej jednostki ewidencyjne i pobieranie obrębów dla całej Polski. Nic nie zmieniło się w działaniu — chodzi tylko o to, żeby dało się to objąć wzrokiem.
