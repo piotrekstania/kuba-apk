@@ -272,7 +272,7 @@ def test_stare_kopie_znikaja_a_najnowsze_zostaja(srodowisko, monkeypatch):
         katalog = aktualizacja.KOPIE / f"2026080{numer}-100000-przed-2026.08.0{numer}"
         katalog.mkdir(parents=True)
         (katalog / "uruchom.py").write_text(f"# wersja {numer}", encoding="utf-8")
-    aktualizacja._sprzataj_kopie()
+    aktualizacja.sprzataj_kopie()
 
     zostaly = sorted(k.name for k in aktualizacja.KOPIE.iterdir() if k.is_dir())
     assert len(zostaly) == 3
@@ -289,10 +289,41 @@ def test_sprzatanie_nie_rusza_kopii_bazy_z_migracji(srodowisko, monkeypatch):
     for numer in (1, 2):
         (aktualizacja.KOPIE / f"2026080{numer}-100000-przed-2026.08.0{numer}").mkdir()
 
-    aktualizacja._sprzataj_kopie()
+    aktualizacja.sprzataj_kopie()
 
     assert (aktualizacja.KOPIE / "operaty-schemat1-20260801-100000.sqlite3").exists()
 
 
 def test_brak_katalogu_kopii_nie_wywala_sprzatania(srodowisko):
-    aktualizacja._sprzataj_kopie()          # katalogu jeszcze nie ma — ma przejść cicho
+    aktualizacja.sprzataj_kopie()          # katalogu jeszcze nie ma — ma przejść cicho
+
+
+def test_samo_uruchomienie_programu_sprzata_kopie(srodowisko, bez_konwertera, monkeypatch):
+    """Sprzątanie nie może zależeć od aktualizacji — i to była pierwsza wpadka.
+
+    Wpięte tylko w `_kopia_zapasowa` działało dopiero przy **następnej** aktualizacji,
+    bo aktualizację wykonuje kod, który użytkownik już ma (pułapka 7b). U brata katalog
+    z czterdziestoma kopiami po podbiciu wersji dalej miał czterdzieści.
+
+    Dlatego test przechodzi przez **prawdziwy cykl życia aplikacji**, a nie woła funkcji
+    sprzątającej wprost: zawiodło samo podpięcie, więc to ono jest tu sprawdzane.
+    """
+    from fastapi.testclient import TestClient
+
+    from app import main, teryt
+
+    aktualizacja.KOPIE.mkdir(parents=True, exist_ok=True)
+    for numer in range(1, 21):
+        (aktualizacja.KOPIE / f"202608{numer:02}-100000-przed-2026.08.{numer}").mkdir()
+    (aktualizacja.KOPIE / "operaty-schemat1-20260801-100000.sqlite3").write_bytes(b"baza")
+    monkeypatch.setattr(aktualizacja, "ILE_KOPII", 5)
+    monkeypatch.setattr(teryt, "pusto", lambda: False)
+    monkeypatch.setattr(main.teryt, "pusto", lambda: False)
+
+    with TestClient(main.app):                      # samo podniesienie programu
+        pass
+
+    katalogi = sorted(k.name for k in aktualizacja.KOPIE.iterdir() if k.is_dir())
+    assert len(katalogi) == 5, "start programu nie posprzątał starych kopii"
+    assert katalogi[-1].endswith("2026.08.20"), "skasowana została najnowsza"
+    assert (aktualizacja.KOPIE / "operaty-schemat1-20260801-100000.sqlite3").exists(),         "kopia bazy zniknęła, choć mieści się w limicie"

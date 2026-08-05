@@ -78,7 +78,9 @@ Nietykalne przy aktualizacji: `dane/` (historia, liczniki numeracji, pobrane dan
 leci kopia bazy i poprzedniej zawartości do `dane/kopie/`.
 
 W `dane/kopie/` zostaje **pięć ostatnich** kopii (`ILE_KOPII` w [app/aktualizacja.py](app/aktualizacja.py)),
-starsze kasują się same przy kolejnej aktualizacji. Bez tego katalog rósłby bez końca:
+a starsze kasują się **przy każdym uruchomieniu programu** — nie przy aktualizacji.
+To rozróżnienie jest istotne: aktualizację wykonuje kod, który użytkownik już ma,
+więc sprzątanie wpięte w nią zaczęłoby działać dopiero przy następnej. Bez tego katalog rósłby bez końca:
 jedna kopia to około 1 MB, a u kogoś z pobranymi obrębami całej Polski około 5 MB —
 przy kilkunastu wydaniach dziennie robią się z tego dziesiątki megabajtów, których nikt
 nigdy nie ogląda. Ratunkowa i tak jest zawsze ta ostatnia.

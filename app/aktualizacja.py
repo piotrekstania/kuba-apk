@@ -98,8 +98,16 @@ def wersja_zdalna() -> tuple[str, str] | None:
     return None
 
 
-def _sprzataj_kopie() -> None:
+def sprzataj_kopie() -> None:
     """Zostawia `ILE_KOPII` ostatnich kopii sprzed aktualizacji, starsze kasuje.
+
+    Wołane **przy każdym starcie programu** (`cykl_zycia` w `app/main.py`), a nie tylko
+    przy aktualizacji. Pierwsza wersja sprzątała wyłącznie w `_kopia_zapasowa`, czyli
+    w trakcie aktualizacji — a aktualizację wykonuje kod, który użytkownik **już ma**,
+    czyli stary (pułapka 7b). Nowa wersja przyjeżdżała więc ze sprzątaniem, które
+    zaczynało działać dopiero przy następnej aktualizacji, i katalog dalej rósł.
+    Porządki na dysku nie mają nic wspólnego z aktualizacją, więc nie powinny od niej
+    zależeć.
 
     Bez tego katalog rośnie bez końca, bo kopia powstaje **przed każdą** aktualizacją.
     Jedna waży ~1 MB (kod, formatki, baza), a u kogoś, kto pobrał obręby całej Polski,
@@ -133,7 +141,7 @@ def _kopia_zapasowa(wersja: str) -> Path:
                             ignore=shutil.ignore_patterns("__pycache__"))
         elif zrodlo.exists():
             shutil.copy2(zrodlo, katalog / nazwa)
-    _sprzataj_kopie()
+    sprzataj_kopie()
     return katalog
 
 

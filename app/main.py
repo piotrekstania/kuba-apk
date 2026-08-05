@@ -44,6 +44,15 @@ def _pierwsze_pobranie_teryt() -> None:
         pass
 
 
+def _sprzataj_kopie() -> None:
+    """Kasuje najstarsze kopie zapasowe — kodu i bazy. Nigdy nie blokuje startu."""
+    try:
+        aktualizacja.sprzataj_kopie()
+        db.sprzataj_kopie_bazy()
+    except Exception:
+        pass
+
+
 def _wyslij_statystyki() -> None:
     """Trzy liczby do arkusza autora — raz na uruchomienie, w tle i po cichu.
 
@@ -63,6 +72,13 @@ async def cykl_zycia(_: FastAPI):
     # Liczniki startują od tego, co brat już zrobił — inaczej po aktualizacji
     # zobaczyłby „0 operatów”, mając ich pięćdziesiąt. Robi się to raz.
     statystyki.zasiej_z_historii()
+    # Porządki w `dane/kopie/` przy każdym starcie, a nie tylko przy aktualizacji:
+    # aktualizację wykonuje kod, który użytkownik już ma, więc sprzątanie wpięte
+    # w nią zaczynałoby działać dopiero przy następnej (patrz pułapka 7b).
+    # Porządki w `dane/kopie/` przy każdym starcie, a nie tylko przy aktualizacji:
+    # aktualizację wykonuje kod, który użytkownik już ma, więc sprzątanie wpięte
+    # w nią zaczynałoby działać dopiero przy następnej (patrz pułapka 7b).
+    _sprzataj_kopie()
     threading.Thread(target=_pierwsze_pobranie_teryt, daemon=True).start()
     threading.Thread(target=_wyslij_statystyki, daemon=True).start()
     yield
