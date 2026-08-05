@@ -3,6 +3,10 @@
 Co doszło w kolejnych wersjach programu. Ten sam opis pokazuje się raz, na stronie
 głównej, zaraz po tym jak program sam się zaktualizuje.
 
+## 2026.08.05.1 — 2026-08-05
+
+Nowość: własne formatki. W Ustawieniach możesz wgrać swoje pliki Worda — do każdego rodzaju dokumentu choćby kilka — a przy tworzeniu operatu, na samym dole formularza, wybrać z tabelki, z której skorzystać. Wybór zapamiętuje się do następnego razu, a przy poprawianiu operatu program bierze tę formatkę, którą on naprawdę powstał. Własne formatki leżą w katalogu „dane” i przeżywają aktualizacje.
+
 ## 2026.08.03.4 — 2026-08-03
 
 Uzupełnienie poprzedniej wersji: razem z trzema liczbami program wysyła teraz także nazwę tego komputera — po niej brat odróżnia Twoje uruchomienia od swoich testowych. Jeśli wolisz, żeby wysyłał co innego, wpisz dowolny tekst do pliku dane\etykieta.txt. Z Twoich operatów nadal nie wychodzi nic.
