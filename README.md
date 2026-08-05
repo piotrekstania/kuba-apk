@@ -49,9 +49,9 @@ Program przy każdym uruchomieniu porównuje swój plik `WERSJA` z tym na GitHub
 (`piotrekstania/kuba-apk`, gałąź `main`). Jeśli tam jest nowszy, pobiera paczkę `.zip`
 i podmienia **wyłącznie kod**. Brak internetu = start po staremu, bez błędu.
 
-Nietykalne przy aktualizacji: `dane/` (historia, liczniki numeracji, pobrane dane TERYT)
-i `wyniki/` (gotowe dokumenty). Przed każdą podmianą leci kopia bazy i poprzedniej
-zawartości do `dane/kopie/`.
+Nietykalne przy aktualizacji: `dane/` (historia, liczniki numeracji, pobrane dane TERYT
+**i własne formatki użytkownika**) oraz `wyniki/` (gotowe dokumenty). Przed każdą podmianą
+leci kopia bazy i poprzedniej zawartości do `dane/kopie/`.
 
 **Szablony jadą razem z kodem.** Jest jeden katalog `szablony/`, wersjonowany w repozytorium
 i nadpisywany przy każdej aktualizacji — formatki Worda utrzymuje autor, nie użytkownik,
@@ -109,6 +109,7 @@ sama się doprowadzi do porządku (po uprzednim zrobieniu kopii).
 | `app/generator.py` | wypełnia szablon danymi |
 | `app/operaty.py` | katalog operatu: zakładanie, `operat.json`, lista plików do sklejenia |
 | `app/pdf.py` | konwersja DOCX→PDF (Word przez COM albo LibreOffice) i łączenie PDF-ów |
+| `app/warianty.py` | własne formatki: wgrywanie do `dane/szablony/`, wybór przy operacie |
 | `app/miniatury.py` | podglądy stron do układania kolejności przed sklejeniem |
 | `app/teryt.py` | jednostki TERYT z GUS-u, obręby i sprawdzanie działek w ULDK |
 | `app/statystyki.py` | liczniki w stopce: operaty, dokumenty, złożone PDF-y |
@@ -176,7 +177,7 @@ mapy, szkice, skany, wypisy i wykaz współrzędnych z C-Geo. Tych plików progr
 nie widział i nie ma ich skąd wziąć. W środku siedzi też `operat.json` — dane roboty
 i zapamiętany układ kafelków przy składaniu PDF-a.
 
-**`dane/`** to historia, licznik numeracji i pobrane dane TERYT. Bez niego program
+**`dane/`** to historia, licznik numeracji, pobrane dane TERYT i **własne formatki Worda**. Bez niego program
 działa dalej, ale numeracja operatów zaczyna się od nowa, a listy TERYT trzeba
 ściągnąć jeszcze raz.
 

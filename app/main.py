@@ -22,10 +22,11 @@ from fastapi.responses import (FileResponse, HTMLResponse, JSONResponse,
                                RedirectResponse, Response)
 from fastapi.staticfiles import StaticFiles
 from fastapi.templating import Jinja2Templates
+from starlette.datastructures import UploadFile
 from starlette.exceptions import HTTPException as BladHTTP
 
 from . import (aktualizacja, db, generator, miniatury, operaty, pdf, raport,
-               statystyki, szablony, teryt, zmiany)
+               statystyki, szablony, teryt, warianty, zmiany)
 from .config import DANE, WEB, WYNIKI
 
 
@@ -198,13 +199,23 @@ def odczytaj_dane(formularz, szablon: szablony.Szablon) -> dict[str, Any]:
             zaznaczone = set(formularz.getlist(f"pole__{pole.klucz}"))
             proste[pole.klucz] = [o for o in pole.opcje
                                   if o in zaznaczone or o in pole.zawsze]
-        elif pole.typ == "teryt":
+        elif pole.typ == "teryt":  # noqa: SIM114 (kolejność gałęzi jest tu czytelniejsza)
             # cztery listy rozwijane przychodzą jako pole__polozenie__gmina itd.;
             # scalamy je w jeden słownik identyfikatorów, żeby walidacja „wymagane”
             # i zapis do historii widziały to jako jedno pole
             czesci = {poziom: proste.pop(f"{pole.klucz}__{poziom}", "")
                       for poziom in ("wojewodztwo", "powiat", "gmina", "obreb")}
             proste[pole.klucz] = czesci if any(czesci.values()) else {}
+
+    # Wybór formatek z tabelki na dole. Zapisujemy **wszystkie** pozycje, także te
+    # ustawione z powrotem na standardową (pusta wartość): brak klucza znaczyłby
+    # „weź domyślną z ustawień”, czyli świadomy powrót do standardu nie przeżyłby
+    # poprawiania operatu.
+    wybor = {klucz[len(warianty.KLUCZ):]: wartosc.strip()
+             for klucz, wartosc in formularz.multi_items()
+             if klucz.startswith(warianty.KLUCZ) and isinstance(wartosc, str)}
+    if wybor:
+        proste["warianty"] = wybor
     return proste
 
 
@@ -331,6 +342,28 @@ def _listy_dokumentow(szablon: szablony.Szablon) -> dict[str, list[dict[str, str
     return listy
 
 
+def _warianty_pozycji(szablon: szablony.Szablon) -> list[dict[str, Any]]:
+    """Pozycje do tabelki „Formatki” na dole formularza — tylko te z wyborem.
+
+    Kategoria bez ani jednej własnej formatki nie ma czego wybierać, więc się nie
+    pokazuje; gdy nie ma ich nigdzie, tabelka znika w całości. Formularz ma być
+    do wypełniania, a nie do oglądania list z jedną pozycją.
+    """
+    kolejnosc = [{"id": szablon.id, "nazwa": szablon.nazwa}]
+    kolejnosc += [dokument for lista in _listy_dokumentow(szablon).values()
+                  for dokument in lista]
+
+    pozycje, widziane = [], set()
+    for pozycja in kolejnosc:
+        if pozycja["id"] in widziane:
+            continue
+        widziane.add(pozycja["id"])
+        wlasne = warianty.lista(pozycja["id"])
+        if wlasne:
+            pozycje.append({**pozycja, "warianty": wlasne})
+    return pozycje
+
+
 @app.get("/nowy/{identyfikator}", response_class=HTMLResponse)
 def formularz(request: Request, identyfikator: str, kopiuj: int | None = None,
               edytuj: int | None = None):
@@ -364,9 +397,16 @@ def formularz(request: Request, identyfikator: str, kopiuj: int | None = None,
                 podglad = wzor.format(numer=numer, numer3=f"{numer:03d}",
                                       rok=date.today().year)
 
+    # Wybór formatek: przy poprawianiu i powielaniu bierzemy ten zapisany przy operacie
+    # (siedzi w `dane_json`), a przy nowym — ostatnio używany z ustawień.
+    wybor_wariantow = dict(warianty.domyslne(db.wczytaj_ustawienia()))
+    wybor_wariantow.update(wartosci.get("warianty") or {})
+
     return _widok(request, "formularz.html", szablon=szablon, wartosci=wartosci,
                   podglad_numeru=podglad, dzisiaj=date.today().isoformat(),
-                  edytuj=edytuj, listy_dokumentow=_listy_dokumentow(szablon))
+                  edytuj=edytuj, listy_dokumentow=_listy_dokumentow(szablon),
+                  warianty_pozycji=_warianty_pozycji(szablon),
+                  wybor_wariantow=wybor_wariantow)
 
 
 @app.post("/generuj/{identyfikator}")
@@ -377,6 +417,15 @@ async def generuj(request: Request, identyfikator: str, edytuj: int | None = Non
 
     formularz_danych = await request.form()
     dane = odczytaj_dane(formularz_danych, szablon)
+    wybor_wariantow = dane.get("warianty") or {}
+
+    # wspólne dla obu powrotów na formularz — po błędzie ma wrócić komplet, razem
+    # z wybranymi formatkami, żeby nic nie trzeba było ustawiać drugi raz
+    powrot = dict(szablon=szablon, wartosci=dane, edytuj=edytuj,
+                  dzisiaj=date.today().isoformat(),
+                  listy_dokumentow=_listy_dokumentow(szablon),
+                  warianty_pozycji=_warianty_pozycji(szablon),
+                  wybor_wariantow=wybor_wariantow)
 
     # `auto_numer` pomijamy: pole zostaje puste celowo, bo numer nadaje program przy
     # generowaniu. Oznaczenie go jako wymaganego ma sens tylko po to, żeby w formularzu
@@ -385,10 +434,8 @@ async def generuj(request: Request, identyfikator: str, edytuj: int | None = Non
                  if p.wymagane and p.zrodlo != "ustawienia" and p.typ != "auto_numer"
                  and not dane.get(p.klucz)]
     if brakujace:
-        return _widok(request, "formularz.html", szablon=szablon, wartosci=dane,
-                      blad="Uzupełnij wymagane pola: " + ", ".join(brakujace),
-                      dzisiaj=date.today().isoformat(), edytuj=edytuj,
-                      listy_dokumentow=_listy_dokumentow(szablon))
+        return _widok(request, "formularz.html", **powrot,
+                      blad="Uzupełnij wymagane pola: " + ", ".join(brakujace))
 
     poprawiany = db.dokument(edytuj) if edytuj else None
     poprzedni_opis = None
@@ -398,18 +445,17 @@ async def generuj(request: Request, identyfikator: str, edytuj: int | None = Non
 
     try:
         plik, kontekst, ostrzezenia = generator.generuj(
-            szablon, dane, db.wczytaj_ustawienia(), poprzedni_opis)
+            warianty.z_wariantem(szablon, wybor_wariantow.get(szablon.id, "")),
+            dane, db.wczytaj_ustawienia(), poprzedni_opis)
     except Exception as blad:
         # Wracamy na formularz z kompletem wpisanych danych — utrata wykazu współrzędnych
         # przez literówkę w szablonie byłaby gorsza niż sam błąd.
         zapisz_blad(request, blad)
-        return _widok(request, "formularz.html", szablon=szablon, wartosci=dane,
-                      listy_dokumentow=_listy_dokumentow(szablon), edytuj=edytuj,
+        return _widok(request, "formularz.html", **powrot,
                       blad=f"Nie udało się wypełnić szablonu „{szablon.nazwa}”. Zwykle "
                            "znaczy to, że w pliku .docx jest literówka w znaczniku "
                            "{{ }} albo {% ... %}. Twoje dane zostały tutaj — popraw "
-                           f"szablon w Wordzie i kliknij ponownie. Szczegóły: {blad}",
-                      dzisiaj=date.today().isoformat())
+                           f"szablon w Wordzie i kliknij ponownie. Szczegóły: {blad}")
 
     # Dodatkowe dokumenty do tego samego katalogu, wypełnione tym samym kontekstem.
     # Awaria któregoś nie może przekreślić dokumentu głównego, który już jest na dysku —
@@ -426,13 +472,20 @@ async def generuj(request: Request, identyfikator: str, edytuj: int | None = Non
         if dodatkowy is None or dodatkowy.id == szablon.id:
             continue
         try:
-            generator.dopisz_dokument(dodatkowy, kontekst, katalog)
+            generator.dopisz_dokument(
+                warianty.z_wariantem(dodatkowy, wybor_wariantow.get(dodatkowy.id, "")),
+                kontekst, katalog)
             wypelnionych += 1
         except Exception as blad:
             zapisz_blad(request, blad)
             ostrzezenia.append(
                 f"Nie udało się wygenerować dokumentu „{dodatkowy.nazwa}” — sprawdź "
                 f"znaczniki w pliku {dodatkowy.plik.name}. Reszta operatu jest gotowa.")
+
+    # Wybrane formatki zostają domyślne na **następny** operat. Wybór dla tego operatu
+    # siedzi w jego `operat.json` (razem z danymi formularza), więc „Popraw” wróci
+    # do formatek, którymi ten operat naprawdę powstał.
+    warianty.zapamietaj(wybor_wariantow)
 
     # Podglądy robimy w tle, zaraz po wygenerowaniu. Zanim brat przejdzie na stronę
     # składania, PDF-y zwykle są już gotowe i miniatury pokazują się od razu.
@@ -666,7 +719,54 @@ async def scal_wykonaj(request: Request, nazwa: str):
 def ustawienia_formularz(request: Request, komunikat: str | None = None,
                          blad: str | None = None):
     return _widok(request, "ustawienia.html", komunikat=komunikat, blad=blad,
-                  teryt_stan=teryt.stan())
+                  teryt_stan=teryt.stan(), rodzaje=szablony.lista_skrocona(),
+                  wlasne_formatki=warianty.wszystkie())
+
+
+# --- własne formatki ---------------------------------------------------------
+
+@app.post("/ustawienia/formatki")
+async def dodaj_formatke(request: Request):
+    """Przyjmuje wgrany plik .docx jako kolejny wariant wybranego rodzaju dokumentu."""
+    formularz_danych = await request.form()
+    kategoria = str(formularz_danych.get("kategoria") or "")
+    przeslany = formularz_danych.get("plik")
+
+    # UploadFile bierzemy ze Starlette, nie z FastAPI: `request.form()` tworzy obiekty
+    # klasy nadrzędnej, więc `isinstance(..., fastapi.UploadFile)` jest zawsze fałszem
+    # i wgrany plik znika bez śladu (kosztowało to już raz działające scalanie).
+    if not isinstance(przeslany, UploadFile) or not przeslany.filename:
+        return RedirectResponse(
+            "/ustawienia?blad=" + quote("Nie wybrano pliku."), status_code=303)
+
+    try:
+        wariant, ostrzezenia = warianty.dodaj(kategoria, przeslany.filename, przeslany.file)
+    except warianty.BladWariantu as blad:
+        return RedirectResponse("/ustawienia?blad=" + quote(str(blad)), status_code=303)
+    except Exception as blad:
+        zapisz_blad(request, blad)
+        return RedirectResponse(
+            "/ustawienia?blad=" + quote("Nie udało się wgrać tego pliku."), status_code=303)
+
+    komunikat = f"Dodano formatkę „{wariant['nazwa']}”. Wybierzesz ją na dole formularza."
+    if ostrzezenia:
+        return RedirectResponse("/ustawienia?blad=" + quote(" ".join(ostrzezenia)),
+                                status_code=303)
+    return RedirectResponse("/ustawienia?komunikat=" + quote(komunikat), status_code=303)
+
+
+@app.post("/ustawienia/formatki/usun")
+async def usun_formatke(request: Request):
+    """Kasuje plik formatki. Operaty nią zrobione zostają nietknięte."""
+    formularz_danych = await request.form()
+    identyfikator = str(formularz_danych.get("wariant") or "")
+    if warianty.usun(identyfikator):
+        return RedirectResponse(
+            "/ustawienia?komunikat=" + quote(
+                "Formatka usunięta. Gotowe operaty zostają bez zmian — kasujemy tylko "
+                "wzór na przyszłość."), status_code=303)
+    return RedirectResponse("/ustawienia?blad=" + quote("Nie ma już takiej formatki."),
+                            status_code=303)
 
 
 # --- TERYT: listy do pól kaskadowych i pobieranie danych ---------------------

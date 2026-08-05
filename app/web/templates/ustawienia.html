@@ -4,6 +4,56 @@
 
 <h1>Ustawienia</h1>
 
+<h2 id="formatki">Własne formatki</h2>
+<p class="szary">Do każdego rodzaju dokumentu możesz dołożyć własne pliki Worda — choćby
+  kilka — i przy każdym operacie wybrać, z którego skorzystać. Wybór zapamiętuje się
+  do następnego razu. Formatki leżą w katalogu <code>dane\szablony</code>, więc
+  <strong>przeżywają aktualizacje programu</strong> i wchodzą do kopii zapasowej.</p>
+
+<form method="post" action="/ustawienia/formatki" enctype="multipart/form-data">
+  <div class="siatka">
+    <div class="pole polowa">
+      <label for="kategoria">Rodzaj dokumentu</label>
+      <select id="kategoria" name="kategoria">
+        {% for rodzaj in rodzaje %}
+        <option value="{{ rodzaj.id }}">{{ rodzaj.nazwa }}</option>
+        {% endfor %}
+      </select>
+    </div>
+    <div class="pole polowa">
+      <label for="plik">Plik .docx</label>
+      <input id="plik" name="plik" type="file" accept=".docx" required>
+    </div>
+  </div>
+  <div class="pasek">
+    <button class="glowny" type="submit">Dodaj formatkę</button>
+  </div>
+</form>
+
+{% set cokolwiek = wlasne_formatki.values() | map('length') | sum %}
+{% if cokolwiek %}
+<table class="lista">
+  <tr><th class="waski">Rodzaj dokumentu</th><th>Twoje formatki</th><th></th></tr>
+  {% for rodzaj in rodzaje %}
+  {% for wariant in wlasne_formatki.get(rodzaj.id, []) %}
+  <tr>
+    <td class="szary">{{ rodzaj.nazwa if loop.first else '' }}</td>
+    <td>{{ wariant.nazwa }}</td>
+    <td class="akcje">
+      <form method="post" action="/ustawienia/formatki/usun"
+            onsubmit="return confirm('Usunąć formatkę „{{ wariant.nazwa }}”? Gotowe operaty zostaną bez zmian.')">
+        <input type="hidden" name="wariant" value="{{ wariant.id }}">
+        <button type="submit">Usuń</button>
+      </form>
+    </td>
+  </tr>
+  {% endfor %}
+  {% endfor %}
+</table>
+{% else %}
+<p class="szary">Nie masz jeszcze własnych formatek — program używa standardowych.</p>
+{% endif %}
+
 <h2 id="teryt">Jednostki ewidencyjne (TERYT)</h2>
 <p class="szary">Lista województw, powiatów i jednostek ewidencyjnych pochodzi z rejestru
   TERYT prowadzonego przez GUS, a obręby — z serwisu ULDK Głównego Urzędu Geodezji

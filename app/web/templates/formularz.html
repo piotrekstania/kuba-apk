@@ -173,6 +173,35 @@
   </fieldset>
   {% endfor %}
 
+  {# Tabelka pokazuje się tylko wtedy, gdy w ogóle jest z czego wybierać — kategoria
+     bez własnych formatek nie ma tu czego robić, a lista z jedną pozycją to szum. #}
+  {% if warianty_pozycji %}
+  <fieldset>
+    <legend>Formatki</legend>
+    <p class="podpowiedz">Z których plików Worda wypełnić te dokumenty. Wybór zapamiętuje
+      się do następnego operatu; własne formatki dokładasz w
+      <a href="/ustawienia#formatki">Ustawieniach</a>.</p>
+    <table class="lista">
+      <tr><th class="waski">Dokument</th><th>Formatka</th></tr>
+      {% for pozycja in warianty_pozycji %}
+      <tr>
+        <td>{{ pozycja.nazwa }}</td>
+        <td>
+          <select name="wariant__{{ pozycja.id }}">
+            <option value="">standardowa</option>
+            {% for wariant in pozycja.warianty %}
+            <option value="{{ wariant.id }}"
+              {{ 'selected' if wariant.id == wybor_wariantow.get(pozycja.id) }}>
+              {{ wariant.nazwa }}</option>
+            {% endfor %}
+          </select>
+        </td>
+      </tr>
+      {% endfor %}
+    </table>
+  </fieldset>
+  {% endif %}
+
   <div class="pasek">
     <button type="submit" class="glowny">{{ 'Zapisz poprawki' if edytuj else 'Generuj dokument' }}</button>
     <a href="{{ '/dokument/' ~ edytuj if edytuj else '/' }}" class="wtorny">Anuluj</a>

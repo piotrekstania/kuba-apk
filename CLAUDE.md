@@ -64,6 +64,7 @@ zainstalowania/uruchomienia, bez instalowania Pythona.
 | Adres i token wysyłki są **jawne w repozytorium** | repo jest publiczne, więc i tak by wyciekły — token jest sitem na przypadkowe boty, a nie zabezpieczeniem. Chroni to, że **sam arkusz zostaje prywatny**. Przy dwóch instalacjach śmieciowy wiersz kasuje się ręcznie |
 | Etykieta instalacji: plik → **nazwa komputera** → dopisek „kopia robocza” | bez nazwy komputera wszystkie nieopisane instalacje wyglądają w arkuszu tak samo i trzeba je rozróżniać po losowym identyfikatorze. Nazwa idzie w polu `etykieta`, więc arkusz ani skrypt nie wymagają zmian. `platform.node()`, a **nie** `socket.getfqdn()` — ten drugi odpytuje DNS i przy kiepskiej sieci potrafi zawisnąć. Kopia robocza gita dokłada sobie dopisek, więc maszyna deweloperska nadal oznacza się sama. Uwaga: nazwa komputera zwykle zawiera imię właściciela (`Kuba-PC`), czyli **jest daną osobową** — dlatego mówi o niej wprost pomoc i opis wydania, a `dane/etykieta.txt` pozwala ją nadpisać |
 | Historia liczników odtwarzana **raz** przy pierwszym starcie nowej wersji (`zasiej_z_historii`) | brat ma już kilkadziesiąt operatów; licznik od zera wyglądałby na zepsuty. Operaty odtwarzamy z tabeli `dokumenty` (pamięta też te zarchiwizowane), dokumenty i PDF-y z katalogów jeszcze obecnych w `wyniki/` — i **tylko pliki o nazwach nadawanych przez program**, żeby jego własne nie wpadły nawet ten jeden raz |
+| **Własne formatki użytkownika leżą w `dane/szablony/<kategoria>/`, nigdy w `szablony/`** (`app/warianty.py`) | `szablony/` jest lustrzane — plik, którego nie ma w repozytorium, znika u brata przy najbliższej aktualizacji. Jego własna formatka wyparowałaby bez śladu, a on dowiedziałby się o tym dopiero po operacie zrobionym ze standardowego wzoru. `dane/` jest nietykalne i wchodzi do kopii zapasowej. **Kategoria** (rodzaj dokumentu) decyduje, jakie pola ma formularz, **wariant** podmienia tylko wypełniany plik — dzięki temu wybór może stać na dole formularza i niczego nie przeładowuje. Wariant z nieznanym znacznikiem dostaje ostrzeżenie przy wgrywaniu, nie blokadę: formatka różniąca się jednym polem to najczęstszy przypadek, a nie błąd |
 | **Dane stałe usunięte z programu** — nazwisko, uprawnienia, pieczątka firmy | brat woli mieć je wpisane na sztywno w swoim szablonie Worda; to i tak nie zmienia się między robotami, a jeden ekran mniej to jeden ekran mniej do tłumaczenia. `db.wczytaj_ustawienia` i `zrodlo: "ustawienia"` zostają w kodzie, ale bez interfejsu |
 
 ## Zasada centralna
@@ -155,6 +156,7 @@ starą wersję (autor się na to nadział).
 | `app/raport.py` | wysyłka tych trzech liczb do arkusza autora; **tylko biblioteka standardowa**, wszystko połykane po cichu |
 | `app/teryt.py` | jednostki TERYT z GUS + obręby z ULDK; **tylko biblioteka standardowa** |
 | `app/operaty.py` | katalog operatu: zakładanie, `operat.json` (w tym zapamiętany `uklad`), lista plików do sklejenia; nazwa pliku wynika z nazwy szablonu (`spis_tresci_wzor` → `spis_tresci.docx`) |
+| `app/warianty.py` | własne formatki użytkownika: wgrywanie, lista, wybór zapamiętany w ustawieniach i przy operacie |
 | `app/miniatury.py` | podgląd pierwszej strony PDF-a (pypdfium2 + Pillow) |
 | `app/main.py` | trasy FastAPI, parsowanie formularza (w tym tabel) |
 | `app/web/templates/` | widoki; `blad.html` to strona każdego niezłapanego wyjątku, a `pomoc.html` instrukcja dla brata — aktualizuj ją razem z funkcjami |
@@ -460,6 +462,7 @@ Co pilnują, w kolejności od najbardziej bolesnych doświadczeń:
 | `test_statystyki.py` | że licznik **nie cofa się po archiwizacji** operatu i **nie rośnie** od plików dołożonych przez brata — na tym wyłożyła się pierwsza wersja |
 | `test_uruchom.py` | że konsola chowa się **tylko po udanym starcie** i że obcy serwer na porcie nie uchodzi za nasz program |
 | `test_zmiany.py` | że `ZMIANY.md` **jedzie do brata przy aktualizacji** i że wydana wersja ma swój wpis w historii |
+| `test_warianty.py` | że własna formatka **przeżywa aktualizację** i że poprawianie operatu bierze tę formatkę, którą naprawdę powstał, a nie dzisiejszą domyślną |
 | `test_uldk.py` | że milczenie ULDK **nie wygląda jak zły numer** — najważniejszy test w tym pliku |
 
 Testy stabilności formatek **pomijają się bez czcionki Calibri/Carlito**
