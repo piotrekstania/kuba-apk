@@ -114,6 +114,47 @@ def test_generowanie_z_formularza(klient):
     assert zapisane["punkty"] == [{"numer": "101", "x": "5712345.12"}]   # pusty wiersz odpadł
 
 
+def test_strona_operatu_pokazuje_nadany_numer(klient):
+    """Numer operatu nadaje program, więc w danych z formularza go nie ma.
+
+    Na stronie operatu musi być mimo to widoczny — to po nim rozpoznaje się robotę
+    w ośrodku, a pusta krata przy „nr_operatu” wygląda jak usterka programu.
+    """
+    import re
+
+    _dodaj_operat(klient)
+    klient.post("/generuj/spis_tresci_wzor", data=FORMULARZ, follow_redirects=False)
+    wpis = db.dokumenty()[0]
+
+    strona = klient.get(f"/dokument/{wpis['id']}").text
+
+    assert wpis["nr_operatu"] in strona, "numeru operatu nie ma nigdzie na stronie"
+    krata = re.search(r'<th class="waski">nr_operatu</th>\s*<td>(.*?)</td>',
+                      strona, re.DOTALL)
+    assert krata and wpis["nr_operatu"] in krata.group(1), \
+        "przy nr_operatu została pusta krata"
+
+
+def test_powielenie_zaczyna_z_pustym_numerem_operatu(klient):
+    """I dlatego numeru **nie** zapisujemy do danych formularza.
+
+    Te dane wracają do formularza przy „Powiel jako nowy”. Numer wpisany tam zostałby
+    użyty drugi raz zamiast wziąć kolejny z licznika — dwa operaty o tym samym numerze
+    to najgorsze, co może się tu stać.
+    """
+    import re
+
+    _dodaj_operat(klient)
+    klient.post("/generuj/spis_tresci_wzor", data=FORMULARZ, follow_redirects=False)
+    wpis = db.dokumenty()[0]
+
+    formularz = klient.get(f"/nowy/spis_tresci_wzor?kopiuj={wpis['id']}").text
+
+    pole = re.search(r'id="p_nr_operatu"[^>]*value="([^"]*)"', formularz)
+    assert pole and pole.group(1) == "", \
+        "powielanie startuje z wpisanym numerem — kolejny operat dostanie ten sam"
+
+
 def test_brak_wymaganego_pola_wraca_na_formularz_z_danymi(klient):
     _dodaj_operat(klient)
     dane = dict(FORMULARZ, pole__nr_roboty="")

@@ -3,6 +3,10 @@
 Co doszło w kolejnych wersjach programu. Ten sam opis pokazuje się raz, na stronie
 głównej, zaraz po tym jak program sam się zaktualizuje.
 
+## 2026.08.06-83 — 2026-08-06
+
+Na stronie operatu widać teraz jego numer — w nagłówku („Operat 001/2026”) i w tabelce z danymi, gdzie wcześniej zostawała pusta krata. Numer nadaje program przy generowaniu, więc w danych z formularza go nie ma; program bierze go z historii. To była tylko kwestia wyświetlania — w dokumencie Worda, w nazwie katalogu i w historii numer był poprawny od zawsze.
+
 ## 2026.08.06-82 — 2026-08-06
 
 Zmiana sposobu numerowania wersji: zamiast licznika wydań w danym dniu jest teraz numer po kolei od pierwszego wydania — „2026.08.06-82” to 82. wydanie programu. W historii wersji (Pomoc → Historia wersji) doszła kolumna z tym numerem, więc widać, które wydanie było które, także dla starszych. Dla Ciebie nic się nie zmienia: program dalej sam sprawdza i pobiera nowe wersje.

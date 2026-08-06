@@ -557,6 +557,17 @@ def dokument(request: Request, dokument_id: int, blad: str | None = None):
                 if isinstance(wartosc, dict) and "obreb" in wartosc else wartosc)
         for klucz, wartosc in dane.items()
     }
+
+    # Numer operatu nadaje program przy generowaniu, więc w danych z formularza jest
+    # **pusty** — i musi taki zostać, bo te dane wracają do formularza przy „Powiel
+    # jako nowy”; wpisany tam numer zostałby użyty drugi raz zamiast wziąć kolejny
+    # z licznika. Ale na tej stronie pusta krata przy numerze operatu wygląda jak
+    # usterka, więc pokazujemy numer, który operat naprawdę dostał — z bazy.
+    szablon = szablony.szablon_po_id(wiersz["szablon"] or "")
+    for pole in (szablon.pola if szablon else []):
+        if pole.typ == "auto_numer" and not czytelne.get(pole.klucz):
+            czytelne[pole.klucz] = wiersz["nr_operatu"] or ""
+
     return _widok(request, "dokument.html", dokument=wiersz, dane=czytelne, blad=blad)
 
 

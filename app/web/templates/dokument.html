@@ -3,7 +3,11 @@
 {% block tresc %}
 
 <h1>{{ dokument.tytul }}</h1>
-<p class="szary">Szablon: {{ dokument.szablon }} · utworzono {{ dokument.utworzono.replace('T', ' ') }}</p>
+{# Numer operatu na wierzchu: to po nim rozpoznaje się robotę w ośrodku, a dotąd
+   nie było go na tej stronie w ogóle — widać było tylko nazwę katalogu. #}
+<p class="szary">{% if dokument.nr_operatu %}Operat <strong>{{ dokument.nr_operatu }}</strong>
+  · {% endif %}szablon: {{ dokument.szablon }}
+  · utworzono {{ dokument.utworzono.replace('T', ' ') }}</p>
 
 {% if dokument.katalog %}
 <div class="komunikat">
