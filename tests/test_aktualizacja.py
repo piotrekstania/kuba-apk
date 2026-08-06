@@ -134,6 +134,36 @@ def test_aktualizacja_podmienia_kod_i_szanuje_dane(srodowisko, monkeypatch, tmp_
     assert aktualizacja.co_nowego() is None            # drugi raz się nie pokazuje
 
 
+def test_zmiana_formatu_numeru_wyzwala_aktualizacje(srodowisko, monkeypatch, tmp_path):
+    """Brat siedzi na starym formacie (`2026.08.06.3`), a wychodzi nowy (`2026.08.06-82`).
+
+    Porównanie jest **na równość, nigdy „na większy”** — i to jest tu cała odpowiedź:
+    dwa różne napisy znaczą „jest nowsza wersja”, niezależnie od tego, jak wyglądają.
+    Gdyby kiedyś ktoś przerobił to na porównanie porządkowe, ten test zapali się
+    pierwszy, bo `2026.08.06-82` w żadnym naturalnym porządku nie jest większe
+    od `2026.08.06.3`.
+    """
+    _instalacja(srodowisko, "2026.08.06.3")
+    paczka = _paczka(tmp_path, "2026.08.06-82\nNowy sposób numerowania wydań.",
+                     {"app/main.py": "# nowy kod"})
+    _podstaw_github(monkeypatch, tmp_path, "2026.08.06-82\nNowy sposób numerowania wydań.",
+                    paczka)
+
+    assert aktualizacja.sprawdz_i_zaktualizuj() is True
+
+    assert aktualizacja.wersja_lokalna()[0] == "2026.08.06-82"
+    assert (srodowisko.katalog / "app" / "main.py").read_text() == "# nowy kod"
+    assert "2026.08.06-82" in aktualizacja.co_nowego()
+
+
+def test_ten_sam_numer_w_nowym_formacie_nie_pobiera_niczego(srodowisko, monkeypatch, tmp_path):
+    """Druga strona tej samej monety: myślnik w numerze nie robi z wersji „innej”."""
+    _instalacja(srodowisko, "2026.08.06-82")
+    _podstaw_github(monkeypatch, tmp_path, "2026.08.06-82", None)
+
+    assert aktualizacja.sprawdz_i_zaktualizuj() is False
+
+
 def test_szablony_sa_lustrzane(srodowisko, monkeypatch, tmp_path):
     """Formatka skasowana w repozytorium ma zniknąć też u brata.
 

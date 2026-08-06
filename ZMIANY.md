@@ -3,6 +3,10 @@
 Co doszło w kolejnych wersjach programu. Ten sam opis pokazuje się raz, na stronie
 głównej, zaraz po tym jak program sam się zaktualizuje.
 
+## 2026.08.06-82 — 2026-08-06
+
+Zmiana sposobu numerowania wersji: zamiast licznika wydań w danym dniu jest teraz numer po kolei od pierwszego wydania — „2026.08.06-82” to 82. wydanie programu. W historii wersji (Pomoc → Historia wersji) doszła kolumna z tym numerem, więc widać, które wydanie było które, także dla starszych. Dla Ciebie nic się nie zmienia: program dalej sam sprawdza i pobiera nowe wersje.
+
 ## 2026.08.06.3 — 2026-08-06
 
 Naprawione: poprawianie operatu przeniesionego wcześniej do archiwum zakładało nowy katalog o kolejnym numerze — poprawiasz 055, a robi się 060. Teraz wraca do tego samego numeru i odtwarza katalog pod starą nazwą, a licznik nie przeskakuje. Uwaga: numery, które już przeskoczyły, zostają jak są.

@@ -38,6 +38,36 @@ def test_czyta_wydania_od_najnowszego(tmp_path, monkeypatch):
     assert wpisy[1]["opis"].endswith("Druga linia opisu.")
 
 
+def test_wydania_sa_ponumerowane_od_pierwszego(tmp_path, monkeypatch):
+    """Lista idzie od najnowszego, więc numery maleją: ostatnie wydanie ma najwyższy.
+
+    Numer liczymy przy czytaniu pliku, a nie zapisujemy w nim — wynika wprost z tego,
+    ile wydań już było, więc wpisany osobno mógłby się z listą rozjechać.
+    """
+    plik = tmp_path / "ZMIANY.md"
+    plik.write_text(PRZYKLAD, encoding="utf-8")
+    monkeypatch.setattr(zmiany, "PLIK", plik)
+
+    wpisy = zmiany.wpisy()
+
+    assert [w["numer"] for w in wpisy] == [2, 1]
+    assert wpisy[-1]["numer"] == 1, "najstarsze wydanie musi być pierwsze"
+
+
+def test_ograniczona_lista_nie_przenumerowuje_wydan(tmp_path, monkeypatch):
+    """`limit` obcina listę, ale numery mają zostać takie jak w pełnej historii."""
+    plik = tmp_path / "ZMIANY.md"
+    plik.write_text(PRZYKLAD, encoding="utf-8")
+    monkeypatch.setattr(zmiany, "PLIK", plik)
+
+    assert [w["numer"] for w in zmiany.wpisy(limit=1)] == [2]
+
+
+def test_strona_historii_pokazuje_numery(klient):
+    tresc = klient.get("/pomoc/historia").text
+    assert 'class="numer' in tresc
+
+
 def test_brak_pliku_nie_wywraca_strony(tmp_path, monkeypatch):
     monkeypatch.setattr(zmiany, "PLIK", tmp_path / "nie-ma-mnie.md")
     assert zmiany.wpisy() == []
@@ -87,3 +117,41 @@ def test_menu_pomocy_prowadzi_do_obu_stron(klient):
 
     assert 'href="/pomoc"' in tresc
     assert 'href="/pomoc/historia"' in tresc
+
+
+# --- stempel nowego wydania --------------------------------------------------
+
+def test_numer_wydania_ma_date_i_kolejny_numer():
+    """`2026.08.06-82`: data z dnia wydania i numer po kolei od pierwszego.
+
+    Numer porządkowy zastąpił licznik wydań w danym dniu — niesie tę samą
+    informację (dwa wydania jednego dnia mają różne numery), a przy okazji mówi,
+    które to wydanie z rzędu.
+    """
+    import sys
+    from datetime import date
+
+    sys.path.insert(0, str(BAZA / "narzedzia"))
+    import wydaj
+
+    assert wydaj.numer_wydania(date(2026, 8, 6), 82) == "2026.08.06-82"
+    assert wydaj.numer_wydania(date(2026, 12, 1), 100) == "2026.12.01-100"
+
+
+def test_nastepny_numer_liczy_tylko_zacommitowane_wydania(monkeypatch):
+    """Powtórne uruchomienie skryptu przed commitem ma dać ten sam numer.
+
+    To, co leży w katalogu roboczym, jest właśnie tym wydaniem, które stemplujemy —
+    gdyby liczyło się do sumy, każde uruchomienie przesuwałoby numer o jeden.
+    """
+    import sys
+    from datetime import date
+
+    sys.path.insert(0, str(BAZA / "narzedzia"))
+    import wydaj
+
+    monkeypatch.setattr(wydaj.zbuduj_zmiany, "wydania_zacommitowane",
+                        lambda: [("x", "", "")] * 81)
+
+    assert wydaj.nastepny_numer(date(2026, 8, 6)) == "2026.08.06-82"
+    assert wydaj.nastepny_numer(date(2026, 8, 6)) == "2026.08.06-82"

@@ -97,16 +97,24 @@ pliku ręcznie.
 Commit bez zmiany `WERSJA` nikomu się nie zainstaluje — i o to chodzi, bo to Ty decydujesz,
 kiedy brat dostaje nową wersję.
 
-Numer ma postać `rok.miesiąc.dzień.licznik`, z datą **dnia wydania** i licznikiem
-liczącym wydania tego dnia od 1. Zaraz po podbiciu uruchom:
+Numeru nie wpisuj ręcznie — stempluje go skrypt:
 
 ```bash
-python narzedzia/zbuduj_zmiany.py --zapisz
+python narzedzia/wydaj.py "Opis zmian dla użytkownika, jednym akapitem."
 ```
 
-— to zbiera historię wydań do `ZMIANY.md`, którą brat ogląda w menu „Pomoc". Bez tego
-kroku dostanie komunikat o nowej wersji i pustą stronę historii; pilnuje tego
-`test_wydana_wersja_ma_wpis_w_historii`.
+Numer ma postać `rok.miesiąc.dzień-kolejny`, np. `2026.08.06-82`: data z dnia wydania
+i numer po kolei od pierwszego wydania. Skrypt bierze datę z zegara, numer z historii
+pliku `WERSJA` w gicie i od razu przebudowuje `ZMIANY.md`, którą brat ogląda w menu
+„Pomoc". Bez tej przebudowy dostałby komunikat o nowej wersji i pustą stronę historii —
+pilnuje tego `test_wydana_wersja_ma_wpis_w_historii`.
+
+Skrypt niczego nie commituje ani nie wypycha: wydanie to świadoma decyzja.
+
+Format numeru wolno zmienić, bo aktualizator porównuje wersje **na równość**, nigdy
+„na większy" — każdy inny napis znaczy „jest nowsza wersja". Nie przerabiaj tego na
+porównanie porządkowe: `2026.08.06-82` jest znakowo *mniejsze* niż `2026.08.06.3`,
+więc aktualizacje stanęłyby po cichu.
 
 W **kopii roboczej gita aktualizator się nie uruchamia** (wykrywa katalog `.git`) — inaczej
 `./start.sh` nadpisałby niezacommitowane zmiany plikami z GitHuba. Tam obowiązuje `git pull`.

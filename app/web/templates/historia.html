@@ -8,9 +8,13 @@
 
 {% if wpisy %}
 <table class="lista">
-  <tr><th class="waski">Wersja</th><th class="waski">Data</th><th>Co się zmieniło</th></tr>
+  <tr><th class="numer">Nr</th><th class="waski">Wersja</th><th class="waski">Data</th>
+      <th>Co się zmieniło</th></tr>
   {% for wpis in wpisy %}
   <tr>
+    {# numer po kolei od pierwszego wydania — wersje sprzed sierpnia 2026 nie miały
+       go jeszcze w swoim numerze, więc tutaj widać, które to było z rzędu #}
+    <td class="numer szary">{{ wpis.numer }}.</td>
     <td>
       <strong>{{ wpis.wersja }}</strong>
       {% if wpis.wersja == wersja %}<br><span class="teraz">masz tę wersję</span>{% endif %}

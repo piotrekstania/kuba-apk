@@ -45,6 +45,10 @@ def wpisy(limit: int | None = None) -> list[dict[str, Any]]:
         elif zebrane and linia.strip() and not linia.startswith("#"):
             zebrane[-1]["opis"].append(linia.strip())
 
-    for wpis in zebrane:
+    # Numer porządkowy liczymy tutaj, a nie zapisujemy w pliku: wynika wprost z tego,
+    # ile wydań już było, więc wpisany osobno mógłby się z listą rozjechać. Lista jest
+    # od najnowszego, czyli pierwszy wpis dostaje najwyższy numer.
+    for numer, wpis in enumerate(zebrane, start=1):
         wpis["opis"] = " ".join(wpis["opis"])
+        wpis["numer"] = len(zebrane) - numer + 1
     return zebrane[:limit] if limit else zebrane

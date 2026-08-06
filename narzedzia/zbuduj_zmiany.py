@@ -38,6 +38,15 @@ def _rozbij(tresc: str) -> tuple[str, str]:
     return czesci[0], " ".join(czesci[1:]).strip()
 
 
+def wydania_zacommitowane() -> list[tuple[str, str, str]]:
+    """Wydania widoczne w historii gita — bez tego, co leży w katalogu roboczym.
+
+    Po tym liczy się numer kolejnego wydania (`narzedzia/wydaj.py`): ile wydań już
+    poszło do brata, tyle jest w gicie.
+    """
+    return _z_gita(set())
+
+
 def wydania() -> list[tuple[str, str, str]]:
     """(numer, data, opis) dla każdego wydania, od najnowszego.
 
@@ -58,6 +67,11 @@ def wydania() -> list[tuple[str, str, str]]:
     if numer_roboczy:
         widziane.add(numer_roboczy)
         zebrane.append((numer_roboczy, datetime.now().strftime("%Y-%m-%d"), opis_roboczy))
+    return zebrane + _z_gita(widziane)
+
+
+def _z_gita(widziane: set[str]) -> list[tuple[str, str, str]]:
+    zebrane: list[tuple[str, str, str]] = []
     linie = _git("log", "--format=%H %ad", "--date=short", "--", "WERSJA").splitlines()
     for wiersz in linie:
         skrot, data = wiersz.split(" ", 1)
@@ -80,6 +94,12 @@ def zbuduj() -> str:
     return "".join(czesci)
 
 
+def zapisz() -> Path:
+    """Przebudowuje ZMIANY.md. Woła to też `narzedzia/wydaj.py` zaraz po stemplu."""
+    PLIK.write_text(zbuduj(), encoding="utf-8")
+    return PLIK
+
+
 if __name__ == "__main__":
     parser = argparse.ArgumentParser(description="Buduje ZMIANY.md z historii gita.")
     parser.add_argument("--zapisz", action="store_true", help="zapisz do ZMIANY.md")
@@ -87,7 +107,7 @@ if __name__ == "__main__":
 
     tresc = zbuduj()
     if argumenty.zapisz:
-        PLIK.write_text(tresc, encoding="utf-8")
+        zapisz()
         print(f"zapisano {PLIK} — wydań: {len(wydania())}")
     else:
         sys.stdout.reconfigure(encoding="utf-8")

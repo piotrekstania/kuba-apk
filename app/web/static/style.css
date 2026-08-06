@@ -126,6 +126,9 @@ table.lista th { background: #f0f2f5; font-size: 13px; }
 table.wiersze th { background: #f0f2f5; font-size: 12px; color: var(--szary); }
 table.wiersze td { padding: 4px 6px; }
 th.waski { width: 220px; }
+/* Kolumna z numerem wydania w historii — wąska i wyrównana do prawej, żeby
+   „7." i „81." kończyły się w tym samym miejscu. */
+th.numer, td.numer { width: 44px; text-align: right; white-space: nowrap; }
 .teraz { font-size: 11px; color: var(--akcent); border: 1px solid var(--akcent);
          border-radius: 999px; padding: 1px 8px; white-space: nowrap; }
 .spoza { font-size: 11px; color: var(--szary); border: 1px solid var(--linia);

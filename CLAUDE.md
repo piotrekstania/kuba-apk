@@ -154,6 +154,7 @@ starą wersję (autor się na to nadział).
 | `WERSJA` | 1. linia = numer porównywany z GitHubem, reszta = opis pokazywany bratu raz po aktualizacji |
 | `ZMIANY.md` | historia wydań pokazywana na `/pomoc/historia`; **generowana**, nie pisana ręcznie |
 | `app/zmiany.py` | czyta `ZMIANY.md` (parser na trzech liniach, format do poprawienia w Notatniku) |
+| `narzedzia/wydaj.py` | stempluje wydanie: numer z daty i kolejności, `WERSJA` + `ZMIANY.md` |
 | `narzedzia/zbuduj_zmiany.py` | buduje `ZMIANY.md` z historii pliku `WERSJA` w gicie |
 | `app/db.py` | SQLite: `dokumenty`, `liczniki`, `zdarzenia`, `teryt_*` (`ustawienia` bez interfejsu) |
 | `app/statystyki.py` | liczniki do stopki: operaty, dokumenty, złożone PDF-y; zliczane w chwili zdarzenia |
@@ -197,18 +198,22 @@ też brat. Interfejs w całości po polsku.
    puszcza ją w puli wątków), przygotowanie podglądów w tle (`threading.Thread`
    w `/generuj`) i `POST /scal/{nazwa}`. Bez `pythoncom.CoInitialize()` leci
    `CoInitialize has not been called` — stąd `_com()` w `app/pdf.py`.
-7a. **Numer wersji to `rok.miesiąc.dzień.licznik` — data ma być z dnia wydania,
-   a licznik liczy wydania tego dnia i zaczyna się od 1.** Łatwo o tym zapomnieć przy
-   serii poprawek ciągnącej się po północy: numery doszły do `2026.07.31.40`, choć
-   wydania szły już 1 sierpnia. Nic się przez to nie psuje — porównanie jest wyłącznie
-   na równość (`numer == lokalna`), nigdy „na większy”, więc licznik może wrócić do 1
-   przy nowej dacie — ale numer przestaje mówić, kiedy brat co dostał.
-7a. **Po podbiciu `WERSJA` uruchom `python narzedzia/zbuduj_zmiany.py --zapisz`.**
-   Historia wydań na `/pomoc/historia` jedzie do brata jako plik `ZMIANY.md`, bo on
-   nie ma gita — ma rozpakowany `.zip`. Skrypt buduje ją z opisów, które i tak
-   powstają w `WERSJA` przy każdym wydaniu, więc nie pisze się tego dwa razy.
-   Pilnuje tego `test_wydana_wersja_ma_wpis_w_historii`: podbita wersja bez wpisu
-   w historii = czerwony test, zanim brat zobaczy „co nowego” i pustą stronę.
+7a. **Wydanie stempluje `narzedzia/wydaj.py "opis dla brata"` — nie rób tego ręcznie.**
+   Skrypt ustala numer (`rok.miesiąc.dzień-kolejny`, np. `2026.08.06-82`: data z zegara,
+   numer po kolei z historii `WERSJA` w gicie), zapisuje `WERSJA` i od razu przebudowuje
+   `ZMIANY.md`. Powstał dlatego, że **oba człony wpisywane z ręki już się pomyliły**:
+   raz weszła data z poprzedniej sesji (numery doszły do `2026.07.31.40`, choć wydania
+   szły już 1 sierpnia), raz numer zajęty przez wydanie zrobione tego dnia na drugim
+   komputerze — trzeba było poprawiać po fakcie. Historia wydań musi jechać do brata
+   jako plik, bo on nie ma gita; pilnuje tego `test_wydana_wersja_ma_wpis_w_historii`:
+   podbita wersja bez wpisu = czerwony test, zanim brat zobaczy „co nowego” i pustą stronę.
+7c. **Format numeru wolno zmienić, bo porównanie jest na równość** (`numer == lokalna`),
+   nigdy „na większy”. Dlatego przejście z `2026.08.06.3` na `2026.08.06-82` zadziałało
+   u brata jak każda inna nowa wersja. Gdyby ktoś kiedyś przerobił to na porównanie
+   porządkowe, **aktualizacje stanęłyby po cichu**: `2026.08.06-82` jest w porządku
+   znakowym *mniejsze* niż `2026.08.06.3` (dywiz przed kropką), więc program uznałby,
+   że ma nowszą wersję. Trzyma to `test_zmiana_formatu_numeru_wyzwala_aktualizacje` —
+   sprawdzone, że przy `<=` zamiast `==` świeci na czerwono.
 7. **Wydanie = podbicie `WERSJA` + push.** Sam commit nic bratu nie wyśle — porównywany
    jest wyłącznie pierwszy wiersz pliku `WERSJA`. To celowe: decydujesz, kiedy dostaje
    nową wersję. Odwrotna pułapka: podbicie `WERSJA` bez wypchnięcia reszty kodu wyśle
