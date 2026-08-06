@@ -199,6 +199,50 @@ def test_poprawianie_bierze_formatke_zapisana_przy_operacie(klient):
     assert zapisane["warianty"][kategoria] == pierwsza["id"]
 
 
+def test_strona_operatu_mowi_z_ktorej_formatki_powstal(klient):
+    """Po samym dokumencie nie widać, że wyszedł z własnej formatki.
+
+    To jest ta informacja, której szuka się po miesiącu, gdy jeden operat wygląda
+    inaczej niż pozostałe.
+    """
+    kategoria = _kategoria(klient.srodowisko)
+    wariant, _ = _wgraj(klient.srodowisko, kategoria, "Wersja skrocona.docx")
+
+    klient.post(f"/generuj/{kategoria}",
+                data={**FORMULARZ, f"wariant__{kategoria}": wariant["id"]},
+                follow_redirects=False)
+    strona = klient.get(f"/dokument/{db.dokumenty()[0]['id']}").text
+
+    assert "Użyte formatki" in strona
+    assert "Wersja_skrocona" in strona
+
+
+def test_operat_ze_standardowej_formatki_nie_dopisuje_nic(klient):
+    """Standardowa formatka to stan domyślny — wypisywanie go byłoby szumem."""
+    kategoria = _kategoria(klient.srodowisko)
+    _wgraj(klient.srodowisko, kategoria)          # formatka istnieje, ale jej nie wybieramy
+
+    klient.post(f"/generuj/{kategoria}", data={**FORMULARZ, f"wariant__{kategoria}": ""},
+                follow_redirects=False)
+    strona = klient.get(f"/dokument/{db.dokumenty()[0]['id']}").text
+
+    assert "Użyte formatki" not in strona
+
+
+def test_strona_mowi_gdy_uzyta_formatka_zostala_usunieta(klient):
+    """Poprawianie takiego operatu wróci do standardowej — lepiej o tym wiedzieć."""
+    kategoria = _kategoria(klient.srodowisko)
+    wariant, _ = _wgraj(klient.srodowisko, kategoria)
+
+    klient.post(f"/generuj/{kategoria}",
+                data={**FORMULARZ, f"wariant__{kategoria}": wariant["id"]},
+                follow_redirects=False)
+    warianty.usun(wariant["id"])
+    strona = klient.get(f"/dokument/{db.dokumenty()[0]['id']}").text
+
+    assert "już usunięta" in strona
+
+
 def test_skasowana_formatka_nie_wywala_generowania(klient):
     """Wariant można skasować także wtedy, gdy zrobiono nim stary operat."""
     kategoria = _kategoria(klient.srodowisko)

@@ -3,6 +3,10 @@
 Co doszło w kolejnych wersjach programu. Ten sam opis pokazuje się raz, na stronie
 głównej, zaraz po tym jak program sam się zaktualizuje.
 
+## 2026.08.06-86 — 2026-08-06
+
+Na stronie operatu widać teraz, z której formatki powstał. Gdy użyta była własna, na dole dochodzi blok „Użyte formatki” z nazwą pliku; przy standardowej nie ma tam nic, bo to stan domyślny. Jeśli formatka została w międzyczasie usunięta, program pisze o tym wprost — poprawianie takiego operatu wróci już do standardowej.
+
 ## 2026.08.06-85 — 2026-08-06
 
 Lista wpisanych danych na stronie operatu jest teraz uporządkowana: pola idą w tej samej kolejności i w tych samych grupach co w formularzu — robota, położenie, spis treści, sprawozdanie, wykazy — rozdzielone nagłówkami. Wcześniej leżały w kolejności przypadkowej, więc numer roboty sąsiadował z opisem przebiegu, a daty stały w trzech miejscach.

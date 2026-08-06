@@ -560,8 +560,8 @@ def dokument(request: Request, dokument_id: int, blad: str | None = None):
         for klucz, wartosc in dane.items()
     }
 
-    # Wybór formatek to nasza wewnętrzna sprawa, nie pole formularza — na liście
-    # wpisanych danych wyglądałby jak „1 wierszy”.
+    # Surowy zapis wyboru formatek wygląda na liście danych jak „1 wierszy” — zdejmujemy
+    # go stąd, ale niżej pokazujemy w osobnej grupie, po ludzku.
     czytelne.pop("warianty", None)
 
     szablon = szablony.szablon_po_id(wiersz["szablon"] or "")
@@ -595,8 +595,36 @@ def dokument(request: Request, dokument_id: int, blad: str | None = None):
             czytelne[pole.klucz] = "; ".join(
                 nazwy_dokumentow.get(str(i), str(i)) for i in (czytelne.get(pole.klucz) or []))
 
-    return _widok(request, "dokument.html", dokument=wiersz, blad=blad,
-                  grupy=_dane_w_grupach(pola, czytelne))
+    grupy = _dane_w_grupach(pola, czytelne)
+    uzyte = _uzyte_formatki(dane.get("warianty") or {}, nazwy_dokumentow)
+    if uzyte:
+        grupy.append({"nazwa": "Użyte formatki", "pola": uzyte})
+
+    return _widok(request, "dokument.html", dokument=wiersz, blad=blad, grupy=grupy)
+
+
+def _uzyte_formatki(wybor: dict[str, str],
+                    nazwy_dokumentow: dict[str, str]) -> list[dict[str, Any]]:
+    """Które dokumenty powstały z **własnej** formatki, a nie ze standardowej.
+
+    Standardowych nie wymieniamy: to domyślny stan i wypisywanie go przy każdym operacie
+    byłoby szumem. Ale gdy operat wyszedł z własnej formatki, po samym dokumencie nie
+    widać tego z niczego — a to jest właśnie ta informacja, której szuka się po miesiącu,
+    gdy operat wygląda inaczej niż pozostałe.
+
+    Formatkę można w międzyczasie usunąć. Piszemy o tym wprost, bo poprawianie takiego
+    operatu wróci już do standardowej i dokument wyjdzie inny niż leżący na dysku.
+    """
+    pozycje: list[dict[str, Any]] = []
+    for kategoria, identyfikator in sorted(wybor.items()):
+        if not identyfikator:
+            continue                      # standardowa formatka — nie ma o czym pisać
+        nazwa = identyfikator.partition(warianty.ROZDZIELNIK)[2] or identyfikator
+        if warianty.plik(identyfikator) is None:
+            nazwa += " (formatka już usunięta)"
+        pozycje.append({"klucz": nazwy_dokumentow.get(kategoria, kategoria),
+                        "wartosc": nazwa})
+    return pozycje
 
 
 def _dane_w_grupach(pola: list[szablony.Pole],
