@@ -135,6 +135,40 @@ def test_strona_operatu_pokazuje_nadany_numer(klient):
         "przy nr_operatu została pusta krata"
 
 
+def test_wpisane_dane_ida_grupami_z_szablonu(klient):
+    """Kolejność i grupy biorą się z opisu szablonu, a nie z kolejności danych w bazie.
+
+    W bazie dane leżą tak, jak przyszły z formularza, więc numer roboty sąsiadował
+    z opisem przebiegu, a daty stały w trzech miejscach. Grupy są już opisane w `.json`
+    obok szablonu — tym samym, po którym formularz układa karty — więc zmiana układu
+    nie wymaga ruszania kodu.
+    """
+    import re
+
+    klient.srodowisko.dodaj_szablon(
+        "spis_tresci_wzor", ["{{ nr_roboty }} {{ nr_operatu }} {{ uwagi }} {{ data_zakonczenia }}"],
+        opis={"nazwa": "Operat", "glowny": True, "licznik": "operat", "pola": [
+            {"klucz": "nr_roboty", "grupa": "Robota", "wymagane": True},
+            {"klucz": "nr_operatu", "typ": "auto_numer", "domyslnie": "{numer3}/{rok}",
+             "grupa": "Robota"},
+            {"klucz": "uwagi", "typ": "textarea", "grupa": "Opis"},
+            # pole tej samej grupy dopisane na końcu ma trafić do niej, a nie założyć
+            # drugiego bloku o tym samym nagłówku
+            {"klucz": "data_zakonczenia", "typ": "date", "grupa": "Robota"},
+        ]})
+
+    klient.post("/generuj/spis_tresci_wzor",
+                data={"pole__nr_roboty": "GK.1.2026", "pole__nr_operatu": "",
+                      "pole__uwagi": "cokolwiek", "pole__data_zakonczenia": "2026-08-06"},
+                follow_redirects=False)
+    strona = klient.get(f"/dokument/{db.dokumenty()[0]['id']}").text
+
+    uklad = re.findall(r'<tr class="grupa"><th colspan="2">(.*?)</th>|<th class="waski">(.*?)</th>',
+                       strona)
+    assert [g or p for g, p in uklad] == [
+        "Robota", "nr_roboty", "nr_operatu", "data_zakonczenia", "Opis", "uwagi"]
+
+
 def test_pole_zbiorcze_dokumentow_nie_pokazuje_sie_puste(klient):
     """Kafelek „Wygeneruj też” zbiera dokumenty, których nie wziął żaden inny.
 

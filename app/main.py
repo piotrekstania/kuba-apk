@@ -595,7 +595,40 @@ def dokument(request: Request, dokument_id: int, blad: str | None = None):
             czytelne[pole.klucz] = "; ".join(
                 nazwy_dokumentow.get(str(i), str(i)) for i in (czytelne.get(pole.klucz) or []))
 
-    return _widok(request, "dokument.html", dokument=wiersz, dane=czytelne, blad=blad)
+    return _widok(request, "dokument.html", dokument=wiersz, blad=blad,
+                  grupy=_dane_w_grupach(pola, czytelne))
+
+
+def _dane_w_grupach(pola: list[szablony.Pole],
+                    wartosci: dict[str, Any]) -> list[dict[str, Any]]:
+    """Wpisane dane w kolejności i grupach **z opisu szablonu**, a nie z bazy.
+
+    Dane w bazie leżą w kolejności, w jakiej przyszły z formularza, więc na stronie
+    operatu numer roboty sąsiadował z opisem przebiegu, a daty stały w trzech miejscach.
+    Kolejność i grupy są już opisane w pliku `.json` obok szablonu — to samo, po czym
+    formularz układa karty — więc bierzemy je stamtąd. Zmiana układu nie wymaga wtedy
+    ruszania kodu, dokładnie tak jak przy formularzu.
+
+    Pola, których nie ma w szablonie (dane po skasowanym polu, ślad po starszej wersji
+    formatki), lądują na końcu — lepiej pokazać je bez grupy niż zgubić.
+    """
+    # Grupy scalamy po nazwie, tak samo jak `Szablon.grupy` przy budowaniu formularza:
+    # pole tej samej grupy dopisane na końcu szablonu ma trafić do niej, a nie założyć
+    # drugiego bloku o tym samym nagłówku. Kolejność bloków wyznacza pierwsze wystąpienie.
+    grupy: dict[str, list[dict[str, Any]]] = {}
+    uzyte: set[str] = set()
+
+    def dopisz(nazwa: str, klucz: str) -> None:
+        grupy.setdefault(nazwa, []).append({"klucz": klucz, "wartosc": wartosci[klucz]})
+        uzyte.add(klucz)
+
+    for pole in pola:
+        if pole.klucz in wartosci and pole.klucz not in uzyte:
+            dopisz(pole.grupa, pole.klucz)
+    for klucz in wartosci:
+        if klucz not in uzyte:
+            dopisz("Pozostałe dane", klucz)
+    return [{"nazwa": nazwa, "pola": lista} for nazwa, lista in grupy.items()]
 
 
 @app.post("/dokument/{dokument_id}/otworz-katalog")

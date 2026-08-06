@@ -26,11 +26,17 @@
 </div>
 
 <h2>Wpisane dane</h2>
+{# Kolejność i podział na grupy biorą się z opisu szablonu (`.json`), czyli z tego
+   samego miejsca, po którym formularz układa karty. Dzięki temu strona operatu czyta
+   się w tej samej kolejności, w jakiej się go wypełniało. #}
 <table class="lista">
-  {% for klucz, wartosc in dane.items() %}
+  {% for grupa in grupy %}
+  <tr class="grupa"><th colspan="2">{{ grupa.nazwa }}</th></tr>
+  {% for pole in grupa.pola %}
   <tr>
-    <th class="waski">{{ klucz }}</th>
+    <th class="waski">{{ pole.klucz }}</th>
     <td>
+      {% set wartosc = pole.wartosc %}
       {% if wartosc is iterable and wartosc is not string %}
         {# lista tekstów (np. spis treści) czyta się sama; lista słowników to tabela #}
         {% if wartosc and wartosc[0] is string %}{{ wartosc | join('; ') }}
@@ -38,6 +44,7 @@
       {% else %}{{ wartosc }}{% endif %}
     </td>
   </tr>
+  {% endfor %}
   {% endfor %}
 </table>
 

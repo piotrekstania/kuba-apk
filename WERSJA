@@ -1,2 +1,2 @@
-2026.08.06-84
-Porządki na stronie operatu: zniknął wiersz „dokumenty — 0 wierszy”. To było pole zbiorcze „Wygeneruj też”, które zbiera dokumenty nieprzypisane do żadnej karty — a że wszystkie są już przypisane, nie ma z czego wybierać i formularz w ogóle go nie pokazuje. Wybrane dokumenty są teraz opisane nazwami („Sprawozdanie techniczne”) zamiast nazwami plików. Wygenerowane pliki były zawsze te, co trzeba.
+2026.08.06-85
+Lista wpisanych danych na stronie operatu jest teraz uporządkowana: pola idą w tej samej kolejności i w tych samych grupach co w formularzu — robota, położenie, spis treści, sprawozdanie, wykazy — rozdzielone nagłówkami. Wcześniej leżały w kolejności przypadkowej, więc numer roboty sąsiadował z opisem przebiegu, a daty stały w trzech miejscach.

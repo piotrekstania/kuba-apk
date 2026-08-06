@@ -126,6 +126,13 @@ table.lista th { background: #f0f2f5; font-size: 13px; }
 table.wiersze th { background: #f0f2f5; font-size: 12px; color: var(--szary); }
 table.wiersze td { padding: 4px 6px; }
 th.waski { width: 220px; }
+/* Separator grup na liście wpisanych danych — ma rozdzielać, a nie krzyczeć,
+   więc drobnym pismem i bez tła; pierwsza grupa nie potrzebuje kreski nad sobą. */
+tr.grupa th { font-size: 12px; font-weight: 600; letter-spacing: .04em;
+              text-transform: uppercase; color: var(--szary);
+              background: transparent; padding: 20px 10px 4px;
+              border-top: 2px solid var(--linia); }
+table.lista tr.grupa:first-child th { padding-top: 8px; border-top: none; }
 /* Kolumna z numerem wydania w historii — wąska i wyrównana do prawej, żeby
    „7." i „81." kończyły się w tym samym miejscu. */
 th.numer, td.numer { width: 44px; text-align: right; white-space: nowrap; }
