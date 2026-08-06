@@ -348,8 +348,10 @@ def _listy_dokumentow(szablon: szablony.Szablon) -> dict[str, list[dict[str, str
     nowy szablon wrzucony do `szablony/` nadal pokazuje się sam, choćby w karcie
     „Inne dokumenty”, zamiast zniknąć bez śladu.
 
-    Pola, dla których nie zostało nic do pokazania, wyrzucamy z formularza — inaczej
-    zostałaby pusta karta z samym nagłówkiem.
+    **Uwaga: ta funkcja zmienia przekazany szablon.** Pola, dla których nie zostało nic
+    do pokazania, wyrzuca z `szablon.pola` — inaczej w formularzu zostałaby pusta karta
+    z samym nagłówkiem. Kto potrzebuje kompletu pól (np. strona operatu, żeby wiedzieć,
+    czego *nie* było w formularzu), musi zrobić kopię **przed** tym wywołaniem.
     """
     wszystkie = [s for s in szablony.lista_skrocona() if s["id"] != szablon.id]
     zajete = {i for p in szablon.pola if p.typ == "dokumenty" for i in p.tylko}
@@ -558,15 +560,40 @@ def dokument(request: Request, dokument_id: int, blad: str | None = None):
         for klucz, wartosc in dane.items()
     }
 
-    # Numer operatu nadaje program przy generowaniu, więc w danych z formularza jest
-    # **pusty** — i musi taki zostać, bo te dane wracają do formularza przy „Powiel
-    # jako nowy”; wpisany tam numer zostałby użyty drugi raz zamiast wziąć kolejny
-    # z licznika. Ale na tej stronie pusta krata przy numerze operatu wygląda jak
-    # usterka, więc pokazujemy numer, który operat naprawdę dostał — z bazy.
+    # Wybór formatek to nasza wewnętrzna sprawa, nie pole formularza — na liście
+    # wpisanych danych wyglądałby jak „1 wierszy”.
+    czytelne.pop("warianty", None)
+
     szablon = szablony.szablon_po_id(wiersz["szablon"] or "")
-    for pole in (szablon.pola if szablon else []):
+    # Uwaga: `_listy_dokumentow` **przycina `szablon.pola`** — wyrzuca pola typu
+    # `dokumenty`, dla których nie ma czego pokazać. Robi to dla formularza (żeby nie
+    # została pusta karta z samym nagłówkiem), ale tutaj potrzebujemy pełnej listy pól,
+    # bo właśnie tym przyciętym trzeba się zająć. Stąd kopia zrobiona **przed** wywołaniem.
+    pola = list(szablon.pola) if szablon else []
+    listy = _listy_dokumentow(szablon) if szablon else {}
+    nazwy_dokumentow = {d["id"]: d["nazwa_dokumentu"] for d in szablony.lista_skrocona()}
+
+    for pole in pola:
+        # Numer operatu nadaje program przy generowaniu, więc w danych z formularza jest
+        # **pusty** — i musi taki zostać, bo te dane wracają do formularza przy „Powiel
+        # jako nowy”; wpisany tam numer zostałby użyty drugi raz zamiast wziąć kolejny
+        # z licznika. Ale na tej stronie pusta krata przy numerze operatu wygląda jak
+        # usterka, więc pokazujemy numer, który operat naprawdę dostał — z bazy.
         if pole.typ == "auto_numer" and not czytelne.get(pole.klucz):
             czytelne[pole.klucz] = wiersz["nr_operatu"] or ""
+
+        elif pole.typ == "dokumenty":
+            # Pole bez `tylko` zbiera dokumenty, których nie wziął żaden inny kafelek.
+            # Gdy wszystkie są już rozdane, nie ma z czego wybierać i **formularz w ogóle
+            # go nie pokazuje** — więc na liście wpisanych danych też nie ma czego pokazać.
+            # Zostawała po nim krata „0 wierszy”, czyli informacja o niczym.
+            if not listy.get(pole.klucz):
+                czytelne.pop(pole.klucz, None)
+                continue
+            # a wybrane dokumenty piszemy tak, jak nazywa je reszta programu,
+            # zamiast identyfikatorami plików („sprawozdanie_techniczne_wzor”)
+            czytelne[pole.klucz] = "; ".join(
+                nazwy_dokumentow.get(str(i), str(i)) for i in (czytelne.get(pole.klucz) or []))
 
     return _widok(request, "dokument.html", dokument=wiersz, dane=czytelne, blad=blad)
 

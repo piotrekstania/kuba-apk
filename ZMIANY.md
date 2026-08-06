@@ -3,6 +3,10 @@
 Co doszło w kolejnych wersjach programu. Ten sam opis pokazuje się raz, na stronie
 głównej, zaraz po tym jak program sam się zaktualizuje.
 
+## 2026.08.06-84 — 2026-08-06
+
+Porządki na stronie operatu: zniknął wiersz „dokumenty — 0 wierszy”. To było pole zbiorcze „Wygeneruj też”, które zbiera dokumenty nieprzypisane do żadnej karty — a że wszystkie są już przypisane, nie ma z czego wybierać i formularz w ogóle go nie pokazuje. Wybrane dokumenty są teraz opisane nazwami („Sprawozdanie techniczne”) zamiast nazwami plików. Wygenerowane pliki były zawsze te, co trzeba.
+
 ## 2026.08.06-83 — 2026-08-06
 
 Na stronie operatu widać teraz jego numer — w nagłówku („Operat 001/2026”) i w tabelce z danymi, gdzie wcześniej zostawała pusta krata. Numer nadaje program przy generowaniu, więc w danych z formularza go nie ma; program bierze go z historii. To była tylko kwestia wyświetlania — w dokumencie Worda, w nazwie katalogu i w historii numer był poprawny od zawsze.

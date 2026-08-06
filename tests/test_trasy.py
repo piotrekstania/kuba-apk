@@ -135,6 +135,35 @@ def test_strona_operatu_pokazuje_nadany_numer(klient):
         "przy nr_operatu została pusta krata"
 
 
+def test_pole_zbiorcze_dokumentow_nie_pokazuje_sie_puste(klient):
+    """Kafelek „Wygeneruj też” zbiera dokumenty, których nie wziął żaden inny.
+
+    Gdy wszystkie są już rozdane po kafelkach nazwanych, nie ma z czego wybierać
+    i formularz w ogóle go nie pokazuje. Na liście wpisanych danych zostawała po nim
+    krata „0 wierszy” — informacja o niczym, wyglądająca jak zgubione dokumenty.
+    """
+    klient.srodowisko.dodaj_szablon(
+        "spis_tresci_wzor", ["{{ nr_roboty }} {{ nr_operatu }}"],
+        opis={**OPIS_OPERATU, "pola": OPIS_OPERATU["pola"] + [
+            {"klucz": "dokumenty_sprawozdanie", "typ": "dokumenty",
+             "tylko": ["sprawozdanie_wzor"]},
+            {"klucz": "dokumenty", "typ": "dokumenty"},        # zbiorcze, bez `tylko`
+        ]})
+    klient.srodowisko.dodaj_szablon("sprawozdanie_wzor", ["{{ nr_operatu }}"],
+                                    opis={"nazwa": "Sprawozdanie techniczne", "pola": []})
+
+    klient.post("/generuj/spis_tresci_wzor",
+                data={**FORMULARZ, "pole__dokumenty_sprawozdanie": "sprawozdanie_wzor"},
+                follow_redirects=False)
+    strona = klient.get(f"/dokument/{db.dokumenty()[0]['id']}").text
+
+    assert "0 wierszy" not in strona
+    assert ">dokumenty</th>" not in strona, "puste pole zbiorcze zostało na liście"
+    # ...a wybrany dokument opisany jest nazwą, nie identyfikatorem pliku
+    assert "Sprawozdanie techniczne" in strona
+    assert "sprawozdanie_wzor" not in strona
+
+
 def test_powielenie_zaczyna_z_pustym_numerem_operatu(klient):
     """I dlatego numeru **nie** zapisujemy do danych formularza.
 
