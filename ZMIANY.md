@@ -3,6 +3,10 @@
 Co doszło w kolejnych wersjach programu. Ten sam opis pokazuje się raz, na stronie
 głównej, zaraz po tym jak program sam się zaktualizuje.
 
+## 2026.08.10-87 — 2026-08-10
+
+Nowe pole „Opis” przy zakładaniu i poprawianiu operatu — miejsce na twoje notatki do roboty: co zostało do zrobienia, na co czekasz, co ustaliłeś w ośrodku. Do żadnego dokumentu to nie wchodzi, jest tylko dla ciebie. Opis widać na liście operatów na stronie głównej, pod danymi operatu, i po wejściu w sam operat. Zmieniasz go przez „Popraw ten operat”, tak jak resztę danych. Zapisuje się razem z operatem, więc zostaje i po przeniesieniu katalogu do archiwum, i po skopiowaniu go na inny komputer.
+
 ## 2026.08.06-86 — 2026-08-06
 
 Na stronie operatu widać teraz, z której formatki powstał. Gdy użyta była własna, na dole dochodzi blok „Użyte formatki” z nazwą pliku; przy standardowej nie ma tam nic, bo to stan domyślny. Jeśli formatka została w międzyczasie usunięta, program pisze o tym wprost — poprawianie takiego operatu wróci już do standardowej.
