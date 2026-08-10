@@ -149,12 +149,18 @@ table.lista tr.notatka span { display: block; margin-left: 2px; padding-left: 10
                               border-left: 2px solid var(--linia);
                               font-size: 12.5px; line-height: 1.45; color: var(--szary);
                               white-space: pre-wrap; }
-/* Opis na stronie operatu. Ta sama pionowa kreska co na liście, żeby brat rozpoznał
-   to jako tę samą rzecz; bez tła, bo to nie komunikat programu tylko jego własny tekst. */
-.opis-operatu { margin: 16px 0; padding-left: 12px; border-left: 3px solid var(--linia); }
-.opis-operatu h2 { margin: 0 0 4px; font-size: 12px; font-weight: 600; letter-spacing: .04em;
+/* Opis na stronie operatu. Pierwsza wersja była samą kreską na gołym tle — i wychodziła
+   bledsza niż stojące pod nią niebieskie pudełko z informacją o katalogu, czyli własny
+   tekst brata wyglądał mniej ważnie niż rutynowy komunikat programu. Teraz to normalny
+   panel, jak karty i pola formularza: białe tło odcina go od szarej strony, a tekst ma
+   zwykły rozmiar i kolor treści, nie szarość podpisu. Kreska z lewej zostaje — po niej
+   poznaje się tę samą rzecz co na liście operatów. */
+.opis-operatu { background: var(--panel); border: 1px solid var(--linia);
+                border-left: 4px solid var(--szary); border-radius: 8px;
+                padding: 12px 16px; margin: 16px 0 18px; }
+.opis-operatu h2 { margin: 0 0 3px; font-size: 12px; font-weight: 700; letter-spacing: .04em;
                    text-transform: uppercase; color: var(--szary); }
-.opis-operatu p { margin: 0; white-space: pre-wrap; }
+.opis-operatu p { margin: 0; white-space: pre-wrap; font-size: 15px; color: var(--tekst); }
 /* Kolumna z numerem wydania w historii — wąska i wyrównana do prawej, żeby
    „7." i „81." kończyły się w tym samym miejscu. */
 th.numer, td.numer { width: 44px; text-align: right; white-space: nowrap; }
