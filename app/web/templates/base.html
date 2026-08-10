@@ -4,17 +4,19 @@
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width, initial-scale=1">
   <title>{% block tytul %}Generator operatów{% endblock %}</title>
-  {# numer wersji w adresie: po aktualizacji przeglądarka pobiera nowy arkusz,
-     zamiast trzymać stary z cache'u — brat nie będzie robił Ctrl+F5 #}
-  <link rel="stylesheet" href="/static/style.css?v={{ wersja }}">
+  {# Znacznik w adresie: po aktualizacji przeglądarka pobiera nowy arkusz, zamiast
+     trzymać stary z cache'u — brat nie będzie robił Ctrl+F5. Siedzi w nim numer wersji
+     **i** czas zmiany plików w `static/` (patrz `main.wersja_zasobow`); sam numer nie
+     wystarcza, bo przy poprawce bez wydania nie zmienia się wcale. #}
+  <link rel="stylesheet" href="/static/style.css?v={{ zasoby }}">
   {# Ten sam plik służy za ikonę karty i za znak w nagłówku — jedno źródło, więc
      nie da się ich rozjechać. SVG, bo skaluje się do każdego rozmiaru ikony. #}
-  <link rel="icon" type="image/svg+xml" href="/static/logo.svg?v={{ wersja }}">
+  <link rel="icon" type="image/svg+xml" href="/static/logo.svg?v={{ zasoby }}">
 </head>
 <body>
 <header>
   <a class="logo" href="/">
-    <img src="/static/logo.svg?v={{ wersja }}" alt="" width="26" height="26">
+    <img src="/static/logo.svg?v={{ zasoby }}" alt="" width="26" height="26">
     Generator operatów</a>
   <nav>
     {# „Złóż PDF” nie ma tu własnej pozycji: to była druga lista tych samych operatów.

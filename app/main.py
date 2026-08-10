@@ -97,9 +97,38 @@ widoki.env.globals["POLA_DZIALKI"] = szablony.POLA_DZIALKI
 DZIENNIK_BLEDOW = DANE / "bledy.log"
 
 
+def wersja_zasobow() -> str:
+    """Znacznik do adresów `/static/...`, po którym przeglądarka pozna nowy arkusz.
+
+    Sam numer wersji programu tu nie wystarcza. Przy zwykłej pracy `WERSJA` stoi
+    w miejscu (podbija ją dopiero wydanie), więc adres `style.css?v=…` się nie zmienia
+    i przeglądarka trzyma stary plik — poprawka wygląda wtedy na niedziałającą, choć
+    serwer oddaje już nowy CSS. Kosztowało to jedną rundę poprawek: układ listy operatów
+    wyglądał na niezmieniony, bo do przeglądarki nie dojechały nowe reguły.
+
+    Dokładamy więc czas zmiany plików statycznych. Nie zastępujemy nim numeru wersji —
+    numer zostaje, bo jest czytelny, gdy trzeba dopasować zgłoszenie brata do wydania.
+    Odczyt jest tani (trzy pliki), ale i tak trzymamy wynik: katalog jest niezmienny
+    przez całe uruchomienie, a aktualizacja i tak restartuje program.
+    """
+    global _ZNACZNIK_ZASOBOW
+    if _ZNACZNIK_ZASOBOW is None:
+        try:
+            najnowszy = max(p.stat().st_mtime for p in (WEB / "static").iterdir()
+                            if p.is_file())
+            _ZNACZNIK_ZASOBOW = str(int(najnowszy))
+        except (OSError, ValueError):      # brak katalogu — trudno, zostaje sam numer
+            _ZNACZNIK_ZASOBOW = ""
+    return _ZNACZNIK_ZASOBOW
+
+
+_ZNACZNIK_ZASOBOW: str | None = None
+
+
 def _widok(request: Request, nazwa: str, **kontekst: Any) -> HTMLResponse:
     kontekst.setdefault("konwerter", pdf.dostepny_konwerter())
     kontekst.setdefault("wersja", aktualizacja.wersja_lokalna()[0])
+    kontekst.setdefault("zasoby", f"{aktualizacja.wersja_lokalna()[0]}-{wersja_zasobow()}")
     kontekst.setdefault("statystyki", statystyki.podsumowanie())
     return widoki.TemplateResponse(request, nazwa, kontekst)
 

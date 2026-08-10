@@ -518,3 +518,50 @@ def test_poprawienie_operatu_z_archiwum_wraca_do_tego_samego_numeru(klient):
     nowy = [w for w in db.dokumenty() if w["nr_operatu"] != numer][0]
     assert nowy["nr_operatu"].startswith("002/"), \
         f"poprawka zjadła numer z licznika — nowy operat dostał {nowy['nr_operatu']}"
+
+
+# --- pliki statyczne w przeglądarce -----------------------------------------
+
+def test_adres_arkusza_zmienia_sie_po_zmianie_pliku(klient, tmp_path, monkeypatch):
+    """Poprawka CSS bez wydania też musi dojechać do przeglądarki.
+
+    Adres był wcześniej znakowany samym numerem wersji, a ten stoi w miejscu aż do
+    wydania — przeglądarka trzymała więc stary arkusz i poprawka wyglądała na
+    niedziałającą, choć serwer oddawał już nowy plik (zdarzyło się przy układzie
+    listy operatów). Teraz w znaczniku jest też czas zmiany plików w `static/`.
+    """
+    from app import main
+
+    statyczne = tmp_path / "static"
+    statyczne.mkdir()
+    (statyczne / "style.css").write_text("body { color: red }", encoding="utf-8")
+    monkeypatch.setattr(main, "WEB", tmp_path)
+
+    monkeypatch.setattr(main, "_ZNACZNIK_ZASOBOW", None)
+    przed = main.wersja_zasobow()
+
+    import os
+    os.utime(statyczne / "style.css", (2_000_000_000, 2_000_000_000))
+    monkeypatch.setattr(main, "_ZNACZNIK_ZASOBOW", None)      # nowe uruchomienie programu
+
+    assert main.wersja_zasobow() != przed
+
+
+def test_strona_znakuje_arkusz_stylow(klient):
+    """Bez znacznika w adresie każda zmiana wyglądu wymagałaby od brata Ctrl+F5.
+
+    Znacznik musi być **czymś więcej niż numerem wersji** — na tym poległa pierwsza
+    wersja: numer stoi w miejscu aż do wydania, więc adres się nie zmieniał.
+    """
+    import re
+
+    from app import aktualizacja
+    _dodaj_operat(klient)
+
+    tresc = klient.get("/").text
+
+    znacznik = re.search(r"/static/style\.css\?v=([^\"']+)", tresc)
+    assert znacznik, "arkusz stylów bez znacznika — przeglądarka zostanie przy starym"
+    wersja = aktualizacja.wersja_lokalna()[0]
+    assert znacznik.group(1) != wersja, "sam numer wersji nie zmienia się między wydaniami"
+    assert wersja in znacznik.group(1), "numer wersji zostaje, bo po nim poznaje się wydanie"
