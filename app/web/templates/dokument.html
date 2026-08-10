@@ -9,6 +9,16 @@
   · {% endif %}szablon: {{ dokument.szablon }}
   · utworzono {{ dokument.utworzono.replace('T', ' ') }}</p>
 
+{# Opis idzie zaraz pod nagłówkiem, przed sprawami katalogu: to notatka brata do tej
+   roboty, więc ma być pierwszą rzeczą, którą widzi po wejściu w operat. Zmienia się
+   go przez „Popraw ten operat”, tak samo jak resztę danych. #}
+{% if dokument.notatka %}
+<div class="opis-operatu">
+  <h2>Opis</h2>
+  <p>{{ dokument.notatka }}</p>
+</div>
+{% endif %}
+
 {% if dokument.katalog %}
 <div class="komunikat">
   Pliki tego operatu leżą w katalogu <code>wyniki\{{ dokument.katalog }}</code>.

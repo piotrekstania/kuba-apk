@@ -111,7 +111,50 @@ def test_operat_bez_opisu_nie_dostaje_pustego_wiersza(klient):
     strona = klient.get("/").text
 
     assert 'class="notatka"' not in strona
-    assert "z-notatka" not in strona
+
+
+def test_opis_siedzi_w_tej_samej_grupie_co_dane_operatu(klient):
+    """Pierwsza wersja stawiała opis w luźnym wierszu i czytał się jak osobna pozycja
+    listy — brat zgłosił to od razu.
+
+    Sprawdzamy mechanizm, który to trzyma: opis i dane są w jednym `<tbody>`, więc
+    kreska rozdzielająca pozycje idzie pod grupą, a nie między nimi. Samego wyglądu
+    test nie obroni, ale tę strukturę owszem — i to ona się wtedy popsuła.
+    """
+    _dodaj_operat(klient)
+    _wyslij(klient, notatka=OPIS)
+
+    tabela = klient.get("/").text.split("<h2>Operaty</h2>")[1]
+    grupa = tabela.split("<tbody")[1].split("</tbody>")[0]
+
+    assert "Czekam na wypis z KW." in grupa, "opis wypadł poza grupę swojego operatu"
+    assert "GK.6640.1.2026" in grupa, "…a to ma być ta sama grupa co dane operatu"
+
+
+# --- strona operatu ----------------------------------------------------------
+
+def test_opis_widac_po_wejsciu_w_operat(klient):
+    """Druga rzecz zgłoszona przez brata: po kliknięciu w operat opisu nie było wcale."""
+    _dodaj_operat(klient)
+    _wyslij(klient, notatka=OPIS)
+    wpis = db.dokumenty()[0]
+
+    strona = klient.get(f"/dokument/{wpis['id']}").text
+
+    assert "Czekam na wypis z KW." in strona
+    assert "Mapę oddać do 15.09." in strona
+    assert "opis-operatu" in strona
+
+
+def test_operat_bez_opisu_nie_ma_pustej_sekcji(klient):
+    """Nagłówek „Opis” nad pustką wygląda, jakby program coś zgubił."""
+    _dodaj_operat(klient)
+    _wyslij(klient, notatka="")
+    wpis = db.dokumenty()[0]
+
+    strona = klient.get(f"/dokument/{wpis['id']}").text
+
+    assert "opis-operatu" not in strona
 
 
 def test_opis_wraca_do_formularza_przy_poprawianiu(klient):

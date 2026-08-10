@@ -133,13 +133,27 @@ tr.grupa th { font-size: 12px; font-weight: 600; letter-spacing: .04em;
               background: transparent; padding: 20px 10px 4px;
               border-top: 2px solid var(--linia); }
 table.lista tr.grupa:first-child th { padding-top: 8px; border-top: none; }
-/* Notatka („Opis”) pod danymi operatu: własny wiersz na całą szerokość, drobniejszym
-   pismem. Wiersz z danymi traci wtedy dolną kreskę, żeby oba czytały się jako jedna
-   pozycja listy. `pre-wrap` zostawia łamanie wierszy tak, jak brat je wpisał — notatka
-   bywa listą rzeczy do zrobienia, a zlepiona w jeden akapit przestaje nią być. */
-table.lista tr.z-notatka td { border-bottom: none; padding-bottom: 2px; }
-table.lista tr.notatka td { padding-top: 0; font-size: 12.5px; color: var(--szary);
-                            white-space: pre-wrap; }
+/* Notatka („Opis”) pod danymi operatu. Pierwsza wersja stawiała ją w osobnym wierszu
+   zaczynającym się od lewej krawędzi tabeli — czyli dokładnie pod numerem operatu — i
+   czytała się jak osierocona linijka albo początek następnej pozycji. Stąd trzy rzeczy
+   naraz: kreska rozdzielająca idzie **pod całą grupą** `<tbody>` (nic nie odcina opisu
+   od jego operatu), tekst dostaje wcięcie i pionową kreskę, więc widać, że do czegoś
+   należy. `pre-wrap` zostawia łamanie wierszy tak, jak brat je wpisał — notatka bywa
+   listą rzeczy do zrobienia, a zlepiona w jeden akapit przestaje nią być. */
+table.lista tbody.operat > tr > td { border-bottom: none; }
+table.lista tbody.operat { border-bottom: 1px solid var(--linia); }
+table.lista tr.notatka td { padding: 0 10px 9px; }
+table.lista tr.notatka td:first-child { padding: 0; }   /* rynna pod numerem operatu */
+table.lista tr.notatka span { display: block; margin-left: 2px; padding-left: 10px;
+                              border-left: 2px solid var(--linia);
+                              font-size: 12.5px; line-height: 1.45; color: var(--szary);
+                              white-space: pre-wrap; }
+/* Opis na stronie operatu. Ta sama pionowa kreska co na liście, żeby brat rozpoznał
+   to jako tę samą rzecz; bez tła, bo to nie komunikat programu tylko jego własny tekst. */
+.opis-operatu { margin: 16px 0; padding-left: 12px; border-left: 3px solid var(--linia); }
+.opis-operatu h2 { margin: 0 0 4px; font-size: 12px; font-weight: 600; letter-spacing: .04em;
+                   text-transform: uppercase; color: var(--szary); }
+.opis-operatu p { margin: 0; white-space: pre-wrap; }
 /* Kolumna z numerem wydania w historii — wąska i wyrównana do prawej, żeby
    „7." i „81." kończyły się w tym samym miejscu. */
 th.numer, td.numer { width: 44px; text-align: right; white-space: nowrap; }
