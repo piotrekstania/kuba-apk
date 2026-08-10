@@ -478,6 +478,8 @@ Co pilnują, w kolejności od najbardziej bolesnych doświadczeń:
 | `test_zmiany.py` | że `ZMIANY.md` **jedzie do brata przy aktualizacji** i że wydana wersja ma swój wpis w historii |
 | `test_warianty.py` | że własna formatka **przeżywa aktualizację** i że poprawianie operatu bierze tę formatkę, którą naprawdę powstał, a nie dzisiejszą domyślną |
 | `test_uldk.py` | że milczenie ULDK **nie wygląda jak zły numer** — najważniejszy test w tym pliku |
+| `test_teryt.py` | że zmiana strony GUS-u **nie czyści bazy** (przychodzi HTML zamiast ZIP-a), że gmina miejsko-wiejska nie wchodzi do listy, że obręby lecą z bazy zamiast z sieci i że przerwane pobieranie hurtowe **nie dobija paska do końca** |
+| `test_miniatury.py` | że pdfium nie jest wołany dwoma wątkami naraz (objawem jest zgaszony program, nie wyjątek) i że plik niebędący PDF-em nie wywraca strony składania |
 
 Testy stabilności formatek **pomijają się bez czcionki Calibri/Carlito**
 (`sudo apt install fonts-crosextra-carlito`), bo bez niej `ujednolic_wyglad.py` w ogóle
@@ -559,9 +561,12 @@ widać było dopiero na obrazku, a nie w liczbach.
    o `--hidden-import win32com.client` i `--hidden-import pythoncom`, bez nich konwersja
    PDF w `.exe` nie ruszy).
 4. Kolejne typy dokumentów (protokół, szkic, sprawozdanie) — każdy to nowy plik w `szablony/`.
-5. Pokrycie testami tego, czego dziś nie ruszają: Word przez COM (potrzebny Windows),
-   sieć do GUS-u i ULDK (atrapy odpowiedzi), renderowanie miniatur, układanie
-   kolejności myszą w przeglądarce.
+5. Pokrycie testami tego, czego dziś nie ruszają. ~~Sieć do GUS-u i ULDK~~ oraz
+   ~~renderowanie miniatur~~ — **zrobione** 10.08.2026 (`test_teryt.py`,
+   `test_miniatury.py`; odpowiedzi GUS-u i ULDK podstawiane, pdfium sprawdzany atrapą
+   dokumentu). Zostaje: Word przez COM (ma testy, ale chodzą tylko na Windowsie
+   — patrz `test_word.py`) i układanie kolejności myszą w przeglądarce, bo to jedyna
+   rzecz w programie, której nie da się dotknąć inaczej niż przeglądarką.
 
 ## Pytania otwarte do brata
 
