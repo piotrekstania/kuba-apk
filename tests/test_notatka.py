@@ -169,6 +169,17 @@ def test_opis_wraca_do_formularza_przy_poprawianiu(klient):
     assert 'name="notatka"' in formularz
 
 
+def test_opis_stoi_na_gorze_formularza(klient):
+    """Po to najczęściej wchodzi się w operat ponownie — pod czternastoma polami
+    wymagałoby to przewinięcia całego formularza (decyzja brata)."""
+    _dodaj_operat(klient)
+
+    formularz = klient.get("/nowy/spis_tresci_wzor").text
+
+    assert formularz.index('name="notatka"') < formularz.index('name="pole__'), \
+        "opis wylądował pod polami dokumentu"
+
+
 def test_powielenie_przenosi_opis(klient):
     """Kolejne zlecenie zaczyna się zwykle od tych samych uwag — skasować łatwiej."""
     _dodaj_operat(klient)

@@ -13,6 +13,21 @@
 {% endif %}
 
 <form method="post" action="/generuj/{{ szablon.id }}{% if edytuj %}?edytuj={{ edytuj }}{% endif %}">
+  {# Notatka do roboty — na samej górze, bo po to najczęściej wchodzi się w operat
+     ponownie, a stojąc pod czternastoma polami wymagała przewijania przez cały
+     formularz. Stoi poza pętlą po polach szablonu, bo nie jest daną dokumentu:
+     nazwa pola nie ma przedrostka `pole__`, więc nie miesza się ze znacznikami z .docx. #}
+  <fieldset>
+    <legend>Opis</legend>
+    {# Krótko, bo to stoi na górze każdego formularza i czyta się przy każdej robocie.
+       Reszta (gdzie widać, co przeżywa) jest w Pomocy — formularz jest do wypełniania,
+       nie do tłumaczenia. Zostaje jedno zdanie, którego brak naprawdę szkodzi. #}
+    <p class="podpowiedz">Notatki do tej roboty. <strong>Do dokumentów to nie
+      wchodzi</strong> — widać je na liście operatów.</p>
+    <textarea id="p_notatka" name="notatka" rows="2"
+              placeholder="np. czekam na wypis z KW, mapę oddać do 15.09">{{ notatka or '' }}</textarea>
+  </fieldset>
+
   {% for grupa, pola in szablon.grupy.items() %}
   <fieldset>
     <legend>{{ grupa }}</legend>
@@ -201,17 +216,6 @@
     </table>
   </fieldset>
   {% endif %}
-
-  {# Notatka do roboty. Stoi poza pętlą po polach szablonu, bo nie jest daną dokumentu:
-     nazwa pola nie ma przedrostka `pole__`, więc nie miesza się ze znacznikami z .docx. #}
-  <fieldset>
-    <legend>Opis</legend>
-    <p class="podpowiedz">Twoje notatki do tej roboty — co zostało do zrobienia, na co
-      czekasz, co ustalone z ośrodkiem. <strong>Do dokumentów to nie wchodzi.</strong>
-      Widać to na liście operatów na stronie głównej.</p>
-    <textarea id="p_notatka" name="notatka" rows="4"
-              placeholder="np. czekam na wypis z KW, mapę oddać do 15.09">{{ notatka or '' }}</textarea>
-  </fieldset>
 
   <div class="pasek">
     <button type="submit" class="glowny">{{ 'Zapisz poprawki' if edytuj else 'Generuj dokument' }}</button>
