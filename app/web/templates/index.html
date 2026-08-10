@@ -34,7 +34,9 @@
   <tr><th class="waski">Nr operatu</th><th>Nr roboty</th>
       <th>Data</th><th></th></tr>
   {% for operat in operaty %}
-  <tr>
+  {# Wiersz z notatką doklejamy pod spodem, więc ten traci dolną kreskę — inaczej
+     opis wyglądałby na osobną pozycję listy, a nie na przypis do tego operatu. #}
+  <tr {% if operat.notatka %}class="z-notatka"{% endif %}>
     <td>
       {% if operat.id %}
       <a href="/dokument/{{ operat.id }}"><strong>{{ operat.nr_operatu or '—' }}</strong></a>
@@ -69,6 +71,9 @@
       {% endif %}
     </td>
   </tr>
+  {% if operat.notatka %}
+  <tr class="notatka"><td colspan="4">{{ operat.notatka }}</td></tr>
+  {% endif %}
   {% endfor %}
 </table>
 {% else %}

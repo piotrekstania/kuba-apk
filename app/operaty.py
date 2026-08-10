@@ -98,6 +98,11 @@ def zaloz(nr_operatu: str, nr_roboty: str, szablon: str, dane: dict[str, Any],
     # byłoby dla niego niezrozumiałe.
     if poprzedni.get("uklad"):
         nowy["uklad"] = poprzedni["uklad"]
+    # Notatka („Opis” w interfejsie) z tego samego powodu. Wpisuje ją `zapisz_notatke`
+    # zaraz po wygenerowaniu, więc świadomą zmianę i tak zobaczymy — przenosimy ją tutaj
+    # po to, żeby żadne inne wywołanie `zaloz` nie skasowało jej po cichu.
+    if poprzedni.get("notatka"):
+        nowy["notatka"] = poprzedni["notatka"]
     (katalog / PLIK_OPISU).write_text(json.dumps(nowy, ensure_ascii=False, indent=2),
                                       encoding="utf-8")
 
@@ -142,6 +147,26 @@ def opis(katalog: Path) -> dict[str, Any]:
         return {}
 
 
+def zapisz_notatke(katalog: Path, tekst: str) -> None:
+    """Notatka brata do operatu — w interfejsie „Opis”.
+
+    Do dokumentu nie wchodzi: to jego własne uwagi do roboty (co jeszcze zostało,
+    na co czeka), a nie dane do wypełnienia formatki. Trzymamy ją **i** w bazie,
+    **i** tutaj, z tego samego powodu co numer operatu: `operat.json` jedzie razem
+    z katalogiem, więc notatka przeżyje skopiowanie na inny dysk i utratę bazy,
+    a wpis w historii przeżyje przeniesienie katalogu do archiwum.
+
+    Osobno od `zaloz`, bo notatka nie ma nic wspólnego z wypełnianiem dokumentów
+    i nie ma po co przechodzić przez generator.
+    """
+    dane = opis(katalog)
+    if not dane:                     # katalogu nie ma albo plik jest połamany
+        return
+    dane["notatka"] = tekst
+    (katalog / PLIK_OPISU).write_text(json.dumps(dane, ensure_ascii=False, indent=2),
+                                      encoding="utf-8")
+
+
 def lista() -> list[dict[str, Any]]:
     """Katalogi operatów, od najnowszego. Rozpoznajemy je po pliku operat.json."""
     wynik = []
@@ -154,6 +179,7 @@ def lista() -> list[dict[str, Any]]:
             "nr_operatu": dane.get("nr_operatu", sciezka.name),
             "nr_roboty": dane.get("nr_roboty", ""),
             "utworzono": dane.get("utworzono", ""),
+            "notatka": dane.get("notatka", ""),
             "plikow": len(pliki(sciezka)),
         })
     return sorted(wynik, key=lambda o: o["utworzono"], reverse=True)

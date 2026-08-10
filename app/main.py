@@ -283,6 +283,7 @@ def _lista_operatow() -> list[dict[str, Any]]:
             "katalog": katalog,
             "utworzono": wpis["utworzono"] or "",
             "szablon": wpis["szablon"],
+            "notatka": wpis["notatka"] or "",
             "w_historii": True,
             # Operat przeniesiony do archiwum zostaje w historii, ale jego katalogu
             # już nie ma — nie ma więc czego składać. Lista musi to pokazać, zamiast
@@ -300,6 +301,9 @@ def _lista_operatow() -> list[dict[str, Any]]:
             "katalog": operat["katalog"],
             "utworzono": operat["utworzono"],
             "szablon": "",
+            # operat spoza historii ma notatkę tylko w swoim `operat.json` — dlatego
+            # zapisujemy ją w obu miejscach
+            "notatka": operat["notatka"],
             "w_historii": False,
             "na_dysku": True,          # ta lista bierze się właśnie ze skanu `wyniki/`
         })
@@ -428,11 +432,16 @@ def formularz(request: Request, identyfikator: str, kopiuj: int | None = None,
     wybor_wariantow = dict(warianty.domyslne(db.wczytaj_ustawienia()))
     wybor_wariantow.update(wartosci.get("warianty") or {})
 
+    # Notatka („Opis”) idzie osobno od `wartosci`, bo nie jest daną dokumentu — nie ma
+    # jej w szablonie i nigdy nie trafia do treści. Przy „Powiel” bierzemy ją razem
+    # z resztą: nowa robota zwykle zaczyna się od tych samych uwag, a skasować łatwiej
+    # niż przepisać.
     return _widok(request, "formularz.html", szablon=szablon, wartosci=wartosci,
                   podglad_numeru=podglad, dzisiaj=date.today().isoformat(),
                   edytuj=edytuj, listy_dokumentow=_listy_dokumentow(szablon),
                   warianty_pozycji=_warianty_pozycji(szablon),
-                  wybor_wariantow=wybor_wariantow)
+                  wybor_wariantow=wybor_wariantow,
+                  notatka=(zrodlo["notatka"] or "") if zrodlo else "")
 
 
 @app.post("/generuj/{identyfikator}")
@@ -444,14 +453,17 @@ async def generuj(request: Request, identyfikator: str, edytuj: int | None = Non
     formularz_danych = await request.form()
     dane = odczytaj_dane(formularz_danych, szablon)
     wybor_wariantow = dane.get("warianty") or {}
+    # Notatka stoi poza `pole__`, więc nie miesza się z danymi szablonu i nie może
+    # przypadkiem zderzyć się ze znacznikiem o tej samej nazwie w formatce Worda.
+    notatka = str(formularz_danych.get("notatka") or "").strip()
 
     # wspólne dla obu powrotów na formularz — po błędzie ma wrócić komplet, razem
-    # z wybranymi formatkami, żeby nic nie trzeba było ustawiać drugi raz
+    # z wybranymi formatkami i notatką, żeby nic nie trzeba było ustawiać drugi raz
     powrot = dict(szablon=szablon, wartosci=dane, edytuj=edytuj,
                   dzisiaj=date.today().isoformat(),
                   listy_dokumentow=_listy_dokumentow(szablon),
                   warianty_pozycji=_warianty_pozycji(szablon),
-                  wybor_wariantow=wybor_wariantow)
+                  wybor_wariantow=wybor_wariantow, notatka=notatka)
 
     # `auto_numer` pomijamy: pole zostaje puste celowo, bo numer nadaje program przy
     # generowaniu. Oznaczenie go jako wymaganego ma sens tylko po to, żeby w formularzu
@@ -531,15 +543,18 @@ async def generuj(request: Request, identyfikator: str, edytuj: int | None = Non
     if not poprawiany:
         statystyki.zlicz(statystyki.OPERAT)
 
+    # Notatka do `operat.json` — po `zaloz()`, które przepisuje ten plik od nowa.
+    operaty.zapisz_notatke(katalog, notatka)
+
     tytul = kontekst.get("nr_roboty") or katalog.name
     if poprawiany:
         db.zaktualizuj_dokument(poprawiany["id"], str(tytul), dane,
-                                f"{katalog.name}/{plik.name}", katalog.name)
+                                f"{katalog.name}/{plik.name}", katalog.name, notatka)
         dokument_id = poprawiany["id"]
     else:
         dokument_id = db.zapisz_dokument(
             szablon.id, str(tytul), f"{katalog.name}/{plik.name}", dane, katalog.name,
-            str(kontekst.get("nr_operatu") or katalog.name))
+            str(kontekst.get("nr_operatu") or katalog.name), notatka)
     adres = f"/dokument/{dokument_id}"
     if ostrzezenia:
         adres += "?blad=" + quote(" ".join(ostrzezenia))

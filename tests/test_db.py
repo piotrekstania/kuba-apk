@@ -35,7 +35,7 @@ def test_polaczenie_zamyka_plik_bazy(srodowisko):
 def test_swieza_baza_jest_w_najnowszym_schemacie(srodowisko):
     with db.polaczenie() as con:                 # `polacz()` zostawiłby otwarty plik
         assert int(con.execute("PRAGMA user_version").fetchone()[0]) == db.WERSJA_SCHEMATU
-    assert {"katalog", "nr_operatu"} <= _kolumny("dokumenty")
+    assert {"katalog", "nr_operatu", "notatka"} <= _kolumny("dokumenty")
 
 
 def test_stara_baza_dociaga_sie_bez_utraty_danych(srodowisko):
@@ -59,7 +59,7 @@ def test_stara_baza_dociaga_sie_bez_utraty_danych(srodowisko):
 
     db.init()
 
-    assert {"katalog", "nr_operatu"} <= _kolumny("dokumenty")
+    assert {"katalog", "nr_operatu", "notatka"} <= _kolumny("dokumenty")
     with db.polaczenie() as con:                 # `polacz()` zostawiłby otwarty plik
         assert int(con.execute("PRAGMA user_version").fetchone()[0]) == db.WERSJA_SCHEMATU
     wiersze = db.dokumenty()

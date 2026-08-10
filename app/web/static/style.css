@@ -133,6 +133,13 @@ tr.grupa th { font-size: 12px; font-weight: 600; letter-spacing: .04em;
               background: transparent; padding: 20px 10px 4px;
               border-top: 2px solid var(--linia); }
 table.lista tr.grupa:first-child th { padding-top: 8px; border-top: none; }
+/* Notatka („Opis”) pod danymi operatu: własny wiersz na całą szerokość, drobniejszym
+   pismem. Wiersz z danymi traci wtedy dolną kreskę, żeby oba czytały się jako jedna
+   pozycja listy. `pre-wrap` zostawia łamanie wierszy tak, jak brat je wpisał — notatka
+   bywa listą rzeczy do zrobienia, a zlepiona w jeden akapit przestaje nią być. */
+table.lista tr.z-notatka td { border-bottom: none; padding-bottom: 2px; }
+table.lista tr.notatka td { padding-top: 0; font-size: 12.5px; color: var(--szary);
+                            white-space: pre-wrap; }
 /* Kolumna z numerem wydania w historii — wąska i wyrównana do prawej, żeby
    „7." i „81." kończyły się w tym samym miejscu. */
 th.numer, td.numer { width: 44px; text-align: right; white-space: nowrap; }

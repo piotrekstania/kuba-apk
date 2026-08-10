@@ -73,7 +73,7 @@ CREATE TABLE IF NOT EXISTS zdarzenia (
 # Numer schematu trzymamy w `PRAGMA user_version` samej bazy. Dzięki temu nowa wersja
 # programu potrafi doprowadzić starą bazę do porządku, zamiast wywalić się na brakującej
 # kolumnie — a baza u brata jest jedynym miejscem, gdzie siedzi historia i numeracja.
-WERSJA_SCHEMATU = 3
+WERSJA_SCHEMATU = 4
 
 # Kolejne kroki dopisujemy tutaj: {2: ["ALTER TABLE dokumenty ADD COLUMN status TEXT"]}
 # i podnosimy WERSJA_SCHEMATU. Kroki muszą być odporne na powtórzenie i nie mogą
@@ -86,6 +86,10 @@ MIGRACJE: dict[int, list[str]] = {
     # 3: numer operatu na liście dokumentów. Wyliczanie go z nazwy katalogu działa tylko
     # dla wzorca 001-2026, a wzorzec numeru siedzi w .json szablonu i może być inny.
     3: ["ALTER TABLE dokumenty ADD COLUMN nr_operatu TEXT"],
+    # 4: notatka użytkownika do operatu (w interfejsie „Opis”). Nazwa kolumny jest inna
+    # niż etykieta, bo `operaty.opis()` znaczy w tym programie co innego — zawartość
+    # `operat.json`, czyli akurat tego pliku, w którym notatka też siedzi.
+    4: ["ALTER TABLE dokumenty ADD COLUMN notatka TEXT"],
 }
 
 
@@ -178,19 +182,19 @@ def init() -> None:
 # --- dokumenty ---------------------------------------------------------------
 
 def zapisz_dokument(szablon: str, tytul: str, plik_docx: str, dane: dict[str, Any],
-                    katalog: str = "", nr_operatu: str = "") -> int:
+                    katalog: str = "", nr_operatu: str = "", notatka: str = "") -> int:
     with polaczenie() as con:
         kursor = con.execute(
             "INSERT INTO dokumenty (szablon, tytul, plik_docx, dane_json, utworzono,"
-            " katalog, nr_operatu) VALUES (?, ?, ?, ?, ?, ?, ?)",
+            " katalog, nr_operatu, notatka) VALUES (?, ?, ?, ?, ?, ?, ?, ?)",
             (szablon, tytul, plik_docx, json.dumps(dane, ensure_ascii=False),
-             datetime.now().isoformat(timespec="seconds"), katalog, nr_operatu),
+             datetime.now().isoformat(timespec="seconds"), katalog, nr_operatu, notatka),
         )
         return int(kursor.lastrowid)
 
 
 def zaktualizuj_dokument(dokument_id: int, tytul: str, dane: dict[str, Any],
-                         plik_docx: str, katalog: str) -> None:
+                         plik_docx: str, katalog: str, notatka: str = "") -> None:
     """Poprawiony operat zostaje tym samym wpisem — nie zakładamy nowego.
 
     Ścieżki też odświeżamy: gdy ktoś skasuje katalog operatu z Eksploratora, poprawianie
@@ -198,9 +202,10 @@ def zaktualizuj_dokument(dokument_id: int, tytul: str, dane: dict[str, Any],
     """
     with polaczenie() as con:
         con.execute(
-            "UPDATE dokumenty SET tytul = ?, dane_json = ?, plik_docx = ?, katalog = ?"
-            " WHERE id = ?",
-            (tytul, json.dumps(dane, ensure_ascii=False), plik_docx, katalog, dokument_id))
+            "UPDATE dokumenty SET tytul = ?, dane_json = ?, plik_docx = ?, katalog = ?,"
+            " notatka = ? WHERE id = ?",
+            (tytul, json.dumps(dane, ensure_ascii=False), plik_docx, katalog, notatka,
+             dokument_id))
 
 
 def ustaw_pdf(dokument_id: int, plik_pdf: str) -> None:
