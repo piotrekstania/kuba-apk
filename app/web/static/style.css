@@ -133,17 +133,18 @@ tr.grupa th { font-size: 12px; font-weight: 600; letter-spacing: .04em;
               background: transparent; padding: 20px 10px 4px;
               border-top: 2px solid var(--linia); }
 table.lista tr.grupa:first-child th { padding-top: 8px; border-top: none; }
-/* Notatka („Opis”) pod danymi operatu. Pierwsza wersja stawiała ją w osobnym wierszu
-   zaczynającym się od lewej krawędzi tabeli — czyli dokładnie pod numerem operatu — i
-   czytała się jak osierocona linijka albo początek następnej pozycji. Stąd trzy rzeczy
-   naraz: kreska rozdzielająca idzie **pod całą grupą** `<tbody>` (nic nie odcina opisu
-   od jego operatu), tekst dostaje wcięcie i pionową kreskę, więc widać, że do czegoś
-   należy. `pre-wrap` zostawia łamanie wierszy tak, jak brat je wpisał — notatka bywa
-   listą rzeczy do zrobienia, a zlepiona w jeden akapit przestaje nią być. */
+/* Notatka („Opis”) pod danymi operatu — zaczyna się pod numerem operatu i idzie na całą
+   szerokość. Że należy do operatu nad nią, a nie jest osobną pozycją listy, trzymają dwie
+   rzeczy: kreska rozdzielająca idzie **pod całą grupą** `<tbody>`, więc nic nie odcina
+   opisu od jego operatu, a pionowy znacznik przy tekście mówi, że to przypis.
+   `pre-wrap` zostawia łamanie wierszy tak, jak brat je wpisał — notatka bywa listą rzeczy
+   do zrobienia, a zlepiona w jeden akapit przestaje nią być.
+   Uwaga przy sprawdzaniu takich zmian: adres arkusza znakuje `main.wersja_zasobow`,
+   ale **serwer trzeba zrestartować** — inaczej ogląda się stary CSS i wygląda to jak
+   niedziałająca poprawka (patrz historia tego pliku). */
 table.lista tbody.operat > tr > td { border-bottom: none; }
 table.lista tbody.operat { border-bottom: 1px solid var(--linia); }
 table.lista tr.notatka td { padding: 0 10px 9px; }
-table.lista tr.notatka td:first-child { padding: 0; }   /* rynna pod numerem operatu */
 table.lista tr.notatka span { display: block; margin-left: 2px; padding-left: 10px;
                               border-left: 2px solid var(--linia);
                               font-size: 12.5px; line-height: 1.45; color: var(--szary);

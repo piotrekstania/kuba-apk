@@ -76,11 +76,11 @@
     </td>
   </tr>
   {% if operat.notatka %}
-  {# Pierwsza kolumna zostaje pusta, żeby opis wisiał pod **danymi** operatu, a nie pod
-     jego numerem. Wcięcie robi sama tabela, więc nie ma tu żadnej liczby pikseli, która
-     rozjedzie się przy zmianie szerokości kolumny. #}
+  {# Opis zaczyna się pod numerem operatu i idzie na całą szerokość (decyzja brata).
+     Że należy do operatu nad nim, a nie do listy, widać po wspólnym `<tbody>` i po
+     pionowym znaczniku przy tekście — wcięcie do drugiej kolumny okazało się zbędne. #}
   <tr class="notatka">
-    <td></td><td colspan="3"><span>{{ operat.notatka }}</span></td>
+    <td colspan="4"><span>{{ operat.notatka }}</span></td>
   </tr>
   {% endif %}
   </tbody>
