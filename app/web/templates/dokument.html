@@ -9,23 +9,9 @@
   · {% endif %}szablon: {{ dokument.szablon }}
   · utworzono {{ dokument.utworzono.replace('T', ' ') }}</p>
 
-{# Opis idzie zaraz pod nagłówkiem, przed sprawami katalogu: to notatka brata do tej
-   roboty, więc ma być pierwszą rzeczą, którą widzi po wejściu w operat. Zmienia się
-   go przez „Popraw ten operat”, tak samo jak resztę danych. #}
-{% if dokument.notatka %}
-<div class="opis-operatu">
-  <h2>Opis</h2>
-  <p>{{ dokument.notatka }}</p>
-</div>
-{% endif %}
-
-{% if dokument.katalog %}
-<div class="komunikat">
-  Pliki tego operatu leżą w katalogu <code>wyniki\{{ dokument.katalog }}</code>.
-  Włóż tam mapy, szkice i wykaz współrzędnych z C-Geo, a potem złóż z tego jeden PDF.
-</div>
-{% endif %}
-
+{# Kolejność na tej stronie: nagłówek → przyciski → Opis → Wpisane dane. Wcześniej przed
+   pierwszą treścią stały cztery bloki w czterech różnych stylach (szara linijka, biały
+   panel z opisem, niebieskie pudełko, pasek przycisków) i robiło się z tego tłok. #}
 <div class="pasek">
   <form method="post" action="/dokument/{{ dokument.id }}/otworz-katalog">
     <button class="wtorny" type="submit">Otwórz katalog</button>
@@ -34,6 +20,21 @@
   <a class="wtorny" href="/nowy/{{ dokument.szablon }}?edytuj={{ dokument.id }}">Popraw ten operat</a>
   <a class="wtorny" href="/nowy/{{ dokument.szablon }}?kopiuj={{ dokument.id }}">Powiel jako nowy</a>
 </div>
+
+{# Ścieżka do katalogu była wcześniej niebieskim pudełkiem — czyli najgłośniejszą rzeczą
+   na stronie, choć mówi to samo przy każdym operacie od zawsze. Zostaje przy przyciskach,
+   których dotyczy, ale cicho; instrukcja „co tam włożyć” jest w Pomocy. #}
+{% if dokument.katalog %}
+<p class="szary przy-pasku">Pliki tego operatu leżą w <code>wyniki\{{ dokument.katalog }}</code>
+  — tam wkładasz mapy, szkice i wykaz z C-Geo przed złożeniem PDF-a.</p>
+{% endif %}
+
+{# Opis nad „Wpisanymi danymi” i w tym samym stroju: nagłówek sekcji plus biały panel.
+   To też są dane operatu, tylko wpisane dla siebie, a nie do dokumentu. #}
+{% if dokument.notatka %}
+<h2>Opis</h2>
+<div class="opis-operatu">{{ dokument.notatka }}</div>
+{% endif %}
 
 <h2>Wpisane dane</h2>
 {# Kolejność i podział na grupy biorą się z opisu szablonu (`.json`), czyli z tego

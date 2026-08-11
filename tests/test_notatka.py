@@ -146,6 +146,44 @@ def test_opis_widac_po_wejsciu_w_operat(klient):
     assert "opis-operatu" in strona
 
 
+def test_opis_stoi_nad_wpisanymi_danymi(klient):
+    """Kolejność sekcji na stronie operatu (decyzja brata).
+
+    Opis to też dane operatu — tyle że wpisane dla siebie, a nie do dokumentu —
+    więc idzie własną sekcją tuż nad „Wpisanymi danymi”, w tym samym stroju:
+    nagłówek `h2` nad białym panelem.
+    """
+    _dodaj_operat(klient)
+    _wyslij(klient, notatka=OPIS)
+    wpis = db.dokumenty()[0]
+
+    strona = klient.get(f"/dokument/{wpis['id']}").text
+
+    assert strona.index("<h2>Opis</h2>") < strona.index("<h2>Wpisane dane</h2>")
+    assert strona.index("opis-operatu") < strona.index("<h2>Wpisane dane</h2>")
+    # …a nie gdziekolwiek wyżej: nad paskiem przycisków opis też jest „nad Wpisanymi
+    # danymi”, a to jest właśnie miejsce, z którego go zabraliśmy
+    assert strona.index('class="pasek"') < strona.index("<h2>Opis</h2>"), \
+        "opis wrócił nad przyciski — sekcje mają iść po akcjach, nie przed nimi"
+
+
+def test_sciezka_katalogu_nie_krzyczy_glosniej_niz_opis(klient):
+    """Ścieżka do katalogu była niebieskim pudełkiem `komunikat` — najgłośniejszą rzeczą
+    na stronie, choć mówi to samo przy każdym operacie od zawsze.
+
+    Klasa `komunikat` zostaje zarezerwowana dla rzeczy, które naprawdę się wydarzyły
+    (błędy, wynik składania) — stała informacja o katalogu ma być cicha.
+    """
+    _dodaj_operat(klient)
+    _wyslij(klient, notatka=OPIS)
+    wpis = db.dokumenty()[0]
+
+    strona = klient.get(f"/dokument/{wpis['id']}").text
+
+    assert "wyniki\\" in strona, "ścieżka do katalogu ma zostać — brat tam wkłada mapy"
+    assert 'class="komunikat"' not in strona
+
+
 def test_operat_bez_opisu_nie_ma_pustej_sekcji(klient):
     """Nagłówek „Opis” nad pustką wygląda, jakby program coś zgubił."""
     _dodaj_operat(klient)
