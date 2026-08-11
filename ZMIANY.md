@@ -3,6 +3,10 @@
 Co doszło w kolejnych wersjach programu. Ten sam opis pokazuje się raz, na stronie
 głównej, zaraz po tym jak program sam się zaktualizuje.
 
+## 2026.08.11-88 — 2026-08-11
+
+Strona operatu poukładana. Opis stoi teraz własną sekcją tuż nad „Wpisanymi danymi” i wygląda tak samo jak one — nagłówek i biały panel — zamiast mieć własny styl obok reszty. Ścieżka do katalogu przestała być niebieskim pudełkiem: mówi to samo przy każdym operacie, więc nie ma po co krzyczeć głośniej niż twoje notatki; stoi teraz cicho tuż pod przyciskami, których dotyczy.
+
 ## 2026.08.10-87 — 2026-08-10
 
 Nowe pole „Opis” przy zakładaniu i poprawianiu operatu — miejsce na twoje notatki do roboty: co zostało do zrobienia, na co czekasz, co ustaliłeś w ośrodku. Do żadnego dokumentu to nie wchodzi, jest tylko dla ciebie. Opis widać na liście operatów na stronie głównej, pod danymi operatu, i po wejściu w sam operat. Zmieniasz go przez „Popraw ten operat”, tak jak resztę danych. Zapisuje się razem z operatem, więc zostaje i po przeniesieniu katalogu do archiwum, i po skopiowaniu go na inny komputer.
