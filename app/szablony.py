@@ -29,6 +29,12 @@ SUFIKSY_TERYT = ("_wojewodztwo", "_wojewodztwo_teryt", "_powiat", "_powiat_teryt
                  "_gmina", "_gmina_teryt", "_obreb", "_obreb_teryt", "_obreb_numer")
 SUFIKSY_DATY = ("_iso", "_slownie")
 SUFIKSY_WYBORU = ("_pliki",)
+# `<klucz>_jest` — czy pole zostało wypełnione. Dla **każdego** pola, bo to zwykły
+# warunek do `{%p if ... %}` w formatce: „wpisał coś, to pokaż; nie wpisał, to napisz
+# «brak»”. Powstało, gdy z formularza zniknął checkbox „Opis przebiegu”: formatka pytała
+# o `opis_przebiegu_jest`, a odpowiedź na to pytanie widać po samej treści opisu, więc
+# osobne pole do klikania było pytaniem o to, co program i tak wie.
+SUFIKS_JEST = "_jest"
 POLA_WYLICZANE = {"data_dzisiaj", "data_dzisiaj_slownie", "rok"}
 
 # Pola, przy których warto podpowiedzieć, czy ULDK zna taką działkę. Rozpoznajemy po
@@ -57,6 +63,8 @@ class Pole:
     domyslnie: str = ""
     zrodlo: str = ""            # "ustawienia" = bierz z danych stałych, nie pokazuj w formularzu
     szerokosc: str = "pelna"    # "pelna" | "polowa" | "trzecia"
+    biblioteka: str = ""        # nad polem staje lista gotowych tekstów z Ustawień
+                                # ("sprawozdanie") i przycisk wklejający wybrany
 
 
 @dataclass
@@ -141,11 +149,14 @@ def wczytaj_szablon(plik: Path) -> Szablon:
             domyslnie=str(surowe.get("domyslnie", "")),
             zrodlo=surowe.get("zrodlo", ""),
             szerokosc=surowe.get("szerokosc", "pelna"),
+            biblioteka=surowe.get("biblioteka", ""),
         )
 
     # kolejność: najpierw pola opisane w .json, potem reszta wykryta w szablonie
     szablon.pola = list(opisane.values())
     znane = set(opisane) | POLA_WYLICZANE
+    # `<klucz>_jest` przysługuje każdemu polu — patrz `SUFIKS_JEST`
+    znane.update(klucz + SUFIKS_JEST for klucz in opisane)
     for pole in opisane.values():
         if pole.typ == "teryt":
             znane.update(pole.klucz + sufiks for sufiks in SUFIKSY_TERYT)

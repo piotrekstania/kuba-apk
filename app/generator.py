@@ -10,7 +10,7 @@ from typing import Any
 from docxtpl import DocxTemplate
 
 from . import db, operaty, teryt
-from .szablony import Szablon
+from .szablony import SUFIKS_JEST, Szablon
 
 MIESIACE = ["stycznia", "lutego", "marca", "kwietnia", "maja", "czerwca", "lipca",
             "sierpnia", "września", "października", "listopada", "grudnia"]
@@ -127,6 +127,14 @@ def przygotuj_kontekst(szablon: Szablon, dane: dict[str, Any], ustawienia: dict[
             kontekst[f"{pole.klucz}_iso"] = kontekst[pole.klucz]
             kontekst[f"{pole.klucz}_slownie"] = data_slownie(kontekst[pole.klucz])
             kontekst[pole.klucz] = data_pl(kontekst[pole.klucz])
+
+    # `<klucz>_jest` dla każdego pola: czy brat cokolwiek tam wpisał. Formatka pyta o to
+    # w `{%p if ... %}`, żeby wybrać między treścią a słowem „brak” — a skoro odpowiedź
+    # widać po samej wartości, nie ma po co trzymać na to osobnego checkboxa w formularzu
+    # (miał go „Opis przebiegu” i był to jeden klik na darmo). Liczymy **po** pętli wyżej,
+    # bo daty są tam podmieniane na format polski, a pusta data pusta zostaje.
+    for pole in szablon.pola:
+        kontekst.setdefault(f"{pole.klucz}{SUFIKS_JEST}", bool(kontekst.get(pole.klucz)))
 
     kontekst.setdefault("data_dzisiaj", dzis.strftime("%d.%m.%Y"))
     kontekst.setdefault("data_dzisiaj_slownie", data_slownie(dzis))

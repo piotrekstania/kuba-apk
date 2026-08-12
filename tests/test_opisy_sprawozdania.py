@@ -173,3 +173,109 @@ def test_opisy_przezywaja_aktualizacje_programu(srodowisko, tmp_path, monkeypatc
     zapisane = db.opisy_sprawozdania()
     assert [(w["nazwa"], w["opis"]) for w in zapisane] == \
         [("Podział", "Ustalono przebieg granic.")]
+
+
+# --- biblioteka w formularzu operatu -----------------------------------------
+#
+# Drugi krok: gotowy opis daje się wkleić do pola „Przebieg wykonanych prac”. Który
+# to pole, mówi `"biblioteka"` w `.json` szablonu — klucza pola nie ma w kodzie, więc
+# bibliotekę da się przepiąć pod inne pole bez ruszania programu.
+
+def _operat_z_opisem(klient):
+    # `{%p if %}` kasuje **cały akapit**, w którym stoi, więc warunek, treść i `endif`
+    # muszą być trzema osobnymi akapitami — tak samo jak w prawdziwej formatce.
+    klient.srodowisko.dodaj_szablon(
+        "spis_tresci_wzor",
+        ["{{ nr_roboty }}",
+         "{%p if opis_przebiegu_jest %}",
+         "Przebieg wykonanych prac: {{ opis_przebiegu }}",
+         "{%p endif %}"],
+        opis={"nazwa": "Operat", "glowny": True,
+              "pola": [{"klucz": "nr_roboty", "etykieta": "Nr roboty"},
+                       {"klucz": "opis_przebiegu", "etykieta": "Przebieg wykonanych prac",
+                        "typ": "textarea", "biblioteka": "sprawozdanie"}]})
+
+
+def test_lista_gotowych_opisow_jest_w_formularzu(klient):
+    db.dodaj_opis_sprawozdania("Mapa do celów projektowych", "Pomiar metodą RTN GNSS.")
+    _operat_z_opisem(klient)
+
+    formularz = klient.get("/nowy/spis_tresci_wzor").text
+
+    assert "Mapa do celów projektowych" in formularz
+    assert "Pomiar metodą RTN GNSS." in formularz, "treść musi dojechać, bo wkleja ją JS"
+    assert 'data-wklej="p_opis_przebiegu"' in formularz
+
+
+def test_bez_zapisanych_opisow_formularz_odsyla_do_ustawien(klient):
+    """Pusta lista rozwijana niczego nie tłumaczy — ma być powiedziane, gdzie je dodać."""
+    _operat_z_opisem(klient)
+
+    formularz = klient.get("/nowy/spis_tresci_wzor").text
+
+    assert "/ustawienia#opisy" in formularz
+    # samego napisu „data-wklej” szukać nie można — jest w skrypcie na dole strony;
+    # chodzi o atrybut z wartością, czyli o wyrenderowany przycisk
+    assert 'data-wklej="' not in formularz, "nie ma czego ładować, więc nie ma przycisku"
+
+
+def test_pole_bez_biblioteki_nie_dostaje_listy(klient):
+    """Biblioteka pokazuje się tam, gdzie mówi o niej `.json` — a nie przy każdym polu."""
+    db.dodaj_opis_sprawozdania("Podział", "Ustalono granice.")
+    klient.srodowisko.dodaj_szablon(
+        "spis_tresci_wzor", ["{{ nr_roboty }} {{ uwagi }}"],
+        opis={"nazwa": "Operat", "glowny": True,
+              "pola": [{"klucz": "nr_roboty", "etykieta": "Nr roboty"},
+                       {"klucz": "uwagi", "etykieta": "Uwagi", "typ": "textarea"}]})
+
+    formularz = klient.get("/nowy/spis_tresci_wzor").text
+
+    assert 'data-wklej="' not in formularz
+    assert "Ustalono granice." not in formularz
+
+
+# --- checkbox „Opis przebiegu” zniknął, a dokument zachowuje się jak przedtem --
+
+def test_nie_ma_juz_checkboxa_opis_przebiegu(klient):
+    """Opis jest zawsze — pytanie „czy jest opis” widać po samej treści opisu."""
+    _operat_z_opisem(klient)
+
+    formularz = klient.get("/nowy/spis_tresci_wzor").text
+
+    assert "opis_przebiegu_jest" not in formularz
+
+
+def test_wypelniony_opis_wchodzi_do_dokumentu(klient):
+    """`{%p if opis_przebiegu_jest %}` w formatce ma dalej działać — bez checkboxa."""
+    from docx import Document
+    _operat_z_opisem(klient)
+
+    klient.post("/generuj/spis_tresci_wzor",
+                data={"pole__nr_roboty": "GK.1", "notatka": "",
+                      "pole__opis_przebiegu": "Pomiar metodą RTN GNSS."},
+                follow_redirects=False)
+
+    katalog = klient.srodowisko.wyniki / db.dokumenty()[0]["katalog"]
+    tresc = "\n".join(a.text for a in Document(katalog / "spis_tresci.docx").paragraphs)
+    assert "Pomiar metodą RTN GNSS." in tresc
+
+
+def test_pusty_opis_wycina_sekcje_z_dokumentu(klient):
+    """Tak jak przy odznaczonym checkboxie: pusto = warunek fałszywy, sekcja znika.
+
+    To jest ta część, która musiała przetrwać usunięcie checkboxa — inaczej formatka
+    brata zaczęłaby po cichu wypisywać pusty opis zamiast „brak”.
+    """
+    from docx import Document
+    _operat_z_opisem(klient)
+
+    klient.post("/generuj/spis_tresci_wzor",
+                data={"pole__nr_roboty": "GK.1", "notatka": "", "pole__opis_przebiegu": ""},
+                follow_redirects=False)
+
+    katalog = klient.srodowisko.wyniki / db.dokumenty()[0]["katalog"]
+    tresc = "\n".join(a.text for a in Document(katalog / "spis_tresci.docx").paragraphs)
+    assert "GK.1" in tresc, "reszta dokumentu ma zostać"
+    # nie „czy pusto”, tylko czy zniknął **cały akapit** z warunku: przy `_jest`
+    # zawsze prawdziwym zostałaby sama etykieta z pustką po dwukropku
+    assert "Przebieg wykonanych prac" not in tresc

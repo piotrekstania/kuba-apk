@@ -49,6 +49,9 @@ def _kontekst_operatu(szablon: szablony.Szablon) -> set[str]:
     dostepne = set(szablony.POLA_WYLICZANE)
     for pole in szablon.pola:
         dostepne.add(pole.klucz)
+        # `<klucz>_jest` wylicza generator dla każdego pola — formatka pyta o to
+        # w `{%p if ... %}`, wybierając między treścią a słowem „brak”
+        dostepne.add(pole.klucz + szablony.SUFIKS_JEST)
         if pole.typ == "teryt":
             dostepne.update(pole.klucz + s for s in szablony.SUFIKSY_TERYT)
         elif pole.typ == "date":

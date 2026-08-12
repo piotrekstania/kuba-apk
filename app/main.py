@@ -470,6 +470,7 @@ def formularz(request: Request, identyfikator: str, kopiuj: int | None = None,
                   edytuj=edytuj, listy_dokumentow=_listy_dokumentow(szablon),
                   warianty_pozycji=_warianty_pozycji(szablon),
                   wybor_wariantow=wybor_wariantow,
+                  opisy_biblioteki=db.opisy_sprawozdania(),
                   notatka=(zrodlo["notatka"] or "") if zrodlo else "")
 
 
@@ -492,7 +493,8 @@ async def generuj(request: Request, identyfikator: str, edytuj: int | None = Non
                   dzisiaj=date.today().isoformat(),
                   listy_dokumentow=_listy_dokumentow(szablon),
                   warianty_pozycji=_warianty_pozycji(szablon),
-                  wybor_wariantow=wybor_wariantow, notatka=notatka)
+                  wybor_wariantow=wybor_wariantow, notatka=notatka,
+                  opisy_biblioteki=db.opisy_sprawozdania())
 
     # `auto_numer` pomijamy: pole zostaje puste celowo, bo numer nadaje program przy
     # generowaniu. Oznaczenie go jako wymaganego ma sens tylko po to, żeby w formularzu

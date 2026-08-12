@@ -162,6 +162,12 @@ table.lista tr.notatka span { display: block; margin-left: 2px; padding-left: 10
    tak, jak brat je wpisał — opis bywa kilkoma akapitami, a zlepiony w jeden przestaje
    być tym, co zapisywał. */
 td.opis-tresc { white-space: pre-wrap; }
+/* Wybór gotowego opisu nad polem tekstowym: lista i „Załaduj” w jednej linii, nad
+   polem, którego dotyczą. Lista dostaje całą wolną szerokość, bo nazwy opisów bywają
+   długie, a ucięta nazwa nie mówi, co się wklei. */
+.biblioteka { display: flex; gap: 8px; align-items: center; margin-bottom: 6px; }
+.biblioteka select { flex: 1; min-width: 0; }
+.biblioteka button { flex: none; }
 /* Kolumna z numerem wydania w historii — wąska i wyrównana do prawej, żeby
    „7." i „81." kończyły się w tym samym miejscu. */
 th.numer, td.numer { width: 44px; text-align: right; white-space: nowrap; }

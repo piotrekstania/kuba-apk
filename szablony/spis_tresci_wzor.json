@@ -107,19 +107,13 @@
       ]
     },
     {
-      "klucz": "opis_przebiegu_jest",
-      "etykieta": "Opis przebiegu",
-      "typ": "checkbox",
-      "grupa": "Sprawozdanie techniczne",
-      "aktywne_gdy": "dokumenty_sprawozdanie:sprawozdanie_techniczne_wzor",
-      "podpowiedz": "Bez zaznaczenia w sprawozdaniu wyjdzie „brak”."
-    },
-    {
       "klucz": "opis_przebiegu",
       "etykieta": "Przebieg wykonanych prac",
       "typ": "textarea",
       "grupa": "Sprawozdanie techniczne",
-      "aktywne_gdy": "opis_przebiegu_jest"
+      "aktywne_gdy": "dokumenty_sprawozdanie:sprawozdanie_techniczne_wzor",
+      "biblioteka": "sprawozdanie",
+      "podpowiedz": "Puste pole daje w sprawozdaniu „brak”. Gotowe opisy dokładasz w Ustawieniach."
     },
     {
       "klucz": "bazy",
@@ -136,7 +130,7 @@
         "GESUT",
         "EGiB"
       ],
-      "aktywne_gdy": "opis_przebiegu_jest",
+      "aktywne_gdy": "dokumenty_sprawozdanie:sprawozdanie_techniczne_wzor",
       "wzor_wartosci": "{nr_roboty}-{opcja}.gml",
       "podpowiedz": "Do sprawozdania wejdą jako nazwy plików GML, po przecinku. Odznaczenie wszystkich daje „brak”."
     },

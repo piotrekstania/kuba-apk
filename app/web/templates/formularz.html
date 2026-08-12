@@ -97,6 +97,26 @@
         {% elif pole.typ == 'textarea' %}
         <div class="pole {{ pole.szerokosc }}"{{ zaleznosc | safe }}>
           <label for="p_{{ pole.klucz }}">{{ pole.etykieta }}{% if pole.wymagane %} <span class="gwiazdka">*</span>{% endif %}</label>
+          {# Gotowe teksty z Ustawień. Które pole je dostaje, mówi `biblioteka` w .json —
+             klucza pola nie ma w kodzie, więc biblioteka da się podpiąć pod inne pole
+             bez ruszania programu. Wklejenie tylko wypełnia pole: dalej brat pisze
+             ręcznie, bo każdy operat i tak różni się szczegółami. #}
+          {% if pole.biblioteka %}
+          <div class="biblioteka">
+            {% if opisy_biblioteki %}
+            <select id="b_{{ pole.klucz }}" aria-label="Gotowe opisy">
+              {% for pozycja in opisy_biblioteki %}
+              <option value="{{ pozycja.opis }}">{{ pozycja.nazwa }}</option>
+              {% endfor %}
+            </select>
+            <button type="button" class="wtorny" data-wklej="p_{{ pole.klucz }}"
+                    data-zrodlo="b_{{ pole.klucz }}">Załaduj</button>
+            {% else %}
+            <span class="podpowiedz">Nie masz jeszcze gotowych opisów —
+              dodasz je w <a href="/ustawienia#opisy">Ustawieniach</a>.</span>
+            {% endif %}
+          </div>
+          {% endif %}
           <textarea id="p_{{ pole.klucz }}" name="pole__{{ pole.klucz }}" rows="5">{{ wartosc }}</textarea>
           {% if pole.podpowiedz %}<p class="podpowiedz">{{ pole.podpowiedz }}</p>{% endif %}
         </div>
@@ -298,7 +318,12 @@ function odswiezZaleznosci() {
     if (!przelacznik) return;
     const aktywne = przelacznik.checked && !przelacznik.disabled;
     pole.classList.toggle('nieaktywne', !aktywne);
-    pole.querySelectorAll('input, textarea, select').forEach(x => { x.disabled = !aktywne; });
+    // `button` też: w wyszarzonej sekcji przycisk „Załaduj” byłby jedyną rzeczą,
+    // która jeszcze działa — wklejałby gotowy opis do pola, którego przeglądarka
+    // i tak nie wyśle, bo jest wyłączone.
+    pole.querySelectorAll('input, textarea, select, button').forEach(x => {
+      x.disabled = !aktywne;
+    });
   });
 }
 
@@ -448,6 +473,21 @@ document.querySelectorAll('input[data-dzialka]').forEach(pole => {
   document.querySelector('select[data-poziom="obreb"]')?.addEventListener('change', () => {
     ostatnie = '';                            // zmiana obrębu unieważnia poprzedni wynik
     sprawdz();
+  });
+});
+
+// „Załaduj” przy polu z biblioteką gotowych opisów: wybrany tekst ląduje w polu i dalej
+// jest zwykłą treścią do poprawiania — o to chodzi, bo każda robota różni się szczegółami.
+// Gdy w polu już coś stoi, pytamy: opis to bywa kwadrans pisania i nie może zniknąć
+// przez jedno kliknięcie w niewłaściwy przycisk.
+document.querySelectorAll('[data-wklej]').forEach(przycisk => {
+  przycisk.addEventListener('click', () => {
+    const cel = document.getElementById(przycisk.dataset.wklej);
+    const zrodlo = document.getElementById(przycisk.dataset.zrodlo);
+    if (!cel || !zrodlo || !zrodlo.value) return;
+    if (cel.value.trim() && !confirm('W polu już coś jest. Zastąpić wybranym opisem?')) return;
+    cel.value = zrodlo.value;
+    cel.focus();
   });
 });
 </script>
