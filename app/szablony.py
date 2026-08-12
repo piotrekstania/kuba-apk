@@ -65,6 +65,8 @@ class Pole:
     szerokosc: str = "pelna"    # "pelna" | "polowa" | "trzecia"
     biblioteka: str = ""        # nad polem staje lista gotowych tekstów z Ustawień
                                 # ("sprawozdanie") i przycisk wklejający wybrany
+    formatowanie: bool = False  # pole przyjmuje pogrubienie/kursywę/podkreślenie
+                                # (wtedy znacznik w formatce musi być `{{r pole }}`)
 
 
 @dataclass
@@ -150,6 +152,7 @@ def wczytaj_szablon(plik: Path) -> Szablon:
             zrodlo=surowe.get("zrodlo", ""),
             szerokosc=surowe.get("szerokosc", "pelna"),
             biblioteka=surowe.get("biblioteka", ""),
+            formatowanie=bool(surowe.get("formatowanie")),
         )
 
     # kolejność: najpierw pola opisane w .json, potem reszta wykryta w szablonie

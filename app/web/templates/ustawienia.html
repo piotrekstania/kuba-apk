@@ -24,7 +24,18 @@
     </div>
     <div class="pole pelna">
       <label for="tresc-opisu">Opis</label>
-      <textarea id="tresc-opisu" name="opis" rows="4" required></textarea>
+      {# Ten sam edytor co przy „Przebiegu wykonanych prac” w formularzu operatu —
+         opis pisany tutaj ma trafić tam jeden do jednego, razem z pogrubieniami. #}
+      <div class="edytor">
+        <div class="pasek-formatu">
+          <button type="button" data-format="bold" title="Pogrubienie (Ctrl+B)"><b>B</b></button>
+          <button type="button" data-format="italic" title="Kursywa (Ctrl+I)"><i>I</i></button>
+          <button type="button" data-format="underline" title="Podkreślenie (Ctrl+U)"><u>U</u></button>
+        </div>
+        <div class="tresc" contenteditable="true" role="textbox" aria-multiline="true"
+             id="tresc-opisu" data-pole="opis-ukryty"></div>
+      </div>
+      <input type="hidden" id="opis-ukryty" name="opis">
     </div>
   </div>
   <div class="pasek">
@@ -39,7 +50,7 @@
   {% for pozycja in opisy_sprawozdania %}
   <tr>
     <td>{{ pozycja.nazwa }}</td>
-    <td class="opis-tresc">{{ pozycja.opis }}</td>
+    <td class="opis-tresc">{{ pozycja.opis | safe }}</td>
     <td class="akcje">
       <form method="post" action="/ustawienia/opisy/usun"
             onsubmit="return confirm('Usunąć opis „{{ pozycja.nazwa }}”? Gotowe operaty zostaną bez zmian.')">
@@ -233,6 +244,39 @@ przyciskStop.addEventListener('click', async () => {
 
 // gdy pobieranie już trwa (np. po odświeżeniu strony), od razu podłącz się do postępu
 odpytaj().then(p => { if (p.trwa) pilnuj(); });
+
+// --- edytor z pogrubieniem, kursywą i podkreśleniem -------------------------
+// Kopia tego, co w formularzu operatu: `contenteditable` bez żadnej biblioteki,
+// bo program ma działać bez internetu, a treść jedzie ukrytym polem, bo edytowalny
+// div nie jest polem formularza i sam nic nie wyśle. Serwer i tak przepuszcza
+// wszystko przez `tekst.oczysc`.
+document.querySelectorAll('.edytor').forEach(edytor => {
+  const tresc = edytor.querySelector('.tresc');
+  const ukryte = document.getElementById(tresc.dataset.pole);
+  const przepisz = () => { ukryte.value = tresc.innerHTML; };
+  tresc.addEventListener('input', przepisz);
+  tresc.addEventListener('blur', przepisz);
+  tresc.closest('form').addEventListener('submit', przepisz);
+
+  edytor.querySelectorAll('[data-format]').forEach(przycisk => {
+    // bez tego kliknięcie zabiera zaznaczenie i formatowanie nie ma się do czego przyłożyć
+    przycisk.addEventListener('mousedown', zdarzenie => zdarzenie.preventDefault());
+    przycisk.addEventListener('click', () => {
+      tresc.focus();
+      document.execCommand(przycisk.dataset.format, false, null);
+      przepisz();
+    });
+  });
+
+  // wklejamy jako czysty tekst — kopia z Worda ciągnie czcionki i kolory, których
+  // do operatu nie wpuszczamy
+  tresc.addEventListener('paste', zdarzenie => {
+    zdarzenie.preventDefault();
+    const czysty = (zdarzenie.clipboardData || window.clipboardData).getData('text/plain');
+    document.execCommand('insertText', false, czysty);
+    przepisz();
+  });
+});
 </script>
 
 {% endblock %}

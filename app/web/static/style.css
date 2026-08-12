@@ -166,6 +166,20 @@ td.opis-tresc { white-space: pre-wrap; }
    pokazywał się tam jako jeden ciąg — jedyne miejsce w programie, gdzie akapity
    naprawdę się zlewały (w polu formularza i w gotowym Wordzie były całe). */
 .wielolinijkowa { white-space: pre-wrap; }
+
+/* Edytor z pogrubieniem, kursywą i podkreśleniem. Ma wyglądać jak zwykłe pole
+   wielolinijkowe z paskiem nad spodem — brat nie ma powodu wiedzieć, że to nie textarea. */
+.edytor { border: 1px solid var(--linia); border-radius: 8px; background: var(--panel);
+          overflow: hidden; }
+.pasek-formatu { display: flex; gap: 4px; padding: 5px 6px; background: #f7f8fa;
+                 border-bottom: 1px solid var(--linia); }
+.pasek-formatu button { min-width: 30px; padding: 2px 8px; line-height: 1.5;
+                        font-size: 14px; }
+.edytor .tresc { min-height: 120px; padding: 10px 12px; font: inherit; overflow-y: auto;
+                 white-space: pre-wrap; outline: none; }
+.edytor:focus-within { border-color: var(--akcent); box-shadow: 0 0 0 2px #bcd6fb; }
+/* Wyszarzenie sekcji zależnej dotyczy też edytora — `disabled` na nim nie działa. */
+.pole.nieaktywne .edytor { background: #f4f6f8; }
 /* Wybór gotowego opisu nad polem tekstowym: lista i „Załaduj” w jednej linii, nad
    polem, którego dotyczą. Lista dostaje całą wolną szerokość, bo nazwy opisów bywają
    długie, a ucięta nazwa nie mówi, co się wklei. */

@@ -162,6 +162,7 @@ starą wersję (autor się na to nadział).
 | `app/teryt.py` | jednostki TERYT z GUS + obręby z ULDK; **tylko biblioteka standardowa** |
 | `app/operaty.py` | katalog operatu: zakładanie, `operat.json` (w tym zapamiętany `uklad`), lista plików do sklejenia; nazwa pliku wynika z nazwy szablonu (`spis_tresci_wzor` → `spis_tresci.docx`) |
 | `app/warianty.py` | własne formatki użytkownika: wgrywanie, lista, wybór zapamiętany w ustawieniach i przy operacie |
+| `app/tekst.py` | pogrubienie/kursywa/podkreślenie: sanitizacja fragmentu HTML i zamiana na `RichText` |
 | `app/miniatury.py` | podgląd pierwszej strony PDF-a (pypdfium2 + Pillow) |
 | `app/main.py` | trasy FastAPI, parsowanie formularza (w tym tabel) |
 | `app/web/templates/` | widoki; `blad.html` to strona każdego niezłapanego wyjątku, a `pomoc.html` instrukcja dla brata — aktualizuj ją razem z funkcjami |
@@ -479,6 +480,7 @@ Co pilnują, w kolejności od najbardziej bolesnych doświadczeń:
 | `test_warianty.py` | że własna formatka **przeżywa aktualizację** i że poprawianie operatu bierze tę formatkę, którą naprawdę powstał, a nie dzisiejszą domyślną |
 | `test_uldk.py` | że milczenie ULDK **nie wygląda jak zły numer** — najważniejszy test w tym pliku |
 | `test_teryt.py` | że zmiana strony GUS-u **nie czyści bazy** (przychodzi HTML zamiast ZIP-a), że gmina miejsko-wiejska nie wchodzi do listy, że obręby lecą z bazy zamiast z sieci i że przerwane pobieranie hurtowe **nie dobija paska do końca** |
+| `test_tekst.py` | że do dokumentu wchodzi **tylko** pogrubienie, kursywa i podkreślenie, a `{{r }}` w formatce jest konieczne — przy zwykłym `{{ }}` powstaje plik, którego Word nie otworzy |
 | `test_miniatury.py` | że pdfium nie jest wołany dwoma wątkami naraz (objawem jest zgaszony program, nie wyjątek) i że plik niebędący PDF-em nie wywraca strony składania |
 
 Testy stabilności formatek **pomijają się bez czcionki Calibri/Carlito**

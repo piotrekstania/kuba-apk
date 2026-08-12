@@ -57,6 +57,7 @@
          formatowanie — mimo że w polu formularza i w gotowym Wordzie akapity są całe.
          Klasa siedzi na `span` opasującym samą wartość, a nie na komórce: na komórce
          `pre-wrap` pokazywałby też wcięcia z tego szablonu i rozpychał wszystkie wiersze. #}
+      {% elif pole.html %}<span class="wielolinijkowa">{{ wartosc | safe }}</span>
       {% else %}<span class="wielolinijkowa">{{ wartosc }}</span>{% endif %}
     </td>
   </tr>

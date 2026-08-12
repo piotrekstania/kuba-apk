@@ -11,6 +11,7 @@ from docxtpl import DocxTemplate
 
 from . import db, operaty, teryt
 from .szablony import SUFIKS_JEST, Szablon
+from .tekst import na_richtext, na_zwykly_tekst
 
 MIESIACE = ["stycznia", "lutego", "marca", "kwietnia", "maja", "czerwca", "lipca",
             "sierpnia", "września", "października", "listopada", "grudnia"]
@@ -127,6 +128,21 @@ def przygotuj_kontekst(szablon: Szablon, dane: dict[str, Any], ustawienia: dict[
             kontekst[f"{pole.klucz}_iso"] = kontekst[pole.klucz]
             kontekst[f"{pole.klucz}_slownie"] = data_slownie(kontekst[pole.klucz])
             kontekst[pole.klucz] = data_pl(kontekst[pole.klucz])
+
+    # Pola z formatowaniem trzymamy jako fragment HTML, a do Worda idą jako `RichText`,
+    # czyli sformatowane biegi tekstu. Znacznik w formatce **musi** wtedy mieć postać
+    # `{{r pole }}` — i odwrotnie: skoro ma, to tu zawsze musi trafić RichText, także
+    # pusty. Zwykły napis wjechałby w to miejsce bez ucieczek i pierwszy znak `<`
+    # w opisie rozwaliłby plik.
+    #
+    # `<klucz>_jest` ustawiamy **tutaj**, zanim wartość przestanie być napisem: pusty
+    # `RichText` jest prawdziwy jak każdy obiekt, więc pętla niżej uznałaby, że opis
+    # jest zawsze — i formatka przestałaby kiedykolwiek pisać „brak”.
+    for pole in szablon.pola:
+        if pole.formatowanie:
+            surowy = str(kontekst.get(pole.klucz) or "")
+            kontekst[f"{pole.klucz}{SUFIKS_JEST}"] = bool(na_zwykly_tekst(surowy))
+            kontekst[pole.klucz] = na_richtext(surowy)
 
     # `<klucz>_jest` dla każdego pola: czy brat cokolwiek tam wpisał. Formatka pyta o to
     # w `{%p if ... %}`, żeby wybrać między treścią a słowem „brak” — a skoro odpowiedź

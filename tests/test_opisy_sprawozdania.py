@@ -10,6 +10,8 @@ znaczy, że przeżywają aktualizację programu (`szablony/` jest lustrzane i ka
 """
 from __future__ import annotations
 
+import json
+
 from app import db
 
 
@@ -279,3 +281,129 @@ def test_pusty_opis_wycina_sekcje_z_dokumentu(klient):
     # nie „czy pusto”, tylko czy zniknął **cały akapit** z warunku: przy `_jest`
     # zawsze prawdziwym zostałaby sama etykieta z pustką po dwukropku
     assert "Przebieg wykonanych prac" not in tresc
+
+
+# --- formatowanie: od formularza po plik Worda -------------------------------
+
+def _operat_z_formatowaniem(klient):
+    klient.srodowisko.dodaj_szablon(
+        "spis_tresci_wzor",
+        ["{{ nr_roboty }}",
+         "{%p if opis_przebiegu_jest %}",
+         "Przebieg: {{r opis_przebiegu }}",
+         "{%p endif %}"],
+        opis={"nazwa": "Operat", "glowny": True,
+              "pola": [{"klucz": "nr_roboty", "etykieta": "Nr roboty"},
+                       {"klucz": "opis_przebiegu", "etykieta": "Przebieg", "typ": "textarea",
+                        "formatowanie": True, "biblioteka": "sprawozdanie"}]})
+
+
+def _akapit_opisu(klient):
+    from docx import Document
+    katalog = klient.srodowisko.wyniki / db.dokumenty()[0]["katalog"]
+    for akapit in Document(katalog / "spis_tresci.docx").paragraphs:
+        if akapit.text.startswith("Przebieg:"):
+            return akapit
+    return None
+
+
+def test_pogrubienie_z_formularza_dojezdza_do_dokumentu(klient):
+    _operat_z_formatowaniem(klient)
+
+    klient.post("/generuj/spis_tresci_wzor",
+                data={"pole__nr_roboty": "GK.1", "notatka": "",
+                      "pole__opis_przebiegu": "<b>Pomiar</b> wykonano <i>metodą RTN</i>."},
+                follow_redirects=False)
+
+    biegi = {b.text: (b.bold, b.italic) for b in _akapit_opisu(klient).runs if b.text}
+    assert biegi["Pomiar"] == (True, None)
+    assert biegi["metodą RTN"] == (None, True)
+
+
+def test_smieci_z_wklejki_nie_wchodza_do_dokumentu(klient):
+    """Kopia z Worda ciągnie style i czasem skrypty — obcinamy je przy zapisie."""
+    _operat_z_formatowaniem(klient)
+
+    klient.post("/generuj/spis_tresci_wzor",
+                data={"pole__nr_roboty": "GK.1", "notatka": "",
+                      "pole__opis_przebiegu":
+                          '<script>alert(1)</script><span style="color:red">Opis</span>'},
+                follow_redirects=False)
+
+    assert json.loads(db.dokumenty()[0]["dane_json"])["opis_przebiegu"] == "Opis"
+    assert "alert" not in _akapit_opisu(klient).text
+
+
+def test_pusty_sformatowany_opis_dalej_wycina_sekcje(klient):
+    """Pułapka tej zmiany: wartość przestaje być napisem, a pusty `RichText` jest
+    prawdziwy jak każdy obiekt — więc `opis_przebiegu_jest` liczymy, zanim ją podmienimy.
+    Bez tego formatka nigdy więcej nie napisałaby „brak”."""
+    _operat_z_formatowaniem(klient)
+
+    klient.post("/generuj/spis_tresci_wzor",
+                data={"pole__nr_roboty": "GK.1", "notatka": "",
+                      "pole__opis_przebiegu": "<b></b><br>"},
+                follow_redirects=False)
+
+    assert _akapit_opisu(klient) is None, "pusty opis miał wyciąć całą sekcję"
+
+
+def test_formatowanie_wraca_do_formularza_przy_poprawianiu(klient):
+    _operat_z_formatowaniem(klient)
+    klient.post("/generuj/spis_tresci_wzor",
+                data={"pole__nr_roboty": "GK.1", "notatka": "",
+                      "pole__opis_przebiegu": "<b>Pomiar</b> RTN"},
+                follow_redirects=False)
+
+    formularz = klient.get(
+        f"/nowy/spis_tresci_wzor?edytuj={db.dokumenty()[0]['id']}").text
+
+    assert "<b>Pomiar</b> RTN" in formularz, "edytor ma dostać HTML, a nie zjedzone znaczniki"
+    assert 'contenteditable="true"' in formularz
+
+
+def test_formatowanie_widac_na_stronie_operatu(klient):
+    _operat_z_formatowaniem(klient)
+    klient.post("/generuj/spis_tresci_wzor",
+                data={"pole__nr_roboty": "GK.1", "notatka": "",
+                      "pole__opis_przebiegu": "<b>Pomiar</b> RTN"},
+                follow_redirects=False)
+
+    strona = klient.get(f"/dokument/{db.dokumenty()[0]['id']}").text
+
+    assert "<b>Pomiar</b> RTN" in strona
+
+
+def test_pole_bez_formatowania_nadal_eskejpuje(klient):
+    """Sąsiednie pola biorą się wprost z tego, co ktoś wpisał — nawias trójkątny
+    w uwagach nie ma prawa stać się znacznikiem."""
+    klient.srodowisko.dodaj_szablon(
+        "spis_tresci_wzor", ["{{ nr_roboty }} {{ uwagi }}"],
+        opis={"nazwa": "Operat", "glowny": True,
+              "pola": [{"klucz": "nr_roboty", "etykieta": "Nr roboty"},
+                       {"klucz": "uwagi", "etykieta": "Uwagi", "typ": "textarea"}]})
+
+    klient.post("/generuj/spis_tresci_wzor",
+                data={"pole__nr_roboty": "GK.1", "notatka": "",
+                      "pole__uwagi": "<b>to nie jest pogrubienie</b>"},
+                follow_redirects=False)
+
+    strona = klient.get(f"/dokument/{db.dokumenty()[0]['id']}").text
+    assert "&lt;b&gt;to nie jest pogrubienie" in strona
+
+
+def test_opis_w_bibliotece_tez_jest_czyszczony(klient):
+    klient.post("/ustawienia/opisy",
+                data={"nazwa": "Wklejka", "opis": '<b>Grube</b><script>x()</script>'},
+                follow_redirects=False)
+
+    assert db.opisy_sprawozdania()[0]["opis"] == "<b>Grube</b>"
+
+
+def test_opis_z_samych_znacznikow_nie_przechodzi(klient):
+    """Pusty edytor zostawia po sobie `<br>` — to nadal jest pusty opis."""
+    odpowiedz = klient.post("/ustawienia/opisy", data={"nazwa": "Puste", "opis": "<br><b></b>"},
+                            follow_redirects=False)
+
+    assert db.opisy_sprawozdania() == []
+    assert "blad=" in odpowiedz.headers["location"]

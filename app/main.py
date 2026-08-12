@@ -25,7 +25,7 @@ from fastapi.templating import Jinja2Templates
 from starlette.datastructures import UploadFile
 from starlette.exceptions import HTTPException as BladHTTP
 
-from . import (aktualizacja, db, generator, miniatury, operaty, pdf, raport,
+from . import (aktualizacja, db, generator, miniatury, operaty, pdf, raport, tekst,
                statystyki, szablony, teryt, warianty, zmiany)
 from .config import DANE, WEB, WYNIKI
 
@@ -254,6 +254,14 @@ def odczytaj_dane(formularz, szablon: szablony.Szablon) -> dict[str, Any]:
             czesci = {poziom: proste.pop(f"{pole.klucz}__{poziom}", "")
                       for poziom in ("wojewodztwo", "powiat", "gmina", "obreb")}
             proste[pole.klucz] = czesci if any(czesci.values()) else {}
+
+    # Pola przyjmujące formatowanie przychodzą jako fragment HTML z edytora w przeglądarce.
+    # Zdejmujemy z nich wszystko poza pogrubieniem, kursywą, podkreśleniem i złamaniem
+    # wiersza: to jedyne, co umiemy wstawić do Worda, a reszta (kolory, czcionki ze
+    # skopiowanego Worda, skrypty) rozjechałaby wygląd operatu albo samą stronę.
+    for pole in szablon.pola:
+        if pole.formatowanie and isinstance(proste.get(pole.klucz), str):
+            proste[pole.klucz] = tekst.oczysc(proste[pole.klucz])
 
     # Wybór formatek z tabelki na dole. Zapisujemy **wszystkie** pozycje, także te
     # ustawione z powrotem na standardową (pusta wartość): brak klucza znaczyłby
@@ -692,13 +700,18 @@ def _dane_w_grupach(pola: list[szablony.Pole],
     grupy: dict[str, list[dict[str, Any]]] = {}
     uzyte: set[str] = set()
 
-    def dopisz(nazwa: str, klucz: str) -> None:
-        grupy.setdefault(nazwa, []).append({"klucz": klucz, "wartosc": wartosci[klucz]})
+    # `html` mówi widokowi, że wartość wolno pokazać jako HTML. Zaznaczamy tak **wyłącznie**
+    # pola opisane w szablonie jako przyjmujące formatowanie — ich treść przeszła przez
+    # `tekst.oczysc`. Reszta zostaje eskejpowana, bo bierze się wprost z tego, co ktoś
+    # wpisał, i nawias trójkątny w uwagach nie ma prawa stać się znacznikiem.
+    def dopisz(nazwa: str, klucz: str, html: bool = False) -> None:
+        grupy.setdefault(nazwa, []).append(
+            {"klucz": klucz, "wartosc": wartosci[klucz], "html": html})
         uzyte.add(klucz)
 
     for pole in pola:
         if pole.klucz in wartosci and pole.klucz not in uzyte:
-            dopisz(pole.grupa, pole.klucz)
+            dopisz(pole.grupa, pole.klucz, html=pole.formatowanie)
     for klucz in wartosci:
         if klucz not in uzyte:
             dopisz("Pozostałe dane", klucz)
@@ -925,9 +938,11 @@ async def dodaj_opis(request: Request):
     """
     formularz_danych = await request.form()
     nazwa = str(formularz_danych.get("nazwa") or "").strip()
-    opis = str(formularz_danych.get("opis") or "").strip()
+    # Opis przychodzi z edytora, czyli jako fragment HTML — przepuszczamy go przez
+    # `tekst.oczysc`, bo wraca potem na stronę jako HTML i jedzie do dokumentu.
+    opis = tekst.oczysc(str(formularz_danych.get("opis") or ""))
 
-    if not nazwa or not opis:
+    if not nazwa or not tekst.na_zwykly_tekst(opis):
         brakuje = "nazwę" if not nazwa else "treść opisu"
         return RedirectResponse(
             "/ustawienia?blad=" + quote(f"Uzupełnij {brakuje} — bez tego opisu nie zapiszę."),

@@ -117,7 +117,26 @@
             {% endif %}
           </div>
           {% endif %}
+          {% if pole.formatowanie %}
+          {# Edytor zamiast zwykłego pola: brat pisał te opisy w Wordzie i chce zachować
+             pogrubienia. `contenteditable` wystarcza, bo dopuszczamy tylko B/I/U —
+             biblioteka z sieci odpadała, program ma działać bez internetu. Treść jedzie
+             ukrytym polem, bo `contenteditable` nie jest polem formularza i sam z siebie
+             niczego nie wysyła. Serwer i tak przepuszcza ją przez `tekst.oczysc`. #}
+          <div class="edytor">
+            <div class="pasek-formatu">
+              <button type="button" data-format="bold" title="Pogrubienie (Ctrl+B)"><b>B</b></button>
+              <button type="button" data-format="italic" title="Kursywa (Ctrl+I)"><i>I</i></button>
+              <button type="button" data-format="underline" title="Podkreślenie (Ctrl+U)"><u>U</u></button>
+            </div>
+            <div class="tresc" contenteditable="true" role="textbox" aria-multiline="true"
+                 id="e_{{ pole.klucz }}" data-pole="p_{{ pole.klucz }}">{{ wartosc | safe }}</div>
+          </div>
+          <input type="hidden" id="p_{{ pole.klucz }}" name="pole__{{ pole.klucz }}"
+                 value="{{ wartosc }}">
+          {% else %}
           <textarea id="p_{{ pole.klucz }}" name="pole__{{ pole.klucz }}" rows="5">{{ wartosc }}</textarea>
+          {% endif %}
           {% if pole.podpowiedz %}<p class="podpowiedz">{{ pole.podpowiedz }}</p>{% endif %}
         </div>
 
@@ -324,6 +343,12 @@ function odswiezZaleznosci() {
     pole.querySelectorAll('input, textarea, select, button').forEach(x => {
       x.disabled = !aktywne;
     });
+    // Edytor z formatowaniem nie jest polem formularza, więc `disabled` go nie dotyczy —
+    // trzeba mu odebrać edytowalność osobno, inaczej w wyszarzonej sekcji dałoby się
+    // pisać w polu, którego przeglądarka i tak nie wyśle.
+    pole.querySelectorAll('.tresc[contenteditable]').forEach(x => {
+      x.setAttribute('contenteditable', aktywne ? 'true' : 'false');
+    });
   });
 }
 
@@ -489,11 +514,58 @@ document.querySelectorAll('[data-wklej]').forEach(przycisk => {
     const cel = document.getElementById(przycisk.dataset.wklej);
     const zrodlo = document.getElementById(przycisk.dataset.zrodlo);
     if (!cel || !zrodlo || !zrodlo.value) return;
+    // przy polu z formatowaniem pisze się do edytora, a ukryte pole dostaje kopię
+    const edytor = document.querySelector(`.tresc[data-pole="${cel.id}"]`);
     const nazwa = zrodlo.options[zrodlo.selectedIndex].textContent.trim();
-    if (cel.value.trim() &&
+    const cokolwiek = edytor ? edytor.textContent.trim() : cel.value.trim();
+    if (cokolwiek &&
         !confirm(`To, co jest w polu, zostanie zastąpione opisem „${nazwa}”.`)) return;
-    cel.value = zrodlo.value;
-    cel.focus();
+    if (edytor) {
+      edytor.innerHTML = zrodlo.value;      // treść jest już oczyszczona przez serwer
+      cel.value = edytor.innerHTML;
+      edytor.focus();
+    } else {
+      cel.value = zrodlo.value;
+      cel.focus();
+    }
+  });
+});
+
+// --- edytor z pogrubieniem, kursywą i podkreśleniem -------------------------
+// `contenteditable` zamiast biblioteki z sieci: program ma działać bez internetu,
+// a zakres formatowania jest wąski (B/I/U), bo tylko tyle umiemy wstawić do Worda.
+// Treść przepisujemy do ukrytego pola, bo `contenteditable` nie jest polem formularza
+// i przeglądarka sama z siebie nic z niego nie wyśle.
+document.querySelectorAll('.edytor').forEach(edytor => {
+  const tresc = edytor.querySelector('.tresc');
+  const ukryte = document.getElementById(tresc.dataset.pole);
+
+  const przepisz = () => { ukryte.value = tresc.innerHTML; };
+  tresc.addEventListener('input', przepisz);
+  tresc.addEventListener('blur', przepisz);
+  // ostatnia deska ratunku: gdyby jakieś zdarzenie umknęło, przy wysyłce i tak
+  // pojedzie to, co widać w edytorze
+  tresc.closest('form').addEventListener('submit', przepisz);
+
+  edytor.querySelectorAll('[data-format]').forEach(przycisk => {
+    // `mousedown` z `preventDefault`, żeby kliknięcie nie zabrało zaznaczenia z tekstu —
+    // po utracie zaznaczenia formatowanie nie miałoby się do czego przyłożyć
+    przycisk.addEventListener('mousedown', zdarzenie => zdarzenie.preventDefault());
+    przycisk.addEventListener('click', () => {
+      tresc.focus();
+      document.execCommand(przycisk.dataset.format, false, null);
+      przepisz();
+    });
+  });
+
+  // Wklejamy zawsze jako zwykły tekst: kopia z Worda albo ze strony ciągnie za sobą
+  // czcionki, rozmiary i kolory, których do operatu nie wpuszczamy. Pogrubienie brat
+  // nakłada przyciskiem — świadomie i na tym, na czym chce.
+  tresc.addEventListener('paste', zdarzenie => {
+    zdarzenie.preventDefault();
+    const czysty = (zdarzenie.clipboardData || window.clipboardData).getData('text/plain');
+    document.execCommand('insertText', false, czysty);
+    przepisz();
   });
 });
 </script>

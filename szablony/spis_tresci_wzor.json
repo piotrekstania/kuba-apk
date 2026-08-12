@@ -113,7 +113,8 @@
       "grupa": "Sprawozdanie techniczne",
       "aktywne_gdy": "dokumenty_sprawozdanie:sprawozdanie_techniczne_wzor",
       "biblioteka": "sprawozdanie",
-      "podpowiedz": "Puste pole daje w sprawozdaniu „brak”. Gotowe opisy dokładasz w Ustawieniach."
+      "podpowiedz": "Puste pole daje w sprawozdaniu „brak”. Pogrubienie, kursywę i podkreślenie ustawiasz przyciskami albo skrótami Ctrl+B/I/U. Gotowe opisy dokładasz w Ustawieniach.",
+      "formatowanie": true
     },
     {
       "klucz": "bazy",
