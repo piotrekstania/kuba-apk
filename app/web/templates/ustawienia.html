@@ -7,6 +7,55 @@
 {# Karty jak w formularzu operatu: jeden `fieldset` na jeden temat. Kotwice
    `#formatki` i `#teryt` zostają na kartach, bo prowadzą do nich linki z Pomocy
    i z formularza. #}
+<fieldset id="opisy">
+  <legend>Opis sprawozdania</legend>
+
+<p class="szary">Gotowe opisy, żeby nie przepisywać przy każdej robocie tego samego.
+  <strong>Nazwa</strong> jest do rozpoznania opisu na liście, <strong>opis</strong> to
+  treść. Zapisują się w bazie programu, więc przeżywają aktualizację i wchodzą do kopii
+  zapasowej.</p>
+
+<form method="post" action="/ustawienia/opisy">
+  <div class="siatka">
+    <div class="pole polowa">
+      <label for="nazwa-opisu">Nazwa</label>
+      <input id="nazwa-opisu" name="nazwa" required
+             placeholder="np. mapa do celów projektowych">
+    </div>
+    <div class="pole pelna">
+      <label for="tresc-opisu">Opis</label>
+      <textarea id="tresc-opisu" name="opis" rows="4" required></textarea>
+    </div>
+  </div>
+  <div class="pasek">
+    <button class="glowny" type="submit">Dodaj opis</button>
+  </div>
+</form>
+
+{% if opisy_sprawozdania %}
+{# Ten sam układ co przy formatkach: nazwa, treść, przycisk usuwania w kolumnie akcji. #}
+<table class="lista">
+  <tr><th class="waski">Nazwa</th><th>Opis</th><th></th></tr>
+  {% for pozycja in opisy_sprawozdania %}
+  <tr>
+    <td>{{ pozycja.nazwa }}</td>
+    <td class="opis-tresc">{{ pozycja.opis }}</td>
+    <td class="akcje">
+      <form method="post" action="/ustawienia/opisy/usun"
+            onsubmit="return confirm('Usunąć opis „{{ pozycja.nazwa }}”? Gotowe operaty zostaną bez zmian.')">
+        <input type="hidden" name="opis" value="{{ pozycja.id }}">
+        <button type="submit">Usuń</button>
+      </form>
+    </td>
+  </tr>
+  {% endfor %}
+</table>
+{% else %}
+<p class="szary">Nie masz jeszcze zapisanych opisów.</p>
+{% endif %}
+
+</fieldset>
+
 <fieldset id="formatki">
   <legend>Własne formatki</legend>
 

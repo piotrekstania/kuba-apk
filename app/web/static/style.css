@@ -158,6 +158,10 @@ table.lista tr.notatka span { display: block; margin-left: 2px; padding-left: 10
                 padding: 10px 14px; white-space: pre-wrap; }
 /* Ścieżka do katalogu tuż pod paskiem przycisków — należy do nich, więc bez odstępu. */
 .przy-pasku { margin: -12px 0 0; font-size: 13px; }
+/* Treść zapisanego opisu na liście w Ustawieniach. `pre-wrap` zostawia łamanie wierszy
+   tak, jak brat je wpisał — opis bywa kilkoma akapitami, a zlepiony w jeden przestaje
+   być tym, co zapisywał. */
+td.opis-tresc { white-space: pre-wrap; }
 /* Kolumna z numerem wydania w historii — wąska i wyrównana do prawej, żeby
    „7." i „81." kończyły się w tym samym miejscu. */
 th.numer, td.numer { width: 44px; text-align: right; white-space: nowrap; }

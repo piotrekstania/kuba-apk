@@ -907,7 +907,47 @@ def ustawienia_formularz(request: Request, komunikat: str | None = None,
                          blad: str | None = None):
     return _widok(request, "ustawienia.html", komunikat=komunikat, blad=blad,
                   teryt_stan=teryt.stan(), rodzaje=szablony.lista_skrocona(),
-                  wlasne_formatki=warianty.wszystkie())
+                  wlasne_formatki=warianty.wszystkie(),
+                  opisy_sprawozdania=db.opisy_sprawozdania())
+
+
+# --- opisy sprawozdania ------------------------------------------------------
+
+@app.post("/ustawienia/opisy")
+async def dodaj_opis(request: Request):
+    """Dokłada gotowy opis do biblioteki. Oba pola muszą być wypełnione.
+
+    Nazwa jest do rozpoznania opisu na liście, więc pusta nie ma sensu; pusty opis
+    to pozycja, która niczego nie wstawi. Zamiast zapisywać takie wpisy i zostawiać
+    brata z zagadką, mówimy o tym wprost.
+    """
+    formularz_danych = await request.form()
+    nazwa = str(formularz_danych.get("nazwa") or "").strip()
+    opis = str(formularz_danych.get("opis") or "").strip()
+
+    if not nazwa or not opis:
+        brakuje = "nazwę" if not nazwa else "treść opisu"
+        return RedirectResponse(
+            "/ustawienia?blad=" + quote(f"Uzupełnij {brakuje} — bez tego opisu nie zapiszę."),
+            status_code=303)
+
+    db.dodaj_opis_sprawozdania(nazwa, opis)
+    return RedirectResponse(
+        "/ustawienia?komunikat=" + quote(f"Opis „{nazwa}” zapisany.") + "#opisy",
+        status_code=303)
+
+
+@app.post("/ustawienia/opisy/usun")
+async def usun_opis(request: Request):
+    formularz_danych = await request.form()
+    try:
+        opis_id = int(str(formularz_danych.get("opis") or ""))
+    except ValueError:
+        return RedirectResponse("/ustawienia#opisy", status_code=303)
+
+    db.usun_opis_sprawozdania(opis_id)
+    return RedirectResponse(
+        "/ustawienia?komunikat=" + quote("Opis usunięty.") + "#opisy", status_code=303)
 
 
 # --- własne formatki ---------------------------------------------------------

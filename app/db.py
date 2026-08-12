@@ -24,6 +24,16 @@ CREATE TABLE IF NOT EXISTS ustawienia (
     wartosc  TEXT NOT NULL
 );
 
+-- Gotowe opisy do sprawozdania: `nazwa` służy do rozpoznania na liście, `opis` to treść.
+-- Osobna tabela, a nie klucz w `ustawienia`, bo tego jest wiele i dochodzi po jednym.
+-- Nowa tabela nie wymaga migracji: `init()` puszcza cały SCHEMAT przy każdym starcie,
+-- a `IF NOT EXISTS` dokłada ją też do bazy, która powstała wcześniej.
+CREATE TABLE IF NOT EXISTS opisy_sprawozdania (
+    id     INTEGER PRIMARY KEY AUTOINCREMENT,
+    nazwa  TEXT NOT NULL,
+    opis   TEXT NOT NULL
+);
+
 -- liczniki numeracji, np. ("operat", 2026) -> 17
 CREATE TABLE IF NOT EXISTS liczniki (
     nazwa  TEXT NOT NULL,
@@ -228,6 +238,34 @@ def dokumenty(limit: int = 100) -> list[sqlite3.Row]:
 def usun_dokument(dokument_id: int) -> None:
     with polaczenie() as con:
         con.execute("DELETE FROM dokumenty WHERE id = ?", (dokument_id,))
+
+
+# --- opisy sprawozdania ------------------------------------------------------
+#
+# Biblioteka gotowych opisów: brat pisze je raz, żeby nie przepisywać tego samego przy
+# każdej robocie. Trzymamy je w bazie, a nie w plikach — baza leży w `dane/`, więc
+# przeżywa aktualizację programu i wchodzi do kopii zapasowej.
+
+
+def opisy_sprawozdania() -> list[sqlite3.Row]:
+    """Wszystkie opisy, po nazwie — lista rośnie, a szuka się po nazwie, nie po dacie."""
+    with polaczenie() as con:
+        return con.execute(
+            "SELECT id, nazwa, opis FROM opisy_sprawozdania ORDER BY nazwa COLLATE NOCASE"
+        ).fetchall()
+
+
+def dodaj_opis_sprawozdania(nazwa: str, opis: str) -> int:
+    with polaczenie() as con:
+        kursor = con.execute(
+            "INSERT INTO opisy_sprawozdania (nazwa, opis) VALUES (?, ?)",
+            (nazwa.strip(), opis.strip()))
+        return int(kursor.lastrowid)
+
+
+def usun_opis_sprawozdania(opis_id: int) -> None:
+    with polaczenie() as con:
+        con.execute("DELETE FROM opisy_sprawozdania WHERE id = ?", (opis_id,))
 
 
 # --- ustawienia (dane stałe geodety, podstawiane do każdego dokumentu) -------

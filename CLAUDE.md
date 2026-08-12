@@ -156,7 +156,7 @@ starą wersję (autor się na to nadział).
 | `app/zmiany.py` | czyta `ZMIANY.md` (parser na trzech liniach, format do poprawienia w Notatniku) |
 | `narzedzia/wydaj.py` | stempluje wydanie: numer z daty i kolejności, `WERSJA` + `ZMIANY.md` |
 | `narzedzia/zbuduj_zmiany.py` | buduje `ZMIANY.md` z historii pliku `WERSJA` w gicie |
-| `app/db.py` | SQLite: `dokumenty`, `liczniki`, `zdarzenia`, `teryt_*` (`ustawienia` bez interfejsu) |
+| `app/db.py` | SQLite: `dokumenty`, `liczniki`, `zdarzenia`, `teryt_*`, `opisy_sprawozdania` (`ustawienia` bez interfejsu) |
 | `app/statystyki.py` | liczniki do stopki: operaty, dokumenty, złożone PDF-y; zliczane w chwili zdarzenia |
 | `app/raport.py` | wysyłka tych trzech liczb do arkusza autora; **tylko biblioteka standardowa**, wszystko połykane po cichu |
 | `app/teryt.py` | jednostki TERYT z GUS + obręby z ULDK; **tylko biblioteka standardowa** |
