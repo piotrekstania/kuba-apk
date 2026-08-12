@@ -312,3 +312,26 @@ def test_zaloz_nie_kasuje_notatki(srodowisko):
 def test_notatka_w_katalogu_ktorego_nie_ma_nie_wywala_programu(srodowisko):
     """Katalog zniknął w trakcie (archiwizacja z Eksploratora) — to nie powód do awarii."""
     operaty.zapisz_notatke(srodowisko.wyniki / "nie ma takiego", OPIS)
+
+
+def test_wielolinijkowe_dane_zachowuja_akapity_na_stronie_operatu(klient):
+    """Opis przebiegu prac bywa kilkoma akapitami.
+
+    Na liście „Wpisane dane” zlewały się w jeden ciąg — jedyne miejsce w programie,
+    gdzie akapity naprawdę ginęły (w polu formularza i w gotowym Wordzie były całe),
+    więc wyglądało to jak zgubione formatowanie w całym programie.
+    """
+    klient.srodowisko.dodaj_szablon(
+        "spis_tresci_wzor", ["{{ nr_roboty }} {{ opis_przebiegu }}"],
+        opis={"nazwa": "Operat", "glowny": True,
+              "pola": [{"klucz": "nr_roboty", "etykieta": "Nr roboty"},
+                       {"klucz": "opis_przebiegu", "etykieta": "Przebieg", "typ": "textarea"}]})
+    klient.post("/generuj/spis_tresci_wzor",
+                data={"pole__nr_roboty": "GK.1", "notatka": "",
+                      "pole__opis_przebiegu": "Pierwszy akapit.\nDrugi akapit."},
+                follow_redirects=False)
+
+    strona = klient.get(f"/dokument/{db.dokumenty()[0]['id']}").text
+
+    assert "Pierwszy akapit.\nDrugi akapit." in strona, "łamanie wierszy zniknęło z HTML-a"
+    assert "wielolinijkowa" in strona, "…a bez tej klasy przeglądarka i tak je sklei"
