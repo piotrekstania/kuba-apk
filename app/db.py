@@ -204,8 +204,12 @@ def zapisz_dokument(szablon: str, tytul: str, plik_docx: str, dane: dict[str, An
 
 
 def zaktualizuj_dokument(dokument_id: int, tytul: str, dane: dict[str, Any],
-                         plik_docx: str, katalog: str, notatka: str = "") -> None:
+                         plik_docx: str, katalog: str, notatka: str) -> None:
     """Poprawiony operat zostaje tym samym wpisem — nie zakładamy nowego.
+
+    `notatka` celowo bez wartości domyślnej: UPDATE nadpisuje istniejący wpis, więc
+    wywołanie bez niej kasowałoby notatkę brata po cichu. Przy INSERT (`zapisz_dokument`)
+    domyślne puste nic nie niszczy, tu by niszczyło.
 
     Ścieżki też odświeżamy: gdy ktoś skasuje katalog operatu z Eksploratora, poprawianie
     zakłada go od nowa i wpis musi wskazywać to, co naprawdę leży na dysku.

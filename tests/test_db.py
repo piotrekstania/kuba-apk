@@ -132,9 +132,10 @@ def test_zapis_i_odczyt_dokumentu(srodowisko):
     assert wiersz["nr_operatu"] == "001/2026"
 
     db.zaktualizuj_dokument(identyfikator, "Operat poprawiony", {"nr_roboty": "GK.2"},
-                            "001.2026/spis_tresci.docx", "001.2026")
+                            "001.2026/spis_tresci.docx", "001.2026", "czekam na wypis")
     wiersz = db.dokument(identyfikator)
     assert wiersz["tytul"] == "Operat poprawiony"
+    assert wiersz["notatka"] == "czekam na wypis"
     assert wiersz["nr_operatu"] == "001/2026"          # numer się nie zmienia przy poprawce
     assert len(db.dokumenty()) == 1                    # i nie powstaje drugi wpis
 
