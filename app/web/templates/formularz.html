@@ -478,14 +478,20 @@ document.querySelectorAll('input[data-dzialka]').forEach(pole => {
 
 // „Załaduj” przy polu z biblioteką gotowych opisów: wybrany tekst ląduje w polu i dalej
 // jest zwykłą treścią do poprawiania — o to chodzi, bo każda robota różni się szczegółami.
-// Gdy w polu już coś stoi, pytamy: opis to bywa kwadrans pisania i nie może zniknąć
-// przez jedno kliknięcie w niewłaściwy przycisk.
+//
+// Puste pole ładuje się od razu. Gdy coś w nim stoi, uprzedzamy — ale **komunikatem**,
+// a nie pytaniem: „Zastąpić wybranym opisem?” brzmiało jak prośba o zgodę i naturalnie
+// się to anulowało, więc wyglądało, jakby przycisk nie działał. Teraz zdanie mówi wprost,
+// co się stanie, a „Anuluj” zostaje wyjściem awaryjnym — wpisany opis bywa kwadransem
+// pisania i nie może zniknąć przez jedno kliknięcie w niewłaściwy przycisk.
 document.querySelectorAll('[data-wklej]').forEach(przycisk => {
   przycisk.addEventListener('click', () => {
     const cel = document.getElementById(przycisk.dataset.wklej);
     const zrodlo = document.getElementById(przycisk.dataset.zrodlo);
     if (!cel || !zrodlo || !zrodlo.value) return;
-    if (cel.value.trim() && !confirm('W polu już coś jest. Zastąpić wybranym opisem?')) return;
+    const nazwa = zrodlo.options[zrodlo.selectedIndex].textContent.trim();
+    if (cel.value.trim() &&
+        !confirm(`To, co jest w polu, zostanie zastąpione opisem „${nazwa}”.`)) return;
     cel.value = zrodlo.value;
     cel.focus();
   });
