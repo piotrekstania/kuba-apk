@@ -8,6 +8,14 @@
   --akcent-ciemny: #1a5cc4;
   --zle: #b42318;
   --ok: #1a7f45;
+  /* Przystanek tabulatora — tyle wynosi `defaultTabStop` w formatkach operatu.
+     Przeglądarka domyślnie liczy tabulator jako osiem znaków (tu ok. 0,8 cm), a Word
+     przeskakuje do najbliższego przystanku co 2 cm; bez tego wyrównanie wyglądało
+     inaczej w programie, a inaczej w gotowym dokumencie. Obowiązuje **wszędzie**, gdzie
+     pokazujemy tekst tak, jak brat go wpisał — poprawianie tego w jednym miejscu
+     zostawiało resztę po staremu. Gdyby `defaultTabStop` w formatkach się zmienił,
+     ta wartość ma pójść za nim. */
+  --tabulator: 2cm;
 }
 
 * { box-sizing: border-box; }
@@ -148,24 +156,24 @@ table.lista tr.notatka td { padding: 0 10px 9px; }
 table.lista tr.notatka span { display: block; margin-left: 2px; padding-left: 10px;
                               border-left: 2px solid var(--linia);
                               font-size: 12.5px; line-height: 1.45; color: var(--szary);
-                              white-space: pre-wrap; }
+                              white-space: pre-wrap; tab-size: var(--tabulator); }
 /* Opis na stronie operatu — sekcja w tym samym stroju co „Wpisane dane”: nagłówek `h2`
    nad białym panelem o tej samej ramce i zaokrągleniu co `table.lista`. Wcześniej miał
    własny strój (kreska z lewej, mały nagłówek w środku) i to on robił bałagan w górnej
    części strony — trzy różne pudełka jedno pod drugim. Etykietę niesie teraz nagłówek
    sekcji, więc w środku został sam tekst. */
 .opis-operatu { background: var(--panel); border: 1px solid var(--linia); border-radius: 8px;
-                padding: 10px 14px; white-space: pre-wrap; }
+                padding: 10px 14px; white-space: pre-wrap; tab-size: var(--tabulator); }
 /* Ścieżka do katalogu tuż pod paskiem przycisków — należy do nich, więc bez odstępu. */
 .przy-pasku { margin: -12px 0 0; font-size: 13px; }
 /* Treść zapisanego opisu na liście w Ustawieniach. `pre-wrap` zostawia łamanie wierszy
    tak, jak brat je wpisał — opis bywa kilkoma akapitami, a zlepiony w jeden przestaje
    być tym, co zapisywał. */
-td.opis-tresc { white-space: pre-wrap; }
+td.opis-tresc { white-space: pre-wrap; tab-size: var(--tabulator); }
 /* Wartości wielolinijkowe na liście „Wpisane dane”. Bez tego opis przebiegu prac
    pokazywał się tam jako jeden ciąg — jedyne miejsce w programie, gdzie akapity
    naprawdę się zlewały (w polu formularza i w gotowym Wordzie były całe). */
-.wielolinijkowa { white-space: pre-wrap; }
+.wielolinijkowa { white-space: pre-wrap; tab-size: var(--tabulator); }
 
 /* Edytor z pogrubieniem, kursywą i podkreśleniem. Ma wyglądać jak zwykłe pole
    wielolinijkowe z paskiem nad spodem — brat nie ma powodu wiedzieć, że to nie textarea. */
@@ -176,13 +184,7 @@ td.opis-tresc { white-space: pre-wrap; }
 .pasek-formatu button { min-width: 30px; padding: 2px 8px; line-height: 1.5;
                         font-size: 14px; }
 .edytor .tresc { min-height: 120px; padding: 10px 12px; font: inherit; overflow-y: auto;
-                 white-space: pre-wrap; outline: none; tab-size: 2cm; }
-/* `tab-size: 2cm` — tyle wynosi `defaultTabStop` w formatkach operatu. Domyślnie
-   przeglądarka liczy tabulator jako **osiem znaków** (w tym kroju ok. 0,8 cm), a Word
-   przeskakuje do najbliższego przystanku co 2 cm — stąd wyrównanie w edytorze wyglądało
-   zupełnie inaczej niż w gotowym dokumencie. Zgodność jest przybliżona i taka zostanie:
-   edytor jest węższy niż kolumna tekstu na A4 i łamie wiersze w innych miejscach.
-   Gdyby w formatkach zmienił się `defaultTabStop`, ta wartość ma pójść za nim. */
+                 white-space: pre-wrap; outline: none; tab-size: var(--tabulator); }
 .edytor:focus-within { border-color: var(--akcent); box-shadow: 0 0 0 2px #bcd6fb; }
 /* Wyszarzenie sekcji zależnej dotyczy też edytora — `disabled` na nim nie działa. */
 .pole.nieaktywne .edytor { background: #f4f6f8; }
