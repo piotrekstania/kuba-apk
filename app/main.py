@@ -25,8 +25,8 @@ from fastapi.templating import Jinja2Templates
 from starlette.datastructures import UploadFile
 from starlette.exceptions import HTTPException as BladHTTP
 
-from . import (aktualizacja, db, generator, miniatury, operaty, pdf, raport, tekst,
-               statystyki, szablony, teryt, warianty, zmiany)
+from . import (aktualizacja, db, generator, miniatury, operaty, opisy, pdf, raport,
+               statystyki, szablony, tekst, teryt, warianty, zmiany)
 from .config import DANE, WEB, WYNIKI
 
 
@@ -78,6 +78,12 @@ async def cykl_zycia(_: FastAPI):
     # Liczniki startują od tego, co brat już zrobił — inaczej po aktualizacji
     # zobaczyłby „0 operatów”, mając ich pięćdziesiąt. Robi się to raz.
     statystyki.zasiej_z_historii()
+    # Opisy dostarczone z programem — też raz na pozycję, żeby skasowana przez brata
+    # nie wracała przy każdym uruchomieniu (patrz `app/opisy.py`).
+    try:
+        opisy.zasiej()
+    except Exception:
+        pass                    # wygoda, a nie funkcja — nie ma prawa zatrzymać startu
     # Porządki w `dane/kopie/` przy każdym starcie, a nie tylko przy aktualizacji:
     # aktualizację wykonuje kod, który użytkownik już ma, więc sprzątanie wpięte
     # w nią zaczynałoby działać dopiero przy następnej (patrz pułapka 7b).

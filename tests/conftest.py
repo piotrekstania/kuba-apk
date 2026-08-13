@@ -102,8 +102,8 @@ def srodowisko(tmp_path, monkeypatch):
     `monkeypatch` powstaje przed tą fixture, więc jego sprzątanie idzie po naszym
     i przez cały czas oczekiwania ścieżki są jeszcze podmienione.
     """
-    from app import (aktualizacja, config, db, generator, main, operaty, pdf, raport,
-                     szablony, warianty)
+    from app import (aktualizacja, config, db, generator, main, operaty, opisy, pdf,
+                     raport, szablony, warianty)
 
     watki_przed = set(threading.enumerate())
 
@@ -123,6 +123,7 @@ def srodowisko(tmp_path, monkeypatch):
     monkeypatch.setattr(db, "BAZA_DANYCH", baza)
     monkeypatch.setattr(db, "DANE", dane_kat)
     monkeypatch.setattr(szablony, "SZABLONY", szablony_kat)
+    monkeypatch.setattr(opisy, "SZABLONY", szablony_kat)
     monkeypatch.setattr(warianty, "KATALOG", dane_kat / "szablony")
     monkeypatch.setattr(operaty, "WYNIKI", wyniki_kat)
     monkeypatch.setattr(operaty, "DANE", dane_kat)

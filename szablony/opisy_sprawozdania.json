@@ -1,0 +1,6 @@
+[
+  {
+    "nazwa": "Opis standardowy",
+    "opis": "a) zakres wykorzystania materiałów zasobu: baza BDOT500, GESUT, EGiB (dla opracowania mapy porównania z terenem, szkicu ilustrującego rozmieszczenie punktów szczegółów terenowych oraz mapy wynikowej).<br>Analiza: otrzymane materiały nadają się pod względem dokładności, aktualności i kompletności do osiągnięcia celu pracy geodezyjnej oraz spełniają wymagane dokładności.<br><br>b) zastosowane technologie i metody pomiarowe: Pomiar wykonano metodą GNSS RTN –pozycjonowanie GNSS w czasie rzeczywistym z wykorzystaniem korekt powierzchniowych systemu sieci stacji referencyjnych RTN ASG-EUPOS. W trakcie pomiaru wykorzystano technologię równoczesnego pomiaru GNSS oraz pomiaru pochylenia tyczki realizowanego za pośrednictwem odbiornika GNSS Art-Geo Matrix II. Przy realizacji pomiaru w interwale 10Hz punkty pomiarowe zostały pomierzone w czasie sekundy lub wielokrotności sekundy. <br><br>Pomiar kontrolny szczegółu I grupy dokładnościowej: \t1 – istniejąca studnia<br>\t\t\t\t\t[dl – 0.02 m] / [dh – 0.03 m]<br><br>Wszystkie punkty graniczne działki przedmiotowej spełniają dokładność określoną w rozporządzeniu – mapa może służyć do projektowania w odległości poniżej 4 m od granicy działki przedmiotowej."
+  }
+]
