@@ -141,3 +141,66 @@ def test_pusty_opis_nie_wywala_wypelniania(pusty):
     plik = _wypelnij("{{r opis }}", tekst.na_richtext(tekst.oczysc(pusty)))
 
     assert Document(plik).paragraphs[0].text.strip() == "Przebieg:"
+
+
+# --- wklejka z Worda ---------------------------------------------------------
+#
+# Sedno tej obsługi: brat wkleja opisy pisane wcześniej w Wordzie. Word zapisuje
+# pogrubienie najczęściej **nie** jako `<b>`, tylko jako `style="font-weight:700"` —
+# bez czytania stylów wklejone formatowanie ginęłoby w całości.
+
+WKLEJKA_Z_WORDA = (
+    '<span style="font-family:Calibri;font-size:11.0pt">Pomiar </span>'
+    '<span style="font-weight:700;font-family:Calibri">RTN GNSS</span>'
+    '<span style="font-style:italic">, tachimetrycznie</span>'
+    '<span style="text-decoration:underline">, kontrolnie</span>.'
+)
+
+
+def test_pogrubienie_ze_stylu_worda_jest_rozpoznane():
+    assert tekst.oczysc(WKLEJKA_Z_WORDA) == (
+        "Pomiar <b>RTN GNSS</b><i>, tachimetrycznie</i><u>, kontrolnie</u>.")
+
+
+def test_krój_i_rozmiar_czcionki_nie_przechodza():
+    """To nie jest brak, tylko decyzja: krój i rozmiary ustala formatka, a pilnuje ich
+    `ujednolic_wyglad.py` — wklejone „Times New Roman 11 pt” rozjechałoby operat."""
+    wynik = tekst.oczysc(WKLEJKA_Z_WORDA)
+
+    assert "font-family" not in wynik and "font-size" not in wynik
+    assert "Calibri" not in wynik
+
+
+def test_kolory_tez_zostaja_za_progiem():
+    assert tekst.oczysc('<span style="color:#ff0000;background:yellow">Czerwone</span>') \
+        == "Czerwone"
+
+
+def test_przekreslenie_i_indeksy_przechodza():
+    """`RichText` umie je oddać wprost, więc nie ma powodu ich odrzucać."""
+    assert tekst.oczysc("<del>skreślone</del> m<sup>2</sup> H<sub>2</sub>O") == \
+        "<s>skreślone</s> m<sup>2</sup> H<sub>2</sub>O"
+
+
+def test_sasiednie_kawalki_o_tym_samym_stylu_nie_mnoza_znacznikow():
+    """Word tnie tekst na kawałki po swojemu — wynik ma być czytelny, a nie posiekany."""
+    assert tekst.oczysc("<b>Ala</b><b> ma</b> kota") == "<b>Ala ma</b> kota"
+
+
+def test_przekreslenie_i_indeksy_dojezdzaja_do_dokumentu():
+    plik = _wypelnij("{{r opis }}", tekst.na_richtext(
+        tekst.oczysc("<del>skreślone</del> m<sup>2</sup>")))
+
+    biegi = {b.text: b for b in Document(plik).paragraphs[0].runs if b.text}
+    assert biegi["skreślone"].font.strike is True
+    assert biegi["2"].font.superscript is True
+
+
+def test_bieg_nie_narzuca_kroju_ani_rozmiaru():
+    """Bieg bez własnych ustawień dziedziczy je z akapitu formatki — czyli wygląda
+    jak reszta dokumentu, o co w tym wszystkim chodzi."""
+    plik = _wypelnij("{{r opis }}", tekst.na_richtext("<b>Pomiar</b>"))
+
+    bieg = next(b for b in Document(plik).paragraphs[0].runs if b.text == "Pomiar")
+    assert bieg.font.size is None
+    assert bieg.font.name is None

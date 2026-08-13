@@ -1013,6 +1013,19 @@ async def usun_formatke(request: Request):
                             status_code=303)
 
 
+@app.post("/tekst/oczysc")
+async def tekst_oczysc(request: Request):
+    """Czyści wklejony fragment HTML — woła to edytor w przeglądarce przy każdym wklejeniu.
+
+    Edytor mógłby czyścić sam, ale wtedy lista dozwolonych znaczników istniałaby dwa razy
+    (raz w JS, raz tutaj) i po pierwszej zmianie zaczęłaby się rozjeżdżać. Tak zostaje
+    jedna, ta sprawdzona testami; program chodzi na `127.0.0.1`, więc to jest kilka
+    milisekund. Gdy zapytanie padnie, edytor wkleja czysty tekst — patrz `formularz.html`.
+    """
+    dane = await request.json()
+    return JSONResponse({"html": tekst.oczysc(str(dane.get("html") or ""))})
+
+
 # --- TERYT: listy do pól kaskadowych i pobieranie danych ---------------------
 
 @app.get("/teryt/lista")

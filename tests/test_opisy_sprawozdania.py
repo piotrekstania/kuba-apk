@@ -407,3 +407,22 @@ def test_opis_z_samych_znacznikow_nie_przechodzi(klient):
 
     assert db.opisy_sprawozdania() == []
     assert "blad=" in odpowiedz.headers["location"]
+
+
+# --- czyszczenie wklejki po stronie serwera ----------------------------------
+
+def test_trasa_czyszczaca_wklejke(klient):
+    """Edytor woła to przy każdym wklejeniu.
+
+    Czyszczenie mogłoby siedzieć w JS, ale wtedy lista dozwolonych znaczników istniałaby
+    dwa razy i po pierwszej zmianie zaczęłaby się rozjeżdżać. Jest jedna, ta z testami.
+    """
+    odpowiedz = klient.post("/tekst/oczysc", json={
+        "html": '<span style="font-weight:700;font-family:Arial">Grube</span>'
+                ' i <span style="color:red">czerwone</span>'})
+
+    assert odpowiedz.json()["html"] == "<b>Grube</b> i czerwone"
+
+
+def test_trasa_czyszczaca_znosi_pustke(klient):
+    assert klient.post("/tekst/oczysc", json={}).json()["html"] == ""

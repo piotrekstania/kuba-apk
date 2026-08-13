@@ -119,10 +119,10 @@
           {% endif %}
           {% if pole.formatowanie %}
           {# Edytor zamiast zwykłego pola: brat pisał te opisy w Wordzie i chce zachować
-             pogrubienia. `contenteditable` wystarcza, bo dopuszczamy tylko B/I/U —
-             biblioteka z sieci odpadała, program ma działać bez internetu. Treść jedzie
-             ukrytym polem, bo `contenteditable` nie jest polem formularza i sam z siebie
-             niczego nie wysyła. Serwer i tak przepuszcza ją przez `tekst.oczysc`. #}
+             pogrubienia. `contenteditable` bez biblioteki z sieci, bo program ma działać
+             bez internetu. Na pasku są trzy przyciski, ale wklejka przenosi więcej —
+             co dokładnie, decyduje `app/tekst.py`. Treść jedzie ukrytym polem, bo
+             `contenteditable` nie jest polem formularza i sam z siebie nic nie wyśle. #}
           <div class="edytor">
             <div class="pasek-formatu">
               <button type="button" data-format="bold" title="Pogrubienie (Ctrl+B)"><b>B</b></button>
@@ -558,13 +558,30 @@ document.querySelectorAll('.edytor').forEach(edytor => {
     });
   });
 
-  // Wklejamy zawsze jako zwykły tekst: kopia z Worda albo ze strony ciągnie za sobą
-  // czcionki, rozmiary i kolory, których do operatu nie wpuszczamy. Pogrubienie brat
-  // nakłada przyciskiem — świadomie i na tym, na czym chce.
-  tresc.addEventListener('paste', zdarzenie => {
+  // Wklejka zachowuje formatowanie, ale przechodzi przez serwer: to on ma jedyną listę
+  // dozwolonych znaczników (`app/tekst.py`), sprawdzoną testami. Czyszczenie po stronie
+  // przeglądarki znaczyłoby drugą taką listę, a dwie się rozjeżdżają. Zostają pogrubienie,
+  // kursywa, podkreślenie, przekreślenie i indeksy; **krój, rozmiar i kolory lecą**, bo
+  // te ustala formatka i pilnuje ich `ujednolic_wyglad.py`.
+  tresc.addEventListener('paste', async zdarzenie => {
     zdarzenie.preventDefault();
-    const czysty = (zdarzenie.clipboardData || window.clipboardData).getData('text/plain');
-    document.execCommand('insertText', false, czysty);
+    const schowek = zdarzenie.clipboardData || window.clipboardData;
+    const zrodlo = schowek.getData('text/html');
+    const czysty = schowek.getData('text/plain');
+    if (!zrodlo) {                       // zwykły tekst — nie ma czego czyścić
+      document.execCommand('insertText', false, czysty);
+      przepisz();
+      return;
+    }
+    try {
+      const odpowiedz = await fetch('/tekst/oczysc', {
+        method: 'POST', headers: {'Content-Type': 'application/json'},
+        body: JSON.stringify({html: zrodlo}),
+      });
+      document.execCommand('insertHTML', false, (await odpowiedz.json()).html);
+    } catch (e) {
+      document.execCommand('insertText', false, czysty);   // padło? lepiej goły tekst
+    }
     przepisz();
   });
 });
