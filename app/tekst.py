@@ -79,7 +79,21 @@ class _Rozbior(HTMLParser):
     def _aktywne(self) -> frozenset[str]:
         return frozenset(s for poziom in self.stos for s in poziom)
 
-    def _nowy_wiersz(self) -> None:
+    def _zlamanie(self) -> None:
+        """`<br>` — zawsze nowy wiersz, także drugi z rzędu.
+
+        Dwa `<br>` obok siebie to **pusta linia**, czyli świadomy odstęp: brat oddziela
+        nimi akapity opisu. Pierwsza wersja zwijała je do jednego „żeby nie dublować”
+        i po zapisaniu opis zlepiał się w jeden blok — dokładnie ta usterka, którą zgłosił.
+        """
+        self.kawalki.append(("\n", frozenset()))
+
+    def _granica_bloku(self) -> None:
+        """Koniec/początek `<p>` albo `<div>` — nowy wiersz, ale bez mnożenia.
+
+        Tu zwijanie jest na miejscu: `</div><div>` to jedna granica opisana dwoma
+        znacznikami, a nie dwie puste linie.
+        """
         if self.kawalki and self.kawalki[-1][0] != "\n":
             self.kawalki.append(("\n", frozenset()))
 
@@ -93,14 +107,14 @@ class _Rozbior(HTMLParser):
         if tag in ZNACZNIKI:
             style.append(ZNACZNIKI[tag])
         if tag == "br":
-            self._nowy_wiersz()
+            self._zlamanie()
         elif tag in BLOKOWE:
-            self._nowy_wiersz()
+            self._granica_bloku()
         self.stos.append(style)
 
     def handle_startendtag(self, tag, atrybuty):
         if tag == "br" and not self.pomijane:
-            self._nowy_wiersz()
+            self._zlamanie()
 
     def handle_endtag(self, tag):
         if tag in Z_TRESCIA:
@@ -109,7 +123,7 @@ class _Rozbior(HTMLParser):
         if self.pomijane:
             return
         if tag in BLOKOWE and tag != "br":
-            self._nowy_wiersz()
+            self._granica_bloku()
         if self.stos:
             self.stos.pop()
 

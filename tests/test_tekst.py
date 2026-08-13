@@ -204,3 +204,43 @@ def test_bieg_nie_narzuca_kroju_ani_rozmiaru():
     bieg = next(b for b in Document(plik).paragraphs[0].runs if b.text == "Pomiar")
     assert bieg.font.size is None
     assert bieg.font.name is None
+
+
+# --- odstępy: to była regresja, którą brat zgłosił ----------------------------
+
+def test_pusta_linia_przezywa():
+    """Dwa `<br>` obok siebie to świadomy odstęp między akapitami opisu.
+
+    Pierwsza wersja zwijała je do jednego „żeby nie dublować złamań” i opis zlepiał się
+    po zapisaniu w jeden blok — dokładnie ta usterka, którą brat zobaczył w sprawozdaniu.
+    """
+    assert tekst.oczysc("Pierwsza<br><br>Trzecia") == "Pierwsza<br><br>Trzecia"
+
+
+def test_pusta_linia_z_edytora_tez_przezywa():
+    """Przeglądarka zapisuje pustą linię jako `<div><br></div>` — to ten sam odstęp."""
+    assert tekst.oczysc("<div>Pierwsza</div><div><br></div><div>Trzecia</div>") == \
+        "Pierwsza<br><br>Trzecia"
+
+
+def test_granica_blokow_sie_nie_mnozy():
+    """`</p><p>` to jedna granica opisana dwoma znacznikami, a nie dwie puste linie."""
+    assert tekst.oczysc("<p>a</p><p>b</p>") == "a<br>b"
+
+
+def test_tabulatory_zostaja():
+    """Brat wyrównuje nimi wiersz z tolerancjami pod kolumnę wartości."""
+    assert tekst.oczysc("Etykieta:\t\twartość") == "Etykieta:\t\twartość"
+
+
+def test_tabulatory_i_puste_linie_dojezdzaja_do_dokumentu():
+    """Cała ta droga naraz — tak wygląda opis, który brat naprawdę wpisuje."""
+    stary = ("Pomiar kontrolny:\t1 – istniejąca studnia\n"
+             "\t\t\t[dl – 0.02 m]\n"
+             "\n"
+             "Wszystkie punkty spełniają dokładność.")
+    xml = zipfile.ZipFile(_wypelnij("{{r opis }}", tekst.na_richtext(tekst.oczysc(stary)))
+                          ).read("word/document.xml").decode()
+
+    assert xml.count("<w:tab/>") == 4
+    assert xml.count("<w:br/>") == 3, "dwa złamania i pusta linia między akapitami"

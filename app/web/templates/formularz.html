@@ -558,6 +558,17 @@ document.querySelectorAll('.edytor').forEach(edytor => {
     });
   });
 
+  // Tab wstawia tabulator, a nie przeskakuje do następnego pola. Brat wyrównuje nim
+  // wiersz z tolerancjami pod kolumnę wartości — w zwykłym polu tekstowym to działało,
+  // a w edytorze Tab zaczął uciekać z pola i wyrównanie przestało być do wpisania.
+  // Wyjście z pola zostaje na Shift+Tab, żeby dało się przejść formularz klawiaturą.
+  tresc.addEventListener('keydown', zdarzenie => {
+    if (zdarzenie.key !== 'Tab' || zdarzenie.shiftKey) return;
+    zdarzenie.preventDefault();
+    document.execCommand('insertText', false, '\t');
+    przepisz();
+  });
+
   // Wklejka zachowuje formatowanie, ale przechodzi przez serwer: to on ma jedyną listę
   // dozwolonych znaczników (`app/tekst.py`), sprawdzoną testami. Czyszczenie po stronie
   // przeglądarki znaczyłoby drugą taką listę, a dwie się rozjeżdżają. Zostają pogrubienie,
