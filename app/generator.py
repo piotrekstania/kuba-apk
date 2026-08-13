@@ -140,9 +140,8 @@ def przygotuj_kontekst(szablon: Szablon, dane: dict[str, Any], ustawienia: dict[
     # jest zawsze — i formatka przestałaby kiedykolwiek pisać „brak”.
     for pole in szablon.pola:
         if pole.formatowanie:
-            surowy = str(kontekst.get(pole.klucz) or "")
-            kontekst[f"{pole.klucz}{SUFIKS_JEST}"] = bool(na_zwykly_tekst(surowy))
-            kontekst[pole.klucz] = na_richtext(surowy)
+            kontekst[f"{pole.klucz}{SUFIKS_JEST}"] = bool(
+                na_zwykly_tekst(str(kontekst.get(pole.klucz) or "")))
 
     # `<klucz>_jest` dla każdego pola: czy brat cokolwiek tam wpisał. Formatka pyta o to
     # w `{%p if ... %}`, żeby wybrać między treścią a słowem „brak” — a skoro odpowiedź
@@ -166,6 +165,52 @@ def nazwa_pliku(szablon: Szablon, kontekst: dict[str, Any]) -> str:
     return bezpieczna_nazwa(baza)
 
 
+def sformatuj_pod_znaczniki(dokument: DocxTemplate, kontekst: dict[str, Any]) -> dict[str, Any]:
+    """Zamienia pola z formatowaniem na `RichText`, biorąc krój i rozmiar **z formatki**.
+
+    Sygnałem jest sam znacznik: `{{r pole }}` w pliku .docx znaczy „tu ma wejść
+    sformatowany tekst". Szukamy go w dokumencie, odczytujemy ustawienia biegu, w którym
+    stoi, i takie same nadajemy wstawianym biegom — dzięki temu opis wygląda jak tekst
+    obok, a nie jak wklejka innym krojem.
+
+    Robimy to **per dokument**, a nie raz w `przygotuj_kontekst`, bo ten sam kontekst
+    wypełnia kilka formatek i każda może mieć w tym miejscu inną czcionkę. Kontekst
+    zwracamy jako kopię — oryginał zostaje napisami, więc kolejny dokument dostanie to,
+    co swoje.
+    """
+    from docx.oxml.ns import qn
+
+    # Bez tego `dokument.docx` jest `None` — plik wczytuje się dopiero przy renderowaniu
+    # (ta sama pułapka co przy `get_xml()`). `reload=False`, żeby nie porzucić tego,
+    # co docxtpl zdążył już wczytać.
+    dokument.init_docx(reload=False)
+    gotowy = dict(kontekst)
+    for akapit in dokument.docx.element.body.iter(qn("w:p")):
+        biegi = list(akapit.iter(qn("w:r")))
+        tekst_akapitu = "".join(w.text or "" for b in biegi for w in b.iter(qn("w:t")))
+        for nazwa in re.findall(r"\{\{r\s+(\w+)", tekst_akapitu):
+            wartosc = kontekst.get(nazwa)
+            if not isinstance(wartosc, str):
+                continue
+            krój, rozmiar = _ustawienia_biegu(biegi, qn)
+            gotowy[nazwa] = na_richtext(wartosc, krój, rozmiar)
+    return gotowy
+
+
+def _ustawienia_biegu(biegi: list, qn) -> tuple[str, int]:
+    """Krój i rozmiar (w półpunktach) z pierwszego biegu, który ma je ustawione."""
+    for bieg in biegi:
+        wlasciwosci = bieg.find(qn("w:rPr"))
+        if wlasciwosci is None:
+            continue
+        czcionki = wlasciwosci.find(qn("w:rFonts"))
+        rozmiar = wlasciwosci.find(qn("w:sz"))
+        krój = czcionki.get(qn("w:ascii")) if czcionki is not None else None
+        if krój or rozmiar is not None:
+            return krój or "", int(rozmiar.get(qn("w:val"))) if rozmiar is not None else 0
+    return "", 0
+
+
 def dopisz_dokument(szablon: Szablon, kontekst: dict[str, Any], katalog: Path) -> Path:
     """Wypełnia dodatkowy szablon **tym samym kontekstem** i kładzie go w katalogu operatu.
 
@@ -174,7 +219,7 @@ def dopisz_dokument(szablon: Szablon, kontekst: dict[str, Any], katalog: Path) -
     bo widzi, że wartość już jest.
     """
     dokument = DocxTemplate(szablon.plik)
-    dokument.render(kontekst, autoescape=True)
+    dokument.render(sformatuj_pod_znaczniki(dokument, kontekst), autoescape=True)
     plik = katalog / operaty.nazwa_dokumentu(szablon.id)
     dokument.save(plik)
     return plik
@@ -213,7 +258,7 @@ def generuj(szablon: Szablon, dane: dict[str, Any], ustawienia: dict[str, str],
     kontekst = przygotuj_kontekst(szablon, dane, ustawienia, rezerwacje)
     try:
         dokument = DocxTemplate(szablon.plik)
-        dokument.render(kontekst, autoescape=True)
+        dokument.render(sformatuj_pod_znaczniki(dokument, kontekst), autoescape=True)
 
         # Katalog nazywa się numerem operatu; gdy szablon go nie ma, bierzemy nazwę
         # z wzorca nazwy pliku, żeby robota i tak dostała swój folder.

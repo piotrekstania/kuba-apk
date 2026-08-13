@@ -173,19 +173,30 @@ def na_zwykly_tekst(tresc: str) -> str:
     return "".join(t for t, _ in _kawalki(tresc)).strip()
 
 
-def na_richtext(tresc: str) -> RichText:
+def na_richtext(tresc: str, krój: str = "", rozmiar: int = 0) -> RichText:
     """Fragment HTML → `RichText` docxtpl, czyli sformatowane biegi tekstu w Wordzie.
 
     W formatce znacznik musi mieć postać `{{r pole }}`. Przy zwykłym `{{ pole }}`
     docxtpl wstawia `<w:r>` w środek `<w:t>` — Word takiego pliku **nie otworzy**
     (sprawdzone), a LibreOffice łyka to bez słowa, więc zielony PDF niczego nie dowodzi.
 
-    Rozmiaru i kroju czcionki świadomie nie ustawiamy: bieg bez własnych ustawień
-    dziedziczy je z akapitu formatki, czyli wygląda jak reszta dokumentu.
+    `krój` i `rozmiar` (w półpunktach, jak w OOXML) **odczytuje generator z samej
+    formatki** — z biegu, w którym stoi znacznik — i podaje tutaj. Nie bierze się to
+    z kodu: o wygląd dokumentu ma decydować formatka, tak jak wszędzie indziej.
+
+    Bez tego wstawiony opis wychodził inną czcionką niż tekst obok: `RichText` zastępuje
+    bieg ze znacznikiem własnymi biegami, a te bez ustawień spadają do domyślnej czcionki
+    dokumentu, a nie do tej z akapitu. Brat zobaczył to od razu — dwa opisy obok siebie,
+    każdy innym krojem.
     """
     bogaty = RichText()
+    dodatkowe = {}
+    if krój:
+        dodatkowe["font"] = krój
+    if rozmiar:
+        dodatkowe["size"] = rozmiar
     for tekst, style in _kawalki(tresc):
         bogaty.add(tekst, bold="b" in style, italic="i" in style,
                    underline="u" in style, strike="s" in style,
-                   superscript="sup" in style, subscript="sub" in style)
+                   superscript="sup" in style, subscript="sub" in style, **dodatkowe)
     return bogaty

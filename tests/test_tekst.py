@@ -244,3 +244,59 @@ def test_tabulatory_i_puste_linie_dojezdzaja_do_dokumentu():
 
     assert xml.count("<w:tab/>") == 4
     assert xml.count("<w:br/>") == 3, "dwa złamania i pusta linia między akapitami"
+
+
+# --- krój i rozmiar bierzemy z formatki --------------------------------------
+
+def test_wstawiony_tekst_ma_krój_z_formatki():
+    """Brat zobaczył dwa opisy obok siebie, każdy inną czcionką — i miał rację.
+
+    `RichText` zastępuje bieg ze znacznikiem własnymi biegami, a te bez ustawień spadają
+    do domyślnej czcionki dokumentu zamiast do tej z akapitu. Generator odczytuje więc
+    krój i rozmiar **z biegu, w którym stoi znacznik**, i podaje je dalej. Z formatki,
+    nie z kodu: o wygląd dokumentu decyduje plik .docx.
+    """
+    from docx.shared import Pt
+
+    from app import generator
+
+    kat = pathlib.Path(tempfile.mkdtemp())
+    dokument = Document()
+    akapit = dokument.add_paragraph()
+    bieg = akapit.add_run("{{r opis }}")
+    bieg.font.name = "Calibri"
+    bieg.font.size = Pt(10)
+    wzor = kat / "wzor.docx"
+    dokument.save(wzor)
+
+    szablon = DocxTemplate(wzor)
+    szablon.render(generator.sformatuj_pod_znaczniki(szablon, {"opis": "<b>Pomiar</b> RTN"}),
+                   autoescape=True)
+    wynik = kat / "wynik.docx"
+    szablon.save(wynik)
+
+    biegi = [b for b in Document(wynik).paragraphs[0].runs if b.text.strip()]
+    assert biegi, "opis w ogóle nie wszedł do dokumentu"
+    for b in biegi:
+        assert b.font.name == "Calibri", f"{b.text!r} wyszedł inną czcionką"
+        assert b.font.size == Pt(10), f"{b.text!r} wyszedł innym rozmiarem"
+    assert [b.text for b in biegi if b.bold] == ["Pomiar"]
+
+
+def test_formatka_bez_ustawien_biegu_nie_wywala_wypelniania():
+    """Nie każda formatka ma krój wpisany wprost w biegu — wtedy zostaje dziedziczenie."""
+    from app import generator
+
+    kat = pathlib.Path(tempfile.mkdtemp())
+    dokument = Document()
+    dokument.add_paragraph("{{r opis }}")
+    wzor = kat / "wzor.docx"
+    dokument.save(wzor)
+
+    szablon = DocxTemplate(wzor)
+    szablon.render(generator.sformatuj_pod_znaczniki(szablon, {"opis": "Zwykły opis"}),
+                   autoescape=True)
+    wynik = kat / "wynik.docx"
+    szablon.save(wynik)
+
+    assert "Zwykły opis" in Document(wynik).paragraphs[0].text
