@@ -176,7 +176,13 @@ td.opis-tresc { white-space: pre-wrap; }
 .pasek-formatu button { min-width: 30px; padding: 2px 8px; line-height: 1.5;
                         font-size: 14px; }
 .edytor .tresc { min-height: 120px; padding: 10px 12px; font: inherit; overflow-y: auto;
-                 white-space: pre-wrap; outline: none; }
+                 white-space: pre-wrap; outline: none; tab-size: 2cm; }
+/* `tab-size: 2cm` — tyle wynosi `defaultTabStop` w formatkach operatu. Domyślnie
+   przeglądarka liczy tabulator jako **osiem znaków** (w tym kroju ok. 0,8 cm), a Word
+   przeskakuje do najbliższego przystanku co 2 cm — stąd wyrównanie w edytorze wyglądało
+   zupełnie inaczej niż w gotowym dokumencie. Zgodność jest przybliżona i taka zostanie:
+   edytor jest węższy niż kolumna tekstu na A4 i łamie wiersze w innych miejscach.
+   Gdyby w formatkach zmienił się `defaultTabStop`, ta wartość ma pójść za nim. */
 .edytor:focus-within { border-color: var(--akcent); box-shadow: 0 0 0 2px #bcd6fb; }
 /* Wyszarzenie sekcji zależnej dotyczy też edytora — `disabled` na nim nie działa. */
 .pole.nieaktywne .edytor { background: #f4f6f8; }
