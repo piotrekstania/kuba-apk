@@ -384,6 +384,14 @@ też brat. Interfejs w całości po polsku.
    łykają każdy wyjątek. Fixture `srodowisko` czeka teraz na nie w swoim sprzątaniu
    (`_zaczekaj_na_watki`), póki podmienione ścieżki jeszcze stoją. Czeka w `srodowisko`,
    a nie w `klient`, bo własny TestClient stawia też `test_word.py`.
+24. **Znacznik bez domknięcia nie może odkładać ramki na stosie stylów.** W `app/tekst.py`
+   `<br>` trafiał na stos razem ze zwykłymi znacznikami, a że nie ma `</br>`, kolejne
+   `</p>` zdejmowało ramkę po nim zamiast po akapicie — styl akapitu zostawał włączony
+   **do końca tekstu**. Objaw: wklejka z Worda `<p style="font-weight:700">pierwsza<br>
+   druga</p><p>zwykła</p>` wychodziła pogrubiona w całości, a w edytorze wystarczyło
+   pogrubić coś, nacisnąć Enter i pisać dalej. Dotyczy każdego pustego znacznika
+   (`br`, `img`, `hr`), stąd lista `PUSTE`. Uwaga przy diagnozie: **przypadek bez
+   złamania wiersza działa poprawnie**, więc łatwo uznać, że parser jest w porządku.
 
 ## Stan na teraz — przetestowane end-to-end
 
@@ -482,7 +490,7 @@ Co pilnują, w kolejności od najbardziej bolesnych doświadczeń:
 | `test_uldk.py` | że milczenie ULDK **nie wygląda jak zły numer** — najważniejszy test w tym pliku |
 | `test_teryt.py` | że zmiana strony GUS-u **nie czyści bazy** (przychodzi HTML zamiast ZIP-a), że gmina miejsko-wiejska nie wchodzi do listy, że obręby lecą z bazy zamiast z sieci i że przerwane pobieranie hurtowe **nie dobija paska do końca** |
 | `test_opisy_wzorcowe.py` | że opis dostarczony z programem pojawia się sam po aktualizacji, ale **skasowany przez brata nie wraca** i nie nadpisuje jego własnej kopii |
-| `test_tekst.py` | że do dokumentu wchodzi **tylko** pogrubienie, kursywa i podkreślenie, a `{{r }}` w formatce jest konieczne — przy zwykłym `{{ }}` powstaje plik, którego Word nie otworzy |
+| `test_tekst.py` | że do dokumentu wchodzi **tylko** pogrubienie, kursywa i podkreślenie, a `{{r }}` w formatce jest konieczne — przy zwykłym `{{ }}` powstaje plik, którego Word nie otworzy; pilnuje też, żeby styl akapitu **nie rozlewał się** za złamanie wiersza (patrz pułapka 24) |
 | `test_miniatury.py` | że pdfium nie jest wołany dwoma wątkami naraz (objawem jest zgaszony program, nie wyjątek) i że plik niebędący PDF-em nie wywraca strony składania |
 
 Testy stabilności formatek **pomijają się bez czcionki Calibri/Carlito**

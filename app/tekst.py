@@ -47,6 +47,13 @@ ZNACZNIKI = {
 # na opis, więc prawdziwe akapity i tak nie miałyby gdzie wejść.
 BLOKOWE = ("p", "div", "li", "tr", "br")
 
+# Znaczniki bez domknięcia. **Nie odkładamy ich na stos stylów**: `<br>` nie ma `</br>`,
+# więc kolejne `</p>` zdejmowałoby ramkę po nim zamiast po akapicie, a styl akapitu
+# zostawał włączony do końca tekstu. Objaw: wklejka z Worda w postaci
+# `<p style="font-weight:700">pierwsza<br>druga</p><p>zwykła</p>` wychodziła pogrubiona
+# w całości — i to akurat przy tym, po co ta obsługa powstała.
+PUSTE = ("br", "img", "hr", "col", "input", "meta", "link", "source", "wbr")
+
 # Znaczniki wyrzucane **razem z treścią**. Przy pozostałych zdejmujemy sam znacznik
 # i zostawiamy tekst — ale ciało `<script>` to nie jest tekst, który ktoś chciał wkleić.
 Z_TRESCIA = ("script", "style", "head", "title")
@@ -103,12 +110,14 @@ class _Rozbior(HTMLParser):
             return
         if self.pomijane:
             return
+        if tag in PUSTE:
+            if tag == "br":
+                self._zlamanie()
+            return                       # bez domknięcia, więc nic nie wnosi na stos
         style = _style_z_atrybutow(atrybuty)
         if tag in ZNACZNIKI:
             style.append(ZNACZNIKI[tag])
-        if tag == "br":
-            self._zlamanie()
-        elif tag in BLOKOWE:
+        if tag in BLOKOWE:
             self._granica_bloku()
         self.stos.append(style)
 

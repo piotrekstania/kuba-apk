@@ -300,3 +300,31 @@ def test_formatka_bez_ustawien_biegu_nie_wywala_wypelniania():
     szablon.save(wynik)
 
     assert "Zwykły opis" in Document(wynik).paragraphs[0].text
+
+
+def test_pogrubienie_akapitu_nie_rozlewa_sie_po_zlamaniu_wiersza():
+    """Word wkleja akapit ze stylem, a złamania wiersza w środku daje jako `<br>`.
+
+    `<br>` nie ma domknięcia, więc odłożony na stos stylów sprawiał, że kolejne `</p>`
+    zdejmowało ramkę po nim, a nie po akapicie — pogrubienie akapitu zostawało włączone
+    do końca tekstu. Cały opis wychodził wtedy pogrubiony, i to akurat przy wklejce
+    z Worda, czyli w przypadku, dla którego ta obsługa powstała.
+    """
+    wynik = tekst.oczysc('<p style="font-weight:700">Pogrubiony akapit<br>druga linia</p>'
+                         '<p>Zwykły akapit</p>')
+
+    assert wynik == ("<b>Pogrubiony akapit</b><br><b>druga linia</b><br>Zwykły akapit")
+
+
+def test_zlamanie_wiersza_nie_gubi_stylu_wewnatrz_akapitu():
+    """Druga strona tej samej monety: `<br>` w środku pogrubienia go nie przerywa."""
+    assert tekst.oczysc("<b>pierwsza<br>druga</b> zwykła") == \
+        "<b>pierwsza</b><br><b>druga</b> zwykła"
+
+
+def test_obrazek_z_wklejki_nie_zabiera_stylu_nastepnym_akapitom():
+    """`<img>` też nie ma domknięcia — ta sama pułapka, inny znacznik."""
+    wynik = tekst.oczysc('<p style="font-style:italic">Z obrazkiem <img src="x.png"></p>'
+                         '<p>Zwykły</p>')
+
+    assert wynik == "<i>Z obrazkiem </i><br>Zwykły"     # spacja z tekstu zostaje
