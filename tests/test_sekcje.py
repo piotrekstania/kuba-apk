@@ -485,9 +485,15 @@ def test_numer_dzialki_wchodzi_do_naglowka_swojej_strony(baza):
     kropka i ten numer."""
     d = _wykaz_dzialek([{"dzialka": "119/10"}, {"dzialka": "119/11"}])
 
-    naglowki = [p.text for p in d.paragraphs if "Identyfikator działki" in p.text]
-    assert [n.split("\t")[-1] for n in naglowki] == ["[247301_1.0112.119/10]",
-                                                     "[247301_1.0112.119/11]"]
+    naglowki = [p for p in d.paragraphs if "Identyfikator działki" in p.text]
+    assert [p.text.split("\t")[-1] for p in naglowki] == ["[247301_1.0112.119/10]",
+                                                          "[247301_1.0112.119/11]"]
+    # wartość ma być pogrubiona, tak jak w trzech wierszach nad nią — pierwsza wersja
+    # skryptu sklejała etykietę i wartość w jeden bieg i to pogrubienie ginęło
+    wartosc = [b for b in naglowki[0].runs if "247301" in b.text]
+    assert wartosc and all(b.bold for b in wartosc), "numer działki stracił pogrubienie"
+    assert not any(b.bold for b in naglowki[0].runs if "Identyfikator" in b.text), \
+        "etykieta ma zostać zwykła"
 
 
 def test_atrybuty_dzialki_stoja_w_wierszach(baza):

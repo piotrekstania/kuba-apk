@@ -118,6 +118,32 @@ def _zamien_w_akapicie(akapit, co: str, na: str) -> bool:
     return True
 
 
+def _akapit_etykieta_wartosc(wzorzec, etykieta: str, wartosc: str):
+    """Klon wiersza nagłówka „Etykieta:<tab>wartość” z podmienioną treścią obu części.
+
+    Etykieta i wartość są w **osobnych biegach** i różnią się formatowaniem — wartość jest
+    pogrubiona. Sklejenie całości w pierwszy bieg (tak robiła pierwsza wersja) gubiło to
+    pogrubienie i wiersz z numerem działki wyglądał inaczej niż trzy nad nim.
+    """
+    akapit = copy.deepcopy(wzorzec)
+    biegi = akapit.findall(qn("w:r"))
+    tabulator = next(i for i, b in enumerate(biegi) if b.find(qn("w:tab")) is not None)
+
+    for zbedny in akapit.findall(qn("w:proofErr")):
+        akapit.remove(zbedny)
+    for zbedny in biegi[1:tabulator] + biegi[tabulator + 2:]:
+        akapit.remove(zbedny)
+
+    for bieg, tekst in ((biegi[0], etykieta), (biegi[tabulator + 1], wartosc)):
+        for stary in bieg.findall(qn("w:t")):
+            bieg.remove(stary)
+        w_t = OxmlElement("w:t")
+        w_t.set(qn("xml:space"), "preserve")
+        w_t.text = tekst
+        bieg.append(w_t)
+    return akapit
+
+
 def zbuduj(zrodlo: Path, wyjscie: Path) -> Path:
     dokument = Document(str(zrodlo))
     body = dokument.element.body
@@ -133,12 +159,8 @@ def zbuduj(zrodlo: Path, wyjscie: Path) -> Path:
     wzorzec_naglowka = next(
         p for p in body.iter(qn("w:p"))
         if "Obręb ewidencyjny" in "".join(t.text or "" for t in p.iter(qn("w:t"))))
-    nowy = copy.deepcopy(wzorzec_naglowka)
-    _zamien_w_akapicie(
-        nowy,
-        "".join(t.text or "" for t in nowy.iter(qn("w:t"))),
-        f"{WIERSZ_IDENTYFIKATORA[0]}\t{WIERSZ_IDENTYFIKATORA[1]}")
-    wzorzec_naglowka.addnext(nowy)
+    wzorzec_naglowka.addnext(_akapit_etykieta_wartosc(
+        wzorzec_naglowka, WIERSZ_IDENTYFIKATORA[0], WIERSZ_IDENTYFIKATORA[1]))
 
     # --- tabela ---------------------------------------------------------------
     tabela = dokument.tables[0]._tbl
