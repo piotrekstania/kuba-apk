@@ -156,6 +156,30 @@
             <fieldset class="sekcja">
               <legend><span class="numer-sekcji"></span>
                 <button type="button" class="usun" title="Usuń">×</button></legend>
+              {% if pole.kolumny %}
+              {# Układ jak w dokumencie: nazwa atrybutu raz, obok pole na każdy stan.
+                 Powtarzanie nazwy przy obu polach dawało przy piętnastu atrybutach
+                 ścianę tekstu, w której nie dało się nic znaleźć. #}
+              <table class="wiersze sekcja-siatka">
+                <thead><tr><th></th>
+                  {% for kolumna in pole.kolumny %}<th>{{ kolumna.etykieta }}</th>{% endfor %}
+                </tr></thead>
+                <tbody>
+                  {% for wiersz in pole.wiersze_sekcji %}
+                  <tr>
+                    <th scope="row">{{ wiersz.etykieta }}</th>
+                    {% for kolumna in pole.kolumny %}
+                    {% set pod = wiersz.pola.get(kolumna.klucz) %}
+                    <td>{% if pod %}<input
+                        name="sek__{{ pole.klucz }}__{{ nr }}__{{ pod.klucz }}"
+                        value="{{ wpis.get(pod.klucz, '') if wpis else '' }}"
+                        aria-label="{{ wiersz.etykieta }} — {{ kolumna.etykieta }}">{% endif %}</td>
+                    {% endfor %}
+                  </tr>
+                  {% endfor %}
+                </tbody>
+              </table>
+              {% else %}
               <div class="siatka">
                 {% for pod in pole.podpola %}
                 <div class="pole {{ pod.szerokosc or 'polowa' }}">
@@ -165,6 +189,7 @@
                 </div>
                 {% endfor %}
               </div>
+              {% endif %}
             </fieldset>
             {% endfor %}
           </div>
@@ -173,6 +198,25 @@
             <fieldset class="sekcja">
               <legend><span class="numer-sekcji"></span>
                 <button type="button" class="usun" title="Usuń">×</button></legend>
+              {% if pole.kolumny %}
+              <table class="wiersze sekcja-siatka">
+                <thead><tr><th></th>
+                  {% for kolumna in pole.kolumny %}<th>{{ kolumna.etykieta }}</th>{% endfor %}
+                </tr></thead>
+                <tbody>
+                  {% for wiersz in pole.wiersze_sekcji %}
+                  <tr>
+                    <th scope="row">{{ wiersz.etykieta }}</th>
+                    {% for kolumna in pole.kolumny %}
+                    {% set pod = wiersz.pola.get(kolumna.klucz) %}
+                    <td>{% if pod %}<input name="sek__{{ pole.klucz }}__0__{{ pod.klucz }}"
+                        aria-label="{{ wiersz.etykieta }} — {{ kolumna.etykieta }}">{% endif %}</td>
+                    {% endfor %}
+                  </tr>
+                  {% endfor %}
+                </tbody>
+              </table>
+              {% else %}
               <div class="siatka">
                 {% for pod in pole.podpola %}
                 <div class="pole {{ pod.szerokosc or 'polowa' }}">
@@ -181,6 +225,7 @@
                 </div>
                 {% endfor %}
               </div>
+              {% endif %}
             </fieldset>
           </template>
           <button type="button" class="dodaj-sekcje">+ {{ pole.etykieta_dodaj or 'dodaj kolejny' }}</button>

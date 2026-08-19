@@ -66,6 +66,30 @@ class Pole:
     podpola: list[dict[str, str]] = field(default_factory=list)
     etykieta_pozycji: str = ""  # nagłówek jednego powtórzenia, np. „Wykaz”
     etykieta_dodaj: str = ""    # napis na przycisku dokładającym powtórzenie
+
+    @property
+    def wiersze_sekcji(self) -> list[dict[str, Any]]:
+        """Podpola pogrupowane w wiersze — do układu takiego jak tabela w dokumencie.
+
+        Gdy podpole ma `wiersz` (nazwę atrybutu) i `kolumna` (np. „dotychczas”), formularz
+        rysuje je jak tabelę w wykazie: nazwa atrybutu **raz**, obok pola dla każdego stanu.
+        Pierwsza wersja powtarzała nazwę przy obu polach („Adres budynku — dotychczasowy”,
+        „Adres budynku — nowy”) i przy piętnastu atrybutach robiła się z tego ściana tekstu.
+
+        Grupujemy tutaj, a nie w szablonie: `groupby` w Jinji wymaga posortowania, a to
+        rozsypałoby kolejność atrybutów — a ona ma być ta sama co w dokumencie.
+        """
+        wiersze: list[dict[str, Any]] = []
+        gdzie: dict[str, dict[str, Any]] = {}
+        for podpole in self.podpola:
+            nazwa = podpole.get("wiersz", "")
+            if not nazwa:
+                continue
+            if nazwa not in gdzie:
+                gdzie[nazwa] = {"etykieta": nazwa, "pola": {}}
+                wiersze.append(gdzie[nazwa])
+            gdzie[nazwa]["pola"][podpole.get("kolumna", "")] = podpole
+        return wiersze
     domyslnie: str = ""
     zrodlo: str = ""            # "ustawienia" = bierz z danych stałych, nie pokazuj w formularzu
     szerokosc: str = "pelna"    # "pelna" | "polowa" | "trzecia"

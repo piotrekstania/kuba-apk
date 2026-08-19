@@ -311,3 +311,12 @@ input:disabled, textarea:disabled, select:disabled { background: #f3f4f6; cursor
 .sekcja > legend .usun { padding: 0 7px; line-height: 1.5; color: var(--szary); }
 .sekcja > legend .usun:hover { color: var(--zle); border-color: var(--zle); }
 .sekcje > label { display: block; font-size: 13px; font-weight: 600; margin-bottom: 6px; }
+
+/* Sekcja w układzie takim jak tabela w dokumencie: nazwa atrybutu raz, obok pole na
+   każdy stan. Nazwa powtarzana przy obu polach dawała przy piętnastu atrybutach ścianę
+   tekstu — brat zgłosił to od razu po zobaczeniu formularza. */
+table.sekcja-siatka { margin-top: 4px; }
+table.sekcja-siatka th[scope="row"] { font-weight: 400; width: 42%; background: transparent; }
+table.sekcja-siatka thead th { font-size: 12px; }
+table.sekcja-siatka td { width: 29%; }
+table.sekcja-siatka input { padding: 5px 8px; }

@@ -170,3 +170,47 @@ def test_formatka_nie_zostawia_niewypelnionych_znacznikow():
     tekst += "\n".join(c.text for t in d.tables for w in t.rows for c in w.cells)
 
     assert "{{" not in tekst and "{%" not in tekst
+
+
+# --- układ tabelaryczny ------------------------------------------------------
+
+def test_nazwa_atrybutu_pojawia_sie_raz_a_nie_przy_kazdym_polu(klient):
+    """Pierwsza wersja powtarzała nazwę przy obu stanach („Adres — dotychczasowy”,
+    „Adres — nowy”) i przy piętnastu atrybutach robiła się ściana tekstu.
+
+    Teraz sekcja wygląda jak tabela w dokumencie: nazwa raz, obok pole na każdy stan.
+    """
+    klient.srodowisko.dodaj_szablon(
+        "spis_tresci_wzor", ["{{ nr_roboty }}"],
+        opis={"nazwa": "Operat", "glowny": True,
+              "pola": [{"klucz": "nr_roboty", "etykieta": "Nr roboty"},
+                       {"klucz": "wykazy", "etykieta": "Wykazy", "typ": "sekcje",
+                        "kolumny": [{"klucz": "dotychczas", "etykieta": "Stan dotychczasowy"},
+                                    {"klucz": "nowy", "etykieta": "Stan nowy"}],
+                        "podpola": [
+                            {"klucz": "adres_dotychczas", "wiersz": "Adres budynku",
+                             "kolumna": "dotychczas"},
+                            {"klucz": "adres_nowy", "wiersz": "Adres budynku",
+                             "kolumna": "nowy"}]}]})
+
+    formularz = klient.get("/nowy/spis_tresci_wzor").text
+
+    assert formularz.count("Adres budynku</th>") == 2, "raz w karcie, raz we wzorcu"
+    assert "Stan dotychczasowy" in formularz and "Stan nowy" in formularz
+    # nazwy pól się nie zmieniły, więc odczyt danych działa tak samo
+    assert 'name="sek__wykazy__0__adres_dotychczas"' in formularz
+
+
+def test_grupowanie_zachowuje_kolejnosc_atrybutow():
+    """Kolejność ma być ta sama co w dokumencie — dlatego grupujemy w Pythonie,
+    a nie `groupby` w Jinji, które najpierw sortuje."""
+    pole = szablony.Pole(
+        klucz="w", etykieta="W", typ="sekcje",
+        podpola=[{"klucz": "b_nowy", "wiersz": "Beta", "kolumna": "nowy"},
+                 {"klucz": "a_nowy", "wiersz": "Alfa", "kolumna": "nowy"},
+                 {"klucz": "b_stary", "wiersz": "Beta", "kolumna": "dotychczas"}])
+
+    wiersze = pole.wiersze_sekcji
+
+    assert [w["etykieta"] for w in wiersze] == ["Beta", "Alfa"]
+    assert sorted(wiersze[0]["pola"]) == ["dotychczas", "nowy"]

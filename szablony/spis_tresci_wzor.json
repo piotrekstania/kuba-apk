@@ -158,153 +158,163 @@
       "podpola": [
         {
           "klucz": "identyfikator_dzialki_dotychczas",
-          "etykieta": "Identyfikator działki / działek — dotychczasowy",
-          "szerokosc": "polowa"
+          "wiersz": "Identyfikator działki / działek",
+          "kolumna": "dotychczas"
         },
         {
           "klucz": "identyfikator_dzialki_nowy",
-          "etykieta": "Identyfikator działki / działek — nowy",
-          "szerokosc": "polowa"
+          "wiersz": "Identyfikator działki / działek",
+          "kolumna": "nowy"
         },
         {
           "klucz": "adres_dotychczas",
-          "etykieta": "Adres budynku — dotychczasowy",
-          "szerokosc": "polowa"
+          "wiersz": "Adres budynku",
+          "kolumna": "dotychczas"
         },
         {
           "klucz": "adres_nowy",
-          "etykieta": "Adres budynku — nowy",
-          "szerokosc": "polowa"
+          "wiersz": "Adres budynku",
+          "kolumna": "nowy"
         },
         {
           "klucz": "identyfikator_budynku_dotychczas",
-          "etykieta": "Identyfikator budynku — dotychczasowy",
-          "szerokosc": "polowa"
+          "wiersz": "Identyfikator budynku",
+          "kolumna": "dotychczas"
         },
         {
           "klucz": "identyfikator_budynku_nowy",
-          "etykieta": "Identyfikator budynku — nowy",
-          "szerokosc": "polowa"
+          "wiersz": "Identyfikator budynku",
+          "kolumna": "nowy"
         },
         {
           "klucz": "kontur_dotychczas",
-          "etykieta": "Numeryczny kontur budynku — dotychczasowy",
-          "szerokosc": "polowa"
+          "wiersz": "Numeryczny kontur budynku",
+          "kolumna": "dotychczas"
         },
         {
           "klucz": "kontur_nowy",
-          "etykieta": "Numeryczny kontur budynku — nowy",
-          "szerokosc": "polowa"
+          "wiersz": "Numeryczny kontur budynku",
+          "kolumna": "nowy"
         },
         {
           "klucz": "rodzaj_kst_dotychczas",
-          "etykieta": "Rodzaj budynku według KŚT — dotychczasowy",
-          "szerokosc": "polowa"
+          "wiersz": "Rodzaj budynku według KŚT",
+          "kolumna": "dotychczas"
         },
         {
           "klucz": "rodzaj_kst_nowy",
-          "etykieta": "Rodzaj budynku według KŚT — nowy",
-          "szerokosc": "polowa"
+          "wiersz": "Rodzaj budynku według KŚT",
+          "kolumna": "nowy"
         },
         {
           "klucz": "kondygnacje_nadziemne_dotychczas",
-          "etykieta": "Liczba kondygnacji nadziemnych — dotychczasowy",
-          "szerokosc": "polowa"
+          "wiersz": "Liczba kondygnacji nadziemnych",
+          "kolumna": "dotychczas"
         },
         {
           "klucz": "kondygnacje_nadziemne_nowy",
-          "etykieta": "Liczba kondygnacji nadziemnych — nowy",
-          "szerokosc": "polowa"
+          "wiersz": "Liczba kondygnacji nadziemnych",
+          "kolumna": "nowy"
         },
         {
           "klucz": "kondygnacje_podziemne_dotychczas",
-          "etykieta": "Liczba kondygnacji podziemnych — dotychczasowy",
-          "szerokosc": "polowa"
+          "wiersz": "Liczba kondygnacji podziemnych",
+          "kolumna": "dotychczas"
         },
         {
           "klucz": "kondygnacje_podziemne_nowy",
-          "etykieta": "Liczba kondygnacji podziemnych — nowy",
-          "szerokosc": "polowa"
+          "wiersz": "Liczba kondygnacji podziemnych",
+          "kolumna": "nowy"
         },
         {
           "klucz": "pole_zabudowy_dotychczas",
-          "etykieta": "Pole zabudowy [m²] — dotychczasowy",
-          "szerokosc": "polowa"
+          "wiersz": "Pole zabudowy [m²]",
+          "kolumna": "dotychczas"
         },
         {
           "klucz": "pole_zabudowy_nowy",
-          "etykieta": "Pole zabudowy [m²] — nowy",
-          "szerokosc": "polowa"
+          "wiersz": "Pole zabudowy [m²]",
+          "kolumna": "nowy"
         },
         {
           "klucz": "dokumenty_wlasnosci_dotychczas",
-          "etykieta": "Dokumenty potwierdzające własność — dotychczasowy",
-          "szerokosc": "polowa"
+          "wiersz": "Dokumenty potwierdzające własność",
+          "kolumna": "dotychczas"
         },
         {
           "klucz": "dokumenty_wlasnosci_nowy",
-          "etykieta": "Dokumenty potwierdzające własność — nowy",
-          "szerokosc": "polowa"
+          "wiersz": "Dokumenty potwierdzające własność",
+          "kolumna": "nowy"
         },
         {
           "klucz": "numer_kw_dotychczas",
-          "etykieta": "Numer księgi wieczystej — dotychczasowy",
-          "szerokosc": "polowa"
+          "wiersz": "Numer księgi wieczystej",
+          "kolumna": "dotychczas"
         },
         {
           "klucz": "numer_kw_nowy",
-          "etykieta": "Numer księgi wieczystej — nowy",
-          "szerokosc": "polowa"
+          "wiersz": "Numer księgi wieczystej",
+          "kolumna": "nowy"
         },
         {
           "klucz": "jednostka_rejestrowa_dotychczas",
-          "etykieta": "Jednostka rejestrowa — dotychczasowy",
-          "szerokosc": "polowa"
+          "wiersz": "Jednostka rejestrowa",
+          "kolumna": "dotychczas"
         },
         {
           "klucz": "jednostka_rejestrowa_nowy",
-          "etykieta": "Jednostka rejestrowa — nowy",
-          "szerokosc": "polowa"
+          "wiersz": "Jednostka rejestrowa",
+          "kolumna": "nowy"
         },
         {
           "klucz": "pow_lokali_odrebnych_dotychczas",
-          "etykieta": "Pow. użytkowa lokali odrębnych — dotychczasowy",
-          "szerokosc": "polowa"
+          "wiersz": "Pow. użytkowa lokali odrębnych",
+          "kolumna": "dotychczas"
         },
         {
           "klucz": "pow_lokali_odrebnych_nowy",
-          "etykieta": "Pow. użytkowa lokali odrębnych — nowy",
-          "szerokosc": "polowa"
+          "wiersz": "Pow. użytkowa lokali odrębnych",
+          "kolumna": "nowy"
         },
         {
           "klucz": "pow_lokali_niewyodrebnionych_dotychczas",
-          "etykieta": "Pow. użytkowa lokali niewyodrębnionych — dotychczasowy",
-          "szerokosc": "polowa"
+          "wiersz": "Pow. użytkowa lokali niewyodrębnionych",
+          "kolumna": "dotychczas"
         },
         {
           "klucz": "pow_lokali_niewyodrebnionych_nowy",
-          "etykieta": "Pow. użytkowa lokali niewyodrębnionych — nowy",
-          "szerokosc": "polowa"
+          "wiersz": "Pow. użytkowa lokali niewyodrębnionych",
+          "kolumna": "nowy"
         },
         {
           "klucz": "pow_pomieszczen_dotychczas",
-          "etykieta": "Pow. użytkowa pomieszczeń przynależnych — dotychczasowy",
-          "szerokosc": "polowa"
+          "wiersz": "Pow. użytkowa pomieszczeń przynależnych",
+          "kolumna": "dotychczas"
         },
         {
           "klucz": "pow_pomieszczen_nowy",
-          "etykieta": "Pow. użytkowa pomieszczeń przynależnych — nowy",
-          "szerokosc": "polowa"
+          "wiersz": "Pow. użytkowa pomieszczeń przynależnych",
+          "kolumna": "nowy"
         },
         {
           "klucz": "uwagi_dotychczas",
-          "etykieta": "Uwagi (wyburzenie, przebudowa, inne) — dotychczasowy",
-          "szerokosc": "polowa"
+          "wiersz": "Uwagi (wyburzenie, przebudowa, inne)",
+          "kolumna": "dotychczas"
         },
         {
           "klucz": "uwagi_nowy",
-          "etykieta": "Uwagi (wyburzenie, przebudowa, inne) — nowy",
-          "szerokosc": "polowa"
+          "wiersz": "Uwagi (wyburzenie, przebudowa, inne)",
+          "kolumna": "nowy"
+        }
+      ],
+      "kolumny": [
+        {
+          "klucz": "dotychczas",
+          "etykieta": "Stan dotychczasowy"
+        },
+        {
+          "klucz": "nowy",
+          "etykieta": "Stan nowy"
         }
       ]
     },
