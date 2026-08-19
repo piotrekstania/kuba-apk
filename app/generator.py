@@ -262,10 +262,18 @@ def generuj(szablon: Szablon, dane: dict[str, Any], ustawienia: dict[str, str],
 
         # Katalog nazywa się numerem operatu; gdy szablon go nie ma, bierzemy nazwę
         # z wzorca nazwy pliku, żeby robota i tak dostała swój folder.
+        #
+        # Przy poprawianiu wracamy do **tego samego** katalogu, i to nawet wtedy, gdy
+        # szablon nie ma licznika. Nazwa zastępcza ma w sobie znacznik czasu co do
+        # sekundy, więc poprawka trafiała w inną sekundę, czyli w katalog obok:
+        # poprzednie dokumenty zostawały w starym folderze, a wpis w historii wskazywał
+        # już nowy. Wychodziło to jako losowe padnięcia testów — za każdym razem w innym,
+        # bo zależało od tego, czy zegar tyknął między jednym żądaniem a drugim.
         numer = _numer_operatu(szablon, kontekst)
         znacznik = datetime.now().strftime("%Y%m%d-%H%M%S")
         katalog, ostrzezenia = operaty.zaloz(
-            numer or f"{nazwa_pliku(szablon, kontekst)}__{znacznik}",
+            numer or str((poprzedni or {}).get("katalog") or "")
+            or f"{nazwa_pliku(szablon, kontekst)}__{znacznik}",
             str(kontekst.get("nr_roboty", "")), szablon.id, dane,
             poprzedni_numer_roboty=str((poprzedni or {}).get("nr_roboty", "")))
 

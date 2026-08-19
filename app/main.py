@@ -543,6 +543,9 @@ async def generuj(request: Request, identyfikator: str, edytuj: int | None = Non
             # 060”. Zjadała przy tym numer, którego już nikt nie odzyska.
             poprzedni_opis = {"nr_operatu": poprawiany["nr_operatu"] or "",
                               "nr_roboty": poprawiany["tytul"] or ""}
+        # Nazwa katalogu z historii — dla szablonów bez licznika to jedyny ślad, po którym
+        # poprawka trafi tam, gdzie leżą poprzednie dokumenty (`operat.json` jej nie ma).
+        poprzedni_opis = {**poprzedni_opis, "katalog": poprawiany["katalog"] or ""}
 
     try:
         plik, kontekst, ostrzezenia = generator.generuj(

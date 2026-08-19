@@ -147,6 +147,38 @@ def test_poprawianie_nie_zuzywa_numeru_i_wraca_do_tego_samego_katalogu(srodowisk
     assert db.podglad_numeru("operat", ROK) == 2      # licznik ruszył tylko raz
 
 
+def test_poprawianie_szablonu_bez_licznika_tez_wraca_do_tego_samego_katalogu(
+        srodowisko, monkeypatch):
+    """Szablon bez licznika nie ma numeru operatu, więc katalog nazywa się wzorcem nazwy
+    pliku plus znacznik czasu **co do sekundy**. Poprawka trafiająca w następną sekundę
+    zakładała katalog obok: poprzednie dokumenty zostawały w starym, a wpis w historii
+    wskazywał nowy. Objawiało się to losowymi padnięciami testów — za każdym razem
+    w innym, bo wszystko zależało od tego, czy zegar akurat tyknął.
+    """
+    import datetime as _datetime
+
+    srodowisko.dodaj_szablon("bez_licznika", ["{{ nr_roboty }}"],
+                             opis={"glowny": True, "wzor_nazwy": "robota",
+                                   "pola": [{"klucz": "nr_roboty"}]})
+    szablon = szablony.szablon_po_id("bez_licznika")
+    plik, _, _ = generator.generuj(szablon, {"nr_roboty": "GK.1.2026"}, {})
+    (plik.parent / "mapa_od_brata.docx").write_bytes(b"cokolwiek")
+
+    class ZegarKtoryTyknal(_datetime.datetime):
+        @classmethod
+        def now(cls, tz=None):
+            return super().now(tz) + _datetime.timedelta(seconds=30)
+
+    monkeypatch.setattr(generator, "datetime", ZegarKtoryTyknal)
+    plik2, _, _ = generator.generuj(
+        szablon, {"nr_roboty": "GK.1.2026"}, {},
+        {"nr_roboty": "GK.1.2026", "katalog": plik.parent.name})
+
+    assert plik2.parent == plik.parent, "poprawka założyła katalog obok"
+    assert (plik.parent / "mapa_od_brata.docx").exists(), \
+        "pliki brata zostały w porzuconym katalogu"
+
+
 def test_bledny_szablon_oddaje_numer(srodowisko):
     """Wywrotka przy wypełnianiu nie może zostawiać dziury w numeracji operatów.
 
