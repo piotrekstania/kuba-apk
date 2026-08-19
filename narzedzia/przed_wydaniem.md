@@ -58,53 +58,7 @@ start.bat
 Wszystko od ostatniego wydania — numer i skrót commita znajdziesz w `ZMIANY.md`
 i `git log`. Dopisuj punkty przy każdej rundzie zmian, kasuj po wydaniu.
 
-### Wykaz działki — pionowa kartka, dwa wiersze na działkę
-
-- [ ] Dokument drukuje się **w pionie**, tabela mieści się w marginesach, nagłówek
-      powtarza się na drugiej stronie przy dłuższym wykazie.
-- [ ] Każda działka to para wierszy „Dotychczasowy" / „Nowy", L.p. z kropką scalone
-      przez oba, między działkami grubsza kreska.
-- [ ] Nagłówek tabeli i kolumna „Stan" pogrubione, dane zwykłe.
-- [ ] **Otwórz w prawdziwym Wordzie** — tabela jest przebudowana od zera przez skrypt,
-      więc to jedyny test na kolejność elementów w OOXML.
-- [ ] Podpis stoi pod tabelą i mieści się w szerokości strony (przy poziomej kartce
-      miał wcięcie, które w pionie łamało go po literze).
-- [ ] Jeśli wgrałeś sobie ten wykaz jako **własną formatkę**, usuń go z Ustawień —
-      teraz jest standardowy i dwie identyczne pozycje na liście tylko mylą.
-
-### Wykaz budynku — rodzaj według KŚT z listy
-
-- [ ] Wiersz „Rodzaj budynku według KŚT" ma **listę wyboru w obu kolumnach**,
-      od `101 - BUDYNKI PRZEMYSŁOWE` do `110 - BUDYNKI MIESZKALNE` — bez rodzajów
-      121 i 122, bo to lokale, a nie budynki.
-- [ ] Wybrana pozycja wchodzi do dokumentu w całości (numer + nazwa).
-- [ ] Operat sprzed zmiany, z tekstem wpisanym z ręki: po „Popraw ten operat" wpis
-      **zostaje** na liście jako dodatkowa pozycja.
-
-### Wykaz budynku — kolumna L.p.
-
-- [ ] Cyfry liczb porządkowych stoją **na środku komórki** w pionie i w poziomie,
-      we wszystkich dziesięciu wierszach (przed poprawką siadały do 3 pt za wysoko
-      w wierszach 5–9). Sprawdź w Wordzie, bo to on składa dokument u brata.
-
-### Poprawianie operatu wraca do tego samego katalogu
-
-- [ ] „Popraw ten operat" → „Zapisz poprawki": **ten sam numer, ten sam katalog**,
-      pliki dołożone Eksploratorem na miejscu. Wcześniej szablon bez licznika mógł
-      przy poprawce założyć katalog obok, gdy zegar tyknął na kolejną sekundę —
-      formatek brata to nie dotyczyło, ale sprawdź, bo zmiana siedzi w tej ścieżce.
-
-### Interfejs
-
-- [ ] Strona główna: zamiast karty szablonu jest niebieski przycisk **„Nowy operat"**,
-      w linii nagłówka „Operaty", dosunięty do prawej krawędzi tabeli. Prowadzi tam,
-      gdzie prowadziła karta.
-- [ ] Nazwy kart w formularzu i w Ustawieniach („Opis", „Robota", „Położenie"…) są
-      **niebieskie**; podkarty („Wykaz 1", „Działka 2") zostają szare.
-- [ ] Przycisk **„Załaduj"** przy gotowych opisach jest niebieski i dalej wkleja opis
-      do pola.
-- [ ] Ostrzeżenie o niezapisanych zmianach nadal działa po tych zmianach: wpisz coś,
-      naciśnij **F5** — przeglądarka pyta, czy wyjść.
+*(pusto — wydanie 2026.08.19-92 poszło 19.08, lista tej rundy przeszła w całości)*
 
 ---
 
