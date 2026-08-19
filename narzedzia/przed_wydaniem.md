@@ -55,53 +55,10 @@ start.bat
 
 ## B. Co doszło w tej rundzie
 
-Wszystko od wydania `2026.08.14-90`, czyli `git log --oneline 3a23109..HEAD`.
+Wszystko od ostatniego wydania — numer i skrót commita znajdziesz w `ZMIANY.md`
+i `git log`. Dopisuj punkty przy każdej rundzie zmian, kasuj po wydaniu.
 
-### Wykazy zmian danych ewidencyjnych w formularzu
-
-- [ ] Karta **„Wykaz zmian danych budynku”**: `+ dodaj kolejny wykaz` dokłada komplet
-      pól, krzyżyk usuwa, numeracja kart idzie po kolei po każdym usunięciu.
-- [ ] Dwa wykazy → **jeden plik, dwie strony**, drugi wykaz od nowej strony,
-      a po ostatnim **nie ma pustej kartki**.
-- [ ] Karta **„Wykaz zmian danych działki”**: kolejne działki to **kolejne wiersze
-      jednej tabeli**, L.p. nadaje program.
-- [ ] Wykaz działki: podpis stoi **linijkę niżej** pod tabelą (nie przyklejony),
-      dane w tabeli **nie są pogrubione**, pogrubiony zostaje sam nagłówek.
-- [ ] Pole **„Identyfikator działki”** wchodzi do nagłówka za kropkę:
-      `[247301_1.0112.1765/311]`. Puste zostawia samą kropkę.
-- [ ] Zaznaczony wykaz, ale **żadne pole niewypełnione** → plik w ogóle nie powstaje,
-      a na stronie operatu stoi zdanie, dlaczego go nie ma.
-- [ ] Przy trzech i więcej działkach tabela nadal mieści się na jednej stronie,
-      a nagłówek powtarza się na kolejnej (`w:tblHeader`).
-
-### Spis treści jako włącznik dokumentów
-
-- [ ] Odznaczenie „Sprawozdanie techniczne” w spisie → pola sprawozdania wyszarzone
-      **i plik nie powstaje**.
-- [ ] Nigdzie w formularzu **nie ma już checkboxów „Wygeneruj”** przy dokumentach.
-- [ ] Na stałe zaznaczony zostaje wyłącznie „Spis treści”.
-
-### Strona operatu
-
-- [ ] Przy wykazach widać **wpisane wiersze**, a nie „2 wierszy”; każdy wykaz ma
-      nagłówek („Wykaz 2”, „Działka 2”), puste atrybuty są pominięte.
-
-### Poprawianie sprząta odznaczone dokumenty (dołożone w review 19.08)
-
-- [x] Operat z wykazem → „Popraw”, odznaczenie wykazu w spisie → plik **znika
-      z katalogu** razem z podglądem, kafelka nie ma na stronie składania.
-      Sprawdzone na żywym Wordzie 19.08 (operat testowy 005/2026).
-- [x] Mapy i skany dołożone ręcznie zostają — sprzątanie zna tylko nazwy
-      nadawane przez program.
-
-### Ostrzeżenie o niezapisanych zmianach
-
-- [ ] Wpisz cokolwiek → **F5**, **Alt+←** i **zamknięcie karty** pytają, czy wyjść.
-      „Zostań na stronie” wraca do wypełnionego formularza.
-- [ ] Po kliknięciu **Generuj dokument** / **Zapisz poprawki** okienko **nie** wyskakuje.
-- [ ] Przy **Anuluj** wyskakuje (celowo — stoi tuż obok zapisu).
-- [ ] Samo wejście na formularz i wyjście bez dotykania niczego **nie pyta**.
-- [ ] Sprawdź w tej przeglądarce, w której brat naprawdę pracuje.
+*(pusto — wydanie 2026.08.19-91 poszło 19.08, lista tej rundy przeszła w całości)*
 
 ---
 
