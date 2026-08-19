@@ -114,7 +114,7 @@ def _wykaz_z_danymi(wykazy: list[dict]) -> Document:
                                               pathlib.Path(tempfile.mkdtemp())))
 
 
-def test_kazdy_wykaz_to_osobna_tabela():
+def test_kazdy_wykaz_to_osobna_tabela(baza):
     """Sedno tej zmiany: kilka wykazów w jednym operacie, każdy ze swoimi danymi."""
     d = _wykaz_z_danymi([
         {"identyfikator_dzialki_dotychczas": "123/4", "uwagi_nowy": "przebudowa"},
@@ -128,7 +128,7 @@ def test_kazdy_wykaz_to_osobna_tabela():
     assert d.tables[1].rows[15].cells[4].text == "wyburzony"
 
 
-def test_naglowek_powtarza_sie_przy_kazdym_wykazie():
+def test_naglowek_powtarza_sie_przy_kazdym_wykazie(baza):
     """Każdy wykaz to osobna kartka do ośrodka — musi mieć swój numer roboty."""
     d = _wykaz_z_danymi([{"adres_nowy": "a"}, {"adres_nowy": "b"}])
 
@@ -136,7 +136,7 @@ def test_naglowek_powtarza_sie_przy_kazdym_wykazie():
     assert sum(1 for p in d.paragraphs if "WYKAZ ZMIAN" in p.text) == 2
 
 
-def test_lamanie_strony_miedzy_wykazami_a_nie_po_ostatnim():
+def test_lamanie_strony_miedzy_wykazami_a_nie_po_ostatnim(baza):
     """Łamanie po ostatnim wykazie zostawiałoby w operacie pustą kartkę."""
     import zipfile
     glowny = szablony.szablon_po_id("spis_tresci_wzor")
@@ -154,7 +154,7 @@ def test_lamanie_strony_miedzy_wykazami_a_nie_po_ostatnim():
     assert lamania(3) == 2
 
 
-def test_wartosc_dziedziczy_krój_z_etykiety_obok():
+def test_wartosc_dziedziczy_krój_z_etykiety_obok(baza):
     """Wartość ma wyglądać jak opis w sąsiedniej kolumnie, a nie jak domyślna
     czcionka dokumentu — to ta sama pułapka co przy opisie przebiegu prac."""
     d = _wykaz_z_danymi([{"identyfikator_dzialki_dotychczas": "123/4"}])
@@ -164,7 +164,7 @@ def test_wartosc_dziedziczy_krój_z_etykiety_obok():
     assert (wartosc.font.name, wartosc.font.size) == (etykieta.font.name, etykieta.font.size)
 
 
-def test_formatka_nie_zostawia_niewypelnionych_znacznikow():
+def test_formatka_nie_zostawia_niewypelnionych_znacznikow(baza):
     d = _wykaz_z_danymi([{"adres_nowy": "Polna 7"}])
     tekst = "\n".join(p.text for p in d.paragraphs)
     tekst += "\n".join(c.text for t in d.tables for w in t.rows for c in w.cells)
@@ -395,7 +395,7 @@ def _wykaz_dzialek(dzialki: list[dict]) -> Document:
                                               pathlib.Path(tempfile.mkdtemp())))
 
 
-def test_kazda_dzialka_to_kolejny_wiersz_jednej_tabeli():
+def test_kazda_dzialka_to_kolejny_wiersz_jednej_tabeli(baza):
     d = _wykaz_dzialek([{"numer_dotychczas": "1765/311"},
                         {"numer_dotychczas": "1765/312"},
                         {"numer_dotychczas": "1765/99"}])
@@ -406,14 +406,14 @@ def test_kazda_dzialka_to_kolejny_wiersz_jednej_tabeli():
     assert [w.cells[1].text for w in tabela.rows[3:]] == ["1765/311", "1765/312", "1765/99"]
 
 
-def test_lp_numeruje_sie_samo():
+def test_lp_numeruje_sie_samo(baza):
     """Numer porządkowy bierze się z pętli — nie ma po co pytać o niego w formularzu."""
     d = _wykaz_dzialek([{"numer_nowy": "a"}, {"numer_nowy": "b"}, {"numer_nowy": "c"}])
 
     assert [w.cells[0].text for w in d.tables[0].rows[3:]] == ["1", "2", "3"]
 
 
-def test_oba_stany_trafiaja_do_swoich_kolumn():
+def test_oba_stany_trafiaja_do_swoich_kolumn(baza):
     d = _wykaz_dzialek([{
         "numer_dotychczas": "1765/311", "pow_ewidencyjna_dotychczas": "0,2140",
         "ofu_dotychczas": "R", "ozu_dotychczas": "IV", "ozk_dotychczas": "a",
@@ -426,7 +426,7 @@ def test_oba_stany_trafiaja_do_swoich_kolumn():
     assert wiersz[7:13] == ["1765/312", "0,1070", "B", "V", "b", "0,1070"]
 
 
-def test_jedna_dzialka_nie_zostawia_pustych_wierszy():
+def test_jedna_dzialka_nie_zostawia_pustych_wierszy(baza):
     """Wiersze sterujące `{%tr for %}` i `{%tr endfor %}` mają zniknąć w całości."""
     d = _wykaz_dzialek([{"numer_dotychczas": "1765/311"}])
 

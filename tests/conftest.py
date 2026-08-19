@@ -76,12 +76,27 @@ def bez_prawdziwej_bazy(tmp_path, monkeypatch):
     Dlatego strażnik jest autouse i stoi obok `bez_wysylki_statystyk`: chroni wszystkie
     testy naraz, także te pisane w przyszłości. Testy z własnym środowiskiem nadpisują
     tę ścieżkę swoją (fixtury autouse idą pierwsze), więc niczego im nie psuje.
+
+    Podmieniamy samą ścieżkę, **bez zakładania bazy**: `db.init()` przy każdym z prawie
+    czterystu testów kosztował na runnerze 2,5 minuty zamiast 25 sekund (kilka transakcji
+    sqlite z `fsync` na plik). Test, który naprawdę potrzebuje tabel, bierze fixture `baza`.
+    Zapomniana kończy się głośnym `no such table`, a nie cichym pisaniem do bazy autora.
     """
     from app import aktualizacja, config, db
-    baza = tmp_path / "straznik.sqlite3"
-    monkeypatch.setattr(config, "BAZA_DANYCH", baza, raising=False)
-    monkeypatch.setattr(db, "BAZA_DANYCH", baza)
-    monkeypatch.setattr(aktualizacja, "BAZA_DANYCH", baza)
+    plik = tmp_path / "straznik.sqlite3"
+    monkeypatch.setattr(config, "BAZA_DANYCH", plik, raising=False)
+    monkeypatch.setattr(db, "BAZA_DANYCH", plik)
+    monkeypatch.setattr(aktualizacja, "BAZA_DANYCH", plik)
+
+
+@pytest.fixture
+def baza(bez_prawdziwej_bazy):
+    """Pusta baza z kompletem tabel — dla testów bez `srodowisko`.
+
+    `srodowisko` zakłada ją samo; ta fixture jest dla testów, które celowo czytają
+    prawdziwe `szablony/` i przez to nie mogą go wziąć.
+    """
+    from app import db
     db.init()
 
 

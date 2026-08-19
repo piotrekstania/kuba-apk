@@ -410,7 +410,11 @@ też brat. Interfejs w całości po polsku.
    dopiero w CI**, gdzie bazy nie ma w ogóle — dziewięć testów padło na
    `no such table: liczniki`. Wniosek: gdy test wywołuje cokolwiek z `app.db`,
    sprawdź, czy ma podmienioną ścieżkę bazy; strażnikiem jest teraz autouse
-   `bez_prawdziwej_bazy` w `conftest.py`.
+   `bez_prawdziwej_bazy` w `conftest.py`. Podmienia **samą ścieżkę** — tabele zakłada
+   dopiero fixture `baza`, bo `db.init()` przy każdym z prawie czterystu testów
+   wydłużył przebieg na runnerze z 25 s do 2,5 minuty (kilka transakcji sqlite
+   z `fsync` na plik). Zapomniana fixture kończy się głośnym `no such table`,
+   a nie cichym pisaniem do bazy autora — i o to chodzi.
 
 ## Stan na teraz — przetestowane end-to-end
 
