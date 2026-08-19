@@ -58,6 +58,14 @@ start.bat
 Wszystko od ostatniego wydania — numer i skrót commita znajdziesz w `ZMIANY.md`
 i `git log`. Dopisuj punkty przy każdej rundzie zmian, kasuj po wydaniu.
 
+### Wykaz budynku — rodzaj według KŚT z listy
+
+- [ ] Wiersz „Rodzaj budynku według KŚT" ma **listę wyboru w obu kolumnach**,
+      od `101 - BUDYNKI PRZEMYSŁOWE` do `122 - LOKALE MIESZKALNE, ...`.
+- [ ] Wybrana pozycja wchodzi do dokumentu w całości (numer + nazwa).
+- [ ] Operat sprzed zmiany, z tekstem wpisanym z ręki: po „Popraw ten operat" wpis
+      **zostaje** na liście jako dodatkowa pozycja.
+
 ### Wykaz budynku — kolumna L.p.
 
 - [ ] Cyfry liczb porządkowych stoją **na środku komórki** w pionie i w poziomie,

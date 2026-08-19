@@ -171,6 +171,18 @@ def wczytaj_szablon(plik: Path) -> Szablon:
         wymaga=meta.get("wymaga", ""),
     )
 
+    # Listy wielokrotnego użytku: `"listy": {"kst": [...]}` w `.json`, a pole albo podpole
+    # mówi tylko `"opcje": "kst"`. Klasyfikacja KŚT stoi przy **dwóch** podpolach (stan
+    # dotychczasowy i nowy) i musi być w obu identyczna co do znaku — dwie kopie w pliku
+    # rozjechałyby się przy pierwszej poprawce, a wykaz z dwiema różnymi wersjami tej samej
+    # klasyfikacji to dokument, którego ośrodek nie przyjmie.
+    listy = {nazwa: list(pozycje) for nazwa, pozycje in (meta.get("listy") or {}).items()}
+
+    def opcje_pola(surowe: dict[str, Any]) -> list[str]:
+        """Lista wprost w polu albo nazwa listy z `"listy"`."""
+        opcje = surowe.get("opcje", [])
+        return list(listy.get(opcje, [])) if isinstance(opcje, str) else list(opcje)
+
     opisane: dict[str, Pole] = {}
     for surowe in meta.get("pola", []):
         klucz = surowe["klucz"]
@@ -181,7 +193,7 @@ def wczytaj_szablon(plik: Path) -> Szablon:
             wymagane=bool(surowe.get("wymagane", False)),
             grupa=surowe.get("grupa", "Dane"),
             podpowiedz=surowe.get("podpowiedz", ""),
-            opcje=list(surowe.get("opcje", [])),
+            opcje=opcje_pola(surowe),
             zawsze=list(surowe.get("zawsze", [])),
             domyslne=list(surowe.get("domyslne", [])),
             wzor_wartosci=surowe.get("wzor_wartosci", ""),
@@ -192,7 +204,8 @@ def wczytaj_szablon(plik: Path) -> Szablon:
             domyslnie=str(surowe.get("domyslnie", "")),
             zrodlo=surowe.get("zrodlo", ""),
             szerokosc=surowe.get("szerokosc", "pelna"),
-            podpola=list(surowe.get("podpola", [])),
+            podpola=[{**pod, "opcje": opcje_pola(pod)}
+                     for pod in surowe.get("podpola", [])],
             etykieta_pozycji=surowe.get("etykieta_pozycji", ""),
             etykieta_dodaj=surowe.get("etykieta_dodaj", ""),
             biblioteka=surowe.get("biblioteka", ""),

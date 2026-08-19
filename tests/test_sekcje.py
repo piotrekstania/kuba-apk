@@ -635,6 +635,97 @@ def test_pusty_identyfikator_zostawia_sam_obreb_z_kropka():
     assert naglowek.endswith("[247301_1.0112.]")
 
 
+# --- listy wyboru w sekcji (KŚT) ---------------------------------------------
+
+# Klasyfikacja Środków Trwałych, grupa 1 — słowo w słowo z rozporządzenia (KŚT 2016,
+# Dz.U. 2016 poz. 1864; w KŚT 2010 te same nazwy). Brat wpisywał to z ręki, a nazwa
+# rodzaju musi zgadzać się co do znaku, bo idzie do dokumentu składanego w ośrodku.
+KST = [
+    "101 - BUDYNKI PRZEMYSŁOWE",
+    "102 - BUDYNKI TRANSPORTU I ŁĄCZNOŚCI",
+    "103 - BUDYNKI HANDLOWO-USŁUGOWE",
+    "104 - ZBIORNIKI, SILOSY I BUDYNKI MAGAZYNOWE",
+    "105 - BUDYNKI BIUROWE",
+    "106 - BUDYNKI SZPITALI I INNE BUDYNKI OPIEKI ZDROWOTNEJ",
+    "107 - BUDYNKI OŚWIATY, NAUKI I KULTURY ORAZ BUDYNKI SPORTOWE",
+    "108 - BUDYNKI PRODUKCYJNE, USŁUGOWE I GOSPODARCZE DLA ROLNICTWA",
+    "109 - POZOSTAŁE BUDYNKI NIEMIESZKALNE",
+    "110 - BUDYNKI MIESZKALNE",
+    "121 - LOKALE NIEMIESZKALNE, SPÓŁDZIELCZE PRAWO DO LOKALU UŻYTKOWEGO",
+    "122 - LOKALE MIESZKALNE, SPÓŁDZIELCZE WŁASNOŚCIOWE PRAWO DO LOKALU MIESZKALNEGO",
+]
+
+
+def _podpola_kst() -> list[dict]:
+    pole = next(p for p in szablony.szablon_po_id("spis_tresci_wzor").pola
+                if p.klucz == "wykazy_budynkow")
+    return [pod for pod in pole.podpola if pod["klucz"].startswith("rodzaj_kst")]
+
+
+def test_rodzaj_kst_ma_liste_z_rozporzadzenia():
+    """Nazwy rodzajów muszą zgadzać się co do znaku — dokument idzie do ośrodka."""
+    podpola = _podpola_kst()
+
+    assert len(podpola) == 2, "KŚT ma być w obu stanach"
+    for pod in podpola:
+        assert pod["opcje"][0] == "", "pierwsza pozycja pusta — wiersz wolno zostawić bez wpisu"
+        assert pod["opcje"][1:] == KST
+
+
+def test_oba_stany_kst_biora_te_sama_liste():
+    """Dwie kopie listy w `.json` rozjechałyby się przy pierwszej poprawce, a wykaz
+    z dwiema wersjami tej samej klasyfikacji to dokument nie do przyjęcia."""
+    dotychczas, nowy = _podpola_kst()
+
+    assert dotychczas["opcje"] == nowy["opcje"]
+
+
+def test_lista_wyboru_w_sekcji_to_select_a_nie_pole_tekstowe(klient):
+    """Nazwa rodzaju ma 60 znaków i trzy przecinki — z ręki nikt tego nie wpisze
+    bez literówki."""
+    klient.srodowisko.dodaj_szablon(
+        "spis_tresci_wzor", ["{{ nr_roboty }}"],
+        opis={"nazwa": "Operat", "glowny": True,
+              "listy": {"kst": ["", "101 - BUDYNKI PRZEMYSŁOWE", "110 - BUDYNKI MIESZKALNE"]},
+              "pola": [{"klucz": "nr_roboty", "etykieta": "Nr roboty"},
+                       {"klucz": "wykazy", "etykieta": "Wykazy", "typ": "sekcje",
+                        "kolumny": [{"klucz": "dotychczas", "etykieta": "Stan dotychczasowy"},
+                                    {"klucz": "nowy", "etykieta": "Stan nowy"}],
+                        "podpola": [
+                            {"klucz": "kst_dotychczas", "wiersz": "Rodzaj budynku według KŚT",
+                             "kolumna": "dotychczas", "opcje": "kst"},
+                            {"klucz": "kst_nowy", "wiersz": "Rodzaj budynku według KŚT",
+                             "kolumna": "nowy", "opcje": "kst"},
+                            {"klucz": "uwagi_nowy", "wiersz": "Uwagi", "kolumna": "nowy"}]}]})
+
+    formularz = klient.get("/nowy/spis_tresci_wzor").text
+
+    assert formularz.count('<option value="101 - BUDYNKI PRZEMYSŁOWE"') == 4, \
+        "dwie kolumny w karcie i dwie we wzorcu do klonowania"
+    assert 'name="sek__wykazy__0__uwagi_nowy"' in formularz
+    assert '<input name="sek__wykazy__0__uwagi_nowy"' in formularz, \
+        "podpole bez listy ma zostać zwykłym polem tekstowym"
+
+
+def test_wartosc_spoza_listy_nie_ginie_przy_poprawianiu(klient):
+    """Operaty sprzed tej zmiany mają w tym miejscu tekst wpisany z ręki. Samo otwarcie
+    „Popraw ten operat” podstawiłoby pierwszą pozycję listy i skasowało jego wpis."""
+    klient.srodowisko.dodaj_szablon(
+        "spis_tresci_wzor", ["{{ nr_roboty }}"],
+        opis={"nazwa": "Operat", "glowny": True,
+              "listy": {"kst": ["", "101 - BUDYNKI PRZEMYSŁOWE"]},
+              "pola": [{"klucz": "nr_roboty", "etykieta": "Nr roboty"},
+                       {"klucz": "wykazy", "etykieta": "Wykazy", "typ": "sekcje",
+                        "podpola": [{"klucz": "kst_nowy", "etykieta": "KŚT",
+                                     "opcje": "kst"}]}]})
+    _wyslij(klient, **{"sek__wykazy__0__kst_nowy": "budynek gospodarczy"})
+    wpis = db.dokumenty()[0]
+
+    formularz = klient.get(f"/nowy/spis_tresci_wzor?edytuj={wpis['id']}").text
+
+    assert '<option value="budynek gospodarczy" selected>' in formularz
+
+
 # --- strona operatu ----------------------------------------------------------
 
 def _operat_z_kolumnami(klient):

@@ -5,6 +5,23 @@
   "glowny": true,
   "wzor_nazwy": "Operat_{nr_roboty}",
   "licznik": "operat",
+  "listy": {
+    "kst": [
+      "",
+      "101 - BUDYNKI PRZEMYSŁOWE",
+      "102 - BUDYNKI TRANSPORTU I ŁĄCZNOŚCI",
+      "103 - BUDYNKI HANDLOWO-USŁUGOWE",
+      "104 - ZBIORNIKI, SILOSY I BUDYNKI MAGAZYNOWE",
+      "105 - BUDYNKI BIUROWE",
+      "106 - BUDYNKI SZPITALI I INNE BUDYNKI OPIEKI ZDROWOTNEJ",
+      "107 - BUDYNKI OŚWIATY, NAUKI I KULTURY ORAZ BUDYNKI SPORTOWE",
+      "108 - BUDYNKI PRODUKCYJNE, USŁUGOWE I GOSPODARCZE DLA ROLNICTWA",
+      "109 - POZOSTAŁE BUDYNKI NIEMIESZKALNE",
+      "110 - BUDYNKI MIESZKALNE",
+      "121 - LOKALE NIEMIESZKALNE, SPÓŁDZIELCZE PRAWO DO LOKALU UŻYTKOWEGO",
+      "122 - LOKALE MIESZKALNE, SPÓŁDZIELCZE WŁASNOŚCIOWE PRAWO DO LOKALU MIESZKALNEGO"
+    ]
+  },
   "pola": [
     {
       "klucz": "nr_roboty",
@@ -183,12 +200,14 @@
         {
           "klucz": "rodzaj_kst_dotychczas",
           "wiersz": "Rodzaj budynku według KŚT",
-          "kolumna": "dotychczas"
+          "kolumna": "dotychczas",
+          "opcje": "kst"
         },
         {
           "klucz": "rodzaj_kst_nowy",
           "wiersz": "Rodzaj budynku według KŚT",
-          "kolumna": "nowy"
+          "kolumna": "nowy",
+          "opcje": "kst"
         },
         {
           "klucz": "kondygnacje_nadziemne_dotychczas",

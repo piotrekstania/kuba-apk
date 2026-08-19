@@ -1,4 +1,26 @@
 {% extends "base.html" %}
+{# Pole w karcie powtarzalnej sekcji. Jedno miejsce na cztery zastosowania (karta
+   i wzorzec do klonowania, w układzie tabelarycznym i płaskim) — wcześniej ten sam
+   `<input>` stał w czterech kopiach i przy każdej zmianie trzeba było trafić we wszystkie. #}
+{% macro pole_sekcji(nazwa_pola, nr, pod, wartosc, etykieta) -%}
+{%- if pod.opcje -%}
+<select name="sek__{{ nazwa_pola }}__{{ nr }}__{{ pod.klucz }}" aria-label="{{ etykieta }}">
+  {%- for opcja in pod.opcje %}
+  <option value="{{ opcja }}"{{ ' selected' if opcja == wartosc }}>{{ opcja }}</option>
+  {%- endfor %}
+  {#- wartość spoza listy (starszy operat, kod wpisany kiedyś z ręki) zostaje na liście:
+      inaczej samo otwarcie „Popraw ten operat” po cichu by ją skasowało #}
+  {%- if wartosc and wartosc not in pod.opcje %}
+  <option value="{{ wartosc }}" selected>{{ wartosc }}</option>
+  {%- endif %}
+</select>
+{%- else -%}
+<input name="sek__{{ nazwa_pola }}__{{ nr }}__{{ pod.klucz }}" value="{{ wartosc }}"
+       aria-label="{{ etykieta }}">
+{%- endif -%}
+{%- endmacro %}
+
+
 {% block tytul %}{{ szablon.nazwa }}{% endblock %}
 {% block tresc %}
 
@@ -170,10 +192,9 @@
                     <th scope="row">{{ wiersz.etykieta }}</th>
                     {% for kolumna in pole.kolumny %}
                     {% set pod = wiersz.pola.get(kolumna.klucz) %}
-                    <td>{% if pod %}<input
-                        name="sek__{{ pole.klucz }}__{{ nr }}__{{ pod.klucz }}"
-                        value="{{ wpis.get(pod.klucz, '') if wpis else '' }}"
-                        aria-label="{{ wiersz.etykieta }} — {{ kolumna.etykieta }}">{% endif %}</td>
+                    <td>{% if pod %}{{ pole_sekcji(
+                        pole.klucz, nr, pod, wpis.get(pod.klucz, '') if wpis else '',
+                        wiersz.etykieta ~ ' — ' ~ kolumna.etykieta) }}{% endif %}</td>
                     {% endfor %}
                   </tr>
                   {% endfor %}
@@ -184,8 +205,8 @@
                 {% for pod in pole.podpola %}
                 <div class="pole {{ pod.szerokosc or 'polowa' }}">
                   <label>{{ pod.etykieta }}</label>
-                  <input name="sek__{{ pole.klucz }}__{{ nr }}__{{ pod.klucz }}"
-                         value="{{ wpis.get(pod.klucz, '') if wpis else '' }}">
+                  {{ pole_sekcji(pole.klucz, nr, pod,
+                                 wpis.get(pod.klucz, '') if wpis else '', pod.etykieta) }}
                 </div>
                 {% endfor %}
               </div>
@@ -209,8 +230,9 @@
                     <th scope="row">{{ wiersz.etykieta }}</th>
                     {% for kolumna in pole.kolumny %}
                     {% set pod = wiersz.pola.get(kolumna.klucz) %}
-                    <td>{% if pod %}<input name="sek__{{ pole.klucz }}__0__{{ pod.klucz }}"
-                        aria-label="{{ wiersz.etykieta }} — {{ kolumna.etykieta }}">{% endif %}</td>
+                    <td>{% if pod %}{{ pole_sekcji(
+                        pole.klucz, 0, pod, '',
+                        wiersz.etykieta ~ ' — ' ~ kolumna.etykieta) }}{% endif %}</td>
                     {% endfor %}
                   </tr>
                   {% endfor %}
@@ -221,7 +243,7 @@
                 {% for pod in pole.podpola %}
                 <div class="pole {{ pod.szerokosc or 'polowa' }}">
                   <label>{{ pod.etykieta }}</label>
-                  <input name="sek__{{ pole.klucz }}__0__{{ pod.klucz }}">
+                  {{ pole_sekcji(pole.klucz, 0, pod, '', pod.etykieta) }}
                 </div>
                 {% endfor %}
               </div>
@@ -635,7 +657,7 @@ document.querySelectorAll('.sekcje').forEach(blok => {
 
   function przenumeruj() {
     lista.querySelectorAll('.sekcja').forEach((sekcja, indeks) => {
-      sekcja.querySelectorAll('input').forEach(pole => {
+      sekcja.querySelectorAll('input, select').forEach(pole => {
         const podklucz = pole.name.split('__').pop();
         pole.name = `sek__${nazwa}__${indeks}__${podklucz}`;
       });
@@ -651,7 +673,7 @@ document.querySelectorAll('.sekcje').forEach(blok => {
   blok.querySelector('.dodaj-sekcje').addEventListener('click', () => {
     lista.appendChild(wzorzec.content.cloneNode(true));
     przenumeruj();
-    lista.lastElementChild.querySelector('input')?.focus();
+    lista.lastElementChild.querySelector('input, select')?.focus();
   });
 
   blok.addEventListener('click', zdarzenie => {
