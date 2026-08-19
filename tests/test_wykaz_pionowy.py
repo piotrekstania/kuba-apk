@@ -92,11 +92,12 @@ def test_kazda_dzialka_dostaje_dwa_wiersze(wariant):
     tabela = d.tables[0]
     assert len(tabela.rows) == 2 + 2 * 2, "dwa wiersze nagłówka i po dwa na działkę"
     stany = [w.cells[1].text.strip() for w in tabela.rows[2:]]
-    assert stany == ["dotychczasowy", "nowy", "dotychczasowy", "nowy"]
+    assert stany == ["Dotychczasowy", "Nowy", "Dotychczasowy", "Nowy"]
     assert [w.cells[2].text.strip() for w in tabela.rows[2:]] == [
         "1765/311", "1765/312", "", "1765/313"]
-    # L.p. jest scalone pionowo, więc obie linijki pary pokazują ten sam numer
-    assert [w.cells[0].text.strip() for w in tabela.rows[2:]] == ["1", "1", "2", "2"]
+    # L.p. jest scalone pionowo, więc obie linijki pary pokazują ten sam numer,
+    # a numer ma kropkę — tak jak w wykazie budynku
+    assert [w.cells[0].text.strip() for w in tabela.rows[2:]] == ["1.", "1.", "2.", "2."]
 
 
 def test_dzialki_oddziela_grubsza_kreska(wariant):
@@ -114,6 +115,29 @@ def test_dzialki_oddziela_grubsza_kreska(wariant):
     assert dolna(nowy) == budowniczy.GRUBA_KRESKA
     assert dolna(dotychczasowy) < budowniczy.GRUBA_KRESKA, \
         "kreska wewnątrz pary ma być cieńsza niż ta między działkami"
+
+
+def test_naglowek_i_kolumna_stanu_sa_pogrubione(wariant):
+    """Decyzja brata: wytłuszczony cały nagłówek tabeli oraz „Dotychczasowy" i „Nowy",
+    bo to one rozdzielają parę wierszy jednej działki. Dane zostają zwykłe."""
+    d = Document(str(wariant))
+    tabela = d.tables[0]
+
+    def pogrubione(komorka) -> bool:
+        biegi = [b for akapit in komorka.paragraphs for b in akapit.runs if b.text.strip()]
+        return bool(biegi) and all(b.bold for b in biegi)
+
+    for wiersz in tabela.rows[:2]:
+        for komorka in wiersz.cells:
+            if komorka.text.strip():
+                assert pogrubione(komorka), \
+                    f"nagłówek {komorka.text.strip()!r} bez pogrubienia"
+
+    stany = [w.cells[1] for w in tabela.rows[3:5]]
+    assert [k.text.strip() for k in stany] == ["Dotychczasowy", "Nowy"]
+    assert all(pogrubione(k) for k in stany)
+    # ...a dane w tej samej parze wierszy zostają zwykłe
+    assert not pogrubione(tabela.rows[3].cells[2])
 
 
 def test_plik_otworzy_sie_w_wordzie(wariant):

@@ -13,7 +13,6 @@ tabelę**, zostawiając nagłówek, logo, podpis i stopkę takimi, jakie są. Fo
 formatka (`dane/szablony/...`), czyli tam, gdzie aktualizacja programu jej nie zabierze.
 
     python narzedzia/utworz_wykaz_dzialki_pionowy.py --wyjscie /tmp/wykaz_pionowy.docx
-    python narzedzia/utworz_wykaz_dzialki_pionowy.py --wyjscie /tmp/wykaz_tlo.docx --tlo
 
 Po zbudowaniu puść na pliku `ujednolic_wyglad.py` — przeliczy przystanki tabulatorów
 w nagłówku, w podpisie i w stopce, bo te liczą się z **szerokości strony**, a ta się
@@ -69,7 +68,15 @@ WCIECIE_PODPISU = 3401
 
 GRUBA_KRESKA = 18        # 2,25 pt — oddziela jedną działkę od następnej
 CIENKA_KRESKA = 4        # 0,5 pt — tyle mają wszystkie kreski w formatce
-TLO_WIERSZA = "F2F2F2"   # bardzo jasny szary; opcjonalny, włączany przełącznikiem --tlo
+
+# Nagłówek tabeli jest wytłuszczony w całości, tak jak w wykazie budynku — łącznie
+# z „Dotychczasowy" i „Nowy" w kolumnie stanu, bo to one rozdzielają parę wierszy.
+POGRUBIONE = ("w:i", "w:iCs", "w:caps", "w:smallCaps", "w:strike", "w:dstrike",
+              "w:outline", "w:shadow", "w:emboss", "w:imprint", "w:noProof",
+              "w:snapToGrid", "w:vanish", "w:webHidden", "w:color", "w:spacing", "w:w",
+              "w:kern", "w:position", "w:sz", "w:szCs", "w:highlight", "w:u", "w:effect",
+              "w:bdr", "w:shd", "w:fitText", "w:vertAlign", "w:rtl", "w:cs", "w:em",
+              "w:lang", "w:eastAsianLayout", "w:specVanish", "w:oMath")
 
 
 def _wstaw_wg_schematu(rodzic, element) -> None:
@@ -94,7 +101,30 @@ def _ustaw(rodzic, tag: str, **atrybuty):
     return element
 
 
-def _tekst_komorki(tc, tekst: str) -> None:
+def _pogrub(bieg, pogrubienie: bool) -> None:
+    """Włącza albo zdejmuje pogrubienie biegu, z zachowaniem kolejności w `rPr`."""
+    rPr = bieg.find(qn("w:rPr"))
+    if rPr is None:
+        rPr = OxmlElement("w:rPr")
+        bieg.insert(0, rPr)
+    for tag in ("w:b", "w:bCs"):
+        istniejacy = rPr.find(qn(tag))
+        if not pogrubienie:
+            if istniejacy is not None:
+                rPr.remove(istniejacy)
+            continue
+        if istniejacy is not None:
+            continue
+        element = OxmlElement(tag)
+        for dziecko in rPr:
+            if dziecko.tag.split("}")[1] in [n.split(":")[1] for n in POGRUBIONE]:
+                dziecko.addprevious(element)
+                break
+        else:
+            rPr.append(element)
+
+
+def _tekst_komorki(tc, tekst: str, pogrubienie: bool | None = None) -> None:
     """Zostawia w komórce jeden akapit z jednym biegiem o podanej treści.
 
     Formatowanie (krój, rozmiar, wyśrodkowanie) bierze się z komórki wzorcowej —
@@ -124,10 +154,12 @@ def _tekst_komorki(tc, tekst: str) -> None:
     w_t.set(qn("xml:space"), "preserve")
     w_t.text = tekst
     bieg.append(w_t)
+    if pogrubienie is not None:
+        _pogrub(bieg, pogrubienie)
 
 
 def _komorka(wzorzec, tekst: str, szerokosc: int, *, span: int = 0, vmerge: str = "",
-             dol: int = 0, tlo: str = ""):
+             dol: int = 0, pogrubienie: bool | None = None):
     """Kopia komórki wzorcowej z podmienioną treścią i szerokością."""
     tc = copy.deepcopy(wzorzec)
     tcPr = tc.find(qn("w:tcPr"))
@@ -158,10 +190,7 @@ def _komorka(wzorzec, tekst: str, szerokosc: int, *, span: int = 0, vmerge: str 
         dolna.set(qn("w:space"), "0")
         dolna.set(qn("w:color"), "000000")
 
-    if tlo:
-        _ustaw(tcPr, "w:shd", val="clear", color="auto", fill=tlo)
-
-    _tekst_komorki(tc, tekst)
+    _tekst_komorki(tc, tekst, pogrubienie)
     return tc
 
 
@@ -213,7 +242,7 @@ def _przenies_podpis(dokument) -> None:
         ustawienia.tab_stops.clear_all()
 
 
-def zbuduj(zrodlo: Path, wyjscie: Path, *, tlo: bool = False) -> Path:
+def zbuduj(zrodlo: Path, wyjscie: Path) -> Path:
     dokument = Document(str(zrodlo))
     _na_pionowa(dokument)
     _przenies_podpis(dokument)
@@ -234,16 +263,18 @@ def zbuduj(zrodlo: Path, wyjscie: Path, *, tlo: bool = False) -> Path:
 
     # --- nagłówek: dwa wiersze, bo OFU/OZU/OZK siedzą pod wspólnym tytułem -----
     nowe.append(_wiersz(wiersze[1], [
-        _komorka(naglowek_wz, "L.p.", K["lp"], vmerge="restart"),
-        _komorka(naglowek_wz, "Stan", K["stan"], vmerge="restart"),
-        _komorka(naglowek_wz, "Numer działki", K["numer"], vmerge="restart"),
+        _komorka(naglowek_wz, "L.p.", K["lp"], vmerge="restart", pogrubienie=True),
+        _komorka(naglowek_wz, "Stan", K["stan"], vmerge="restart", pogrubienie=True),
+        _komorka(naglowek_wz, "Numer działki", K["numer"], vmerge="restart",
+                 pogrubienie=True),
         _komorka(naglowek_wz, "Pole powierzchni ewidencyjnej działki [ha]", K["pole"],
-                 vmerge="restart"),
+                 vmerge="restart", pogrubienie=True),
         _komorka(grupa_wz, "Użytki gruntowe i klasy bonitacyjne w działce",
-                 K["ofu"] + K["ozu"] + K["ozk"], span=3),
+                 K["ofu"] + K["ozu"] + K["ozk"], span=3, pogrubienie=True),
         _komorka(naglowek_wz,
                  "Pole powierzchni użytków gruntowych i klas bonitacyjnych "
-                 "w obszarze działki [ha]", K["uzytki"], vmerge="restart"),
+                 "w obszarze działki [ha]", K["uzytki"], vmerge="restart",
+                 pogrubienie=True),
     ], naglowek=True))
 
     nowe.append(_wiersz(wiersze[2], [
@@ -251,9 +282,9 @@ def zbuduj(zrodlo: Path, wyjscie: Path, *, tlo: bool = False) -> Path:
         _komorka(naglowek_wz, "", K["stan"], vmerge="dalej"),
         _komorka(naglowek_wz, "", K["numer"], vmerge="dalej"),
         _komorka(naglowek_wz, "", K["pole"], vmerge="dalej"),
-        _komorka(pod_wz, "OFU", K["ofu"]),
-        _komorka(pod_wz, "OZU", K["ozu"]),
-        _komorka(pod_wz, "OZK", K["ozk"]),
+        _komorka(pod_wz, "OFU", K["ofu"], pogrubienie=True),
+        _komorka(pod_wz, "OZU", K["ozu"], pogrubienie=True),
+        _komorka(pod_wz, "OZK", K["ozk"], pogrubienie=True),
         _komorka(naglowek_wz, "", K["uzytki"], vmerge="dalej"),
     ], naglowek=True))
 
@@ -268,27 +299,21 @@ def zbuduj(zrodlo: Path, wyjscie: Path, *, tlo: bool = False) -> Path:
 
     # --- dwa wiersze na działkę ----------------------------------------------
     nowe.append(_wiersz(wiersze[4], [
-        _komorka(lp_wz, "{{ loop.index }}", K["lp"], vmerge="restart",
-                 tlo=TLO_WIERSZA if tlo else ""),
-        _komorka(dane_wz, "dotychczasowy", K["stan"], tlo=TLO_WIERSZA if tlo else ""),
-        _komorka(dane_wz, "{{ dzialka.numer_dotychczas }}", K["numer"],
-                 tlo=TLO_WIERSZA if tlo else ""),
-        _komorka(dane_wz, "{{ dzialka.pow_ewidencyjna_dotychczas }}", K["pole"],
-                 tlo=TLO_WIERSZA if tlo else ""),
-        _komorka(dane_wz, "{{ dzialka.ofu_dotychczas }}", K["ofu"],
-                 tlo=TLO_WIERSZA if tlo else ""),
-        _komorka(dane_wz, "{{ dzialka.ozu_dotychczas }}", K["ozu"],
-                 tlo=TLO_WIERSZA if tlo else ""),
-        _komorka(dane_wz, "{{ dzialka.ozk_dotychczas }}", K["ozk"],
-                 tlo=TLO_WIERSZA if tlo else ""),
-        _komorka(dane_wz, "{{ dzialka.pow_uzytkow_dotychczas }}", K["uzytki"],
-                 tlo=TLO_WIERSZA if tlo else ""),
+        # kropka po numerze — tak jak w wykazie budynku, gdzie stoi „1.", „2."
+        _komorka(lp_wz, "{{ loop.index }}.", K["lp"], vmerge="restart"),
+        _komorka(dane_wz, "Dotychczasowy", K["stan"], pogrubienie=True),
+        _komorka(dane_wz, "{{ dzialka.numer_dotychczas }}", K["numer"]),
+        _komorka(dane_wz, "{{ dzialka.pow_ewidencyjna_dotychczas }}", K["pole"]),
+        _komorka(dane_wz, "{{ dzialka.ofu_dotychczas }}", K["ofu"]),
+        _komorka(dane_wz, "{{ dzialka.ozu_dotychczas }}", K["ozu"]),
+        _komorka(dane_wz, "{{ dzialka.ozk_dotychczas }}", K["ozk"]),
+        _komorka(dane_wz, "{{ dzialka.pow_uzytkow_dotychczas }}", K["uzytki"]),
     ]))
 
     # dolna kreska tego wiersza jest gruba — to ona oddziela jedną działkę od następnej
     nowe.append(_wiersz(wiersze[4], [
         _komorka(lp_wz, "", K["lp"], vmerge="dalej", dol=GRUBA_KRESKA),
-        _komorka(dane_wz, "nowy", K["stan"], dol=GRUBA_KRESKA),
+        _komorka(dane_wz, "Nowy", K["stan"], dol=GRUBA_KRESKA, pogrubienie=True),
         _komorka(dane_wz, "{{ dzialka.numer_nowy }}", K["numer"], dol=GRUBA_KRESKA),
         _komorka(dane_wz, "{{ dzialka.pow_ewidencyjna_nowy }}", K["pole"], dol=GRUBA_KRESKA),
         _komorka(dane_wz, "{{ dzialka.ofu_nowy }}", K["ofu"], dol=GRUBA_KRESKA),
@@ -326,8 +351,6 @@ def main() -> int:
     parser = argparse.ArgumentParser(description=__doc__.splitlines()[0])
     parser.add_argument("--wyjscie", required=True, type=Path,
                         help="gdzie zapisać wariant (nigdy do szablony/)")
-    parser.add_argument("--tlo", action="store_true",
-                        help="dodatkowo przyciemnia wiersz „dotychczasowy” bardzo jasnym szarym")
     parser.add_argument("--zrodlo", type=Path, default=ZRODLO)
     argumenty = parser.parse_args()
 
@@ -336,7 +359,7 @@ def main() -> int:
               file=sys.stderr)
         return 1
 
-    plik = zbuduj(argumenty.zrodlo, argumenty.wyjscie, tlo=argumenty.tlo)
+    plik = zbuduj(argumenty.zrodlo, argumenty.wyjscie)
     print(f"{plik}: 8 kolumn, {SZEROKOSC_TABELI} twipów, dwa wiersze na działkę")
     return 0
 
