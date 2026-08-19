@@ -3,6 +3,10 @@
 Co doszło w kolejnych wersjach programu. Ten sam opis pokazuje się raz, na stronie
 głównej, zaraz po tym jak program sam się zaktualizuje.
 
+## 2026.08.19-95 — 2026-08-19
+
+W wykazie działki wartości wielolinijkowe (OFU, OZU, OZK, pole powierzchni użytków) zaczynają się od górnej krawędzi komórki, więc linijki stanu dotychczasowego i nowego trzymają poziom — wcześniej krótsza kolumna była środkowana w pionie i pływała. Razem z pustymi linijkami z poprzedniej wersji daje to równe wiersze w obu kolumnach.
+
 ## 2026.08.19-94 — 2026-08-19
 
 W wielolinijkowych polach wykazu działki (OFU, OZU, OZK, pole powierzchni użytków) puste linijki zostają i wchodzą do dokumentu — możesz nimi zsunąć wpis stanu nowego do właściwego wiersza sąsiedniej kolumny, np. gdy zmiana dotyczy dopiero drugiego użytku. Puste linijki przeżywają też poprawianie operatu.
