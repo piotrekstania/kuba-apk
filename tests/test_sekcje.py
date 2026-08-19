@@ -298,3 +298,83 @@ def test_dokument_bez_deklaracji_wymaga_powstaje_zawsze(klient):
                       "pole__dokumenty_inne": "notatka_wzor"}, follow_redirects=False)
 
     assert _pliki_operatu(klient) == ["notatka.docx", "spis_tresci.docx"]
+
+
+# --- spis treści jest jedynym włącznikiem dokumentów -------------------------
+#
+# Wcześniej pozycja w spisie treści i checkbox „Wygeneruj” w karcie dokumentu pytały
+# o to samo dwa razy — dało się je ustawić sprzecznie: dokument w spisie, a pliku brak.
+
+def _operat_ze_spisem(klient):
+    klient.srodowisko.dodaj_szablon(
+        "spis_tresci_wzor", ["{{ nr_roboty }}"],
+        opis={"nazwa": "Operat", "glowny": True,
+              "pola": [{"klucz": "nr_roboty", "etykieta": "Nr roboty"},
+                       {"klucz": "spis_tresci", "etykieta": "Co wchodzi", "grupa": "Spis treści",
+                        "typ": "wybor_wielokrotny",
+                        "opcje": ["Spis treści", "Sprawozdanie techniczne", "Mapa"],
+                        "zawsze": ["Spis treści"],
+                        "dokumenty": {"Sprawozdanie techniczne": "sprawozdanie_wzor"}},
+                       {"klucz": "uwagi", "etykieta": "Uwagi", "typ": "textarea",
+                        "aktywne_gdy": "spis_tresci:Sprawozdanie techniczne"}]})
+    klient.srodowisko.dodaj_szablon("sprawozdanie_wzor", ["{{ nr_roboty }} {{ uwagi }}"],
+                                    opis={"nazwa": "Sprawozdanie techniczne"})
+
+
+def test_zaznaczenie_w_spisie_tresci_generuje_dokument(klient):
+    _operat_ze_spisem(klient)
+
+    klient.post("/generuj/spis_tresci_wzor",
+                data={"pole__nr_roboty": "GK.1", "notatka": "",
+                      "pole__spis_tresci": "Sprawozdanie techniczne",
+                      "pole__uwagi": "treść"},
+                follow_redirects=False)
+
+    assert _pliki_operatu(klient) == ["spis_tresci.docx", "sprawozdanie.docx"]
+
+
+def test_brak_pozycji_w_spisie_tresci_to_brak_dokumentu(klient):
+    """Sedno zmiany: nie ma osobnego „wygeneruj”, więc nie da się mieć dokumentu
+    w spisie treści bez pliku ani pliku bez pozycji w spisie."""
+    _operat_ze_spisem(klient)
+
+    klient.post("/generuj/spis_tresci_wzor",
+                data={"pole__nr_roboty": "GK.1", "notatka": "",
+                      "pole__spis_tresci": "Mapa", "pole__uwagi": ""},
+                follow_redirects=False)
+
+    assert _pliki_operatu(klient) == ["spis_tresci.docx"]
+
+
+def test_pola_dokumentu_wisza_na_pozycji_ze_spisu_tresci(klient):
+    """Zaznaczenie w spisie treści ma **włączać pola** tego dokumentu."""
+    _operat_ze_spisem(klient)
+
+    formularz = klient.get("/nowy/spis_tresci_wzor").text
+
+    assert 'data-aktywne-gdy="spis_tresci:Sprawozdanie techniczne"' in formularz
+
+
+def test_dokument_ze_spisu_nie_wraca_do_karty_inne_dokumenty(klient):
+    """Szablon, który ma już włącznik w spisie treści, nie może dać się włączyć
+    drugi raz gdzie indziej — inaczej dwa miejsca mówiłyby co innego."""
+    klient.srodowisko.dodaj_szablon(
+        "spis_tresci_wzor", ["{{ nr_roboty }}"],
+        opis={"nazwa": "Operat", "glowny": True,
+              "pola": [{"klucz": "nr_roboty", "etykieta": "Nr roboty"},
+                       {"klucz": "spis_tresci", "etykieta": "Co wchodzi",
+                        "typ": "wybor_wielokrotny", "opcje": ["Sprawozdanie techniczne"],
+                        "dokumenty": {"Sprawozdanie techniczne": "sprawozdanie_wzor"}},
+                       {"klucz": "dokumenty", "etykieta": "Wygeneruj też",
+                        "typ": "dokumenty"}]})
+    klient.srodowisko.dodaj_szablon("sprawozdanie_wzor", ["{{ nr_roboty }}"],
+                                    opis={"nazwa": "Sprawozdanie techniczne"})
+    klient.srodowisko.dodaj_szablon("inny_wzor", ["{{ nr_roboty }}"],
+                                    opis={"nazwa": "Inny dokument"})
+
+    formularz = klient.get("/nowy/spis_tresci_wzor").text
+    lista_innych = formularz.split('name="pole__dokumenty"')
+
+    assert "Inny dokument" in formularz, "szablon bez pozycji w spisie ma zostać do wyboru"
+    assert formularz.count('value="sprawozdanie_wzor"') == 0, \
+        "sprawozdanie ma włącznik w spisie treści — w „Innych dokumentach” nie ma czego dublować"

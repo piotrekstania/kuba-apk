@@ -92,26 +92,21 @@
         "Pełnomocnictwa stron"
       ],
       "zawsze": [
-        "Spis treści",
-        "Sprawozdanie techniczne"
+        "Spis treści"
       ],
-      "podpowiedz": "Do dokumentu trafią tylko zaznaczone pozycje, w tej kolejności."
-    },
-    {
-      "klucz": "dokumenty_sprawozdanie",
-      "etykieta": "Wygeneruj",
-      "typ": "dokumenty",
-      "grupa": "Sprawozdanie techniczne",
-      "tylko": [
-        "sprawozdanie_techniczne_wzor"
-      ]
+      "podpowiedz": "Do dokumentu trafią tylko zaznaczone pozycje, w tej kolejności. Zaznaczenie sprawozdania albo wykazu włącza jego pola niżej i sprawia, że program go wygeneruje.",
+      "dokumenty": {
+        "Sprawozdanie techniczne": "sprawozdanie_techniczne_wzor",
+        "Wykaz zmian danych ewidencyjnych budynku": "wykaz_zmian_budynku_wzor",
+        "Wykaz zmian danych ewidencyjnych": "wykaz_zmian_dzialki_wzor"
+      }
     },
     {
       "klucz": "opis_przebiegu",
       "etykieta": "Przebieg wykonanych prac",
       "typ": "textarea",
       "grupa": "Sprawozdanie techniczne",
-      "aktywne_gdy": "dokumenty_sprawozdanie:sprawozdanie_techniczne_wzor",
+      "aktywne_gdy": "spis_tresci:Sprawozdanie techniczne",
       "biblioteka": "sprawozdanie",
       "podpowiedz": "Wchodzi do sprawozdania w punkcie 7. Pogrubienie, kursywę i podkreślenie ustawiasz przyciskami albo skrótami Ctrl+B/I/U; gotowe opisy dokładasz w Ustawieniach.",
       "formatowanie": true
@@ -131,29 +126,18 @@
         "GESUT",
         "EGiB"
       ],
-      "aktywne_gdy": "dokumenty_sprawozdanie:sprawozdanie_techniczne_wzor",
+      "aktywne_gdy": "spis_tresci:Sprawozdanie techniczne",
       "wzor_wartosci": "{nr_roboty}-{opcja}.gml",
       "podpowiedz": "Do sprawozdania wejdą jako nazwy plików GML, po przecinku. Odznaczenie wszystkich daje „brak”."
-    },
-    {
-      "klucz": "dokumenty_wykazy",
-      "etykieta": "Wygeneruj",
-      "typ": "dokumenty",
-      "grupa": "Wykazy zmian danych ewidencyjnych",
-      "tylko": [
-        "wykaz_zmian_budynku_wzor",
-        "wykaz_zmian_dzialki_wzor"
-      ],
-      "podpowiedz": "Na razie bez dodatkowych opcji — biorą dane z operatu."
     },
     {
       "klucz": "wykazy_budynkow",
       "etykieta": "Wykazy zmian danych budynku",
       "typ": "sekcje",
-      "grupa": "Wykazy zmian danych ewidencyjnych",
+      "grupa": "Wykaz zmian danych budynku",
       "etykieta_pozycji": "Wykaz",
       "etykieta_dodaj": "dodaj kolejny wykaz",
-      "aktywne_gdy": "dokumenty_wykazy:wykaz_zmian_budynku_wzor",
+      "aktywne_gdy": "spis_tresci:Wykaz zmian danych ewidencyjnych budynku",
       "podpowiedz": "Jeden komplet na jeden budynek. Puste pola zostaną w dokumencie puste, a wykaz bez ani jednej wypełnionej wartości w ogóle nie powstanie.",
       "podpola": [
         {

@@ -408,7 +408,11 @@ def _listy_dokumentow(szablon: szablony.Szablon) -> dict[str, list[dict[str, str
     czego *nie* było w formularzu), musi zrobić kopię **przed** tym wywołaniem.
     """
     wszystkie = [s for s in szablony.lista_skrocona() if s["id"] != szablon.id]
+    # „Zajęty” to szablon, który ma już swój włącznik gdzie indziej: albo własną kartę
+    # (`tylko`), albo pozycję w spisie treści. Bez tego drugiego sprawozdanie i wykazy
+    # wróciłyby do karty „Inne dokumenty” i dało się je włączyć w dwóch miejscach naraz.
     zajete = {i for p in szablon.pola if p.typ == "dokumenty" for i in p.tylko}
+    zajete |= {i for p in szablon.pola for i in p.dokumenty.values()}
 
     listy: dict[str, list[dict[str, str]]] = {}
     for pole in szablon.pola:
@@ -560,9 +564,16 @@ async def generuj(request: Request, identyfikator: str, edytuj: int | None = Non
     katalog = plik.parent
     # zaznaczenia zbieramy ze wszystkich pól typu „dokumenty” — każdy dokument
     # ma swoją kartę, więc pól jest kilka
+    # Co wygenerować: pozycje zaznaczone w spisie treści (mapowanie `dokumenty` w .json)
+    # plus pola typu `dokumenty`, które zostały dla szablonów bez własnej pozycji w spisie.
     wybrane_szablony = [identyfikator
                         for pole in szablon.pola if pole.typ == "dokumenty"
                         for identyfikator in (dane.get(pole.klucz) or [])]
+    for pole in szablon.pola:
+        if not pole.dokumenty:
+            continue
+        zaznaczone = dane.get(pole.klucz) or []
+        wybrane_szablony += [pole.dokumenty[o] for o in zaznaczone if o in pole.dokumenty]
     wypelnionych = 1                      # dokument główny już powstał
     for identyfikator_dodatkowego in wybrane_szablony:
         dodatkowy = szablony.szablon_po_id(str(identyfikator_dodatkowego))

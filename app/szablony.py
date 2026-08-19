@@ -57,6 +57,11 @@ class Pole:
     domyslne: list[str] = field(default_factory=list)  # zaznaczone na start, ale odklikywalne
     wzor_wartosci: str = ""     # np. "{nr_roboty}-{opcja}.gml" — wynik pod kluczem <pole>_pliki
     tylko: list[str] = field(default_factory=list)    # typ "dokumenty": które szablony pokazać
+    # typ "wybor_wielokrotny": które zaznaczenie uruchamia który dokument, np.
+    # {"Sprawozdanie techniczne": "sprawozdanie_techniczne_wzor"}. Dzięki temu spis treści
+    # jest **jedynym** włącznikiem: pozycja w spisie i osobny checkbox „wygeneruj” pytały
+    # o to samo dwa razy i dało się je ustawić sprzecznie.
+    dokumenty: dict[str, str] = field(default_factory=dict)
     aktywne_gdy: str = ""       # pole jest wyszarzone, dopóki wskazany przełącznik
                                 # nie jest zaznaczony; "dokumenty:id" celuje w pozycję listy
     kolumny: list[dict[str, str]] = field(default_factory=list)   # tylko dla typ="tabela"
@@ -181,6 +186,7 @@ def wczytaj_szablon(plik: Path) -> Szablon:
             domyslne=list(surowe.get("domyslne", [])),
             wzor_wartosci=surowe.get("wzor_wartosci", ""),
             tylko=list(surowe.get("tylko", [])),
+            dokumenty=dict(surowe.get("dokumenty", {})),
             aktywne_gdy=surowe.get("aktywne_gdy", ""),
             kolumny=list(surowe.get("kolumny", [])),
             domyslnie=str(surowe.get("domyslnie", "")),
