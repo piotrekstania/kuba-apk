@@ -113,6 +113,10 @@ class Szablon:
     wzor_nazwy: str = "{id_szablonu}"
     licznik: str = ""           # nazwa licznika dla pola typu "auto_numer"
     glowny: bool = False        # kafelek na stronie głównej; reszta tylko jako dodatek
+    # Klucz pola, bez którego ten dokument nie ma sensu. Wykaz zmian danych budynku
+    # to sama pętla po wykazach — przy pustej liście powstawał **plik bez jednej litery**,
+    # który szedł do konwersji i wychodził w składaniu operatu jako pusty kafelek.
+    wymaga: str = ""
     pola: list[Pole] = field(default_factory=list)
 
     @property
@@ -159,6 +163,7 @@ def wczytaj_szablon(plik: Path) -> Szablon:
         wzor_nazwy=meta.get("wzor_nazwy", plik.stem + "_{data_dokumentu}"),
         licznik=meta.get("licznik", ""),
         glowny=bool(meta.get("glowny", False)),
+        wymaga=meta.get("wymaga", ""),
     )
 
     opisane: dict[str, Pole] = {}

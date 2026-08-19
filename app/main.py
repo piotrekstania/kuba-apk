@@ -568,6 +568,14 @@ async def generuj(request: Request, identyfikator: str, edytuj: int | None = Non
         dodatkowy = szablony.szablon_po_id(str(identyfikator_dodatkowego))
         if dodatkowy is None or dodatkowy.id == szablon.id:
             continue
+        # Dokument, który jest samą pętlą po pustej liście, wyszedłby jako plik bez
+        # jednej litery — w składaniu operatu widać go wtedy jako pusty kafelek i nie
+        # wiadomo, czy to usterka, czy zapomniane dane. Mówimy o tym wprost.
+        if dodatkowy.wymaga and not dane.get(dodatkowy.wymaga):
+            ostrzezenia.append(
+                f"„{dodatkowy.nazwa}” nie powstał, bo nie wypełniłeś ani jednej pozycji. "
+                "Uzupełnij dane i popraw operat, a dokument się dołoży.")
+            continue
         try:
             generator.dopisz_dokument(
                 warianty.z_wariantem(dodatkowy, wybor_wariantow.get(dodatkowy.id, "")),

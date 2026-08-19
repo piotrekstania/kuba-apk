@@ -214,3 +214,87 @@ def test_grupowanie_zachowuje_kolejnosc_atrybutow():
 
     assert [w["etykieta"] for w in wiersze] == ["Beta", "Alfa"]
     assert sorted(wiersze[0]["pola"]) == ["dotychczas", "nowy"]
+
+
+# --- pusty wykaz nie powstaje ------------------------------------------------
+
+def _operat_z_wykazem(klient):
+    """Operat główny plus dokument dodatkowy, który bez danych nie ma sensu."""
+    klient.srodowisko.dodaj_szablon(
+        "spis_tresci_wzor", ["{{ nr_roboty }}"],
+        opis={"nazwa": "Operat", "glowny": True,
+              "pola": [{"klucz": "nr_roboty", "etykieta": "Nr roboty"},
+                       {"klucz": "wykazy", "etykieta": "Wykazy", "typ": "sekcje",
+                        "podpola": PODPOLA},
+                       {"klucz": "dokumenty_wykazy", "etykieta": "Wygeneruj",
+                        "typ": "dokumenty", "tylko": ["wykaz_wzor"]}]})
+    klient.srodowisko.dodaj_szablon(
+        "wykaz_wzor", ["{%p for w in wykazy %}", "{{ w.adres_nowy }}", "{%p endfor %}"],
+        opis={"nazwa": "Wykaz zmian", "wymaga": "wykazy"})
+
+
+def _pliki_operatu(klient) -> list[str]:
+    katalog = klient.srodowisko.wyniki / db.dokumenty()[0]["katalog"]
+    return sorted(p.name for p in katalog.iterdir() if p.suffix == ".docx")
+
+
+def test_wykaz_bez_danych_w_ogole_nie_powstaje(klient):
+    """Dokument będący samą pętlą po pustej liście wychodził jako plik bez jednej
+    litery — w składaniu operatu pusty kafelek, po którym nie wiadomo, czy to usterka."""
+    _operat_z_wykazem(klient)
+
+    klient.post("/generuj/spis_tresci_wzor",
+                data={"pole__nr_roboty": "GK.1", "notatka": "",
+                      "pole__dokumenty_wykazy": "wykaz_wzor",
+                      "sek__wykazy__0__adres_nowy": ""},
+                follow_redirects=False)
+
+    assert _pliki_operatu(klient) == ["spis_tresci.docx"]
+
+
+def test_program_mowi_dlaczego_wykazu_nie_ma(klient):
+    """Ciche pominięcie jest gorsze niż pusty plik: brat zaznaczył dokument i ma prawo
+    wiedzieć, czemu go nie widzi."""
+    _operat_z_wykazem(klient)
+
+    odpowiedz = klient.post("/generuj/spis_tresci_wzor",
+                            data={"pole__nr_roboty": "GK.1", "notatka": "",
+                                  "pole__dokumenty_wykazy": "wykaz_wzor",
+                                  "sek__wykazy__0__adres_nowy": ""},
+                            follow_redirects=False)
+
+    from urllib.parse import unquote
+    komunikat = unquote(odpowiedz.headers["location"])
+    assert "nie powstał, bo nie wypełniłeś ani jednej pozycji" in komunikat
+    assert "Wykaz zmian" in komunikat, "brat ma wiedzieć, którego dokumentu to dotyczy"
+
+
+def test_wykaz_z_danymi_powstaje_normalnie(klient):
+    _operat_z_wykazem(klient)
+
+    klient.post("/generuj/spis_tresci_wzor",
+                data={"pole__nr_roboty": "GK.1", "notatka": "",
+                      "pole__dokumenty_wykazy": "wykaz_wzor",
+                      "sek__wykazy__0__adres_nowy": "Polna 7"},
+                follow_redirects=False)
+
+    assert _pliki_operatu(klient) == ["spis_tresci.docx", "wykaz.docx"]
+
+
+def test_dokument_bez_deklaracji_wymaga_powstaje_zawsze(klient):
+    """`wymaga` jest wpisem w `.json`, a nie regułą zgadującą po treści — dokument,
+    który jej nie ma, zachowuje się dokładnie jak dotąd."""
+    klient.srodowisko.dodaj_szablon(
+        "spis_tresci_wzor", ["{{ nr_roboty }}"],
+        opis={"nazwa": "Operat", "glowny": True,
+              "pola": [{"klucz": "nr_roboty", "etykieta": "Nr roboty"},
+                       {"klucz": "dokumenty_inne", "etykieta": "Wygeneruj",
+                        "typ": "dokumenty", "tylko": ["notatka_wzor"]}]})
+    klient.srodowisko.dodaj_szablon("notatka_wzor", ["{{ nr_roboty }}"],
+                                    opis={"nazwa": "Notatka"})
+
+    klient.post("/generuj/spis_tresci_wzor",
+                data={"pole__nr_roboty": "GK.1", "notatka": "",
+                      "pole__dokumenty_inne": "notatka_wzor"}, follow_redirects=False)
+
+    assert _pliki_operatu(klient) == ["notatka.docx", "spis_tresci.docx"]

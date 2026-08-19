@@ -1,5 +1,6 @@
 {
   "nazwa": "Wykaz zmian danych ewidencyjnych dotyczących budynku",
   "opis": "Dokłada się do operatu. Korzysta z danych wpisanych przy spisie treści.",
-  "pola": []
+  "pola": [],
+  "wymaga": "wykazy_budynkow"
 }
