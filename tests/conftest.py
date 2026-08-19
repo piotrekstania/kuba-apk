@@ -62,6 +62,29 @@ def bez_wysylki_statystyk(monkeypatch):
     monkeypatch.setenv(raport.WYLACZNIK, "1")
 
 
+@pytest.fixture(autouse=True)
+def bez_prawdziwej_bazy(tmp_path, monkeypatch):
+    """Żaden test nie pisze do bazy autora — nawet ten, który nie bierze `srodowisko`.
+
+    Testy sprawdzające **wydane formatki** celowo nie mogą wziąć `srodowisko`: ono
+    podmienia `szablony/` na pusty katalog, a one chcą prawdziwych plików brata.
+    Przez to nie miały podmienionej też bazy i szły do `dane/operaty.sqlite3` autora —
+    `przygotuj_kontekst` rezerwuje numer operatu, więc **każde uruchomienie testów
+    podbijało mu licznik numeracji** (doszedł do 463 przy czterech operatach w historii).
+    Widać to było dopiero w CI, gdzie bazy nie ma w ogóle: `no such table: liczniki`.
+
+    Dlatego strażnik jest autouse i stoi obok `bez_wysylki_statystyk`: chroni wszystkie
+    testy naraz, także te pisane w przyszłości. Testy z własnym środowiskiem nadpisują
+    tę ścieżkę swoją (fixtury autouse idą pierwsze), więc niczego im nie psuje.
+    """
+    from app import aktualizacja, config, db
+    baza = tmp_path / "straznik.sqlite3"
+    monkeypatch.setattr(config, "BAZA_DANYCH", baza, raising=False)
+    monkeypatch.setattr(db, "BAZA_DANYCH", baza)
+    monkeypatch.setattr(aktualizacja, "BAZA_DANYCH", baza)
+    db.init()
+
+
 # --- pomocnicze budowanie dokumentów -----------------------------------------
 
 def zbuduj_docx(sciezka: Path, akapity: list[str | tuple], **kwargs) -> Path:

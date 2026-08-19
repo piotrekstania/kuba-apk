@@ -401,6 +401,17 @@ też brat. Interfejs w całości po polsku.
    (`br`, `img`, `hr`), stąd lista `PUSTE`. Uwaga przy diagnozie: **przypadek bez
    złamania wiersza działa poprawnie**, więc łatwo uznać, że parser jest w porządku.
 
+25. **Test bez fixture `srodowisko` pisze tam, gdzie pokazuje `app.config`.** Testy
+   wydanych formatek muszą czytać prawdziwe `szablony/`, więc nie mogą wziąć
+   `srodowisko` — i przez to nie miały podmienionej **bazy**. `przygotuj_kontekst`
+   rezerwuje numer operatu, więc każde uruchomienie testów podbijało autorowi licznik
+   w `dane/operaty.sqlite3` (doszedł do 463 przy czterech operatach w historii).
+   Lokalnie nie było tego widać, bo baza istnieje i wszystko przechodziło; **wyszło
+   dopiero w CI**, gdzie bazy nie ma w ogóle — dziewięć testów padło na
+   `no such table: liczniki`. Wniosek: gdy test wywołuje cokolwiek z `app.db`,
+   sprawdź, czy ma podmienioną ścieżkę bazy; strażnikiem jest teraz autouse
+   `bez_prawdziwej_bazy` w `conftest.py`.
+
 ## Stan na teraz — przetestowane end-to-end
 
 Formularz → `.docx` → PDF → sklejenie kilku PDF-ów w jeden. Działa: powtarzalne wiersze tabeli
@@ -477,7 +488,10 @@ Chodzą w kilkanaście sekund, bez sieci i bez Worda (konwersja jest podmieniana
 jeden test oznaczony markerem `konwerter` używa prawdziwego LibreOffice'a, gdy jest).
 Żaden test nie dotyka prawdziwych `wyniki/` i `dane/` — `tests/conftest.py` podmienia
 ścieżki **w każdym module z osobna**, bo `from .config import WYNIKI` przywiązuje je
-do modułu w chwili importu.
+do modułu w chwili importu. Samą bazę chroni dodatkowo fixture **autouse**
+`bez_prawdziwej_bazy`: testy sprawdzające wydane formatki celowo nie biorą `srodowisko`
+(bo ono podmienia `szablony/` na pusty katalog), więc bez tego szły do bazy autora
+i przy każdym uruchomieniu podbijały mu licznik numeracji — patrz pułapka 25.
 
 Co pilnują, w kolejności od najbardziej bolesnych doświadczeń:
 
