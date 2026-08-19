@@ -58,6 +58,20 @@ start.bat
 Wszystko od ostatniego wydania — numer i skrót commita znajdziesz w `ZMIANY.md`
 i `git log`. Dopisuj punkty przy każdej rundzie zmian, kasuj po wydaniu.
 
+### Wykaz działki — pionowa kartka, dwa wiersze na działkę
+
+- [ ] Dokument drukuje się **w pionie**, tabela mieści się w marginesach, nagłówek
+      powtarza się na drugiej stronie przy dłuższym wykazie.
+- [ ] Każda działka to para wierszy „Dotychczasowy" / „Nowy", L.p. z kropką scalone
+      przez oba, między działkami grubsza kreska.
+- [ ] Nagłówek tabeli i kolumna „Stan" pogrubione, dane zwykłe.
+- [ ] **Otwórz w prawdziwym Wordzie** — tabela jest przebudowana od zera przez skrypt,
+      więc to jedyny test na kolejność elementów w OOXML.
+- [ ] Podpis stoi pod tabelą i mieści się w szerokości strony (przy poziomej kartce
+      miał wcięcie, które w pionie łamało go po literze).
+- [ ] Jeśli wgrałeś sobie ten wykaz jako **własną formatkę**, usuń go z Ustawień —
+      teraz jest standardowy i dwie identyczne pozycje na liście tylko mylą.
+
 ### Wykaz budynku — rodzaj według KŚT z listy
 
 - [ ] Wiersz „Rodzaj budynku według KŚT" ma **listę wyboru w obu kolumnach**,

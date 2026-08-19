@@ -447,11 +447,14 @@ def test_dokument_ze_spisu_nie_wraca_do_karty_inne_dokumenty(klient):
         "sprawozdanie ma włącznik w spisie treści — w „Innych dokumentach” nie ma czego dublować"
 
 
-# --- wykaz działki: kolejne działki to kolejne WIERSZE jednej tabeli ---------
+# --- wykaz działki: każda działka to PARA WIERSZY jednej tabeli --------------
 #
 # Inaczej niż przy budynku, gdzie każdy wykaz to osobna strona z własną tabelą.
 # Formularz wygląda tak samo (karta na działkę), bo o formie decyduje typ pola,
 # a o dokumencie — znacznik w formatce: tam `{%tr for %}` zamiast `{%p for %}`.
+#
+# Od 19.08.2026 formatka jest **pionowa**: zamiast trzynastu kolumn (sześć na stan
+# dotychczasowy i sześć na nowy, obok siebie) ma osiem, a stany leżą jeden pod drugim.
 
 def _wykaz_dzialek(dzialki: list[dict]) -> Document:
     glowny = szablony.szablon_po_id("spis_tresci_wzor")
@@ -462,25 +465,31 @@ def _wykaz_dzialek(dzialki: list[dict]) -> Document:
                                               pathlib.Path(tempfile.mkdtemp())))
 
 
-def test_kazda_dzialka_to_kolejny_wiersz_jednej_tabeli(baza):
+def test_kazda_dzialka_to_para_wierszy_jednej_tabeli(baza):
     d = _wykaz_dzialek([{"numer_dotychczas": "1765/311"},
                         {"numer_dotychczas": "1765/312"},
                         {"numer_dotychczas": "1765/99"}])
 
     assert len(d.tables) == 1, "działki nie mają robić kolejnych tabel ani stron"
     tabela = d.tables[0]
-    assert len(tabela.rows) == 6, "trzy wiersze nagłówka plus trzy działki"
-    assert [w.cells[1].text for w in tabela.rows[3:]] == ["1765/311", "1765/312", "1765/99"]
+    assert len(tabela.rows) == 2 + 2 * 3, "dwa wiersze nagłówka i po dwa na działkę"
+    assert [w.cells[1].text.strip() for w in tabela.rows[2:]] == \
+        ["Dotychczasowy", "Nowy"] * 3
+    assert [w.cells[2].text.strip() for w in tabela.rows[2:]] == \
+        ["1765/311", "", "1765/312", "", "1765/99", ""]
 
 
 def test_lp_numeruje_sie_samo(baza):
     """Numer porządkowy bierze się z pętli — nie ma po co pytać o niego w formularzu."""
     d = _wykaz_dzialek([{"numer_nowy": "a"}, {"numer_nowy": "b"}, {"numer_nowy": "c"}])
 
-    assert [w.cells[0].text for w in d.tables[0].rows[3:]] == ["1", "2", "3"]
+    # komórka L.p. jest scalona przez oba wiersze pary, więc numer powtarza się dwa razy;
+    # kropka po numerze jest taka sama jak w wykazie budynku
+    assert [w.cells[0].text.strip() for w in d.tables[0].rows[2:]] == \
+        ["1.", "1.", "2.", "2.", "3.", "3."]
 
 
-def test_oba_stany_trafiaja_do_swoich_kolumn(baza):
+def test_oba_stany_trafiaja_do_swoich_wierszy(baza):
     d = _wykaz_dzialek([{
         "numer_dotychczas": "1765/311", "pow_ewidencyjna_dotychczas": "0,2140",
         "ofu_dotychczas": "R", "ozu_dotychczas": "IV", "ozk_dotychczas": "a",
@@ -488,9 +497,11 @@ def test_oba_stany_trafiaja_do_swoich_kolumn(baza):
         "numer_nowy": "1765/312", "pow_ewidencyjna_nowy": "0,1070",
         "ofu_nowy": "B", "ozu_nowy": "V", "ozk_nowy": "b", "pow_uzytkow_nowy": "0,1070"}])
 
-    wiersz = [c.text.strip() for c in d.tables[0].rows[3].cells]
-    assert wiersz[1:7] == ["1765/311", "0,2140", "R", "IV", "a", "0,2140"]
-    assert wiersz[7:13] == ["1765/312", "0,1070", "B", "V", "b", "0,1070"]
+    dotychczasowy = [c.text.strip() for c in d.tables[0].rows[2].cells]
+    nowy = [c.text.strip() for c in d.tables[0].rows[3].cells]
+    assert dotychczasowy[1:] == ["Dotychczasowy", "1765/311", "0,2140", "R", "IV", "a",
+                                 "0,2140"]
+    assert nowy[1:] == ["Nowy", "1765/312", "0,1070", "B", "V", "b", "0,1070"]
 
 
 def test_jedna_dzialka_nie_zostawia_pustych_wierszy(baza):
@@ -498,7 +509,7 @@ def test_jedna_dzialka_nie_zostawia_pustych_wierszy(baza):
     d = _wykaz_dzialek([{"numer_dotychczas": "1765/311"}])
 
     tabela = d.tables[0]
-    assert len(tabela.rows) == 4
+    assert len(tabela.rows) == 2 + 2, "dwa wiersze nagłówka i para wierszy jednej działki"
     assert not any("{%" in c.text for w in tabela.rows for c in w.cells)
 
 
@@ -515,7 +526,7 @@ def test_naglowek_tabeli_powtarza_sie_na_kolejnych_stronach():
     tabela = Document(str(szablony.szablon_po_id(
         "wykaz_zmian_dzialki_wzor").plik)).tables[0]
 
-    for nr in range(3):
+    for nr in range(2):
         trPr = tabela.rows[nr]._tr.find(qn("w:trPr"))
         assert trPr is not None and trPr.find(qn("w:tblHeader")) is not None, \
             f"wiersz nagłówka {nr} nie jest oznaczony jako powtarzany"
@@ -544,21 +555,72 @@ def test_pod_tabela_jest_dokladnie_jeden_pusty_akapit():
         "akapit odstępu ma być pusty"
 
 
-def test_dane_w_tabeli_dzialki_nie_sa_pogrubione():
-    """Pogrubiony był tylko ten jeden wykaz — w wykazie budynku dane są zwykłe.
+def test_pogrubienia_w_tabeli_dzialki():
+    """Wytłuszczony nagłówek i kolumna „Stan", zwykłe dane — decyzja brata.
 
-    Pogrubienia to decyzja brata (patrz CLAUDE.md), a on chce w obu tabelach tego samego:
-    wytłuszczony zostaje sam nagłówek, dane czyta się normalnie.
+    „Dotychczasowy" i „Nowy" rozdzielają parę wierszy jednej działki, więc mają być
+    mocniejsze niż liczby obok. Dane pogrubione były kiedyś w całej tabeli i to właśnie
+    kazał zdjąć; pogrubienie ma odróżniać opis od treści, a nie zamalowywać kartkę.
     """
     d = Document(str(szablony.szablon_po_id("wykaz_zmian_dzialki_wzor").plik))
-    wiersz = next(w for w in d.tables[0].rows if "{{ dzialka." in w.cells[1].text)
+    tabela = d.tables[0]
 
-    pogrubione = [b.text for k in wiersz.cells for p in k.paragraphs
-                  for b in p.runs if b.bold]
-    assert not pogrubione, f"dane w tabeli wciąż pogrubione: {pogrubione}"
-    # ...a nagłówek tabeli zostaje wytłuszczony, tak jak w wykazie budynku
-    assert any(b.bold for k in d.tables[0].rows[0].cells for p in k.paragraphs
-               for b in p.runs), "nagłówek stracił pogrubienie"
+    def pogrubione(komorka) -> bool:
+        biegi = [b for akapit in komorka.paragraphs for b in akapit.runs if b.text.strip()]
+        return bool(biegi) and all(b.bold for b in biegi)
+
+    for wiersz in tabela.rows[:2]:
+        for komorka in wiersz.cells:
+            if komorka.text.strip():
+                assert pogrubione(komorka), \
+                    f"nagłówek {komorka.text.strip()!r} bez pogrubienia"
+
+    dotychczasowy, nowy = tabela.rows[3], tabela.rows[4]
+    assert [w.cells[1].text.strip() for w in (dotychczasowy, nowy)] == \
+        ["Dotychczasowy", "Nowy"]
+    assert all(pogrubione(w.cells[1]) for w in (dotychczasowy, nowy))
+
+    pogrubione_dane = [k.text.strip() for w in (dotychczasowy, nowy)
+                       for k in w.cells[2:] if pogrubione(k)]
+    assert not pogrubione_dane, f"dane w tabeli wciąż pogrubione: {pogrubione_dane}"
+
+
+def test_dzialki_oddziela_grubsza_kreska():
+    """Bez tego dwa wiersze jednej działki zlewają się z następną parą."""
+    from docx.oxml.ns import qn
+
+    tabela = Document(str(szablony.szablon_po_id(
+        "wykaz_zmian_dzialki_wzor").plik)).tables[0]
+
+    def dolna(wiersz) -> int:
+        brzegi = wiersz._tr.findall(qn("w:tc"))[1].find(qn("w:tcPr")).find(qn("w:tcBorders"))
+        return int(brzegi.find(qn("w:bottom")).get(qn("w:sz")))
+
+    assert dolna(tabela.rows[4]) > dolna(tabela.rows[3]), \
+        "kreska po wierszu „Nowy” ma być grubsza niż ta wewnątrz pary"
+
+
+def test_wykaz_dzialki_jest_na_pionowej_kartce():
+    """Cały sens przebudowy z 19.08.2026. Tabela szersza niż tekst wychodziłaby poza
+    margines i Word łamałby ją na drugą stronę — dlatego mierzymy jedno i drugie."""
+    from docx.enum.section import WD_ORIENT
+    from docx.oxml.ns import qn
+
+    d = Document(str(szablony.szablon_po_id("wykaz_zmian_dzialki_wzor").plik))
+    sekcja = d.sections[0]
+
+    assert sekcja.orientation == WD_ORIENT.PORTRAIT
+    assert sekcja.page_width < sekcja.page_height
+    szerokosc_tekstu = int((sekcja.page_width - sekcja.left_margin
+                            - sekcja.right_margin) / 914400 * 1440)
+    kolumny = [int(k.get(qn("w:w"))) for k in d.tables[0]._tbl.find(qn("w:tblGrid"))]
+    assert sum(kolumny) <= szerokosc_tekstu
+
+    # W poziomej formatce (do 19.08.2026) kolumny miały: numer 851, pole 1416,
+    # OFU/OZU/OZK po ~709, użytki 1701. Węższa kartka nie może oznaczać ciaśniejszych
+    # kolumn — inaczej ta zmiana nie miałaby sensu.
+    numer, pole, ofu, ozu, ozk, uzytki = kolumny[2:]
+    assert (numer, pole, ofu, ozu, ozk, uzytki) >= (851, 1416, 709, 709, 708, 1701)
 
 
 def test_liczby_porzadkowe_wykazu_budynku_stoja_na_srodku_komorki():
@@ -619,7 +681,8 @@ def test_identyfikator_dzialki_wchodzi_do_naglowka_wykazu():
 
     naglowek = next(p.text for p in d.paragraphs if "Identyfikator działki ewidencyjnej" in p.text)
     assert naglowek.endswith("[247301_1.0112.1765/311]")
-    assert len(d.tables[0].rows) == 5, "dwa wiersze działek, identyfikator poza tabelą"
+    assert len(d.tables[0].rows) == 2 + 2 * 2, \
+        "dwie działki po dwa wiersze, identyfikator poza tabelą"
 
 
 def test_pusty_identyfikator_zostawia_sam_obreb_z_kropka():

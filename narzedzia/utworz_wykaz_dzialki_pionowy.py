@@ -7,10 +7,17 @@ Dzięki temu wartości przed i po leżą jedno pod drugim, w tej samej kolumnie,
 się je okiem w pionie, zamiast wodzić palcem przez pół szerokiej kartki. Każda kolumna
 jest przy tym **szersza** niż dziś, mimo węższej strony.
 
-Skrypt nie tworzy dokumentu od zera: bierze wydaną formatkę i **podmienia w niej samą
-tabelę**, zostawiając nagłówek, logo, podpis i stopkę takimi, jakie są. Formatki w
-`szablony/` nie rusza — zapisuje osobny plik, do wgrania w Ustawieniach jako własna
-formatka (`dane/szablony/...`), czyli tam, gdzie aktualizacja programu jej nie zabierze.
+Skrypt nie tworzy dokumentu od zera: bierze **poziomą** formatkę i podmienia w niej samą
+tabelę, zostawiając nagłówek, logo, podpis i stopkę takimi, jakie są.
+
+**Konwersja jest już zrobiona** — od 19.08.2026 pionowy wykaz jest formatką domyślną
+(commit `2b6596a` to ostatni z poziomą). Skrypt zostaje jako opis tego, co się wtedy
+stało, i na wypadek, gdyby brat przysłał kolejną poziomą tabelę do przełożenia; sam
+odmawia pracy, gdy dostanie plik, który jest już pionowy — inaczej klonowałby komórki
+spod błędnych indeksów i wychodziłby z tego dokument bez sensu. Poziomy wzór wyjmiesz
+z historii:
+
+    git show 2b6596a:szablony/wykaz_zmian_dzialki_wzor.docx > /tmp/poziomy.docx
 
     python narzedzia/utworz_wykaz_dzialki_pionowy.py --wyjscie /tmp/wykaz_pionowy.docx
 
@@ -247,6 +254,11 @@ def _przenies_podpis(dokument) -> None:
 
 def zbuduj(zrodlo: Path, wyjscie: Path) -> Path:
     dokument = Document(str(zrodlo))
+    if len(dokument.tables[0].columns) == len(KOLUMNY):
+        raise SystemExit(
+            f"{zrodlo} jest już pionowy — ten skrypt przekłada tabelę **poziomą** "
+            "(13 kolumn) i klonuje komórki spod indeksów tamtej. Poziomy wzór:\n"
+            "    git show 2b6596a:szablony/wykaz_zmian_dzialki_wzor.docx > /tmp/poziomy.docx")
     _na_pionowa(dokument)
     _przenies_podpis(dokument)
 
