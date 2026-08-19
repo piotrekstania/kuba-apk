@@ -765,9 +765,12 @@ def _wypelnione_sekcje(pole: szablony.Pole, wartosc: Any) -> list[dict[str, Any]
             if any(komorki):
                 wiersze.append({"etykieta": wiersz["etykieta"], "komorki": komorki})
         if not kolumny:          # sekcja bez układu tabelarycznego — płaska lista pól
+            # tylko podpola z `wiersz`: te bez niego są już wyżej w `wspolne`
+            # i wypisane drugi raz robiłyby z podglądu echo
             wiersze = [{"etykieta": pod.get("etykieta", pod["klucz"]),
                         "komorki": [str(wpis.get(pod["klucz"], "") or "")]}
-                       for pod in pole.podpola if wpis.get(pod["klucz"])]
+                       for pod in pole.podpola
+                       if pod.get("wiersz") and wpis.get(pod["klucz"])]
         if wiersze or wspolne:
             sekcje.append({"naglowek": f"{nazwa} {numer}", "wspolne": wspolne,
                            "wiersze": wiersze})

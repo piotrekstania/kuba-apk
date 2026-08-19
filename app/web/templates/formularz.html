@@ -690,7 +690,9 @@ document.querySelectorAll('.sekcje').forEach(blok => {
 
   function przenumeruj() {
     lista.querySelectorAll('.sekcja').forEach((sekcja, indeks) => {
-      sekcja.querySelectorAll('input, select').forEach(pole => {
+      // textarea też: OFU/OZU/OZK są wielolinijkowe — klon wzorca zostawał z indeksem 0
+      // i pusta textarea nadpisywała użytki pierwszej działki (ostatni wygrywa)
+      sekcja.querySelectorAll('input, select, textarea').forEach(pole => {
         const podklucz = pole.name.split('__').pop();
         pole.name = `sek__${nazwa}__${indeks}__${podklucz}`;
       });
@@ -706,7 +708,7 @@ document.querySelectorAll('.sekcje').forEach(blok => {
   blok.querySelector('.dodaj-sekcje').addEventListener('click', () => {
     lista.appendChild(wzorzec.content.cloneNode(true));
     przenumeruj();
-    lista.lastElementChild.querySelector('input, select')?.focus();
+    lista.lastElementChild.querySelector('input, select, textarea')?.focus();
   });
 
   blok.addEventListener('click', zdarzenie => {

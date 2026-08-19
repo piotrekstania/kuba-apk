@@ -95,18 +95,16 @@ def zbuduj(opis: dict) -> Path:
     return plik
 
 
-if __name__ == "__main__":
-    parser = argparse.ArgumentParser(description=__doc__.splitlines()[0])
-    parser.add_argument("--nadpisz", action="store_true",
-                        help="nadpisz istniejące .docx (UWAGA: skasuje prawdziwe formatki)")
-    argumenty = parser.parse_args()
-
+def zbuduj_wszystkie(nadpisz: bool) -> None:
     for opis in WYKAZY:
         docelowy = SZABLONY / opis["plik"]
-        if docelowy.exists() and not argumenty.nadpisz:
+        if docelowy.exists() and not nadpisz:
+            # Także bez ruszania pliku .json: opis pól żywej formatki niesie ustawienia,
+            # których szkielet nie zna (np. "wymaga" — reguła pustego wykazu). Zapis
+            # stojący poza tym strażnikiem kasował je przy „bezpiecznym” uruchomieniu.
             print(f"{docelowy.name} już istnieje — zostawiam bez zmian.")
-        else:
-            print("Utworzono:", zbuduj(opis).name)
+            continue
+        print("Utworzono:", zbuduj(opis).name)
 
         # własnych pól nie ma: wszystko przychodzi z formularza operatu
         docelowy.with_suffix(".json").write_text(
@@ -116,3 +114,12 @@ if __name__ == "__main__":
                         "pola": []}, ensure_ascii=False, indent=2) + "\n",
             encoding="utf-8")
         print("  opis pól:", docelowy.with_suffix(".json").name)
+
+
+if __name__ == "__main__":
+    parser = argparse.ArgumentParser(description=__doc__.splitlines()[0])
+    parser.add_argument("--nadpisz", action="store_true",
+                        help="nadpisz istniejące .docx (UWAGA: skasuje prawdziwe formatki)")
+    argumenty = parser.parse_args()
+
+    zbuduj_wszystkie(argumenty.nadpisz)

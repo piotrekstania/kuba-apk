@@ -37,6 +37,27 @@ def _wyslij(klient, **pola):
 
 # --- odczyt z formularza -----------------------------------------------------
 
+def test_przenumerowanie_kart_obejmuje_pola_wielolinijkowe():
+    """OFU/OZU/OZK są `<textarea>`, a wzorzec karty ma sztywny indeks 0.
+
+    `przenumeruj()` łapiące tylko `input, select` zostawiało textarea klona pod
+    indeksem pierwszej karty — pusta wartość drugiej działki wysyłała się jako
+    `sek__wykazy_dzialek__0__ofu_dotychczas` i kasowała użytki działki 1 (przy
+    odczycie ostatni wygrywa). Złapane na żywym operacie: OFU wyszło puste mimo
+    wypełnienia. Zachowania JS nie dotkniemy bez przeglądarki, więc pilnujemy
+    selektorów — obu, bo fokus po dodaniu karty ma trafić i w textarea.
+    """
+    from app.config import WEB
+
+    szablon = (WEB / "templates" / "formularz.html").read_text(encoding="utf-8")
+
+    # w pliku są dwie funkcje `przenumeruj`: pierwsza obsługuje wiersze tabel (tam są
+    # wyłącznie inputy), sekcje przenumerowuje ta ostatnia
+    przenumeruj = szablon.split("function przenumeruj")[-1].split("}")[0]
+    assert "'input, select, textarea'" in przenumeruj, \
+        "przenumerowanie pomija textarea — użytki drugiej karty nadpiszą pierwszą"
+
+
 def test_sekcje_wracaja_jako_lista_slownikow(klient):
     """Ten sam kształt co przy tabeli — żeby formatka nie musiała ich rozróżniać."""
     _operat_z_sekcjami(klient)
@@ -802,3 +823,31 @@ def test_sekcja_bez_kolumn_tez_sie_pokazuje(klient):
 
     assert "Adres — nowy" in strona and "Leśna 3" in strona
     assert "Adres — dotychczasowy" not in strona
+
+
+def test_plaska_sekcja_nie_wypisuje_wartosci_dwa_razy(klient):
+    """Podpola bez `wiersz` idą do bloku wspólnego nad tabelą — wypisane drugi raz
+    w tabeli robiły z podglądu echo: każda wartość stała na stronie operatu dwukrotnie."""
+    _operat_z_sekcjami(klient)
+
+    _wyslij(klient, **{"sek__wykazy__0__adres_nowy": "Leśna 3"})
+    strona = klient.get(f"/dokument/{db.dokumenty()[0]['id']}").text
+
+    assert strona.count("Leśna 3") == 1, "wartość płaskiej sekcji wypisana podwójnie"
+
+
+def test_tabele_wykazow_mieszcza_sie_w_marginesach():
+    """Tabela szersza od szerokości tekstu **choćby o 23 twipy** ucieka na drugą stronę
+    (pułapka 12g). Porównanie działki z budynkiem tego nie łapie — obie formatki mogą
+    być za szerokie o tyle samo — więc strażnik musi być bezwzględny."""
+    from docx.oxml.ns import qn
+
+    for nazwa in ("wykaz_zmian_budynku_wzor", "wykaz_zmian_dzialki_wzor"):
+        d = Document(str(szablony.szablon_po_id(nazwa).plik))
+        sekcja = d.sections[0]
+        szerokosc_tekstu = int((sekcja.page_width - sekcja.left_margin
+                                - sekcja.right_margin) / 914400 * 1440)
+        for tabela in d.tables:
+            kolumny = [int(k.get(qn("w:w"))) for k in tabela._tbl.find(qn("w:tblGrid"))]
+            assert sum(kolumny) <= szerokosc_tekstu, \
+                f"{nazwa}: tabela ma {sum(kolumny)} twipów przy {szerokosc_tekstu} tekstu"
