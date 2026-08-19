@@ -131,7 +131,9 @@
               <option value="{{ pozycja.opis }}">{{ pozycja.nazwa }}</option>
               {% endfor %}
             </select>
-            <button type="button" class="wtorny" data-wklej="p_{{ pole.klucz }}"
+            {# „Załaduj” jest tu jedyną rzeczą do kliknięcia i robi konkretną robotę —
+               wstawia gotowy opis do pola. Szary gubił się obok listy. #}
+            <button type="button" class="glowny" data-wklej="p_{{ pole.klucz }}"
                     data-zrodlo="b_{{ pole.klucz }}">Załaduj</button>
             {% else %}
             <span class="podpowiedz">Nie masz jeszcze gotowych opisów —

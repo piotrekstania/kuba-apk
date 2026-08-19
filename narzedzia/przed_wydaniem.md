@@ -87,6 +87,25 @@ i `git log`. Dopisuj punkty przy każdej rundzie zmian, kasuj po wydaniu.
       we wszystkich dziesięciu wierszach (przed poprawką siadały do 3 pt za wysoko
       w wierszach 5–9). Sprawdź w Wordzie, bo to on składa dokument u brata.
 
+### Poprawianie operatu wraca do tego samego katalogu
+
+- [ ] „Popraw ten operat" → „Zapisz poprawki": **ten sam numer, ten sam katalog**,
+      pliki dołożone Eksploratorem na miejscu. Wcześniej szablon bez licznika mógł
+      przy poprawce założyć katalog obok, gdy zegar tyknął na kolejną sekundę —
+      formatek brata to nie dotyczyło, ale sprawdź, bo zmiana siedzi w tej ścieżce.
+
+### Interfejs
+
+- [ ] Strona główna: zamiast karty szablonu jest niebieski przycisk **„Nowy operat"**,
+      w linii nagłówka „Operaty", dosunięty do prawej krawędzi tabeli. Prowadzi tam,
+      gdzie prowadziła karta.
+- [ ] Nazwy kart w formularzu i w Ustawieniach („Opis", „Robota", „Położenie"…) są
+      **niebieskie**; podkarty („Wykaz 1", „Działka 2") zostają szare.
+- [ ] Przycisk **„Załaduj"** przy gotowych opisach jest niebieski i dalej wkleja opis
+      do pola.
+- [ ] Ostrzeżenie o niezapisanych zmianach nadal działa po tych zmianach: wpisz coś,
+      naciśnij **F5** — przeglądarka pyta, czy wyjść.
+
 ---
 
 ## C. Zlecenie review (do wklejenia Fable)
