@@ -58,8 +58,8 @@ start.bat
 Wszystko od ostatniego wydania — numer i skrót commita znajdziesz w `ZMIANY.md`
 i `git log`. Dopisuj punkty przy każdej rundzie zmian, kasuj po wydaniu.
 
-*(pusto — wydanie 2026.08.19-95 poszło 19.08; wyrównanie do góry sprawdzone
-na PDF z prawdziwego Worda przy poprawce)*
+*(pusto — wydanie 2026.08.19-96 poszło 19.08; wyrównanie podglądu operatu
+zmierzone na żywo w przeglądarce: 0 px różnicy górnych krawędzi kolumn)*
 
 ---
 
