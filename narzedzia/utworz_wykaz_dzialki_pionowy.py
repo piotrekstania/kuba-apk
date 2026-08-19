@@ -44,13 +44,16 @@ STRONA_SZEROKOSC, STRONA_WYSOKOSC = 11906, 16838
 # tego wariantu jest szersza albo taka sama, mimo węższej kartki.
 KOLUMNY = {
     "lp": 563,
-    "stan": 1500,
+    # 1300 twipów: pogrubione „Dotychczasowy" mierzy 1022 twipy przy 8 pt, plus
+    # marginesy komórki (2 × 108) i zapas na to, że Word łamie wiersz odrobinę
+    # wcześniej, niż wynika z sumy szerokości znaków (pułapka 12g)
+    "stan": 1300,
     "numer": 1100,
     "pole": 1500,
     "ofu": 709,
     "ozu": 709,
     "ozk": 709,
-    "uzytki": 2315,
+    "uzytki": 2515,
 }
 SZEROKOSC_TABELI = sum(KOLUMNY.values())
 
