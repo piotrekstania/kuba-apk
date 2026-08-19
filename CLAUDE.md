@@ -103,6 +103,10 @@ to znak, że idziesz pod prąd tej architektury.
    `ujednolic_wyglad.py` i `popraw_szablon.py` nie uruchamiasz „przy okazji”.
 6. **Zerknij na CI przed podbiciem `WERSJA`.** Zielony krzyżyk po wydaniu to już tylko
    raport ze szkody.
+7. **Przed wydaniem przejdź listę z [narzedzia/przed_wydaniem.md](narzedzia/przed_wydaniem.md).**
+   Testy nie sprawdzą dwóch rzeczy: prawdziwego Worda (nie ma go w CI) i tego, jak
+   dokument wygląda na kartce. Część B tej listy dopisujesz przy każdej rundzie zmian
+   i kasujesz po wydaniu.
 
 ## Stos
 
