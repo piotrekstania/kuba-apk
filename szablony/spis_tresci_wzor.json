@@ -303,6 +303,14 @@
       ]
     },
     {
+      "klucz": "wykaz_identyfikator_dzialki",
+      "etykieta": "Identyfikator działki",
+      "grupa": "Wykaz zmian danych działki",
+      "szerokosc": "polowa",
+      "aktywne_gdy": "spis_tresci:Wykaz zmian danych ewidencyjnych",
+      "podpowiedz": "Wchodzi do nagłówka wykazu, zaraz za identyfikatorem obrębu — np. [247301_1.0112.1765/311]. Jeden na cały wykaz, niezależnie od liczby działek w tabeli."
+    },
+    {
       "klucz": "wykazy_dzialek",
       "etykieta": "Działki w wykazie",
       "typ": "sekcje",

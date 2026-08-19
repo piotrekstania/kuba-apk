@@ -469,3 +469,35 @@ def test_pod_tabela_nie_ma_pustych_akapitow():
                   and "Sporządził" in "".join(t.text or "" for t in el.iter(qn("w:t"))))
 
     assert podpis == tabela + 1, "między tabelą a podpisem nie ma prawa nic stać"
+
+
+def test_identyfikator_dzialki_wchodzi_do_naglowka_wykazu():
+    """Numer działki dopisuje się za identyfikatorem obrębu, przed nawiasem zamykającym.
+
+    Jest **jeden na cały wykaz**, niezależnie od liczby wierszy w tabeli — stoi
+    w nagłówku, czyli poza pętlą `{%tr for %}`.
+    """
+    sz = szablony.szablon_po_id("wykaz_zmian_dzialki_wzor")
+    kontekst = {"nr_roboty": "G.1", "polozenie_obreb_teryt": "247301_1.0112",
+                "wykaz_identyfikator_dzialki": "1765/311",
+                "wykazy_dzialek": [{"numer_nowy": "a"}, {"numer_nowy": "b"}]}
+
+    d = Document(generator.dopisz_dokument(sz, kontekst,
+                                           pathlib.Path(tempfile.mkdtemp())))
+
+    naglowek = next(p.text for p in d.paragraphs if "Identyfikator działki ewidencyjnej" in p.text)
+    assert naglowek.endswith("[247301_1.0112.1765/311]")
+    assert len(d.tables[0].rows) == 5, "dwa wiersze działek, identyfikator poza tabelą"
+
+
+def test_pusty_identyfikator_zostawia_sam_obreb_z_kropka():
+    """Tak jak było przed tą zmianą — brat dopisze numer w Wordzie, gdy go nie poda."""
+    sz = szablony.szablon_po_id("wykaz_zmian_dzialki_wzor")
+
+    d = Document(generator.dopisz_dokument(
+        sz, {"polozenie_obreb_teryt": "247301_1.0112", "wykaz_identyfikator_dzialki": "",
+             "wykazy_dzialek": [{"numer_nowy": "a"}]},
+        pathlib.Path(tempfile.mkdtemp())))
+
+    naglowek = next(p.text for p in d.paragraphs if "Identyfikator działki ewidencyjnej" in p.text)
+    assert naglowek.endswith("[247301_1.0112.]")
