@@ -627,3 +627,18 @@ def test_formularz_ostrzega_przed_zgubieniem_wpisanych_danych(klient):
     straznik = strona[max(0, strona.index("beforeunload") - 2000):]
     assert "'submit'" in straznik or '"submit"' in straznik, \
         "wysyłka nie zeruje flagi — okienko wyskoczy przy generowaniu"
+
+
+def test_podglad_wykazu_wyrownuje_komorki_do_gory():
+    """To samo wyrównanie co w dokumencie: przy trzech linijkach po jednej stronie
+    i dwóch po drugiej krótsza kolumna nie może pływać w pionie. Formatka ma to
+    w komórkach tabeli, a podgląd operatu musi w CSS — przeglądarka domyślnie
+    środkuje komórki tabeli w pionie."""
+    from app.config import WEB
+
+    style = (WEB / "static" / "style.css").read_text(encoding="utf-8")
+
+    komorki = style.split('.sekcja-podglad table.wiersze')[1:]
+    assert komorki, "podgląd wykazów zniknął z arkusza stylów"
+    assert any("vertical-align: top" in blok.split("}")[0] for blok in komorki), \
+        "komórki podglądu środkują w pionie — krótsza kolumna pływa jak kiedyś w PDF"
