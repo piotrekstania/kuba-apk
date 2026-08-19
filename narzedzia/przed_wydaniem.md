@@ -53,8 +53,9 @@ start.bat
 
 ---
 
-## B. Co doszło w tej rundzie (wszystko od wydania `2026.08.14-90`,
-czyli `git log --oneline 3a23109..HEAD`)
+## B. Co doszło w tej rundzie
+
+Wszystko od wydania `2026.08.14-90`, czyli `git log --oneline 3a23109..HEAD`.
 
 ### Wykazy zmian danych ewidencyjnych w formularzu
 
@@ -99,9 +100,8 @@ czyli `git log --oneline 3a23109..HEAD`)
 ## C. Zlecenie review (do wklejenia Fable)
 
 > Zrób przegląd kodu zmian z zakresu `3a23109..HEAD` w tym repozytorium
-> (`git log --oneline 3a23109..HEAD`, `git diff 3a23109..HEAD`) — to wszystko,
-> co przyszło po ostatnim wydaniu. Kontekst
-> projektu jest w `CLAUDE.md` — przeczytaj go najpierw, zwłaszcza listę pułapek
+> (`git log --oneline 3a23109..HEAD`, `git diff 3a23109..HEAD`) — to wszystko, co
+> przyszło po ostatnim wydaniu. Kontekst projektu jest w `CLAUDE.md` — przeczytaj go najpierw, zwłaszcza listę pułapek
 > i zasady pracy nad kodem. Odpowiadaj po polsku.
 >
 > Odbiorcą programu jest geodeta, nie programista, a aktualizacja instaluje się
@@ -119,12 +119,12 @@ czyli `git log --oneline 3a23109..HEAD`)
 >    i usuwaniu kart (`sek__<pole>__<nr>__<podpole>`), oraz strażnik `beforeunload`
 >    na końcu skryptu. Czy da się doprowadzić do stanu, w którym dane z formularza
 >    trafiają pod zły indeks albo giną?
-> 3a. `tests/conftest.py` — fixtury `bez_prawdziwej_bazy` i `baza`: czy zostaje jeszcze
+> 4. `tests/conftest.py` — fixtury `bez_prawdziwej_bazy` i `baza`: czy zostaje jeszcze
 >    jakaś ścieżka, którą test bez `srodowisko` dosięga prawdziwych `dane/` albo
 >    `wyniki/` autora?
-> 4. Reguła pomijania pustego dokumentu (`"wymaga"` w `.json`) — czy pomija dokładnie
+> 5. Reguła pomijania pustego dokumentu (`"wymaga"` w `.json`) — czy pomija dokładnie
 >    to, co ma, i czy użytkownik zawsze dowiaduje się, że pliku nie ma?
-> 5. Testy w `tests/test_sekcje.py` i `tests/test_trasy.py` — czy sprawdzają
+> 6. Testy w `tests/test_sekcje.py` i `tests/test_trasy.py` — czy sprawdzają
 >    zachowanie, czy tylko to, że kod się wykonał.
 >
 > Czego **nie** zgłaszać: nazw po polsku (to konwencja projektu), braku typów
