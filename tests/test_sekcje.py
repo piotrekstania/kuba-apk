@@ -561,6 +561,48 @@ def test_dane_w_tabeli_dzialki_nie_sa_pogrubione():
                for b in p.runs), "nagłówek stracił pogrubienie"
 
 
+def test_liczby_porzadkowe_wykazu_budynku_stoja_na_srodku_komorki():
+    """Cyfry L.p. siadały na różnych wysokościach — najbardziej w wierszach niższych.
+
+    Winne były dwie rzeczy naraz: część akapitów miała interlinię z własnego
+    ustawienia, a część brała ją ze stylu, i **znacznik końca akapitu był większy
+    niż cyfra** (12 pt przy 7-punktowej cyfrze). Wyśrodkowanie w pionie centruje
+    wiersz tekstu, a nie same cyfry, więc rozdmuchany znacznik podnosił je nad
+    środek komórki. Zmierzone na wydruku: odchyłka do 3 pt, po poprawce ±0,7 pt.
+    """
+    from docx.oxml.ns import qn
+
+    d = Document(str(szablony.szablon_po_id("wykaz_zmian_budynku_wzor").plik))
+    rozmiar = lambda el: (el.find(qn("w:sz")).get(qn("w:val"))     # noqa: E731
+                          if el is not None and el.find(qn("w:sz")) is not None else None)
+
+    interlinie, znaczniki = set(), set()
+    for wiersz in d.tables[0]._tbl.findall(qn("w:tr")):
+        komorka = wiersz.findall(qn("w:tc"))[0]
+        tcPr = komorka.find(qn("w:tcPr"))
+        vAlign = tcPr.find(qn("w:vAlign")) if tcPr is not None else None
+        assert vAlign is not None and vAlign.get(qn("w:val")) == "center", \
+            "komórka L.p. bez wyśrodkowania w pionie"
+
+        for akapit in komorka.findall(qn("w:p")):
+            pPr = akapit.find(qn("w:pPr"))
+            jc = pPr.find(qn("w:jc")) if pPr is not None else None
+            assert jc is not None and jc.get(qn("w:val")) == "center", \
+                "cyfra L.p. nie jest wyśrodkowana w poziomie"
+            odstep = pPr.find(qn("w:spacing"))
+            interlinie.add((odstep.get(qn("w:line")), odstep.get(qn("w:lineRule")))
+                           if odstep is not None else None)
+            znacznik = rozmiar(pPr.find(qn("w:rPr")))
+            znaczniki.add(znacznik)
+            bieg = akapit.find(qn("w:r"))
+            if bieg is not None:
+                assert znacznik == rozmiar(bieg.find(qn("w:rPr"))), \
+                    "znacznik akapitu większy niż cyfra — podniesie ją nad środek"
+
+    assert len(interlinie) == 1, f"różne interlinie w kolumnie L.p.: {interlinie}"
+    assert len(znaczniki) == 1, f"różne rozmiary znaczników akapitu: {znaczniki}"
+
+
 def test_identyfikator_dzialki_wchodzi_do_naglowka_wykazu():
     """Numer działki dopisuje się za identyfikatorem obrębu, przed nawiasem zamykającym.
 

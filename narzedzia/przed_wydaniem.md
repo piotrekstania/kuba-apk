@@ -58,7 +58,11 @@ start.bat
 Wszystko od ostatniego wydania — numer i skrót commita znajdziesz w `ZMIANY.md`
 i `git log`. Dopisuj punkty przy każdej rundzie zmian, kasuj po wydaniu.
 
-*(pusto — wydanie 2026.08.19-91 poszło 19.08, lista tej rundy przeszła w całości)*
+### Wykaz budynku — kolumna L.p.
+
+- [ ] Cyfry liczb porządkowych stoją **na środku komórki** w pionie i w poziomie,
+      we wszystkich dziesięciu wierszach (przed poprawką siadały do 3 pt za wysoko
+      w wierszach 5–9). Sprawdź w Wordzie, bo to on składa dokument u brata.
 
 ---
 
