@@ -58,7 +58,26 @@ start.bat
 Wszystko od ostatniego wydania — numer i skrót commita znajdziesz w `ZMIANY.md`
 i `git log`. Dopisuj punkty przy każdej rundzie zmian, kasuj po wydaniu.
 
-*(pusto — wydanie 2026.08.19-92 poszło 19.08, lista tej rundy przeszła w całości)*
+### Wykazy — zmiany na czerwono
+
+- [ ] Stan nowy różny od dotychczasowego wychodzi **czerwony i pogrubiony**, taki sam
+      zostaje czarny. Sprawdź w obu wykazach i **w prawdziwym Wordzie**.
+- [ ] Wpis tam, gdzie dotychczas było pusto, też jest czerwony.
+
+### Wykaz działki — jedna działka, jedna strona
+
+- [ ] Dokument wygląda jak wykaz budynku: ta sama tabela, ten sam nagłówek, jedna
+      działka na stronę, łamanie strony **między** działkami, nie po ostatniej.
+- [ ] Pole „Działka" w karcie (sam numer) wchodzi do nagłówka **swojej** strony jako
+      `[obręb.numer]`.
+- [ ] OFU, OZU, OZK i pole powierzchni użytków przyjmują kilka linijek i tak samo
+      wychodzą w dokumencie — po jednej wartości w wierszu.
+- [ ] Operat zrobiony przed tą zmianą: po „Popraw ten operat" karty działek mają dane
+      w nowych miejscach, a stary „Identyfikator działki" zniknął z formularza.
+
+### Wykaz budynku
+
+- [ ] Zniknęły odsyłacze do przypisów `(1)` i `(2)`; indeks górny przy `m²` **został**.
 
 ---
 

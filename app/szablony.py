@@ -95,6 +95,16 @@ class Pole:
                 wiersze.append(gdzie[nazwa])
             gdzie[nazwa]["pola"][podpole.get("kolumna", "")] = podpole
         return wiersze
+
+    @property
+    def podpola_wspolne(self) -> list[dict[str, Any]]:
+        """Podpola bez `wiersz` — dotyczą całej pozycji, nie pojedynczego atrybutu.
+
+        Tak wchodzi numer działki: w dokumencie stoi w nagłówku strony, a nie w tabeli
+        stanów, więc i w formularzu ma stać nad tabelą, a nie w jej wierszu. Bez tego
+        trzeba by mu wymyślać sztuczny „stan dotychczasowy”.
+        """
+        return [podpole for podpole in self.podpola if not podpole.get("wiersz")]
     domyslnie: str = ""
     zrodlo: str = ""            # "ustawienia" = bierz z danych stałych, nie pokazuj w formularzu
     szerokosc: str = "pelna"    # "pelna" | "polowa" | "trzecia"

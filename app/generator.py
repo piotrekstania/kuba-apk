@@ -7,7 +7,7 @@ from datetime import date, datetime
 from pathlib import Path
 from typing import Any
 
-from docxtpl import DocxTemplate
+from docxtpl import DocxTemplate, RichText
 
 from . import db, operaty, teryt
 from .szablony import SUFIKS_JEST, Szablon
@@ -185,15 +185,79 @@ def sformatuj_pod_znaczniki(dokument: DocxTemplate, kontekst: dict[str, Any]) ->
     # co docxtpl zdążył już wczytać.
     dokument.init_docx(reload=False)
     gotowy = dict(kontekst)
+    w_petli: dict[str, tuple[str, int]] = {}
     for akapit in dokument.docx.element.body.iter(qn("w:p")):
         biegi = list(akapit.iter(qn("w:r")))
         tekst_akapitu = "".join(w.text or "" for b in biegi for w in b.iter(qn("w:t")))
-        for nazwa in re.findall(r"\{\{r\s+(\w+)", tekst_akapitu):
+        for nazwa in re.findall(r"\{\{r\s+([\w.]+)", tekst_akapitu):
+            krój, rozmiar = _ustawienia_biegu(biegi, qn)
+            if "." in nazwa:
+                # `{{r dzialka.numer_nowy }}` — pole wewnątrz pętli po liście słowników.
+                # Nie wiemy tutaj, po której liście chodzi pętla, więc zapamiętujemy sam
+                # klucz i podmieniamy go wszędzie, gdzie występuje (patrz `_zaznacz_zmiany`).
+                w_petli[nazwa.split(".", 1)[1]] = (krój, rozmiar)
+                continue
             wartosc = kontekst.get(nazwa)
             if not isinstance(wartosc, str):
                 continue
-            krój, rozmiar = _ustawienia_biegu(biegi, qn)
             gotowy[nazwa] = na_richtext(wartosc, krój, rozmiar)
+    if w_petli:
+        gotowy = _zaznacz_zmiany(gotowy, w_petli)
+    return gotowy
+
+
+# Stan nowy różny od dotychczasowego wyróżniamy w wykazie **na czerwono i grubo** —
+# tak brat zaznaczał to dotąd ręcznie w Wordzie, a ośrodek po tym czyta, co się zmieniło.
+# Czerwień jest ta sama co numeru roboty w nagłówku formatek.
+CZERWONY = "FF0000"
+SUFIKS_NOWY = "_nowy"
+SUFIKS_DOTYCHCZAS = "_dotychczas"
+
+
+def _zmienione(wpis: dict[str, Any], klucz: str) -> bool:
+    """Czy to stan nowy, który różni się od dotychczasowego?
+
+    Puste pole dotychczasowe też jest różnicą (wpisano coś, czego nie było), ale puste
+    pole nowe nie — nie ma czego malować, a brak wpisu nie znaczy „wykreślono”.
+    """
+    if not klucz.endswith(SUFIKS_NOWY):
+        return False
+    nowa = str(wpis.get(klucz, "") or "").strip()
+    if not nowa:
+        return False
+    poprzednia = wpis.get(klucz[: -len(SUFIKS_NOWY)] + SUFIKS_DOTYCHCZAS, "")
+    return nowa != str(poprzednia or "").strip()
+
+
+def _zaznacz_zmiany(kontekst: dict[str, Any],
+                    w_petli: dict[str, tuple[str, int]]) -> dict[str, Any]:
+    """Zamienia pola z list (wykazy) na `RichText`, czerwieniąc zmienione stany nowe.
+
+    Kopiujemy listy i słowniki, zamiast poprawiać je w miejscu: ten sam kontekst wypełnia
+    kilka formatek, a `RichText` w miejscu zwykłego `{{ }}` daje plik, którego Word nie
+    otworzy. Podmieniamy **tylko** klucze, dla których ta formatka ma `{{r }}` — czyli
+    dokładnie tam, gdzie się ich spodziewa.
+    """
+    gotowy = dict(kontekst)
+    for nazwa, wartosc in kontekst.items():
+        if not isinstance(wartosc, list) or not any(isinstance(w, dict) for w in wartosc):
+            continue
+        nowa_lista = []
+        for wpis in wartosc:
+            if not isinstance(wpis, dict):
+                nowa_lista.append(wpis)
+                continue
+            kopia = dict(wpis)
+            for klucz, (krój, rozmiar) in w_petli.items():
+                tresc = kopia.get(klucz)
+                if not isinstance(tresc, str):
+                    continue
+                kopia[klucz] = RichText(
+                    tresc, font=krój or None, size=rozmiar or None,
+                    color=CZERWONY if _zmienione(wpis, klucz) else None,
+                    bold=_zmienione(wpis, klucz))
+            nowa_lista.append(kopia)
+        gotowy[nazwa] = nowa_lista
     return gotowy
 
 

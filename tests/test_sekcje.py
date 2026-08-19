@@ -447,70 +447,77 @@ def test_dokument_ze_spisu_nie_wraca_do_karty_inne_dokumenty(klient):
         "sprawozdanie ma włącznik w spisie treści — w „Innych dokumentach” nie ma czego dublować"
 
 
-# --- wykaz działki: każda działka to PARA WIERSZY jednej tabeli --------------
+# --- wykaz działki: każda działka to OSOBNA STRONA ---------------------------
 #
-# Inaczej niż przy budynku, gdzie każdy wykaz to osobna strona z własną tabelą.
-# Formularz wygląda tak samo (karta na działkę), bo o formie decyduje typ pola,
-# a o dokumencie — znacznik w formatce: tam `{%tr for %}` zamiast `{%p for %}`.
-#
-# Od 19.08.2026 formatka jest **pionowa**: zamiast trzynastu kolumn (sześć na stan
-# dotychczasowy i sześć na nowy, obok siebie) ma osiem, a stany leżą jeden pod drugim.
+# Decyzja z 19.08.2026 (druga tego dnia — pionowa tabela z dwoma wierszami na działkę
+# nie utrzymała się w praniu): wykaz działki wygląda dokładnie jak wykaz budynku.
+# Atrybut w wierszu, dwie kolumny stanów, jedna działka na stronę, numer działki
+# w nagłówku **swojej** strony. Formatkę buduje z formatki budynku
+# `narzedzia/utworz_wykaz_dzialki.py`, żeby oba dokumenty nie rozjechały się z czasem.
 
 def _wykaz_dzialek(dzialki: list[dict]) -> Document:
     glowny = szablony.szablon_po_id("spis_tresci_wzor")
     sz = szablony.szablon_po_id("wykaz_zmian_dzialki_wzor")
     kontekst = generator.przygotuj_kontekst(
-        glowny, {"nr_roboty": "G.1", "wykazy_dzialek": dzialki}, {})
+        glowny, {"nr_roboty": "G.1", "polozenie": {"obreb": "247301_1.0112"},
+                 "wykazy_dzialek": dzialki}, {})
+    kontekst["polozenie_obreb_teryt"] = "247301_1.0112"
     return Document(generator.dopisz_dokument(sz, kontekst,
                                               pathlib.Path(tempfile.mkdtemp())))
 
 
-def test_kazda_dzialka_to_para_wierszy_jednej_tabeli(baza):
-    d = _wykaz_dzialek([{"numer_dotychczas": "1765/311"},
-                        {"numer_dotychczas": "1765/312"},
-                        {"numer_dotychczas": "1765/99"}])
+def test_kazda_dzialka_dostaje_osobna_strone(baza):
+    """Tak samo jak przy budynku: jedna pozycja, jedna strona, własna tabela."""
+    d = _wykaz_dzialek([{"dzialka": "119/10", "numer_dotychczas": "119/10"},
+                        {"dzialka": "119/11", "numer_dotychczas": "119/11"}])
 
-    assert len(d.tables) == 1, "działki nie mają robić kolejnych tabel ani stron"
-    tabela = d.tables[0]
-    assert len(tabela.rows) == 2 + 2 * 3, "dwa wiersze nagłówka i po dwa na działkę"
-    assert [w.cells[1].text.strip() for w in tabela.rows[2:]] == \
-        ["Dotychczasowy", "Nowy"] * 3
-    assert [w.cells[2].text.strip() for w in tabela.rows[2:]] == \
-        ["1765/311", "", "1765/312", "", "1765/99", ""]
-
-
-def test_lp_numeruje_sie_samo(baza):
-    """Numer porządkowy bierze się z pętli — nie ma po co pytać o niego w formularzu."""
-    d = _wykaz_dzialek([{"numer_nowy": "a"}, {"numer_nowy": "b"}, {"numer_nowy": "c"}])
-
-    # komórka L.p. jest scalona przez oba wiersze pary, więc numer powtarza się dwa razy;
-    # kropka po numerze jest taka sama jak w wykazie budynku
-    assert [w.cells[0].text.strip() for w in d.tables[0].rows[2:]] == \
-        ["1.", "1.", "2.", "2.", "3.", "3."]
+    assert len(d.tables) == 2, "każda działka ma własną tabelę"
+    assert [t.rows[1].cells[-2].text.strip() for t in d.tables] == ["119/10", "119/11"]
+    lamania = sum(1 for p in d.paragraphs
+                  for b in p.runs for _ in b._r.findall(
+                      "{http://schemas.openxmlformats.org/wordprocessingml/2006/main}br"))
+    assert lamania == 1, "łamanie strony między działkami, ale nie po ostatniej"
 
 
-def test_oba_stany_trafiaja_do_swoich_wierszy(baza):
+def test_numer_dzialki_wchodzi_do_naglowka_swojej_strony(baza):
+    """Numer jest podpolem każdego wykazu, nie jednym polem na cały dokument — dlatego
+    na drugiej stronie stoi drugi numer. Identyfikatorem jest dopiero całość: obręb,
+    kropka i ten numer."""
+    d = _wykaz_dzialek([{"dzialka": "119/10"}, {"dzialka": "119/11"}])
+
+    naglowki = [p.text for p in d.paragraphs if "Identyfikator działki" in p.text]
+    assert [n.split("\t")[-1] for n in naglowki] == ["[247301_1.0112.119/10]",
+                                                     "[247301_1.0112.119/11]"]
+
+
+def test_atrybuty_dzialki_stoja_w_wierszach(baza):
+    """Układ tabeli: L.p., nazwa atrybutu, stan dotychczasowy, stan nowy."""
     d = _wykaz_dzialek([{
-        "numer_dotychczas": "1765/311", "pow_ewidencyjna_dotychczas": "0,2140",
-        "ofu_dotychczas": "R", "ozu_dotychczas": "IV", "ozk_dotychczas": "a",
-        "pow_uzytkow_dotychczas": "0,2140",
-        "numer_nowy": "1765/312", "pow_ewidencyjna_nowy": "0,1070",
-        "ofu_nowy": "B", "ozu_nowy": "V", "ozk_nowy": "b", "pow_uzytkow_nowy": "0,1070"}])
-
-    dotychczasowy = [c.text.strip() for c in d.tables[0].rows[2].cells]
-    nowy = [c.text.strip() for c in d.tables[0].rows[3].cells]
-    assert dotychczasowy[1:] == ["Dotychczasowy", "1765/311", "0,2140", "R", "IV", "a",
-                                 "0,2140"]
-    assert nowy[1:] == ["Nowy", "1765/312", "0,1070", "B", "V", "b", "0,1070"]
-
-
-def test_jedna_dzialka_nie_zostawia_pustych_wierszy(baza):
-    """Wiersze sterujące `{%tr for %}` i `{%tr endfor %}` mają zniknąć w całości."""
-    d = _wykaz_dzialek([{"numer_dotychczas": "1765/311"}])
+        "dzialka": "119/10", "numer_dotychczas": "119/10", "numer_nowy": "119/11",
+        "pow_ewidencyjna_dotychczas": "5.5241", "pow_ewidencyjna_nowy": "5.5241",
+        "ofu_dotychczas": "R", "ofu_nowy": "Ba",
+        "ozu_dotychczas": "IVa", "ozk_dotychczas": "II",
+        "pow_uzytkow_dotychczas": "5.5241", "pow_uzytkow_nowy": "5.5241"}])
 
     tabela = d.tables[0]
-    assert len(tabela.rows) == 2 + 2, "dwa wiersze nagłówka i para wierszy jednej działki"
-    assert not any("{%" in c.text for w in tabela.rows for c in w.cells)
+    assert [k.text.strip() for k in tabela.rows[0].cells] == [
+        "L.p.", "Oznaczenie atrybutu działki", "Oznaczenie atrybutu działki",
+        "STAN DOTYCHCZASOWY", "STAN NOWY"]
+    opisy = [w.cells[1].text.strip() for w in tabela.rows[1:]]
+    assert opisy[0] == "Numer działki"
+    assert "Użytki gruntowe" in opisy[2]
+    assert [w.cells[-2].text.strip() for w in tabela.rows[1:3]] == ["119/10", "5.5241"]
+    assert [w.cells[-1].text.strip() for w in tabela.rows[1:3]] == ["119/11", "5.5241"]
+
+
+def test_kilka_uzytkow_stoi_jeden_pod_drugim(baza):
+    """Jedna działka bywa podzielona na kilka użytków — brat wpisuje je w polu
+    wielolinijkowym i w dokumencie mają zostać w osobnych linijkach, w jednej komórce."""
+    d = _wykaz_dzialek([{"dzialka": "119/10", "ofu_dotychczas": "R\nR\nW/R",
+                         "ozk_dotychczas": "II\nIIIa\nIIIa"}])
+
+    uzytki = next(w for w in d.tables[0].rows if w.cells[2].text.strip() == "OFU")
+    assert uzytki.cells[-2].text.strip().splitlines() == ["R", "R", "W/R"]
 
 
 def test_wykaz_dzialek_bez_danych_nie_powstaje():
@@ -518,109 +525,75 @@ def test_wykaz_dzialek_bez_danych_nie_powstaje():
     assert szablony.szablon_po_id("wykaz_zmian_dzialki_wzor").wymaga == "wykazy_dzialek"
 
 
-def test_naglowek_tabeli_powtarza_sie_na_kolejnych_stronach():
-    """Odkąd działki mogą przelać się na następną stronę, kontynuacja bez opisu kolumn
-    byłaby gołymi kratkami — a ten dokument idzie do ośrodka."""
-    from docx.oxml.ns import qn
-
-    tabela = Document(str(szablony.szablon_po_id(
-        "wykaz_zmian_dzialki_wzor").plik)).tables[0]
-
-    for nr in range(2):
-        trPr = tabela.rows[nr]._tr.find(qn("w:trPr"))
-        assert trPr is not None and trPr.find(qn("w:tblHeader")) is not None, \
-            f"wiersz nagłówka {nr} nie jest oznaczony jako powtarzany"
-
-
-def test_pod_tabela_jest_dokladnie_jeden_pusty_akapit():
-    """Stos pustych akapitów spychał podpis na osobną, pustą kartkę — ale podpis
-    przyklejony do dolnej krawędzi tabeli wyglądał źle (obejrzane na wydruku).
-
-    Stanęło na jednym akapicie odstępu: widać, że to osobny blok, a dokument
-    dalej rośnie razem z tabelą i mieści się na jednej stronie.
-    """
-    from docx.oxml.ns import qn
-
-    d = Document(str(szablony.szablon_po_id("wykaz_zmian_dzialki_wzor").plik))
-    elementy = list(d.element.body)
-    tabela = next(i for i, el in enumerate(elementy) if el.tag.endswith("}tbl"))
-    podpis = next(i for i, el in enumerate(elementy)
-                  if el.tag.endswith("}p")
-                  and "Sporządził" in "".join(t.text or "" for t in el.iter(qn("w:t"))))
-
-    assert podpis == tabela + 2, "między tabelą a podpisem ma stać jeden pusty akapit"
-    odstep = elementy[tabela + 1]
-    assert odstep.tag.endswith("}p")
-    assert not "".join(t.text or "" for t in odstep.iter(qn("w:t"))), \
-        "akapit odstępu ma być pusty"
-
-
-def test_pogrubienia_w_tabeli_dzialki():
-    """Wytłuszczony nagłówek i kolumna „Stan", zwykłe dane — decyzja brata.
-
-    „Dotychczasowy" i „Nowy" rozdzielają parę wierszy jednej działki, więc mają być
-    mocniejsze niż liczby obok. Dane pogrubione były kiedyś w całej tabeli i to właśnie
-    kazał zdjąć; pogrubienie ma odróżniać opis od treści, a nie zamalowywać kartkę.
-    """
-    d = Document(str(szablony.szablon_po_id("wykaz_zmian_dzialki_wzor").plik))
-    tabela = d.tables[0]
-
-    def pogrubione(komorka) -> bool:
-        biegi = [b for akapit in komorka.paragraphs for b in akapit.runs if b.text.strip()]
-        return bool(biegi) and all(b.bold for b in biegi)
-
-    for wiersz in tabela.rows[:2]:
-        for komorka in wiersz.cells:
-            if komorka.text.strip():
-                assert pogrubione(komorka), \
-                    f"nagłówek {komorka.text.strip()!r} bez pogrubienia"
-
-    dotychczasowy, nowy = tabela.rows[3], tabela.rows[4]
-    assert [w.cells[1].text.strip() for w in (dotychczasowy, nowy)] == \
-        ["Dotychczasowy", "Nowy"]
-    assert all(pogrubione(w.cells[1]) for w in (dotychczasowy, nowy))
-
-    pogrubione_dane = [k.text.strip() for w in (dotychczasowy, nowy)
-                       for k in w.cells[2:] if pogrubione(k)]
-    assert not pogrubione_dane, f"dane w tabeli wciąż pogrubione: {pogrubione_dane}"
-
-
-def test_dzialki_oddziela_grubsza_kreska():
-    """Bez tego dwa wiersze jednej działki zlewają się z następną parą."""
-    from docx.oxml.ns import qn
-
-    tabela = Document(str(szablony.szablon_po_id(
-        "wykaz_zmian_dzialki_wzor").plik)).tables[0]
-
-    def dolna(wiersz) -> int:
-        brzegi = wiersz._tr.findall(qn("w:tc"))[1].find(qn("w:tcPr")).find(qn("w:tcBorders"))
-        return int(brzegi.find(qn("w:bottom")).get(qn("w:sz")))
-
-    assert dolna(tabela.rows[4]) > dolna(tabela.rows[3]), \
-        "kreska po wierszu „Nowy” ma być grubsza niż ta wewnątrz pary"
-
-
-def test_wykaz_dzialki_jest_na_pionowej_kartce():
-    """Cały sens przebudowy z 19.08.2026. Tabela szersza niż tekst wychodziłaby poza
-    margines i Word łamałby ją na drugą stronę — dlatego mierzymy jedno i drugie."""
+def test_wykaz_dzialki_wyglada_jak_wykaz_budynku():
+    """Oba wykazy mają być jednym kompletem: ta sama kartka, ta sama tabela, ten sam
+    nagłówek. Rozjazd zaczyna się od drobiazgu, więc porównujemy wprost."""
     from docx.enum.section import WD_ORIENT
     from docx.oxml.ns import qn
 
-    d = Document(str(szablony.szablon_po_id("wykaz_zmian_dzialki_wzor").plik))
-    sekcja = d.sections[0]
+    budynek = Document(str(szablony.szablon_po_id("wykaz_zmian_budynku_wzor").plik))
+    dzialka = Document(str(szablony.szablon_po_id("wykaz_zmian_dzialki_wzor").plik))
 
-    assert sekcja.orientation == WD_ORIENT.PORTRAIT
-    assert sekcja.page_width < sekcja.page_height
-    szerokosc_tekstu = int((sekcja.page_width - sekcja.left_margin
-                            - sekcja.right_margin) / 914400 * 1440)
-    kolumny = [int(k.get(qn("w:w"))) for k in d.tables[0]._tbl.find(qn("w:tblGrid"))]
-    assert sum(kolumny) <= szerokosc_tekstu
+    assert dzialka.sections[0].orientation == WD_ORIENT.PORTRAIT
+    assert dzialka.sections[0].page_width == budynek.sections[0].page_width
+    kolumny = lambda d: [int(k.get(qn("w:w")))                       # noqa: E731
+                        for k in d.tables[0]._tbl.find(qn("w:tblGrid"))]
+    assert kolumny(dzialka) == kolumny(budynek), "inna siatka kolumn niż w wykazie budynku"
 
-    # W poziomej formatce (do 19.08.2026) kolumny miały: numer 851, pole 1416,
-    # OFU/OZU/OZK po ~709, użytki 1701. Węższa kartka nie może oznaczać ciaśniejszych
-    # kolumn — inaczej ta zmiana nie miałaby sensu.
-    numer, pole, ofu, ozu, ozk, uzytki = kolumny[2:]
-    assert (numer, pole, ofu, ozu, ozk, uzytki) >= (851, 1416, 709, 709, 708, 1701)
+
+def test_zmieniony_stan_nowy_jest_czerwony_i_pogrubiony(baza):
+    """Po tym ośrodek czyta, co się zmieniło — brat zaznaczał to dotąd ręcznie.
+
+    Wartość taka sama jak dotychczasowa zostaje czarna; różna (także wpisana tam,
+    gdzie wcześniej było pusto) idzie na czerwono i grubo.
+    """
+    d = _wykaz_dzialek([{"dzialka": "119/10",
+                         "numer_dotychczas": "119/10", "numer_nowy": "119/10",
+                         "pow_ewidencyjna_dotychczas": "5.5241",
+                         "pow_ewidencyjna_nowy": "5.6000",
+                         "ofu_nowy": "Ba"}])
+
+    def biegi(wiersz):
+        return [b for p in wiersz.cells[-1].paragraphs for b in p.runs if b.text.strip()]
+
+    tabela = d.tables[0]
+    bez_zmiany, ze_zmiana = tabela.rows[1], tabela.rows[2]
+    assert [b.text for b in biegi(bez_zmiany)] == ["119/10"]
+    assert not any(b.bold for b in biegi(bez_zmiany)), "niezmieniony stan ma zostać zwykły"
+    assert all(b.bold for b in biegi(ze_zmiana))
+    assert all(str(b.font.color.rgb) == "FF0000" for b in biegi(ze_zmiana))
+    # wartość wpisana tam, gdzie dotąd było pusto, to też zmiana
+    uzytki = next(w for w in tabela.rows if w.cells[2].text.strip() == "OFU")
+    assert all(b.bold and str(b.font.color.rgb) == "FF0000" for b in biegi(uzytki))
+
+
+def test_wykaz_budynku_tez_czerwieni_zmiany(baza):
+    """Ta sama zasada w obu wykazach — inaczej brat musiałby pamiętać, gdzie działa."""
+    sz = szablony.szablon_po_id("wykaz_zmian_budynku_wzor")
+    d = Document(generator.dopisz_dokument(sz, {
+        "nr_roboty": "G.1",
+        "wykazy_budynkow": [{"adres_dotychczas": "Polna 7", "adres_nowy": "Polna 7",
+                             "kondygnacje_nadziemne_dotychczas": "1",
+                             "kondygnacje_nadziemne_nowy": "2"}]},
+        pathlib.Path(tempfile.mkdtemp())))
+
+    def biegi(tekst_wiersza):
+        wiersz = next(w for w in d.tables[0].rows if tekst_wiersza in w.cells[1].text)
+        return [b for p in wiersz.cells[-1].paragraphs for b in p.runs if b.text.strip()]
+
+    assert not any(b.bold for b in biegi("Adres budynku"))
+    assert all(b.bold and str(b.font.color.rgb) == "FF0000"
+               for b in biegi("Liczba kondygnacji"))
+
+
+def test_w_wykazie_budynku_nie_ma_juz_odsylaczy_do_przypisow():
+    """Odsyłacze (1) i (2) prowadziły do przypisów, których w formatce nie ma —
+    zostały po wzorze z rozporządzenia. Indeks górny przy m² to co innego i zostaje."""
+    d = Document(str(szablony.szablon_po_id("wykaz_zmian_budynku_wzor").plik))
+    tresc = " ".join(k.text for w in d.tables[0].rows for k in w.cells)
+
+    assert "(1)" not in tresc and "(2)" not in tresc
+    assert "Pole zabudowy m2" in tresc.replace("\n", " "), "jednostka m² ma zostać"
 
 
 def test_liczby_porzadkowe_wykazu_budynku_stoja_na_srodku_komorki():
@@ -663,39 +636,6 @@ def test_liczby_porzadkowe_wykazu_budynku_stoja_na_srodku_komorki():
 
     assert len(interlinie) == 1, f"różne interlinie w kolumnie L.p.: {interlinie}"
     assert len(znaczniki) == 1, f"różne rozmiary znaczników akapitu: {znaczniki}"
-
-
-def test_identyfikator_dzialki_wchodzi_do_naglowka_wykazu():
-    """Numer działki dopisuje się za identyfikatorem obrębu, przed nawiasem zamykającym.
-
-    Jest **jeden na cały wykaz**, niezależnie od liczby wierszy w tabeli — stoi
-    w nagłówku, czyli poza pętlą `{%tr for %}`.
-    """
-    sz = szablony.szablon_po_id("wykaz_zmian_dzialki_wzor")
-    kontekst = {"nr_roboty": "G.1", "polozenie_obreb_teryt": "247301_1.0112",
-                "wykaz_identyfikator_dzialki": "1765/311",
-                "wykazy_dzialek": [{"numer_nowy": "a"}, {"numer_nowy": "b"}]}
-
-    d = Document(generator.dopisz_dokument(sz, kontekst,
-                                           pathlib.Path(tempfile.mkdtemp())))
-
-    naglowek = next(p.text for p in d.paragraphs if "Identyfikator działki ewidencyjnej" in p.text)
-    assert naglowek.endswith("[247301_1.0112.1765/311]")
-    assert len(d.tables[0].rows) == 2 + 2 * 2, \
-        "dwie działki po dwa wiersze, identyfikator poza tabelą"
-
-
-def test_pusty_identyfikator_zostawia_sam_obreb_z_kropka():
-    """Tak jak było przed tą zmianą — brat dopisze numer w Wordzie, gdy go nie poda."""
-    sz = szablony.szablon_po_id("wykaz_zmian_dzialki_wzor")
-
-    d = Document(generator.dopisz_dokument(
-        sz, {"polozenie_obreb_teryt": "247301_1.0112", "wykaz_identyfikator_dzialki": "",
-             "wykazy_dzialek": [{"numer_nowy": "a"}]},
-        pathlib.Path(tempfile.mkdtemp())))
-
-    naglowek = next(p.text for p in d.paragraphs if "Identyfikator działki ewidencyjnej" in p.text)
-    assert naglowek.endswith("[247301_1.0112.]")
 
 
 # --- listy wyboru w sekcji (KŚT) ---------------------------------------------

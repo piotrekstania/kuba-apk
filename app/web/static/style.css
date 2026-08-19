@@ -342,3 +342,11 @@ table.sekcja-siatka input { padding: 5px 8px; }
                   gap: 12px; flex-wrap: wrap; margin: 24px 0 10px; }
 .naglowek-listy h1 { margin: 0; }
 .naglowek-listy .przyciski { display: flex; gap: 10px; flex-wrap: wrap; }
+
+/* Pola dotyczące całej pozycji wykazu (numer działki) — nad tabelą stanów, w jednej
+   linii, bo zwykle jest ich jedno albo dwa. */
+.wspolne-sekcji { margin-bottom: 10px; }
+.wspolne-sekcji .podpowiedz { margin-top: 2px; }
+/* Wielolinijkowe komórki wykazu: kilka użytków jeden pod drugim. Wysokość zostawiamy
+   małą — pole rośnie, gdy brat je rozciągnie, a domyślnie nie rozpycha karty. */
+.sekcja-siatka textarea { width: 100%; min-height: 58px; resize: vertical; }

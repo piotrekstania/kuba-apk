@@ -753,6 +753,11 @@ def _wypelnione_sekcje(pole: szablony.Pole, wartosc: Any) -> list[dict[str, Any]
     for numer, wpis in enumerate(wartosc, start=1):
         if not isinstance(wpis, dict):
             continue
+        # pola dotyczące całej pozycji (numer działki) — nad tabelą stanów, tak jak
+        # w formularzu i jak w nagłówku strony w gotowym dokumencie
+        wspolne = [{"etykieta": pod.get("etykieta", pod["klucz"]),
+                    "wartosc": str(wpis.get(pod["klucz"], "") or "")}
+                   for pod in pole.podpola_wspolne if wpis.get(pod["klucz"])]
         wiersze = []
         for wiersz in pole.wiersze_sekcji:
             komorki = [str(wpis.get(wiersz["pola"][k]["klucz"], "") or "")
@@ -763,8 +768,9 @@ def _wypelnione_sekcje(pole: szablony.Pole, wartosc: Any) -> list[dict[str, Any]
             wiersze = [{"etykieta": pod.get("etykieta", pod["klucz"]),
                         "komorki": [str(wpis.get(pod["klucz"], "") or "")]}
                        for pod in pole.podpola if wpis.get(pod["klucz"])]
-        if wiersze:
-            sekcje.append({"naglowek": f"{nazwa} {numer}", "wiersze": wiersze})
+        if wiersze or wspolne:
+            sekcje.append({"naglowek": f"{nazwa} {numer}", "wspolne": wspolne,
+                           "wiersze": wiersze})
     return sekcje
 
 

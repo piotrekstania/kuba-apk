@@ -54,6 +54,10 @@
       {% for sekcja in pole.sekcje %}
       <div class="sekcja-podglad">
         <strong>{{ sekcja.naglowek }}</strong>
+        {% for pod in sekcja.wspolne %}
+        <p class="szary">{{ pod.etykieta }}: <strong>{{ pod.wartosc }}</strong></p>
+        {% endfor %}
+        {% if sekcja.wiersze %}
         <table class="wiersze">
           {% if pole.kolumny %}
           <thead><tr><th></th>
@@ -64,11 +68,16 @@
             {% for wiersz in sekcja.wiersze %}
             <tr>
               <th scope="row">{{ wiersz.etykieta }}</th>
-              {% for komorka in wiersz.komorki %}<td>{{ komorka or '—' }}</td>{% endfor %}
+              {# `wielolinijkowa` zostawia łamanie wierszy: OFU/OZU/OZK bywają kilkuwierszowe
+                 (kilka użytków w jednej działce) i mają się czytać tak jak w dokumencie #}
+              {% for komorka in wiersz.komorki %}
+              <td><span class="wielolinijkowa">{{ komorka or '—' }}</span></td>
+              {% endfor %}
             </tr>
             {% endfor %}
           </tbody>
         </table>
+        {% endif %}
       </div>
       {% endfor %}
       {% elif wartosc is iterable and wartosc is not string %}

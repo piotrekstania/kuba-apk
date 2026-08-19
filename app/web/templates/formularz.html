@@ -14,6 +14,12 @@
   <option value="{{ wartosc }}" selected>{{ wartosc }}</option>
   {%- endif %}
 </select>
+{%- elif pod.typ == 'textarea' -%}
+{#- OFU, OZU, OZK i pole powierzchni użytków bywają kilkuwierszowe: jedna działka może
+    mieć kilka użytków, każdy w osobnej linijce. Do dokumentu wchodzą tak samo, jedna
+    pod drugą — dlatego pole musi przyjmować Enter. -#}
+<textarea name="sek__{{ nazwa_pola }}__{{ nr }}__{{ pod.klucz }}" rows="3"
+          aria-label="{{ etykieta }}">{{ wartosc }}</textarea>
 {%- else -%}
 <input name="sek__{{ nazwa_pola }}__{{ nr }}__{{ pod.klucz }}" value="{{ wartosc }}"
        aria-label="{{ etykieta }}">
@@ -180,6 +186,20 @@
             <fieldset class="sekcja">
               <legend><span class="numer-sekcji"></span>
                 <button type="button" class="usun" title="Usuń">×</button></legend>
+              {% if pole.podpola_wspolne %}
+              {# Pola dotyczące całej pozycji, nie pojedynczego atrybutu — numer działki
+                 stoi w dokumencie w nagłówku strony, więc i tu jest nad tabelą stanów. #}
+              <div class="siatka wspolne-sekcji">
+                {% for pod in pole.podpola_wspolne %}
+                <div class="pole {{ pod.szerokosc or 'polowa' }}">
+                  <label>{{ pod.etykieta }}</label>
+                  {{ pole_sekcji(pole.klucz, nr, pod,
+                                 wpis.get(pod.klucz, '') if wpis else '', pod.etykieta) }}
+                  {% if pod.podpowiedz %}<p class="podpowiedz">{{ pod.podpowiedz }}</p>{% endif %}
+                </div>
+                {% endfor %}
+              </div>
+              {% endif %}
               {% if pole.kolumny %}
               {# Układ jak w dokumencie: nazwa atrybutu raz, obok pole na każdy stan.
                  Powtarzanie nazwy przy obu polach dawało przy piętnastu atrybutach
@@ -202,7 +222,7 @@
                   {% endfor %}
                 </tbody>
               </table>
-              {% else %}
+              {% elif not pole.podpola_wspolne %}
               <div class="siatka">
                 {% for pod in pole.podpola %}
                 <div class="pole {{ pod.szerokosc or 'polowa' }}">
@@ -221,6 +241,17 @@
             <fieldset class="sekcja">
               <legend><span class="numer-sekcji"></span>
                 <button type="button" class="usun" title="Usuń">×</button></legend>
+              {% if pole.podpola_wspolne %}
+              <div class="siatka wspolne-sekcji">
+                {% for pod in pole.podpola_wspolne %}
+                <div class="pole {{ pod.szerokosc or 'polowa' }}">
+                  <label>{{ pod.etykieta }}</label>
+                  {{ pole_sekcji(pole.klucz, 0, pod, '', pod.etykieta) }}
+                  {% if pod.podpowiedz %}<p class="podpowiedz">{{ pod.podpowiedz }}</p>{% endif %}
+                </div>
+                {% endfor %}
+              </div>
+              {% endif %}
               {% if pole.kolumny %}
               <table class="wiersze sekcja-siatka">
                 <thead><tr><th></th>
@@ -240,7 +271,7 @@
                   {% endfor %}
                 </tbody>
               </table>
-              {% else %}
+              {% elif not pole.podpola_wspolne %}
               <div class="siatka">
                 {% for pod in pole.podpola %}
                 <div class="pole {{ pod.szerokosc or 'polowa' }}">

@@ -320,14 +320,6 @@
       ]
     },
     {
-      "klucz": "wykaz_identyfikator_dzialki",
-      "etykieta": "Identyfikator działki",
-      "grupa": "Wykaz zmian danych działki",
-      "szerokosc": "polowa",
-      "aktywne_gdy": "spis_tresci:Wykaz zmian danych ewidencyjnych",
-      "podpowiedz": "Wchodzi do nagłówka wykazu, zaraz za identyfikatorem obrębu — np. [247301_1.0112.1765/311]. Jeden na cały wykaz, niezależnie od liczby działek w tabeli."
-    },
-    {
       "klucz": "wykazy_dzialek",
       "etykieta": "Działki w wykazie",
       "typ": "sekcje",
@@ -345,8 +337,14 @@
           "etykieta": "Stan nowy"
         }
       ],
-      "podpowiedz": "Każda działka to jeden wiersz w tabeli wykazu — wszystkie trafiają do jednej tabeli, jedna pod drugą. Numer L.p. program nadaje sam.",
+      "podpowiedz": "Jedna karta na działkę — w dokumencie każda dostaje osobną stronę. Numer działki wchodzi do identyfikatora w nagłówku tej strony. OFU, OZU, OZK i pole powierzchni użytków przyjmują kilka wartości: każdą w osobnej linijce (Enter).",
       "podpola": [
+        {
+          "klucz": "dzialka",
+          "etykieta": "Działka",
+          "szerokosc": "polowa",
+          "podpowiedz": "np. 119/10 — sam numer, bez obrębu"
+        },
         {
           "klucz": "numer_dotychczas",
           "wiersz": "Numer działki",
@@ -370,42 +368,50 @@
         {
           "klucz": "ofu_dotychczas",
           "wiersz": "OFU",
-          "kolumna": "dotychczas"
+          "kolumna": "dotychczas",
+          "typ": "textarea"
         },
         {
           "klucz": "ofu_nowy",
           "wiersz": "OFU",
-          "kolumna": "nowy"
+          "kolumna": "nowy",
+          "typ": "textarea"
         },
         {
           "klucz": "ozu_dotychczas",
           "wiersz": "OZU",
-          "kolumna": "dotychczas"
+          "kolumna": "dotychczas",
+          "typ": "textarea"
         },
         {
           "klucz": "ozu_nowy",
           "wiersz": "OZU",
-          "kolumna": "nowy"
+          "kolumna": "nowy",
+          "typ": "textarea"
         },
         {
           "klucz": "ozk_dotychczas",
           "wiersz": "OZK",
-          "kolumna": "dotychczas"
+          "kolumna": "dotychczas",
+          "typ": "textarea"
         },
         {
           "klucz": "ozk_nowy",
           "wiersz": "OZK",
-          "kolumna": "nowy"
+          "kolumna": "nowy",
+          "typ": "textarea"
         },
         {
           "klucz": "pow_uzytkow_dotychczas",
           "wiersz": "Pole powierzchni użytków gruntowych i klas bonitacyjnych [ha]",
-          "kolumna": "dotychczas"
+          "kolumna": "dotychczas",
+          "typ": "textarea"
         },
         {
           "klucz": "pow_uzytkow_nowy",
           "wiersz": "Pole powierzchni użytków gruntowych i klas bonitacyjnych [ha]",
-          "kolumna": "nowy"
+          "kolumna": "nowy",
+          "typ": "textarea"
         }
       ]
     },
