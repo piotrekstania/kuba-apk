@@ -58,7 +58,7 @@ start.bat
 Wszystko od ostatniego wydania — numer i skrót commita znajdziesz w `ZMIANY.md`
 i `git log`. Dopisuj punkty przy każdej rundzie zmian, kasuj po wydaniu.
 
-*(pusto — wydanie 2026.08.19-93 poszło 19.08, lista tej rundy przeszła w całości)*
+*(pusto — wydanie 2026.08.19-94 poszło 19.08; runda z pustymi linijkami sprawdzona end-to-end z Wordem przy poprawce)*
 
 ---
 
