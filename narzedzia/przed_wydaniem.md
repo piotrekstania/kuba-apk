@@ -75,7 +75,8 @@ i `git log`. Dopisuj punkty przy każdej rundzie zmian, kasuj po wydaniu.
 ### Wykaz budynku — rodzaj według KŚT z listy
 
 - [ ] Wiersz „Rodzaj budynku według KŚT" ma **listę wyboru w obu kolumnach**,
-      od `101 - BUDYNKI PRZEMYSŁOWE` do `122 - LOKALE MIESZKALNE, ...`.
+      od `101 - BUDYNKI PRZEMYSŁOWE` do `110 - BUDYNKI MIESZKALNE` — bez rodzajów
+      121 i 122, bo to lokale, a nie budynki.
 - [ ] Wybrana pozycja wchodzi do dokumentu w całości (numer + nazwa).
 - [ ] Operat sprzed zmiany, z tekstem wpisanym z ręki: po „Popraw ten operat" wpis
       **zostaje** na liście jako dodatkowa pozycja.

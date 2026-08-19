@@ -700,9 +700,11 @@ def test_pusty_identyfikator_zostawia_sam_obreb_z_kropka():
 
 # --- listy wyboru w sekcji (KŚT) ---------------------------------------------
 
-# Klasyfikacja Środków Trwałych, grupa 1 — słowo w słowo z rozporządzenia (KŚT 2016,
-# Dz.U. 2016 poz. 1864; w KŚT 2010 te same nazwy). Brat wpisywał to z ręki, a nazwa
-# rodzaju musi zgadzać się co do znaku, bo idzie do dokumentu składanego w ośrodku.
+# Klasyfikacja Środków Trwałych, podgrupy 10 i 11 — słowo w słowo z rozporządzenia
+# (KŚT 2016, Dz.U. 2016 poz. 1864; w KŚT 2010 te same nazwy). Brat wpisywał to z ręki,
+# a nazwa rodzaju musi zgadzać się co do znaku, bo idzie do dokumentu składanego
+# w ośrodku. Podgrupy 12 (rodzaje 121 i 122) **nie ma na liście**: to lokale, a nie
+# budynki — geodety w wykazie zmian danych budynku nie dotyczą (decyzja brata).
 KST = [
     "101 - BUDYNKI PRZEMYSŁOWE",
     "102 - BUDYNKI TRANSPORTU I ŁĄCZNOŚCI",
@@ -714,8 +716,6 @@ KST = [
     "108 - BUDYNKI PRODUKCYJNE, USŁUGOWE I GOSPODARCZE DLA ROLNICTWA",
     "109 - POZOSTAŁE BUDYNKI NIEMIESZKALNE",
     "110 - BUDYNKI MIESZKALNE",
-    "121 - LOKALE NIEMIESZKALNE, SPÓŁDZIELCZE PRAWO DO LOKALU UŻYTKOWEGO",
-    "122 - LOKALE MIESZKALNE, SPÓŁDZIELCZE WŁASNOŚCIOWE PRAWO DO LOKALU MIESZKALNEGO",
 ]
 
 
@@ -733,6 +733,8 @@ def test_rodzaj_kst_ma_liste_z_rozporzadzenia():
     for pod in podpola:
         assert pod["opcje"][0] == "", "pierwsza pozycja pusta — wiersz wolno zostawić bez wpisu"
         assert pod["opcje"][1:] == KST
+        assert not [o for o in pod["opcje"] if o.startswith(("121", "122"))], \
+            "lokale to nie budynki — podgrupa 12 nie ma czego szukać w tym wykazie"
 
 
 def test_oba_stany_kst_biora_te_sama_liste():
