@@ -454,10 +454,12 @@ def test_naglowek_tabeli_powtarza_sie_na_kolejnych_stronach():
             f"wiersz nagłówka {nr} nie jest oznaczony jako powtarzany"
 
 
-def test_pod_tabela_nie_ma_pustych_akapitow():
-    """Puste akapity między tabelą a podpisem spychały go na osobną, pustą kartkę.
+def test_pod_tabela_jest_dokladnie_jeden_pusty_akapit():
+    """Stos pustych akapitów spychał podpis na osobną, pustą kartkę — ale podpis
+    przyklejony do dolnej krawędzi tabeli wyglądał źle (obejrzane na wydruku).
 
-    Podpis ma iść zaraz pod tabelą i rosnąć razem z nią (decyzja brata).
+    Stanęło na jednym akapicie odstępu: widać, że to osobny blok, a dokument
+    dalej rośnie razem z tabelą i mieści się na jednej stronie.
     """
     from docx.oxml.ns import qn
 
@@ -468,7 +470,28 @@ def test_pod_tabela_nie_ma_pustych_akapitow():
                   if el.tag.endswith("}p")
                   and "Sporządził" in "".join(t.text or "" for t in el.iter(qn("w:t"))))
 
-    assert podpis == tabela + 1, "między tabelą a podpisem nie ma prawa nic stać"
+    assert podpis == tabela + 2, "między tabelą a podpisem ma stać jeden pusty akapit"
+    odstep = elementy[tabela + 1]
+    assert odstep.tag.endswith("}p")
+    assert not "".join(t.text or "" for t in odstep.iter(qn("w:t"))), \
+        "akapit odstępu ma być pusty"
+
+
+def test_dane_w_tabeli_dzialki_nie_sa_pogrubione():
+    """Pogrubiony był tylko ten jeden wykaz — w wykazie budynku dane są zwykłe.
+
+    Pogrubienia to decyzja brata (patrz CLAUDE.md), a on chce w obu tabelach tego samego:
+    wytłuszczony zostaje sam nagłówek, dane czyta się normalnie.
+    """
+    d = Document(str(szablony.szablon_po_id("wykaz_zmian_dzialki_wzor").plik))
+    wiersz = next(w for w in d.tables[0].rows if "{{ dzialka." in w.cells[1].text)
+
+    pogrubione = [b.text for k in wiersz.cells for p in k.paragraphs
+                  for b in p.runs if b.bold]
+    assert not pogrubione, f"dane w tabeli wciąż pogrubione: {pogrubione}"
+    # ...a nagłówek tabeli zostaje wytłuszczony, tak jak w wykazie budynku
+    assert any(b.bold for k in d.tables[0].rows[0].cells for p in k.paragraphs
+               for b in p.runs), "nagłówek stracił pogrubienie"
 
 
 def test_identyfikator_dzialki_wchodzi_do_naglowka_wykazu():
