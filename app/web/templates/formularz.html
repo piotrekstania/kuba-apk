@@ -728,6 +728,46 @@ document.querySelectorAll('.edytor').forEach(edytor => {
     przepisz();
   });
 });
+
+// --- Ostrzeżenie przed zgubieniem wpisanych danych --------------------------
+// Wypełnienie operatu to kilkanaście pól i kilka wykazów; przypadkowe „wstecz”,
+// odświeżenie albo zamknięcie karty kasowało to wszystko bez słowa. Pilnuje tego
+// `beforeunload` — jedyne, co przeglądarka daje.
+//
+// Dwie rzeczy, których nie da się zrobić inaczej, i tak ma być:
+// 1. **Treści okienka nie ustawiamy my.** Przeglądarki zignorowały własne komunikaty
+//    lata temu (podszywały się pod systemowe ostrzeżenia), więc `returnValue` musi być
+//    ustawione, ale jego wartość nic nie zmienia. Przyciski są „Opuść stronę / Zostań”
+//    — nie ma jak dołożyć tam „Zapisz”.
+// 2. **Okienko wychodzi też przy „Anuluj”.** Anuluj stoi tuż obok „Zapisz poprawki”,
+//    więc chybione kliknięcie kosztuje dokładnie tyle samo co odświeżenie.
+(function () {
+  const formularz = document.querySelector('form[action^="/generuj/"]');
+  if (!formularz) return;
+
+  let zmienione = false;
+  const oznacz = () => { zmienione = true; };
+
+  // `input` łapie też edytor z formatowaniem (`contenteditable` bąbelkuje), a `change`
+  // — listy TERYT-u i checkboxy. Słuchamy na formularzu, nie na polach: karty wykazów
+  // dokładają się w trakcie i nie ma komu ich podpinać.
+  formularz.addEventListener('input', oznacz);
+  formularz.addEventListener('change', oznacz);
+  // dodanie i usunięcie karty wykazu albo wiersza tabeli to też zmiana, a nie leci
+  // po niej żadne `input`
+  formularz.addEventListener('click', z => {
+    if (z.target.closest('button:not([type="submit"])')) oznacz();
+  });
+  // wysyłka to nie jest utrata danych — inaczej okienko wyskakiwałoby przy każdym
+  // wygenerowaniu dokumentu
+  formularz.addEventListener('submit', () => { zmienione = false; });
+
+  window.addEventListener('beforeunload', zdarzenie => {
+    if (!zmienione) return;
+    zdarzenie.preventDefault();
+    zdarzenie.returnValue = '';       // wymagane przez starsze przeglądarki
+  });
+})();
 </script>
 
 {% endblock %}

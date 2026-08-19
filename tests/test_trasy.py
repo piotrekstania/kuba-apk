@@ -565,3 +565,22 @@ def test_strona_znakuje_arkusz_stylow(klient):
     wersja = aktualizacja.wersja_lokalna()[0]
     assert znacznik.group(1) != wersja, "sam numer wersji nie zmienia się między wydaniami"
     assert wersja in znacznik.group(1), "numer wersji zostaje, bo po nim poznaje się wydanie"
+
+
+def test_formularz_ostrzega_przed_zgubieniem_wpisanych_danych(klient):
+    """Wstecz, odświeżenie albo zamknięcie karty kasowało wypełniony operat bez słowa.
+
+    Testem sprawdzamy to, co da się sprawdzić bez przeglądarki: że strona formularza
+    wiezie ten strażnik i że jest **wpięty w wysyłkę** — bez tego okienko wyskakiwałoby
+    przy każdym wygenerowaniu dokumentu, czyli zawsze, czyli brat nauczyłby się je
+    odklikiwać. Zachowanie w przeglądarce sprawdzone ręcznie: czysta strona nie pyta,
+    po wpisaniu pyta, po wysłaniu znów nie.
+    """
+    _dodaj_operat(klient)
+
+    strona = klient.get("/nowy/spis_tresci_wzor").text
+
+    assert "beforeunload" in strona, "formularz bez ostrzeżenia o niezapisanych zmianach"
+    straznik = strona[max(0, strona.index("beforeunload") - 2000):]
+    assert "'submit'" in straznik or '"submit"' in straznik, \
+        "wysyłka nie zeruje flagi — okienko wyskoczy przy generowaniu"
