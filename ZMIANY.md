@@ -3,6 +3,10 @@
 Co doszło w kolejnych wersjach programu. Ten sam opis pokazuje się raz, na stronie
 głównej, zaraz po tym jak program sam się zaktualizuje.
 
+## 2026.08.19-96 — 2026-08-19
+
+Podgląd operatu (strona „Wpisane dane”) wyrównuje komórki wykazów do góry, tak samo jak gotowy dokument — przy różnej liczbie linijek w dwóch stanach linijki trzymają poziom także na ekranie, nie tylko w PDF.
+
 ## 2026.08.19-95 — 2026-08-19
 
 W wykazie działki wartości wielolinijkowe (OFU, OZU, OZK, pole powierzchni użytków) zaczynają się od górnej krawędzi komórki, więc linijki stanu dotychczasowego i nowego trzymają poziom — wcześniej krótsza kolumna była środkowana w pionie i pływała. Razem z pustymi linijkami z poprzedniej wersji daje to równe wiersze w obu kolumnach.
