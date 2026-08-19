@@ -58,7 +58,16 @@ start.bat
 Wszystko od ostatniego wydania — numer i skrót commita znajdziesz w `ZMIANY.md`
 i `git log`. Dopisuj punkty przy każdej rundzie zmian, kasuj po wydaniu.
 
-*(pusto — wydanie 2026.08.19-94 poszło 19.08; runda z pustymi linijkami sprawdzona end-to-end z Wordem przy poprawce)*
+### Wykaz działki — pola wielolinijkowe wyrównane do góry
+
+- [x] Komórki OFU/OZU/OZK/pola użytków startują od górnej krawędzi: przy trzech
+      linijkach po jednej stronie i dwóch po drugiej linijki trzymają poziom
+      (środkowanie w pionie rozjeżdżało kolumny). Sprawdzone na PDF z prawdziwego
+      Worda 19.08 (operat próbny 009/2026): `Bp/S` równo z `R/B`, a wpis z pustą
+      linijką na starcie równo z 2.–3. linijką sąsiedniej kolumny.
+- [x] Wiersze jednolinijkowe (Numer działki, Pole powierzchni) zostają wyśrodkowane.
+- [x] Formatka po zmianie przechodzi kontrolę kolejności OOXML i otwiera się
+      w Wordzie (konwersja podglądu przeszła).
 
 ---
 

@@ -904,3 +904,23 @@ def test_puste_linijki_wchodza_do_dokumentu(baza):
     assert "\n\nsdf" in komorki, "puste linijki stanu nowego nie doszły do dokumentu"
     assert komorki["\n\nsdf"]._tc.xml.count("<w:br/>") == 2
     assert "sdf\nsdf\nsdf" in komorki
+
+
+def test_komorki_wielolinijkowe_wyrownane_do_gory():
+    """Środkowanie w pionie rozjeżdżało kolumny: przy trzech linijkach z jednej strony
+    i dwóch z drugiej krótsza kolumna pływała w pionie i wiersze nie trzymały poziomu.
+    Wyrównanie do góry + zachowane puste linijki dają linijki równo w poziomie
+    (prośba brata, 19.08.2026). Jednolinijkowe wiersze zostają wyśrodkowane."""
+    from docx.oxml.ns import qn
+
+    d = Document(str(szablony.szablon_po_id("wykaz_zmian_dzialki_wzor").plik))
+    wielolinijkowe = ("ofu_", "ozu_", "ozk_", "pow_uzytkow_")
+
+    komorki = {c._tc: c.text.strip() for w in d.tables[0].rows for c in w.cells
+               if any(z in c.text for z in wielolinijkowe)}
+    assert len(komorki) == 8, "cztery pola wielolinijkowe w dwóch stanach"
+    for tc, tekst in komorki.items():
+        tcPr = tc.find(qn("w:tcPr"))
+        vAlign = tcPr.find(qn("w:vAlign")) if tcPr is not None else None
+        assert vAlign is None or vAlign.get(qn("w:val")) == "top", \
+            f"komórka {tekst[:34]!r} środkuje w pionie — krótsza kolumna będzie pływać"
