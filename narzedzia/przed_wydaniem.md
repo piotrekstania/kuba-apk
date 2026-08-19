@@ -69,7 +69,7 @@ i `git log`. Dopisuj punkty przy każdej rundzie zmian, kasuj po wydaniu.
 - [ ] Dokument wygląda jak wykaz budynku: ta sama tabela, ten sam nagłówek, jedna
       działka na stronę, łamanie strony **między** działkami, nie po ostatniej.
 - [ ] Pole „Działka" w karcie (sam numer) wchodzi do nagłówka **swojej** strony jako
-      `[obręb.numer]`.
+      `[obręb.numer]`, **pogrubione** — tak jak jednostka i obręb w wierszach nad nim.
 - [ ] OFU, OZU, OZK i pole powierzchni użytków przyjmują kilka linijek i tak samo
       wychodzą w dokumencie — po jednej wartości w wierszu.
 - [ ] Operat zrobiony przed tą zmianą: po „Popraw ten operat" karty działek mają dane
@@ -83,33 +83,41 @@ i `git log`. Dopisuj punkty przy każdej rundzie zmian, kasuj po wydaniu.
 
 ## C. Zlecenie review (do wklejenia Fable)
 
-> Zrób przegląd kodu zmian z zakresu `3a23109..HEAD` w tym repozytorium
-> (`git log --oneline 3a23109..HEAD`, `git diff 3a23109..HEAD`) — to wszystko, co
-> przyszło po ostatnim wydaniu. Kontekst projektu jest w `CLAUDE.md` — przeczytaj go najpierw, zwłaszcza listę pułapek
-> i zasady pracy nad kodem. Odpowiadaj po polsku.
+> Zrób przegląd kodu zmian z zakresu `c9c66c4..HEAD` w tym repozytorium
+> (`git log --oneline c9c66c4..HEAD`, `git diff c9c66c4..HEAD`) — to wszystko, co
+> przyszło po ostatnim wydaniu (`2026.08.19-92`). Kontekst projektu jest w `CLAUDE.md` —
+> przeczytaj go najpierw, zwłaszcza listę pułapek i zasady pracy nad kodem.
+> Odpowiadaj po polsku.
 >
 > Odbiorcą programu jest geodeta, nie programista, a aktualizacja instaluje się
 > u niego sama przy starcie — więc szukam **błędów, które on zobaczy**, a nie
 > uwag o stylu.
 >
 > Na czym się skup:
-> 1. `app/main.py` — `_wypelnione_sekcje` i `_dane_w_grupach`: dane z bazy bywają
->    starsze niż dzisiejszy szablon (pole skasowane, zmieniony typ, wpis niebędący
->    słownikiem). Czy któraś ścieżka wywala stronę operatu zamiast pominąć dane?
-> 2. `app/szablony.py` — `wiersze_sekcji` i nowe pola `Pole`: co się dzieje przy
->    niepełnym albo sprzecznym opisie `.json` (podpole bez `wiersz`, kolumna,
->    której nie ma w `kolumny`)?
-> 3. `app/web/templates/formularz.html` — JS: numeracja pól przy dokładaniu
->    i usuwaniu kart (`sek__<pole>__<nr>__<podpole>`), oraz strażnik `beforeunload`
->    na końcu skryptu. Czy da się doprowadzić do stanu, w którym dane z formularza
->    trafiają pod zły indeks albo giną?
-> 4. `tests/conftest.py` — fixtury `bez_prawdziwej_bazy` i `baza`: czy zostaje jeszcze
->    jakaś ścieżka, którą test bez `srodowisko` dosięga prawdziwych `dane/` albo
->    `wyniki/` autora?
-> 5. Reguła pomijania pustego dokumentu (`"wymaga"` w `.json`) — czy pomija dokładnie
->    to, co ma, i czy użytkownik zawsze dowiaduje się, że pliku nie ma?
-> 6. Testy w `tests/test_sekcje.py` i `tests/test_trasy.py` — czy sprawdzają
->    zachowanie, czy tylko to, że kod się wykonał.
+> 1. `app/generator.py` — `sformatuj_pod_znaczniki`, `_zaznacz_zmiany` i `_zmienione`:
+>    nowy mechanizm zamienia pola wykazów na `RichText` (czerwień przy zmienionym stanie
+>    nowym). Kluczowe pytanie: czy `RichText` może trafić do formatki, która w tym
+>    miejscu ma **zwykłe** `{{ }}` — bo taki plik Word odmawia otworzyć. Sprawdź też,
+>    co się dzieje, gdy w danych siedzi liczba, `None` albo lista zamiast napisu,
+>    i czy oryginalny kontekst na pewno zostaje napisami dla kolejnej formatki.
+> 2. `narzedzia/utworz_wykaz_dzialki.py` — buduje formatkę działki z formatki budynku,
+>    klonując komórki spod ustalonych indeksów wierszy. Co się stanie, gdy brat przyśle
+>    wykaz budynku o innej liczbie wierszy? Czy skrypt powie to wprost, czy zbuduje
+>    dokument bez sensu?
+> 3. `app/szablony.py` — `podpola_wspolne` i `wiersze_sekcji`: co przy niepełnym albo
+>    sprzecznym opisie `.json` (podpole bez `wiersz`, kolumna spoza `kolumny`,
+>    `opcje` wskazujące nieistniejącą listę)?
+> 4. `app/main.py` — `_wypelnione_sekcje`: dane z bazy bywają starsze niż dzisiejszy
+>    szablon (pole skasowane, zmieniony typ, wpis niebędący słownikiem). Czy któraś
+>    ścieżka wywala stronę operatu zamiast pominąć dane? Zwróć uwagę na operaty sprzed
+>    przebudowy wykazu działki — mają dane pod kluczami, których już nie ma.
+> 5. `app/web/templates/formularz.html` — numeracja pól przy dokładaniu i usuwaniu kart
+>    (`sek__<pole>__<nr>__<podpole>`), nowe pola wielolinijkowe i podpola wspólne,
+>    strażnik `beforeunload`. Czy da się doprowadzić do stanu, w którym dane trafiają
+>    pod zły indeks albo giną?
+> 6. Testy w `tests/test_sekcje.py` — czy sprawdzają zachowanie, czy tylko to, że kod
+>    się wykonał. Przy okazji: czy któryś zostawia po sobie pliki w prawdziwych
+>    `dane/` albo `wyniki/`?
 >
 > Czego **nie** zgłaszać: nazw po polsku (to konwencja projektu), braku typów
 > generycznych, sugestii przejścia na framework frontendowy, propozycji drugiego
