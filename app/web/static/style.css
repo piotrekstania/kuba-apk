@@ -330,3 +330,11 @@ table.sekcja-siatka input { padding: 5px 8px; }
 .sekcja-podglad table.wiersze th[scope="row"] { font-weight: 400; width: 45%;
                                                 background: transparent; }
 .sekcja-podglad table.wiersze td { width: 27%; }
+
+/* Nagłówek listy operatów: tytuł z lewej, „Nowy operat” z prawej — dosunięty do prawej
+   krawędzi tabeli, bo tam wzrok wraca po przejrzeniu listy. Kontener jest blokiem
+   szerokim na całą treść, więc krawędź przycisku i tabeli to ta sama linia. */
+.naglowek-listy { display: flex; align-items: center; justify-content: space-between;
+                  gap: 12px; flex-wrap: wrap; margin: 24px 0 10px; }
+.naglowek-listy h1 { margin: 0; }
+.naglowek-listy .przyciski { display: flex; gap: 10px; flex-wrap: wrap; }

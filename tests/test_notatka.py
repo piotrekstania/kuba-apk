@@ -124,7 +124,7 @@ def test_opis_siedzi_w_tej_samej_grupie_co_dane_operatu(klient):
     _dodaj_operat(klient)
     _wyslij(klient, notatka=OPIS)
 
-    tabela = klient.get("/").text.split("<h2>Operaty</h2>")[1]
+    tabela = klient.get("/").text.split(">Operaty</h")[1]
     grupa = tabela.split("<tbody")[1].split("</tbody>")[0]
 
     assert "Czekam na wypis z KW." in grupa, "opis wypadł poza grupę swojego operatu"

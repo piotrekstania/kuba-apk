@@ -66,12 +66,38 @@ def test_strony_odpowiadaja(klient):
 
 
 def test_strona_glowna_pokazuje_tylko_szablony_glowne(klient):
+    """Sprawozdanie samo, bez operatu, nie istnieje — dokłada się je w formularzu."""
     _dodaj_operat(klient)
     klient.srodowisko.dodaj_szablon("sprawozdanie_wzor", ["{{ nr_roboty }}"],
                                     opis={"nazwa": "Sprawozdanie techniczne", "pola": []})
     tresc = klient.get("/").text
-    assert "Operat" in tresc
+
+    assert 'href="/nowy/spis_tresci_wzor"' in tresc
+    assert 'href="/nowy/sprawozdanie_wzor"' not in tresc
     assert "Sprawozdanie techniczne" not in tresc
+
+
+def test_nowa_robota_to_przycisk_przy_naglowku_listy(klient):
+    """Zaczęcie roboty to jedno kliknięcie. Karta z opisem szablonu i liczbą pól
+    zajmowała ćwierć ekranu nad listą operatów, czyli nad tym, po co brat tu wchodzi.
+
+    Przycisk stoi **w nagłówku listy**, dosunięty do jej prawej krawędzi — sam wygląd
+    obroni dopiero oko, ale tę strukturę już test: bez wspólnego kontenera przycisk
+    wraca nad nagłówek i wyrównanie do tabeli przestaje istnieć.
+    """
+    import re
+
+    _dodaj_operat(klient)
+
+    tresc = klient.get("/").text
+
+    assert '<a class="glowny" href="/nowy/spis_tresci_wzor">Nowy operat</a>' in tresc
+    assert 'class="karta"' not in tresc, "karta szablonu została na stronie głównej"
+    naglowek = re.search(r'<div class="naglowek-listy">(.*?)</div>\s*</div>',
+                         tresc, re.DOTALL)
+    assert naglowek, "przycisk nie stoi w nagłówku listy"
+    assert "<h1>Operaty</h1>" in naglowek.group(1)
+    assert 'href="/nowy/spis_tresci_wzor"' in naglowek.group(1)
 
 
 def test_nieznany_adres_daje_polska_strone_bledu(klient):

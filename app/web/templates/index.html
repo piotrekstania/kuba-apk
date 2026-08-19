@@ -8,19 +8,7 @@
 </div>
 {% endif %}
 
-<h1>Nowy dokument</h1>
-
-{% if szablony %}
-<div class="karty">
-  {% for szablon in szablony %}
-  <a class="karta" href="/nowy/{{ szablon.id }}">
-    <strong>{{ szablon.nazwa }}</strong>
-    <span>{{ szablon.opis }}</span>
-    <small>{{ szablon.pola | length }} pól · {{ szablon.plik.name }}</small>
-  </a>
-  {% endfor %}
-</div>
-{% else %}
+{% if not szablony %}
 <div class="komunikat zle">
   Katalog <code>szablony/</code> jest pusty. Wrzuć tam plik .docx z tagami
   <code>{{ '{{ nazwa_pola }}' }}</code> — pojawi się tutaj automatycznie.
@@ -28,7 +16,22 @@
 </div>
 {% endif %}
 
-<h2>Operaty</h2>
+{# Zaczęcie nowej roboty to jedno kliknięcie, więc jest tu przycisk, a nie karta z opisem
+   szablonu i liczbą pól: karta ogłaszała rzecz, którą brat robi codziennie, i zajmowała
+   ćwierć ekranu nad listą operatów, czyli nad tym, po co naprawdę tu wchodzi. Stoi przy
+   nagłówku listy, dosunięty do jej prawej krawędzi — tam, gdzie wzrok wraca po
+   przejrzeniu operatów. Przycisków jest tyle, ile szablonów głównych: dziś jeden,
+   ale nowy `.docx` z `"glowny": true` dołoży swój sam. #}
+<div class="naglowek-listy">
+  <h1>Operaty</h1>
+  {% if szablony %}
+  <div class="przyciski">
+    {% for szablon in szablony %}
+    <a class="glowny" href="/nowy/{{ szablon.id }}">Nowy {{ szablon.nazwa | lower }}</a>
+    {% endfor %}
+  </div>
+  {% endif %}
+</div>
 {% if operaty %}
 <table class="lista">
   <thead>
