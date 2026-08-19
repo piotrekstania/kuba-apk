@@ -17,9 +17,13 @@
 {%- elif pod.typ == 'textarea' -%}
 {#- OFU, OZU, OZK i pole powierzchni użytków bywają kilkuwierszowe: jedna działka może
     mieć kilka użytków, każdy w osobnej linijce. Do dokumentu wchodzą tak samo, jedna
-    pod drugą — dlatego pole musi przyjmować Enter. -#}
+    pod drugą — dlatego pole musi przyjmować Enter. Dodatkowe złamanie zaraz po `>`
+    jest konieczne: parser HTML ignoruje pierwszy znak nowej linii po <textarea>,
+    więc bez niego każde „Popraw ten operat” zjadałoby jedną pustą linijkę
+    z początku wartości — a pustymi linijkami brat wyrównuje wpis do właściwego
+    wiersza sąsiedniej kolumny. -#}
 <textarea name="sek__{{ nazwa_pola }}__{{ nr }}__{{ pod.klucz }}" rows="3"
-          aria-label="{{ etykieta }}">{{ wartosc }}</textarea>
+          aria-label="{{ etykieta }}">{{ "\n" }}{{ wartosc }}</textarea>
 {%- else -%}
 <input name="sek__{{ nazwa_pola }}__{{ nr }}__{{ pod.klucz }}" value="{{ wartosc }}"
        aria-label="{{ etykieta }}">

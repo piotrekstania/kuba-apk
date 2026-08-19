@@ -214,6 +214,19 @@ def blad_adresu_z_danymi(request: Request, wyjatek: RequestValidationError) -> H
 
 # --- parsowanie formularza ---------------------------------------------------
 
+def _przytnij_wielolinijkowe(tekst: str) -> str:
+    """Jak `strip()`, ale **puste linijki na początku zostają**.
+
+    W wykazach OFU/OZU/OZK stoją w dwóch kolumnach obok siebie i brat wyrównuje
+    wartość pustymi enterami do właściwej linijki sąsiedniej kolumny — wpis w stanie
+    nowym potrafi dotyczyć dopiero drugiego użytku. `strip()` zjadał te linijki
+    po cichu. Koniec ucinamy jak dotąd (ogonowe entery tylko nadmuchują komórkę),
+    a `\\r\\n` z przeglądarki sprowadzamy do `\\n` — na tym łamie docxtpl.
+    """
+    tekst = (tekst or "").replace("\r\n", "\n").replace("\r", "\n")
+    return tekst.rstrip().lstrip(" \t")
+
+
 def odczytaj_dane(formularz, szablon: szablony.Szablon) -> dict[str, Any]:
     """Zamienia płaski formularz HTML na słownik z listami dla tabel.
 
@@ -236,7 +249,7 @@ def odczytaj_dane(formularz, szablon: szablony.Szablon) -> dict[str, Any]:
                 przedrostek, nazwa, indeks, podklucz = czesci
                 if indeks.isdigit():
                     gdzie = tabele if przedrostek == "tab" else sekcje
-                    gdzie[nazwa][int(indeks)][podklucz] = (wartosc or "").strip()
+                    gdzie[nazwa][int(indeks)][podklucz] = _przytnij_wielolinijkowe(wartosc)
 
     for zbior in (tabele, sekcje):
         for nazwa, wiersze in zbior.items():

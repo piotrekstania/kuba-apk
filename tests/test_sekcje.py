@@ -851,3 +851,56 @@ def test_tabele_wykazow_mieszcza_sie_w_marginesach():
             kolumny = [int(k.get(qn("w:w"))) for k in tabela._tbl.find(qn("w:tblGrid"))]
             assert sum(kolumny) <= szerokosc_tekstu, \
                 f"{nazwa}: tabela ma {sum(kolumny)} twipów przy {szerokosc_tekstu} tekstu"
+
+
+# --- puste linijki w polach wielolinijkowych ---------------------------------
+#
+# OFU/OZU/OZK stoją w dwóch kolumnach obok siebie i brat wyrównuje wartość pustymi
+# enterami do właściwej linijki sąsiedniej kolumny — wpis w stanie nowym potrafi
+# dotyczyć dopiero drugiego użytku. Zjadały je dwa miejsca: `strip()` przy odczycie
+# formularza i parser HTML, który ignoruje pierwszy znak nowej linii po <textarea>.
+
+def test_puste_linijki_na_poczatku_wartosci_przezywaja_odczyt(klient):
+    """Przeglądarka wysyła `\r\n`; do historii ma wejść `\n` — z pustymi linijkami
+    na początku, bez ogonowych na końcu."""
+    _operat_z_sekcjami(klient)
+
+    _wyslij(klient, **{"sek__wykazy__0__adres_nowy": "\r\n\r\nsdf\r\n"})
+
+    import json
+    zapisane = json.loads(db.dokumenty()[0]["dane_json"])["wykazy"]
+    assert zapisane == [{"adres_nowy": "\n\nsdf"}]
+
+
+def test_formularz_nie_zjada_pustej_linijki_przy_poprawianiu(klient):
+    """Parser HTML ignoruje pierwszy znak nowej linii po `<textarea>` — bez dodatkowego
+    złamania w szablonie każda runda „Popraw ten operat” zjadałaby jedną pustą linijkę
+    z początku wartości, po cichu i kumulatywnie."""
+    klient.srodowisko.dodaj_szablon(
+        "spis_tresci_wzor", ["{{ nr_roboty }}"],
+        opis={"nazwa": "Operat", "glowny": True,
+              "pola": [{"klucz": "nr_roboty", "etykieta": "Nr roboty"},
+                       {"klucz": "wykazy", "etykieta": "Wykazy", "typ": "sekcje",
+                        "podpola": [{"klucz": "ofu_nowy", "etykieta": "OFU",
+                                     "typ": "textarea"}]}]})
+    _wyslij(klient, **{"sek__wykazy__0__ofu_nowy": "\r\n\r\nsdf"})
+
+    formularz = klient.get(f"/nowy/spis_tresci_wzor?edytuj={db.dokumenty()[0]['id']}").text
+
+    # dodatkowe złamanie z szablonu + dwie puste linijki brata; parser zje to pierwsze
+    assert ">\n\n\nsdf</textarea>" in formularz, \
+        "pierwsza pusta linijka zniknie przy każdym otwarciu formularza"
+
+
+def test_puste_linijki_wchodza_do_dokumentu(baza):
+    """Obie drogi do formatki: stan nowy przez `{{r }}`/RichText, dotychczasowy przez
+    zwykłe `{{ }}` — puste linijki mają wyjść w komórce jako złamania wiersza."""
+    d = _wykaz_dzialek([{"dzialka": "119/80",
+                         "ofu_dotychczas": "sdf\nsdf\nsdf",
+                         "ofu_nowy": "\n\nsdf"}])
+
+    komorki = {c.text: c for t in d.tables for w in t.rows for c in w.cells
+               if "sdf" in c.text}
+    assert "\n\nsdf" in komorki, "puste linijki stanu nowego nie doszły do dokumentu"
+    assert komorki["\n\nsdf"]._tc.xml.count("<w:br/>") == 2
+    assert "sdf\nsdf\nsdf" in komorki
