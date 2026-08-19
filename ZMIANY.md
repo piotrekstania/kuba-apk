@@ -3,6 +3,10 @@
 Co doszło w kolejnych wersjach programu. Ten sam opis pokazuje się raz, na stronie
 głównej, zaraz po tym jak program sam się zaktualizuje.
 
+## 2026.08.19-92 — 2026-08-19
+
+Wykaz zmian danych działki drukuje się teraz w pionie, jak reszta operatu: każda działka to dwa wiersze — stan dotychczasowy nad nowym — więc wartości przed i po zmianie porównujesz jedną pod drugą, a kolumny są szersze niż na poziomej kartce. Rodzaj budynku według KŚT wybierasz z listy w obu stanach, bez przepisywania z ręki — a wpis z ręki w starszym operacie zostaje. Cyfry L.p. w wykazie budynku stoją równo na środku komórek. Na stronie głównej zamiast karty szablonu jest przycisk „Nowy operat”, a nazwy kart formularza są niebieskie, żeby łatwiej je znaleźć przy przewijaniu.
+
 ## 2026.08.19-91 — 2026-08-19
 
 Wykazy zmian danych ewidencyjnych wypełniasz teraz w programie — na to czekałeś: wykaz budynku po kilka na operat, każdy na osobnej stronie, a wykaz działki jako kolejne wiersze jednej tabeli, z identyfikatorem działki w nagłówku. Spis treści włącza dokumenty: zaznaczenie pozycji odblokowuje jej pola i generuje plik, a dokument odznaczony przy poprawianiu znika z katalogu operatu. Formularz ostrzega też przed wyjściem z niezapisanymi zmianami.
