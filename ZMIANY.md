@@ -3,6 +3,10 @@
 Co doszło w kolejnych wersjach programu. Ten sam opis pokazuje się raz, na stronie
 głównej, zaraz po tym jak program sam się zaktualizuje.
 
+## 2026.08.19-94 — 2026-08-19
+
+W wielolinijkowych polach wykazu działki (OFU, OZU, OZK, pole powierzchni użytków) puste linijki zostają i wchodzą do dokumentu — możesz nimi zsunąć wpis stanu nowego do właściwego wiersza sąsiedniej kolumny, np. gdy zmiana dotyczy dopiero drugiego użytku. Puste linijki przeżywają też poprawianie operatu.
+
 ## 2026.08.19-93 — 2026-08-19
 
 Wykazy zmian same wyróżniają to, co się zmieniło: stan nowy różny od dotychczasowego wychodzi w dokumencie na czerwono i pogrubiony — tak, jak dotąd zaznaczałeś to ręcznie w Wordzie. Wykaz działki wygląda teraz jak wykaz budynku: jedna działka to jedna strona, a jej numer wpisujesz w karcie działki — wchodzi do nagłówka swojej strony. OFU, OZU, OZK i pole powierzchni użytków przyjmują kilka wartości, każdą w osobnej linijce (Enter). Z wykazu budynku zniknęły odsyłacze do przypisów.
