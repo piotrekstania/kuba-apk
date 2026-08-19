@@ -378,3 +378,63 @@ def test_dokument_ze_spisu_nie_wraca_do_karty_inne_dokumenty(klient):
     assert "Inny dokument" in formularz, "szablon bez pozycji w spisie ma zostać do wyboru"
     assert formularz.count('value="sprawozdanie_wzor"') == 0, \
         "sprawozdanie ma włącznik w spisie treści — w „Innych dokumentach” nie ma czego dublować"
+
+
+# --- wykaz działki: kolejne działki to kolejne WIERSZE jednej tabeli ---------
+#
+# Inaczej niż przy budynku, gdzie każdy wykaz to osobna strona z własną tabelą.
+# Formularz wygląda tak samo (karta na działkę), bo o formie decyduje typ pola,
+# a o dokumencie — znacznik w formatce: tam `{%tr for %}` zamiast `{%p for %}`.
+
+def _wykaz_dzialek(dzialki: list[dict]) -> Document:
+    glowny = szablony.szablon_po_id("spis_tresci_wzor")
+    sz = szablony.szablon_po_id("wykaz_zmian_dzialki_wzor")
+    kontekst = generator.przygotuj_kontekst(
+        glowny, {"nr_roboty": "G.1", "wykazy_dzialek": dzialki}, {})
+    return Document(generator.dopisz_dokument(sz, kontekst,
+                                              pathlib.Path(tempfile.mkdtemp())))
+
+
+def test_kazda_dzialka_to_kolejny_wiersz_jednej_tabeli():
+    d = _wykaz_dzialek([{"numer_dotychczas": "1765/311"},
+                        {"numer_dotychczas": "1765/312"},
+                        {"numer_dotychczas": "1765/99"}])
+
+    assert len(d.tables) == 1, "działki nie mają robić kolejnych tabel ani stron"
+    tabela = d.tables[0]
+    assert len(tabela.rows) == 6, "trzy wiersze nagłówka plus trzy działki"
+    assert [w.cells[1].text for w in tabela.rows[3:]] == ["1765/311", "1765/312", "1765/99"]
+
+
+def test_lp_numeruje_sie_samo():
+    """Numer porządkowy bierze się z pętli — nie ma po co pytać o niego w formularzu."""
+    d = _wykaz_dzialek([{"numer_nowy": "a"}, {"numer_nowy": "b"}, {"numer_nowy": "c"}])
+
+    assert [w.cells[0].text for w in d.tables[0].rows[3:]] == ["1", "2", "3"]
+
+
+def test_oba_stany_trafiaja_do_swoich_kolumn():
+    d = _wykaz_dzialek([{
+        "numer_dotychczas": "1765/311", "pow_ewidencyjna_dotychczas": "0,2140",
+        "ofu_dotychczas": "R", "ozu_dotychczas": "IV", "ozk_dotychczas": "a",
+        "pow_uzytkow_dotychczas": "0,2140",
+        "numer_nowy": "1765/312", "pow_ewidencyjna_nowy": "0,1070",
+        "ofu_nowy": "B", "ozu_nowy": "V", "ozk_nowy": "b", "pow_uzytkow_nowy": "0,1070"}])
+
+    wiersz = [c.text.strip() for c in d.tables[0].rows[3].cells]
+    assert wiersz[1:7] == ["1765/311", "0,2140", "R", "IV", "a", "0,2140"]
+    assert wiersz[7:13] == ["1765/312", "0,1070", "B", "V", "b", "0,1070"]
+
+
+def test_jedna_dzialka_nie_zostawia_pustych_wierszy():
+    """Wiersze sterujące `{%tr for %}` i `{%tr endfor %}` mają zniknąć w całości."""
+    d = _wykaz_dzialek([{"numer_dotychczas": "1765/311"}])
+
+    tabela = d.tables[0]
+    assert len(tabela.rows) == 4
+    assert not any("{%" in c.text for w in tabela.rows for c in w.cells)
+
+
+def test_wykaz_dzialek_bez_danych_nie_powstaje():
+    """Ta sama zasada co przy budynku — deklaracja `wymaga` w `.json` szablonu."""
+    assert szablony.szablon_po_id("wykaz_zmian_dzialki_wzor").wymaga == "wykazy_dzialek"

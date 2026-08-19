@@ -303,6 +303,88 @@
       ]
     },
     {
+      "klucz": "wykazy_dzialek",
+      "etykieta": "Działki w wykazie",
+      "typ": "sekcje",
+      "grupa": "Wykaz zmian danych działki",
+      "etykieta_pozycji": "Działka",
+      "etykieta_dodaj": "dodaj kolejną działkę",
+      "aktywne_gdy": "spis_tresci:Wykaz zmian danych ewidencyjnych",
+      "kolumny": [
+        {
+          "klucz": "dotychczas",
+          "etykieta": "Stan dotychczasowy"
+        },
+        {
+          "klucz": "nowy",
+          "etykieta": "Stan nowy"
+        }
+      ],
+      "podpowiedz": "Każda działka to jeden wiersz w tabeli wykazu — wszystkie trafiają do jednej tabeli, jedna pod drugą. Numer L.p. program nadaje sam.",
+      "podpola": [
+        {
+          "klucz": "numer_dotychczas",
+          "wiersz": "Numer działki",
+          "kolumna": "dotychczas"
+        },
+        {
+          "klucz": "numer_nowy",
+          "wiersz": "Numer działki",
+          "kolumna": "nowy"
+        },
+        {
+          "klucz": "pow_ewidencyjna_dotychczas",
+          "wiersz": "Pole powierzchni ewidencyjnej działki [ha]",
+          "kolumna": "dotychczas"
+        },
+        {
+          "klucz": "pow_ewidencyjna_nowy",
+          "wiersz": "Pole powierzchni ewidencyjnej działki [ha]",
+          "kolumna": "nowy"
+        },
+        {
+          "klucz": "ofu_dotychczas",
+          "wiersz": "OFU",
+          "kolumna": "dotychczas"
+        },
+        {
+          "klucz": "ofu_nowy",
+          "wiersz": "OFU",
+          "kolumna": "nowy"
+        },
+        {
+          "klucz": "ozu_dotychczas",
+          "wiersz": "OZU",
+          "kolumna": "dotychczas"
+        },
+        {
+          "klucz": "ozu_nowy",
+          "wiersz": "OZU",
+          "kolumna": "nowy"
+        },
+        {
+          "klucz": "ozk_dotychczas",
+          "wiersz": "OZK",
+          "kolumna": "dotychczas"
+        },
+        {
+          "klucz": "ozk_nowy",
+          "wiersz": "OZK",
+          "kolumna": "nowy"
+        },
+        {
+          "klucz": "pow_uzytkow_dotychczas",
+          "wiersz": "Pole powierzchni użytków gruntowych i klas bonitacyjnych [ha]",
+          "kolumna": "dotychczas"
+        },
+        {
+          "klucz": "pow_uzytkow_nowy",
+          "wiersz": "Pole powierzchni użytków gruntowych i klas bonitacyjnych [ha]",
+          "kolumna": "nowy"
+        }
+      ]
+    },
+    {
       "klucz": "dokumenty",
       "etykieta": "Wygeneruj też",
       "typ": "dokumenty",
