@@ -86,6 +86,14 @@ Wszystko od wydania `2026.08.14-90`, czyli `git log --oneline 3a23109..HEAD`.
 - [ ] Przy wykazach widać **wpisane wiersze**, a nie „2 wierszy”; każdy wykaz ma
       nagłówek („Wykaz 2”, „Działka 2”), puste atrybuty są pominięte.
 
+### Poprawianie sprząta odznaczone dokumenty (dołożone w review 19.08)
+
+- [x] Operat z wykazem → „Popraw”, odznaczenie wykazu w spisie → plik **znika
+      z katalogu** razem z podglądem, kafelka nie ma na stronie składania.
+      Sprawdzone na żywym Wordzie 19.08 (operat testowy 005/2026).
+- [x] Mapy i skany dołożone ręcznie zostają — sprzątanie zna tylko nazwy
+      nadawane przez program.
+
 ### Ostrzeżenie o niezapisanych zmianach
 
 - [ ] Wpisz cokolwiek → **F5**, **Alt+←** i **zamknięcie karty** pytają, czy wyjść.

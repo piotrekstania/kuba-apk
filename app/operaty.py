@@ -147,6 +147,35 @@ def opis(katalog: Path) -> dict[str, Any]:
         return {}
 
 
+def usun_dokumenty_programu(katalog: Path, nazwy: set[str]) -> list[str]:
+    """Kasuje wskazane dokumenty programu razem z ich podglądami. Zwraca to,
+    czego usunąć **nie zdołała** — np. plik otwarty przez brata w Wordzie.
+
+    Do sprzątania po poprawianiu operatu: pliki nadpisują się nazwa po nazwie, więc
+    dokument odznaczony w tej rundzie (albo pominięty przez `wymaga`) zostawał
+    w katalogu z danymi z poprzedniej — szedł potem do scalonego PDF-a, choć spis
+    treści o nim milczał. Wołający podaje wyłącznie nazwy nadawane przez program
+    (`nazwa_dokumentu`), więc mapy i skany dołożone ręcznie są poza zasięgiem.
+
+    Pod `_BLOKADA_PODGLADU`, bo konwersja podglądów chodzi w tle: bez blokady
+    kasowalibyśmy plik, który Word ma właśnie otwarty (na Windowsie `PermissionError`
+    w środku trasy), a wątek podglądów odtwarzałby PDF skasowanego dokumentu.
+    """
+    zostawione: list[str] = []
+    with _BLOKADA_PODGLADU:
+        for nazwa in sorted(nazwy):
+            plik = katalog / nazwa
+            if not plik.is_file():
+                continue
+            try:
+                plik.unlink()
+            except OSError:
+                zostawione.append(nazwa)          # zostaje jak przed poprawką — bez awarii
+                continue
+            (PODGLADY / katalog.name / (plik.stem + ".pdf")).unlink(missing_ok=True)
+    return zostawione
+
+
 def zapisz_notatke(katalog: Path, tekst: str) -> None:
     """Notatka brata do operatu — w interfejsie „Opis”.
 
@@ -309,6 +338,10 @@ def przygotuj_podglady(katalog: Path) -> int:
     if not do_zrobienia:
         return 0
     with _BLOKADA_PODGLADU:
+        # Listę filtrujemy drugi raz, już pod blokadą: między spisaniem plików a wzięciem
+        # zamka poprawianie operatu mogło sprzątnąć odznaczony dokument — konwersja
+        # skasowanego pliku by padła, a jego podgląd wróciłby zza grobu.
+        do_zrobienia = [(z, c) for z, c in do_zrobienia if z.is_file()]
         return len(pdf.docx_na_pdf_wsad(do_zrobienia))
 
 

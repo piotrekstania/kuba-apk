@@ -575,6 +575,7 @@ async def generuj(request: Request, identyfikator: str, edytuj: int | None = Non
         zaznaczone = dane.get(pole.klucz) or []
         wybrane_szablony += [pole.dokumenty[o] for o in zaznaczone if o in pole.dokumenty]
     wypelnionych = 1                      # dokument główny już powstał
+    aktualne = {plik.name}                # dokumenty tej rundy — reszta programowych to starocie
     for identyfikator_dodatkowego in wybrane_szablony:
         dodatkowy = szablony.szablon_po_id(str(identyfikator_dodatkowego))
         if dodatkowy is None or dodatkowy.id == szablon.id:
@@ -592,11 +593,28 @@ async def generuj(request: Request, identyfikator: str, edytuj: int | None = Non
                 warianty.z_wariantem(dodatkowy, wybor_wariantow.get(dodatkowy.id, "")),
                 kontekst, katalog)
             wypelnionych += 1
+            aktualne.add(operaty.nazwa_dokumentu(dodatkowy.id))
         except Exception as blad:
             zapisz_blad(request, blad)
             ostrzezenia.append(
                 f"Nie udało się wygenerować dokumentu „{dodatkowy.nazwa}” — sprawdź "
                 f"znaczniki w pliku {dodatkowy.plik.name}. Reszta operatu jest gotowa.")
+            # awaria to nie odznaczenie — stary plik zostaje, bo jest lepszy niż dziura
+            aktualne.add(operaty.nazwa_dokumentu(dodatkowy.id))
+
+    # Poprawianie nadpisuje pliki nazwa po nazwie, więc dokument odznaczony w tej
+    # rundzie (albo pominięty przez `wymaga`) zostawał w katalogu z danymi
+    # z poprzedniej — szedł potem do scalonego PDF-a, choć spis treści o nim milczał,
+    # a przy pustym wykazie program ogłaszał „nie powstał”, mając jego starą wersję
+    # na dysku. Sprzątamy wyłącznie nazwy nadawane przez program: mapy i skany
+    # dołożone Eksploratorem zostają.
+    if poprawiany:
+        programowe = {operaty.nazwa_dokumentu(s["id"]) for s in szablony.lista_skrocona()}
+        for nazwa in operaty.usun_dokumenty_programu(katalog, programowe - aktualne):
+            ostrzezenia.append(
+                f"Nie udało się usunąć nieaktualnego pliku „{nazwa}” — pewnie jest "
+                "otwarty w Wordzie. Zamknij go i usuń z katalogu operatu ręcznie, "
+                "inaczej wejdzie do złożonego PDF-a.")
 
     # Wybrane formatki zostają domyślne na **następny** operat. Wybór dla tego operatu
     # siedzi w jego `operat.json` (razem z danymi formularza), więc „Popraw” wróci

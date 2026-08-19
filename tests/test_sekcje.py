@@ -281,6 +281,73 @@ def test_wykaz_z_danymi_powstaje_normalnie(klient):
     assert _pliki_operatu(klient) == ["spis_tresci.docx", "wykaz.docx"]
 
 
+# --- poprawianie operatu sprząta dokumenty odznaczone w tej rundzie ----------
+#
+# Poprawianie nadpisuje pliki nazwa po nazwie, więc dokument odznaczony (albo pominięty
+# przez `wymaga`) zostawał w katalogu z danymi z poprzedniej rundy. Szedł potem do
+# scalonego PDF-a, choć spis treści o nim milczał — a przy pustym wykazie program
+# ogłaszał „nie powstał”, mając jego starą wersję na dysku.
+
+def _wygeneruj_z_wykazem(klient) -> int:
+    _operat_z_wykazem(klient)
+    klient.post("/generuj/spis_tresci_wzor",
+                data={"pole__nr_roboty": "GK.1", "notatka": "",
+                      "pole__dokumenty_wykazy": "wykaz_wzor",
+                      "sek__wykazy__0__adres_nowy": "Polna 7"},
+                follow_redirects=False)
+    assert _pliki_operatu(klient) == ["spis_tresci.docx", "wykaz.docx"]
+    return db.dokumenty()[0]["id"]
+
+
+def test_poprawianie_sprzata_odznaczony_dokument(klient):
+    """Odznaczony przy poprawianiu dokument znika z katalogu razem z podglądem."""
+    identyfikator = _wygeneruj_z_wykazem(klient)
+    katalog = db.dokumenty()[0]["katalog"]
+    podglad = klient.srodowisko.dane / "podglad" / katalog / "wykaz.pdf"
+    podglad.parent.mkdir(parents=True, exist_ok=True)
+    podglad.write_bytes(b"stary podglad")
+
+    klient.post(f"/generuj/spis_tresci_wzor?edytuj={identyfikator}",
+                data={"pole__nr_roboty": "GK.1", "notatka": "",
+                      "sek__wykazy__0__adres_nowy": "Polna 7"},
+                follow_redirects=False)
+
+    assert _pliki_operatu(klient) == ["spis_tresci.docx"], \
+        "stary wykaz został w katalogu i poszedłby do scalonego PDF-a"
+    assert not podglad.exists(), "podgląd skasowanego dokumentu został w dane/podglad"
+
+
+def test_poprawianie_z_oproznionym_wykazem_sprzata_stary_plik(klient):
+    """Komunikat „nie powstał” nie może kłamać: stary plik z poprzednimi danymi
+    ma zniknąć, skoro tym razem nie ma go z czego zrobić."""
+    identyfikator = _wygeneruj_z_wykazem(klient)
+
+    klient.post(f"/generuj/spis_tresci_wzor?edytuj={identyfikator}",
+                data={"pole__nr_roboty": "GK.1", "notatka": "",
+                      "pole__dokumenty_wykazy": "wykaz_wzor",
+                      "sek__wykazy__0__adres_nowy": ""},
+                follow_redirects=False)
+
+    assert _pliki_operatu(klient) == ["spis_tresci.docx"]
+
+
+def test_poprawianie_nie_rusza_plikow_dolozonych_recznie(klient):
+    """Sprzątanie obejmuje wyłącznie nazwy nadawane przez program — mapa dołożona
+    Eksploratorem, nawet jako .docx, zostaje."""
+    identyfikator = _wygeneruj_z_wykazem(klient)
+    katalog = klient.srodowisko.wyniki / db.dokumenty()[0]["katalog"]
+    (katalog / "mapa_do_celow_projektowych.docx").write_bytes(b"od brata")
+
+    klient.post(f"/generuj/spis_tresci_wzor?edytuj={identyfikator}",
+                data={"pole__nr_roboty": "GK.1", "notatka": "",
+                      "sek__wykazy__0__adres_nowy": "Polna 7"},
+                follow_redirects=False)
+
+    pliki = _pliki_operatu(klient)
+    assert "mapa_do_celow_projektowych.docx" in pliki
+    assert "wykaz.docx" not in pliki
+
+
 def test_dokument_bez_deklaracji_wymaga_powstaje_zawsze(klient):
     """`wymaga` jest wpisem w `.json`, a nie regułą zgadującą po treści — dokument,
     który jej nie ma, zachowuje się dokładnie jak dotąd."""
