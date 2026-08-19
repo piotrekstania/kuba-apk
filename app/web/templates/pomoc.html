@@ -261,25 +261,25 @@ Wykonano: brak
   przycisk <strong>„+ dodaj kolejną działkę”</strong>. Różni się dokumentem — wszystkie
   działki trafiają do <strong>jednej tabeli</strong>, każda jako kolejny wiersz. Numer
   L.p. program nadaje sam, więc nie ma go w formularzu.</p>
+<p>Nad kartami stoi pole <strong>„Identyfikator działki”</strong>. Jest jedno na cały
+  wykaz — wchodzi do nagłówka dokumentu, za identyfikator obrębu i kropkę. To
+  <strong>osobne pole</strong>, niezależne od numeru działki z góry formularza: w nagłówku
+  wpisuje się to, czego wykaz dotyczy, a to nie zawsze jest ta sama działka. Zostawione
+  puste zachowuje się jak dotąd — w dokumencie zostaje sam obręb z kropką, a numer
+  dopiszesz w Wordzie.</p>
 
 <h2 id="dokumenty">Kilka dokumentów za jednym razem</h2>
-<p>Jeden operat to zwykle kilka plików Worda. W formularzu, pod spisem treści, jest karta
-  <strong>„Dokumenty do wygenerowania”</strong> z listą pozostałych szablonów — zaznaczasz,
-  co ma powstać obok dokumentu głównego. Wszystko trafia do <strong>tego samego katalogu
-  operatu</strong> i dostaje te same dane: ten sam numer roboty, numer operatu, daty
-  i położenie.</p>
-<p class="szary">Ta lista <strong>nie ma związku ze spisem treści</strong>. Spis treści mówi,
-  co w operacie jest (także rzeczy, których program nie generuje — mapy z C-Geo, skany).
-  Ta lista mówi, które pliki Worda program ma teraz zrobić.</p>
-<p>Karty biorą się z plików leżących w katalogu <code>szablony/</code>, więc nowy szablon
-  dokłada pozycję sam. Każdy dokument może mieć własną kartę — wtedy jego opcje stoją
-  tuż pod jego checkboxem i widać, czego dotyczą. Rozstrzyga o tym <code>"tylko"</code>
-  w opisie pola:</p>
-<pre>{"klucz": "dokumenty_sprawozdanie", "etykieta": "Wygeneruj", "typ": "dokumenty",
- "grupa": "Sprawozdanie techniczne", "tylko": ["sprawozdanie_techniczne_wzor"]}</pre>
-<p>Pole <strong>bez</strong> <code>"tylko"</code> zbiera całą resztę. Dzięki temu nowy
-  szablon wrzucony do katalogu pokaże się w karcie „Inne dokumenty”, zamiast zniknąć
-  bez śladu — a gdy wszystkie mają już swoje miejsce, ta karta znika.</p>
+<p>Jeden operat to zwykle kilka plików Worda. Wszystkie trafiają do <strong>tego samego
+  katalogu operatu</strong> i dostają te same dane: ten sam numer roboty, numer operatu,
+  daty i położenie. Co ma powstać, mówi <a href="#spis-wlacznik">spis treści</a> —
+  pozycja w spisie jest jednocześnie włącznikiem dokumentu.</p>
+<p>Wiąże je opis szablonu: pozycja spisu wskazuje plik, który ma z niej powstać.</p>
+<pre>{"klucz": "spis_tresci", "typ": "wybor_wielokrotny",
+ "dokumenty": {"Sprawozdanie techniczne": "sprawozdanie_techniczne_wzor"}}</pre>
+<p>Szablon, którego żadna pozycja spisu nie wskazuje, nie ginie — pokazuje się w karcie
+  <strong>„Inne dokumenty”</strong> jako zwykły checkbox. Dzięki temu nowy plik wrzucony
+  do katalogu <code>szablony/</code> daje się wygenerować od razu, a gdy wszystkie mają
+  już swoje pozycje w spisie, karta znika.</p>
 <p class="szary">Nazwa pliku wynika z nazwy szablonu: <code>sprawozdanie_techniczne_wzor.docx</code>
   robi w katalogu operatu <code>sprawozdanie_techniczne.docx</code>. Gdyby któryś dodatkowy
   szablon miał błąd, dokument główny i tak powstaje — o reszcie program powie osobno.</p>
