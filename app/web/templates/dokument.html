@@ -48,7 +48,30 @@
     <th class="waski">{{ pole.klucz }}</th>
     <td>
       {% set wartosc = pole.wartosc %}
-      {% if wartosc is iterable and wartosc is not string %}
+      {% if pole.sekcje %}
+      {# Powtarzalne sekcje rozpisane na to, co wpisano. Samo „2 wierszy” nie mówiło nic,
+         a po to właśnie wchodzi się w gotowy operat — żeby zobaczyć, z czym się go oddało. #}
+      {% for sekcja in pole.sekcje %}
+      <div class="sekcja-podglad">
+        <strong>{{ sekcja.naglowek }}</strong>
+        <table class="wiersze">
+          {% if pole.kolumny %}
+          <thead><tr><th></th>
+            {% for kolumna in pole.kolumny %}<th>{{ kolumna }}</th>{% endfor %}
+          </tr></thead>
+          {% endif %}
+          <tbody>
+            {% for wiersz in sekcja.wiersze %}
+            <tr>
+              <th scope="row">{{ wiersz.etykieta }}</th>
+              {% for komorka in wiersz.komorki %}<td>{{ komorka or '—' }}</td>{% endfor %}
+            </tr>
+            {% endfor %}
+          </tbody>
+        </table>
+      </div>
+      {% endfor %}
+      {% elif wartosc is iterable and wartosc is not string %}
         {# lista tekstów (np. spis treści) czyta się sama; lista słowników to tabela #}
         {% if wartosc and wartosc[0] is string %}{{ wartosc | join('; ') }}
         {% else %}{{ wartosc | length }} wierszy{% endif %}

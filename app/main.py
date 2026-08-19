@@ -713,6 +713,40 @@ def _uzyte_formatki(wybor: dict[str, str],
     return pozycje
 
 
+def _wypelnione_sekcje(pole: szablony.Pole, wartosc: Any) -> list[dict[str, Any]]:
+    """Powtarzalne sekcje rozpisane na to, co naprawdę wpisano.
+
+    Bez tego strona operatu pokazywała przy wykazach samo „2 wierszy” — liczbę, po której
+    nie da się sprawdzić ani numeru działki, ani co się w niej zmieniło. A po to właśnie
+    wchodzi się w gotowy operat: żeby zobaczyć, z czym się go oddało.
+
+    Puste atrybuty pomijamy. Wykaz budynku ma ich piętnaście, a wypełnione bywają dwa —
+    reszta byłaby ścianą kresek zasłaniającą to, co istotne.
+    """
+    if pole.typ != "sekcje" or not isinstance(wartosc, list):
+        return []
+    kolumny = [k.get("klucz", "") for k in pole.kolumny]
+    nazwa = pole.etykieta_pozycji or "Pozycja"
+
+    sekcje: list[dict[str, Any]] = []
+    for numer, wpis in enumerate(wartosc, start=1):
+        if not isinstance(wpis, dict):
+            continue
+        wiersze = []
+        for wiersz in pole.wiersze_sekcji:
+            komorki = [str(wpis.get(wiersz["pola"][k]["klucz"], "") or "")
+                       if k in wiersz["pola"] else "" for k in kolumny]
+            if any(komorki):
+                wiersze.append({"etykieta": wiersz["etykieta"], "komorki": komorki})
+        if not kolumny:          # sekcja bez układu tabelarycznego — płaska lista pól
+            wiersze = [{"etykieta": pod.get("etykieta", pod["klucz"]),
+                        "komorki": [str(wpis.get(pod["klucz"], "") or "")]}
+                       for pod in pole.podpola if wpis.get(pod["klucz"])]
+        if wiersze:
+            sekcje.append({"naglowek": f"{nazwa} {numer}", "wiersze": wiersze})
+    return sekcje
+
+
 def _dane_w_grupach(pola: list[szablony.Pole],
                     wartosci: dict[str, Any]) -> list[dict[str, Any]]:
     """Wpisane dane w kolejności i grupach **z opisu szablonu**, a nie z bazy.
@@ -736,14 +770,18 @@ def _dane_w_grupach(pola: list[szablony.Pole],
     # pola opisane w szablonie jako przyjmujące formatowanie — ich treść przeszła przez
     # `tekst.oczysc`. Reszta zostaje eskejpowana, bo bierze się wprost z tego, co ktoś
     # wpisał, i nawias trójkątny w uwagach nie ma prawa stać się znacznikiem.
-    def dopisz(nazwa: str, klucz: str, html: bool = False) -> None:
+    def dopisz(nazwa: str, klucz: str, html: bool = False,
+               sekcje: list | None = None, kolumny: list | None = None) -> None:
         grupy.setdefault(nazwa, []).append(
-            {"klucz": klucz, "wartosc": wartosci[klucz], "html": html})
+            {"klucz": klucz, "wartosc": wartosci[klucz], "html": html,
+             "sekcje": sekcje or [], "kolumny": kolumny or []})
         uzyte.add(klucz)
 
     for pole in pola:
         if pole.klucz in wartosci and pole.klucz not in uzyte:
-            dopisz(pole.grupa, pole.klucz, html=pole.formatowanie)
+            dopisz(pole.grupa, pole.klucz, html=pole.formatowanie,
+                   sekcje=_wypelnione_sekcje(pole, wartosci[pole.klucz]),
+                   kolumny=[k.get("etykieta", "") for k in pole.kolumny])
     for klucz in wartosci:
         if klucz not in uzyte:
             dopisz("Pozostałe dane", klucz)

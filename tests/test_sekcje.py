@@ -501,3 +501,70 @@ def test_pusty_identyfikator_zostawia_sam_obreb_z_kropka():
 
     naglowek = next(p.text for p in d.paragraphs if "Identyfikator działki ewidencyjnej" in p.text)
     assert naglowek.endswith("[247301_1.0112.]")
+
+
+# --- strona operatu ----------------------------------------------------------
+
+def _operat_z_kolumnami(klient):
+    klient.srodowisko.dodaj_szablon(
+        "spis_tresci_wzor", ["{{ nr_roboty }}"],
+        opis={"nazwa": "Operat", "glowny": True,
+              "pola": [{"klucz": "nr_roboty", "etykieta": "Nr roboty"},
+                       {"klucz": "wykazy", "etykieta": "Wykazy", "typ": "sekcje",
+                        "etykieta_pozycji": "Wykaz",
+                        "kolumny": [{"klucz": "dotychczas", "etykieta": "Stan dotychczasowy"},
+                                    {"klucz": "nowy", "etykieta": "Stan nowy"}],
+                        "podpola": [
+                            {"klucz": "adres_dotychczas", "wiersz": "Adres budynku",
+                             "kolumna": "dotychczas"},
+                            {"klucz": "adres_nowy", "wiersz": "Adres budynku",
+                             "kolumna": "nowy"},
+                            {"klucz": "pole_dotychczas", "wiersz": "Pole zabudowy",
+                             "kolumna": "dotychczas"},
+                            {"klucz": "pole_nowy", "wiersz": "Pole zabudowy",
+                             "kolumna": "nowy"}]}]})
+
+
+def test_strona_operatu_pokazuje_wpisane_wiersze(klient):
+    """„2 wierszy” nie mówiło nic — a po to właśnie wchodzi się w gotowy operat.
+
+    Wykazów w operacie bywa kilka, więc każdy dostaje własny nagłówek z numerem;
+    inaczej nie wiadomo, który adres należy do którego budynku.
+    """
+    _operat_z_kolumnami(klient)
+
+    _wyslij(klient, **{"sek__wykazy__0__adres_nowy": "Polna 7a",
+                       "sek__wykazy__1__pole_dotychczas": "148",
+                       "sek__wykazy__1__pole_nowy": "162"})
+    strona = klient.get(f"/dokument/{db.dokumenty()[0]['id']}").text
+
+    assert "wierszy" not in strona, "została sama liczba zamiast danych"
+    assert "Polna 7a" in strona and "148" in strona and "162" in strona
+    assert "Wykaz 1" in strona and "Wykaz 2" in strona
+    assert strona.index("Polna 7a") < strona.index("Wykaz 2"), \
+        "dane wpadły do niewłaściwego wykazu"
+
+
+def test_strona_operatu_pomija_niewypelnione_atrybuty(klient):
+    """Wykaz budynku ma piętnaście atrybutów, a wypełnione bywają dwa.
+
+    Wypisywanie wszystkich dałoby ścianę kresek zasłaniającą to, co istotne.
+    """
+    _operat_z_kolumnami(klient)
+
+    _wyslij(klient, **{"sek__wykazy__0__adres_nowy": "Polna 7a"})
+    strona = klient.get(f"/dokument/{db.dokumenty()[0]['id']}").text
+
+    assert "Adres budynku" in strona
+    assert "Pole zabudowy" not in strona, "pusty atrybut trafił na stronę operatu"
+
+
+def test_sekcja_bez_kolumn_tez_sie_pokazuje(klient):
+    """Nie każda sekcja ma układ tabelaryczny — płaską wypisujemy etykietami podpól."""
+    _operat_z_sekcjami(klient)          # `podpola` bez `wiersz`/`kolumna`
+
+    _wyslij(klient, **{"sek__wykazy__0__adres_nowy": "Leśna 3"})
+    strona = klient.get(f"/dokument/{db.dokumenty()[0]['id']}").text
+
+    assert "Adres — nowy" in strona and "Leśna 3" in strona
+    assert "Adres — dotychczasowy" not in strona
