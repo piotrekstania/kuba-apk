@@ -438,3 +438,34 @@ def test_jedna_dzialka_nie_zostawia_pustych_wierszy():
 def test_wykaz_dzialek_bez_danych_nie_powstaje():
     """Ta sama zasada co przy budynku — deklaracja `wymaga` w `.json` szablonu."""
     assert szablony.szablon_po_id("wykaz_zmian_dzialki_wzor").wymaga == "wykazy_dzialek"
+
+
+def test_naglowek_tabeli_powtarza_sie_na_kolejnych_stronach():
+    """Odkąd działki mogą przelać się na następną stronę, kontynuacja bez opisu kolumn
+    byłaby gołymi kratkami — a ten dokument idzie do ośrodka."""
+    from docx.oxml.ns import qn
+
+    tabela = Document(str(szablony.szablon_po_id(
+        "wykaz_zmian_dzialki_wzor").plik)).tables[0]
+
+    for nr in range(3):
+        trPr = tabela.rows[nr]._tr.find(qn("w:trPr"))
+        assert trPr is not None and trPr.find(qn("w:tblHeader")) is not None, \
+            f"wiersz nagłówka {nr} nie jest oznaczony jako powtarzany"
+
+
+def test_pod_tabela_nie_ma_pustych_akapitow():
+    """Puste akapity między tabelą a podpisem spychały go na osobną, pustą kartkę.
+
+    Podpis ma iść zaraz pod tabelą i rosnąć razem z nią (decyzja brata).
+    """
+    from docx.oxml.ns import qn
+
+    d = Document(str(szablony.szablon_po_id("wykaz_zmian_dzialki_wzor").plik))
+    elementy = list(d.element.body)
+    tabela = next(i for i, el in enumerate(elementy) if el.tag.endswith("}tbl"))
+    podpis = next(i for i, el in enumerate(elementy)
+                  if el.tag.endswith("}p")
+                  and "Sporządził" in "".join(t.text or "" for t in el.iter(qn("w:t"))))
+
+    assert podpis == tabela + 1, "między tabelą a podpisem nie ma prawa nic stać"
