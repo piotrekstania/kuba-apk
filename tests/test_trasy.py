@@ -573,6 +573,23 @@ def test_adres_arkusza_zmienia_sie_po_zmianie_pliku(klient, tmp_path, monkeypatc
     assert main.wersja_zasobow() != przed
 
 
+def test_nazwy_kart_maja_kolor_akcentu():
+    """Formularz operatu ma kilkanaście kart i przy przewijaniu szuka się właśnie ich
+    nazw — czarne na tle czarnego tekstu zlewały się w jedno.
+
+    Podkarty („Wykaz 1”, „Działka 2”) zostają szare: różnica między kartą a jej
+    wnętrzem ma być widoczna.
+    """
+    from app.config import WEB
+
+    style = (WEB / "static" / "style.css").read_text(encoding="utf-8")
+
+    legenda = style.split("legend {")[1].split("}")[0]
+    assert "var(--akcent)" in legenda, "nazwy kart bez koloru akcentu"
+    podkarta = style.split(".sekcja > legend {")[1].split("}")[0]
+    assert "var(--szary)" in podkarta, "podkarty przestały być szare"
+
+
 def test_strona_znakuje_arkusz_stylow(klient):
     """Bez znacznika w adresie każda zmiana wyglądu wymagałaby od brata Ctrl+F5.
 

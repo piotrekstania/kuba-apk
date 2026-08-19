@@ -105,7 +105,11 @@ pre { background: var(--panel); border: 1px solid var(--linia); border-radius: 8
 /* formularz */
 fieldset { background: var(--panel); border: 1px solid var(--linia); border-radius: 10px;
            padding: 8px 18px 18px; margin: 0 0 18px; }
-legend { font-weight: 600; padding: 0 6px; }
+/* Nazwy kart na niebiesko: formularz operatu ma ich kilkanaście, a przy przewijaniu
+   szuka się właśnie ich — czarny tekst na tle czarnego tekstu zlewał się w jedno.
+   Podkarty (`.sekcja > legend`, np. „Wykaz 1”) zostają szare, żeby nie zgubić różnicy
+   między kartą a jej wnętrzem. */
+legend { font-weight: 600; padding: 0 6px; color: var(--akcent); }
 .siatka { display: grid; grid-template-columns: repeat(6, 1fr); gap: 14px; }
 .pole.pelna { grid-column: span 6; }
 .pole.polowa { grid-column: span 3; }
