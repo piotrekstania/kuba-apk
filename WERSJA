@@ -1,2 +1,2 @@
-2026.08.14-90
-Poprawione formatowanie opisu przebiegu prac: pogrubienie ustawione na jednym akapicie nie rozlewa się już na tekst pod spodem. Dotyczyło to wklejki z Worda i pisania w edytorze po naciśnięciu Entera.
+2026.08.19-91
+Wykazy zmian danych ewidencyjnych wypełniasz teraz w programie — na to czekałeś: wykaz budynku po kilka na operat, każdy na osobnej stronie, a wykaz działki jako kolejne wiersze jednej tabeli, z identyfikatorem działki w nagłówku. Spis treści włącza dokumenty: zaznaczenie pozycji odblokowuje jej pola i generuje plik, a dokument odznaczony przy poprawianiu znika z katalogu operatu. Formularz ostrzega też przed wyjściem z niezapisanymi zmianami.
