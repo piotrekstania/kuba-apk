@@ -140,6 +140,53 @@
           {% if pole.podpowiedz %}<p class="podpowiedz">{{ pole.podpowiedz }}</p>{% endif %}
         </div>
 
+        {% elif pole.typ == 'sekcje' %}
+        {# Powtarzany **komplet pól**, nie wiersz tabeli. Wykaz zmian danych budynku to
+           15 atrybutów w dwóch stanach; jako tabela miałby 30 kolumn i nie dałoby się go
+           wypełnić. Każde powtórzenie to osobna karta, a do formatki jedzie lista
+           słowników — dokładnie taka sama jak z tabeli, więc `{%p for %}` w Wordzie
+           obsługuje jedno i drugie tak samo. #}
+        <div class="pole pelna sekcje" data-nazwa="{{ pole.klucz }}"
+             data-pozycja="{{ pole.etykieta_pozycji or 'Pozycja' }}"{{ zaleznosc | safe }}>
+          <label>{{ pole.etykieta }}</label>
+          {% set wpisy = wartosc if wartosc is iterable and wartosc is not string else [] %}
+          <div class="sekcje-lista">
+            {% for wpis in (wpisy or [{}]) %}
+            {% set nr = loop.index0 %}
+            <fieldset class="sekcja">
+              <legend><span class="numer-sekcji"></span>
+                <button type="button" class="usun" title="Usuń">×</button></legend>
+              <div class="siatka">
+                {% for pod in pole.podpola %}
+                <div class="pole {{ pod.szerokosc or 'polowa' }}">
+                  <label>{{ pod.etykieta }}</label>
+                  <input name="sek__{{ pole.klucz }}__{{ nr }}__{{ pod.klucz }}"
+                         value="{{ wpis.get(pod.klucz, '') if wpis else '' }}">
+                </div>
+                {% endfor %}
+              </div>
+            </fieldset>
+            {% endfor %}
+          </div>
+          {# Wzorzec do klonowania — dzięki niemu JS nie musi znać listy podpól. #}
+          <template class="wzorzec-sekcji">
+            <fieldset class="sekcja">
+              <legend><span class="numer-sekcji"></span>
+                <button type="button" class="usun" title="Usuń">×</button></legend>
+              <div class="siatka">
+                {% for pod in pole.podpola %}
+                <div class="pole {{ pod.szerokosc or 'polowa' }}">
+                  <label>{{ pod.etykieta }}</label>
+                  <input name="sek__{{ pole.klucz }}__0__{{ pod.klucz }}">
+                </div>
+                {% endfor %}
+              </div>
+            </fieldset>
+          </template>
+          <button type="button" class="dodaj-sekcje">+ {{ pole.etykieta_dodaj or 'dodaj kolejny' }}</button>
+          {% if pole.podpowiedz %}<p class="podpowiedz">{{ pole.podpowiedz }}</p>{% endif %}
+        </div>
+
         {% elif pole.typ == 'select' %}
         <div class="pole {{ pole.szerokosc }}"{{ zaleznosc | safe }}>
           <label for="p_{{ pole.klucz }}">{{ pole.etykieta }}</label>
@@ -529,6 +576,46 @@ document.querySelectorAll('[data-wklej]').forEach(przycisk => {
       cel.focus();
     }
   });
+});
+
+// --- powtarzalne sekcje (np. wykazy zmian danych budynku) -------------------
+// Ta sama zasada co przy wierszach tabeli: po każdej zmianie numerujemy pola od nowa,
+// bo o kolejności decyduje indeks w nazwie pola, a nie miejsce w dokumencie. Wzorzec
+// pustej sekcji przyjeżdża z serwera w `<template>`, dzięki czemu JS nie musi znać
+// listy podpól — dokłada je `.json` szablonu i nic tu nie trzeba poprawiać.
+document.querySelectorAll('.sekcje').forEach(blok => {
+  const nazwa = blok.dataset.nazwa;
+  const lista = blok.querySelector('.sekcje-lista');
+  const wzorzec = blok.querySelector('.wzorzec-sekcji');
+
+  function przenumeruj() {
+    lista.querySelectorAll('.sekcja').forEach((sekcja, indeks) => {
+      sekcja.querySelectorAll('input').forEach(pole => {
+        const podklucz = pole.name.split('__').pop();
+        pole.name = `sek__${nazwa}__${indeks}__${podklucz}`;
+      });
+      const numer = sekcja.querySelector('.numer-sekcji');
+      if (numer) numer.textContent = `${blok.dataset.pozycja} ${indeks + 1}`;
+      // ostatniej sekcji nie ma po co usuwać: pusta i tak nie trafia do dokumentu,
+      // a formularz bez żadnej sekcji wygląda, jakby czegoś brakowało
+      const usun = sekcja.querySelector('.usun');
+      if (usun) usun.hidden = lista.querySelectorAll('.sekcja').length < 2;
+    });
+  }
+
+  blok.querySelector('.dodaj-sekcje').addEventListener('click', () => {
+    lista.appendChild(wzorzec.content.cloneNode(true));
+    przenumeruj();
+    lista.lastElementChild.querySelector('input')?.focus();
+  });
+
+  blok.addEventListener('click', zdarzenie => {
+    if (!zdarzenie.target.classList.contains('usun')) return;
+    zdarzenie.target.closest('.sekcja').remove();
+    przenumeruj();
+  });
+
+  przenumeruj();
 });
 
 // --- edytor z pogrubieniem, kursywą i podkreśleniem -------------------------

@@ -147,6 +147,168 @@
       "podpowiedz": "Na razie bez dodatkowych opcji — biorą dane z operatu."
     },
     {
+      "klucz": "wykazy_budynkow",
+      "etykieta": "Wykazy zmian danych budynku",
+      "typ": "sekcje",
+      "grupa": "Wykazy zmian danych ewidencyjnych",
+      "etykieta_pozycji": "Wykaz",
+      "etykieta_dodaj": "dodaj kolejny wykaz",
+      "aktywne_gdy": "dokumenty_wykazy:wykaz_zmian_budynku_wzor",
+      "podpowiedz": "Jeden komplet na jeden budynek. Puste pola zostaną w dokumencie puste, a wykaz bez ani jednej wypełnionej wartości w ogóle nie powstanie.",
+      "podpola": [
+        {
+          "klucz": "identyfikator_dzialki_dotychczas",
+          "etykieta": "Identyfikator działki / działek — dotychczasowy",
+          "szerokosc": "polowa"
+        },
+        {
+          "klucz": "identyfikator_dzialki_nowy",
+          "etykieta": "Identyfikator działki / działek — nowy",
+          "szerokosc": "polowa"
+        },
+        {
+          "klucz": "adres_dotychczas",
+          "etykieta": "Adres budynku — dotychczasowy",
+          "szerokosc": "polowa"
+        },
+        {
+          "klucz": "adres_nowy",
+          "etykieta": "Adres budynku — nowy",
+          "szerokosc": "polowa"
+        },
+        {
+          "klucz": "identyfikator_budynku_dotychczas",
+          "etykieta": "Identyfikator budynku — dotychczasowy",
+          "szerokosc": "polowa"
+        },
+        {
+          "klucz": "identyfikator_budynku_nowy",
+          "etykieta": "Identyfikator budynku — nowy",
+          "szerokosc": "polowa"
+        },
+        {
+          "klucz": "kontur_dotychczas",
+          "etykieta": "Numeryczny kontur budynku — dotychczasowy",
+          "szerokosc": "polowa"
+        },
+        {
+          "klucz": "kontur_nowy",
+          "etykieta": "Numeryczny kontur budynku — nowy",
+          "szerokosc": "polowa"
+        },
+        {
+          "klucz": "rodzaj_kst_dotychczas",
+          "etykieta": "Rodzaj budynku według KŚT — dotychczasowy",
+          "szerokosc": "polowa"
+        },
+        {
+          "klucz": "rodzaj_kst_nowy",
+          "etykieta": "Rodzaj budynku według KŚT — nowy",
+          "szerokosc": "polowa"
+        },
+        {
+          "klucz": "kondygnacje_nadziemne_dotychczas",
+          "etykieta": "Liczba kondygnacji nadziemnych — dotychczasowy",
+          "szerokosc": "polowa"
+        },
+        {
+          "klucz": "kondygnacje_nadziemne_nowy",
+          "etykieta": "Liczba kondygnacji nadziemnych — nowy",
+          "szerokosc": "polowa"
+        },
+        {
+          "klucz": "kondygnacje_podziemne_dotychczas",
+          "etykieta": "Liczba kondygnacji podziemnych — dotychczasowy",
+          "szerokosc": "polowa"
+        },
+        {
+          "klucz": "kondygnacje_podziemne_nowy",
+          "etykieta": "Liczba kondygnacji podziemnych — nowy",
+          "szerokosc": "polowa"
+        },
+        {
+          "klucz": "pole_zabudowy_dotychczas",
+          "etykieta": "Pole zabudowy [m²] — dotychczasowy",
+          "szerokosc": "polowa"
+        },
+        {
+          "klucz": "pole_zabudowy_nowy",
+          "etykieta": "Pole zabudowy [m²] — nowy",
+          "szerokosc": "polowa"
+        },
+        {
+          "klucz": "dokumenty_wlasnosci_dotychczas",
+          "etykieta": "Dokumenty potwierdzające własność — dotychczasowy",
+          "szerokosc": "polowa"
+        },
+        {
+          "klucz": "dokumenty_wlasnosci_nowy",
+          "etykieta": "Dokumenty potwierdzające własność — nowy",
+          "szerokosc": "polowa"
+        },
+        {
+          "klucz": "numer_kw_dotychczas",
+          "etykieta": "Numer księgi wieczystej — dotychczasowy",
+          "szerokosc": "polowa"
+        },
+        {
+          "klucz": "numer_kw_nowy",
+          "etykieta": "Numer księgi wieczystej — nowy",
+          "szerokosc": "polowa"
+        },
+        {
+          "klucz": "jednostka_rejestrowa_dotychczas",
+          "etykieta": "Jednostka rejestrowa — dotychczasowy",
+          "szerokosc": "polowa"
+        },
+        {
+          "klucz": "jednostka_rejestrowa_nowy",
+          "etykieta": "Jednostka rejestrowa — nowy",
+          "szerokosc": "polowa"
+        },
+        {
+          "klucz": "pow_lokali_odrebnych_dotychczas",
+          "etykieta": "Pow. użytkowa lokali odrębnych — dotychczasowy",
+          "szerokosc": "polowa"
+        },
+        {
+          "klucz": "pow_lokali_odrebnych_nowy",
+          "etykieta": "Pow. użytkowa lokali odrębnych — nowy",
+          "szerokosc": "polowa"
+        },
+        {
+          "klucz": "pow_lokali_niewyodrebnionych_dotychczas",
+          "etykieta": "Pow. użytkowa lokali niewyodrębnionych — dotychczasowy",
+          "szerokosc": "polowa"
+        },
+        {
+          "klucz": "pow_lokali_niewyodrebnionych_nowy",
+          "etykieta": "Pow. użytkowa lokali niewyodrębnionych — nowy",
+          "szerokosc": "polowa"
+        },
+        {
+          "klucz": "pow_pomieszczen_dotychczas",
+          "etykieta": "Pow. użytkowa pomieszczeń przynależnych — dotychczasowy",
+          "szerokosc": "polowa"
+        },
+        {
+          "klucz": "pow_pomieszczen_nowy",
+          "etykieta": "Pow. użytkowa pomieszczeń przynależnych — nowy",
+          "szerokosc": "polowa"
+        },
+        {
+          "klucz": "uwagi_dotychczas",
+          "etykieta": "Uwagi (wyburzenie, przebudowa, inne) — dotychczasowy",
+          "szerokosc": "polowa"
+        },
+        {
+          "klucz": "uwagi_nowy",
+          "etykieta": "Uwagi (wyburzenie, przebudowa, inne) — nowy",
+          "szerokosc": "polowa"
+        }
+      ]
+    },
+    {
       "klucz": "dokumenty",
       "etykieta": "Wygeneruj też",
       "typ": "dokumenty",

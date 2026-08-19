@@ -60,6 +60,12 @@ class Pole:
     aktywne_gdy: str = ""       # pole jest wyszarzone, dopóki wskazany przełącznik
                                 # nie jest zaznaczony; "dokumenty:id" celuje w pozycję listy
     kolumny: list[dict[str, str]] = field(default_factory=list)   # tylko dla typ="tabela"
+    # tylko dla typ="sekcje": pola powtarzane w każdym powtórzeniu. Wykaz zmian danych
+    # budynku to 15 atrybutów w dwóch stanach — jako tabela miałby 30 kolumn i nie dałoby
+    # się go wypełnić, więc powtarzamy **komplet pól**, a nie wiersz.
+    podpola: list[dict[str, str]] = field(default_factory=list)
+    etykieta_pozycji: str = ""  # nagłówek jednego powtórzenia, np. „Wykaz”
+    etykieta_dodaj: str = ""    # napis na przycisku dokładającym powtórzenie
     domyslnie: str = ""
     zrodlo: str = ""            # "ustawienia" = bierz z danych stałych, nie pokazuj w formularzu
     szerokosc: str = "pelna"    # "pelna" | "polowa" | "trzecia"
@@ -151,6 +157,9 @@ def wczytaj_szablon(plik: Path) -> Szablon:
             domyslnie=str(surowe.get("domyslnie", "")),
             zrodlo=surowe.get("zrodlo", ""),
             szerokosc=surowe.get("szerokosc", "pelna"),
+            podpola=list(surowe.get("podpola", [])),
+            etykieta_pozycji=surowe.get("etykieta_pozycji", ""),
+            etykieta_dodaj=surowe.get("etykieta_dodaj", ""),
             biblioteka=surowe.get("biblioteka", ""),
             formatowanie=bool(surowe.get("formatowanie")),
         )

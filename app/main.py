@@ -222,27 +222,34 @@ def odczytaj_dane(formularz, szablon: szablony.Szablon) -> dict[str, Any]:
     """
     proste: dict[str, Any] = {}
     tabele: dict[str, dict[int, dict[str, str]]] = defaultdict(lambda: defaultdict(dict))
+    # `sekcje` to powtarzany **komplet pól** (np. jeden wykaz zmian danych budynku),
+    # a nie wiersz tabeli. Dane wychodzą w tym samym kształcie co z tabeli — lista
+    # słowników — więc formatka obsługuje jedno i drugie tą samą pętlą `{%p for %}`.
+    sekcje: dict[str, dict[int, dict[str, str]]] = defaultdict(lambda: defaultdict(dict))
 
     for klucz, wartosc in formularz.multi_items():
         if klucz.startswith("pole__"):
             proste[klucz[len("pole__"):]] = wartosc.strip() if isinstance(wartosc, str) else wartosc
-        elif klucz.startswith("tab__"):
+        elif klucz.startswith("tab__") or klucz.startswith("sek__"):
             czesci = klucz.split("__")
             if len(czesci) == 4:
-                _, nazwa, indeks, kolumna = czesci
+                przedrostek, nazwa, indeks, podklucz = czesci
                 if indeks.isdigit():
-                    tabele[nazwa][int(indeks)][kolumna] = (wartosc or "").strip()
+                    gdzie = tabele if przedrostek == "tab" else sekcje
+                    gdzie[nazwa][int(indeks)][podklucz] = (wartosc or "").strip()
 
-    for nazwa, wiersze in tabele.items():
-        uporzadkowane = [wiersze[i] for i in sorted(wiersze)]
-        # wiersze całkiem puste (użytkownik dodał i nie wypełnił) pomijamy
-        proste[nazwa] = [w for w in uporzadkowane if any(v for v in w.values())]
+    for zbior in (tabele, sekcje):
+        for nazwa, wiersze in zbior.items():
+            uporzadkowane = [wiersze[i] for i in sorted(wiersze)]
+            # całkiem puste pomijamy — dołożony i niewypełniony wykaz nie ma po co
+            # jechać do dokumentu jako pusta strona
+            proste[nazwa] = [w for w in uporzadkowane if any(v for v in w.values())]
 
     for pole in szablon.pola:
         if pole.typ == "checkbox":
             proste[pole.klucz] = pole.klucz in {k[len("pole__"):] for k in formularz
                                                 if k.startswith("pole__")}
-        elif pole.typ == "tabela":
+        elif pole.typ in ("tabela", "sekcje"):
             proste.setdefault(pole.klucz, [])
         elif pole.typ == "dokumenty":
             proste[pole.klucz] = formularz.getlist(f"pole__{pole.klucz}")
