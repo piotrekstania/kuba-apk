@@ -418,6 +418,18 @@ też brat. Interfejs w całości po polsku.
    z `fsync` na plik). Zapomniana fixture kończy się głośnym `no such table`,
    a nie cichym pisaniem do bazy autora — i o to chodzi.
 
+26. **Nazwa katalogu ze znacznikiem czasu psuje poprawianie operatu.** Gdy szablon nie
+   ma licznika, operat nie dostaje numeru i katalog nazywa się wzorcem nazwy pliku plus
+   datą **co do sekundy** — a przy poprawianiu znacznik liczył się od nowa, więc
+   poprawka trafiająca w następną sekundę zakładała katalog obok. Poprzednie dokumenty,
+   razem z mapami dołożonymi ręcznie, zostawały w starym, a wpis w historii wskazywał
+   już nowy. W testach wyglądało to na wyścig z wątkiem podglądów: `test_sekcje.py`
+   padał ~1 raz na 5 przebiegów, **za każdym razem w innym teście**, bo wszystko
+   zależało od tego, czy zegar tyknął między dwoma żądaniami. Teraz przy poprawianiu
+   nazwa katalogu bierze się z historii (`poprzedni["katalog"]`), a znacznik zostaje
+   tylko dla nowych robót. Wniosek ogólny ten sam co w pułapce 22: **przy losowym
+   padnięciu najpierw sprawdź zegar i kolejność, dopiero potem wątki.**
+
 ## Stan na teraz — przetestowane end-to-end
 
 Formularz → `.docx` → PDF → sklejenie kilku PDF-ów w jeden. Działa: powtarzalne wiersze tabeli
