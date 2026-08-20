@@ -547,6 +547,38 @@ def test_kilka_uzytkow_stoi_jeden_pod_drugim(baza):
     assert uzytki.cells[-2].text.strip().splitlines() == ["R", "R", "W/R"]
 
 
+def _vAlign(komorka) -> str:
+    from docx.oxml.ns import qn
+    element = komorka._tc.get_or_add_tcPr().find(qn("w:vAlign"))
+    return element.get(qn("w:val")) if element is not None else "top"
+
+
+def test_pojedyncza_wartosc_stoi_na_srodku_komorki(baza):
+    """Wiersz z jedną wartością po każdej stronie ma ją równo z nazwą atrybutu obok.
+
+    Wyrównanie do góry jest potrzebne tylko przy kilku linijkach; w pozostałych wierszach
+    kleiło liczbę do górnej krawędzi, podczas gdy dwuwierszowa etykieta obok stała
+    na środku — i wyglądało to na usterkę.
+    """
+    d = _wykaz_dzialek([{"dzialka": "119/80", "pow_uzytkow_dotychczas": "2,56",
+                         "pow_uzytkow_nowy": "8,96"}])
+
+    wiersz = next(w for w in d.tables[0].rows if "Pole powierzchni użytków" in w.cells[1].text)
+    assert [_vAlign(k) for k in wiersz.cells[-2:]] == ["center", "center"]
+
+
+def test_kilka_linijek_ciagnie_komorki_stanow_do_gory(baza):
+    """Przy kilku użytkach wartość w sąsiedniej kolumnie musi wypaść na wysokości
+    **swojej** linijki — brat dosuwa ją pustymi linijkami, a to działa tylko wtedy,
+    gdy obie komórki są wyrównane do góry. Nazwa atrybutu zostaje na środku."""
+    d = _wykaz_dzialek([{"dzialka": "119/80", "ozu_dotychczas": "78\n36\n36",
+                         "ozu_nowy": "67"}])
+
+    wiersz = next(w for w in d.tables[0].rows if w.cells[2].text.strip() == "OZU")
+    assert [_vAlign(k) for k in wiersz.cells[-2:]] == ["top", "top"]
+    assert _vAlign(wiersz.cells[1]) == "center", "nazwa atrybutu ma zostać na środku"
+
+
 def test_wykaz_dzialek_bez_danych_nie_powstaje():
     """Ta sama zasada co przy budynku — deklaracja `wymaga` w `.json` szablonu."""
     assert szablony.szablon_po_id("wykaz_zmian_dzialki_wzor").wymaga == "wykazy_dzialek"

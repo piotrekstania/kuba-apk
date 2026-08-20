@@ -275,6 +275,55 @@ def _ustawienia_biegu(biegi: list, qn) -> tuple[str, int]:
     return "", 0
 
 
+# Ile kolumn od prawej to kolumny stanów („dotychczasowy” i „nowy”). Reszta wiersza —
+# L.p., nazwa atrybutu, podwiersz — zostaje wyśrodkowana zawsze.
+KOLUMNY_STANOW = 2
+
+
+def wyrownaj_komorki_stanow(dokument) -> int:
+    """Komórki stanów: do góry, gdy w wierszu jest kilka linijek; inaczej na środek.
+
+    Jedna działka bywa podzielona na kilka użytków i brat wpisuje je jeden pod drugim,
+    a wartość w sąsiedniej kolumnie musi wypaść na wysokości **swojej** linijki (do tego
+    służą puste linijki na początku wpisu). Przy wyśrodkowaniu w pionie krótsza kolumna
+    pływała i nic się nie zgadzało — więc takie wiersze wyrównujemy do góry.
+
+    Ale wiersz z jedną wartością po każdej stronie wyrównany do góry wygląda źle:
+    liczba klei się do górnej krawędzi, a nazwa atrybutu obok stoi na środku, bo jej
+    komórka bywa wyższa (dwuwierszowa etykieta, sąsiedni podwiersz). Dlatego decyduje
+    **treść**, a nie formatka: to jedyne miejsce, które wie, ile linijek naprawdę wpisano.
+    Robimy to po wypełnieniu, tuż przed zapisem.
+    """
+    from docx.oxml.ns import qn
+
+    # `w:vAlign` stoi w `tcPr` przed `w:hideMark` i po `w:tcMar` — kolejność w OOXML jest
+    # częścią schematu, a nie kwestią gustu (pułapka 12d)
+    po_wyrownaniu = ("hideMark",)
+
+    zmienione = 0
+    for tabela in dokument.tables:
+        for wiersz in tabela.rows:
+            komorki = wiersz.cells[-KOLUMNY_STANOW:]
+            if len(komorki) < KOLUMNY_STANOW:
+                continue
+            wielolinijkowa = any(len(k.text.splitlines()) > 1 for k in komorki)
+            for komorka in komorki:
+                tcPr = komorka._tc.get_or_add_tcPr()
+                vAlign = tcPr.find(qn("w:vAlign"))
+                if vAlign is None:
+                    from docx.oxml import OxmlElement            # noqa: PLC0415
+                    vAlign = OxmlElement("w:vAlign")
+                    for dziecko in tcPr:
+                        if dziecko.tag.split("}")[1] in po_wyrownaniu:
+                            dziecko.addprevious(vAlign)
+                            break
+                    else:
+                        tcPr.append(vAlign)
+                vAlign.set(qn("w:val"), "top" if wielolinijkowa else "center")
+                zmienione += 1
+    return zmienione
+
+
 def dopisz_dokument(szablon: Szablon, kontekst: dict[str, Any], katalog: Path) -> Path:
     """Wypełnia dodatkowy szablon **tym samym kontekstem** i kładzie go w katalogu operatu.
 
@@ -284,6 +333,7 @@ def dopisz_dokument(szablon: Szablon, kontekst: dict[str, Any], katalog: Path) -
     """
     dokument = DocxTemplate(szablon.plik)
     dokument.render(sformatuj_pod_znaczniki(dokument, kontekst), autoescape=True)
+    wyrownaj_komorki_stanow(dokument.docx)
     plik = katalog / operaty.nazwa_dokumentu(szablon.id)
     dokument.save(plik)
     return plik
@@ -323,6 +373,7 @@ def generuj(szablon: Szablon, dane: dict[str, Any], ustawienia: dict[str, str],
     try:
         dokument = DocxTemplate(szablon.plik)
         dokument.render(sformatuj_pod_znaczniki(dokument, kontekst), autoescape=True)
+        wyrownaj_komorki_stanow(dokument.docx)
 
         # Katalog nazywa się numerem operatu; gdy szablon go nie ma, bierzemy nazwę
         # z wzorca nazwy pliku, żeby robota i tak dostała swój folder.

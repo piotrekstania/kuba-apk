@@ -58,8 +58,14 @@ start.bat
 Wszystko od ostatniego wydania — numer i skrót commita znajdziesz w `ZMIANY.md`
 i `git log`. Dopisuj punkty przy każdej rundzie zmian, kasuj po wydaniu.
 
-*(pusto — wydanie 2026.08.19-96 poszło 19.08; wyrównanie podglądu operatu
-zmierzone na żywo w przeglądarce: 0 px różnicy górnych krawędzi kolumn)*
+### Wyrównanie komórek w wykazach zależy od treści
+
+- [ ] Wiersz, w którym obie kolumny mają **po jednej wartości**, ma je na środku —
+      równo z nazwą atrybutu obok (sprawdź wiersz „Pole powierzchni użytków…", gdzie
+      etykieta łamie się na dwie linijki).
+- [ ] Wiersz z **kilkoma linijkami** po którejkolwiek stronie jest wyrównany do góry,
+      więc puste linijki dalej dosuwają wpis do właściwego użytku.
+- [ ] To samo w wykazie budynku, gdy wpiszesz kilka linijek w „Uwagi".
 
 ---
 
