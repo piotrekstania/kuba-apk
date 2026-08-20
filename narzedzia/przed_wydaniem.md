@@ -72,9 +72,13 @@ i `git log`. Dopisuj punkty przy każdej rundzie zmian, kasuj po wydaniu.
       poprawki nagłówek „STAN NOWY" nie miał prawego boku) i nie ma kreski w środku
       tam, gdzie jej nie powinno być.
 - [ ] Nagłówek czwartej kolumny to **PPU [ha]** w obu stanach.
-- [ ] **Formularz i strona operatu mają ten sam układ co dokument**: dwa piętra
-      nagłówka, OFU/OZU/OZK/PPU obok siebie, a numer działki i pole powierzchni
-      na całą szerokość stanu. Sprawdź przy dwóch działkach i po „Popraw ten operat".
+- [ ] **Formularz i strona operatu mają ten sam układ co dokument**: OFU/OZU/OZK/PPU
+      obok siebie, a numer działki i pole powierzchni na całą szerokość stanu.
+      Sprawdź przy dwóch działkach i po „Popraw ten operat".
+- [ ] Oznaczenia **OFU/OZU/OZK/PPU stoją nad swoimi polami**, a nie w nagłówku tabeli —
+      nad „Numerem działki" i „Polem powierzchni" nie ma ich w ogóle.
+- [ ] Kolumny użytków są **równej szerokości** (dotyczy formularza i strony operatu;
+      w dokumencie szerokości są z formatki).
 - [ ] **Otwórz w prawdziwym Wordzie** — tabela jest zbudowana od nowa przez skrypt
       (dwa piętra nagłówka, scalenia poziome i pionowe, krawędzie ustawiane po
       zbudowaniu wiersza). To jest ten rodzaj pliku, który LibreOffice składa bez
@@ -116,9 +120,14 @@ i `git log`. Dopisuj punkty przy każdej rundzie zmian, kasuj po wydaniu.
 >    miejscu ma **zwykłe** `{{ }}` — bo taki plik Word odmawia otworzyć. Sprawdź też,
 >    co się dzieje, gdy w danych siedzi liczba, `None` albo lista zamiast napisu,
 >    i czy oryginalny kontekst na pewno zostaje napisami dla kolejnej formatki.
-> 4. `app/szablony.py` — `podpola_wspolne` i `wiersze_sekcji`: co przy niepełnym albo
->    sprzecznym opisie `.json` (podpole bez `wiersz`, kolumna spoza `kolumny`,
->    `opcje` wskazujące nieistniejącą listę)?
+> 4. `app/szablony.py` — `podpola_wspolne` i `wiersze_sekcji` (nowy podział na
+>    `podkolumny`): co przy niepełnym albo sprzecznym opisie `.json` — podpole bez
+>    `wiersz`, kolumna spoza `kolumny`, `podkolumna` spoza `podkolumny`, wiersz mieszany
+>    (część podpól z podkolumną, część bez), `opcje` wskazujące nieistniejącą listę?
+>    Czy któryś z tych przypadków gubi dane po cichu albo wywala stronę?
+> 4a. `app/web/templates/formularz.html` i `dokument.html` — nagłówki `colspan` i podpisy
+>    podkolumn. Czy liczba komórek w wierszu zgadza się z nagłówkiem przy sekcji **bez**
+>    podkolumn (wykaz budynku) i przy sekcji z nimi?
 > 5. `app/main.py` — `_wypelnione_sekcje`: dane z bazy bywają starsze niż dzisiejszy
 >    szablon (pole skasowane, zmieniony typ, wpis niebędący słownikiem). Czy któraś
 >    ścieżka wywala stronę operatu zamiast pominąć dane? Zwróć uwagę na operaty sprzed
