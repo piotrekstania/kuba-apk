@@ -37,11 +37,12 @@
   {# Notatka w tej samej siatce co dane niżej — inaczej jedna karta zaczyna tekst przy
      lewej krawędzi, a wszystkie pozostałe 190 px dalej, i strona traci pionową kreskę,
      wzdłuż której się ją czyta. Kolumna podpisów nie zostaje pusta: mieści zdanie,
-     które w formularzu stoi nad tym polem — że to jedyna rzecz na tej stronie, której
-     w dokumentach nie ma. #}
+     nazwę tej jednej danej. Podpis jest w stroju nazw pól (ciemny, pogrubiony), bo
+     stoi w ich kolumnie i cichszy wyglądał tam jak coś niedokończonego. Że notatka
+     nie wchodzi do dokumentów, mówi formularz w miejscu, w którym się ją wpisuje. #}
   <table class="lista">
     <tr>
-      <th class="waski"><span class="uwaga-pola">Nie wchodzi do dokumentów</span></th>
+      <th class="waski">opis</th>
       <td><div class="opis-operatu">{{ dokument.notatka }}</div></td>
     </tr>
   </table>

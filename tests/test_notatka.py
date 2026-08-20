@@ -173,7 +173,7 @@ def test_opis_zaczyna_sie_w_tej_samej_linii_co_dane(klient):
 
     Zaczynała się przy lewej krawędzi karty, a wszystkie dane 190 px dalej — strona
     traciła pionową linię, wzdłuż której się ją czyta. Kolumna podpisów nie zostaje
-    pusta: mieści uwagę, że to jedyna rzecz na tej stronie, której w dokumentach nie ma.
+    pusta: stoi w niej nazwa tej danej, tak samo jak przy polach z dokumentu.
     """
     _dodaj_operat(klient)
     _wyslij(klient, notatka=OPIS)
@@ -183,7 +183,7 @@ def test_opis_zaczyna_sie_w_tej_samej_linii_co_dane(klient):
 
     assert '<th class="waski"' in karta, "opis poza siatką — nie trafi w kolumnę wartości"
     assert "<td>" in karta.split("opis-operatu")[0], "opis nie stoi w kolumnie wartości"
-    assert "dokument" in karta.split("opis-operatu")[0], "zniknęła uwaga o dokumentach"
+    assert ">opis</th>" in karta, "zniknął podpis kolumny przy opisie"
 
 
 def test_karty_na_stronie_operatu_sa_pozamykane(klient):
