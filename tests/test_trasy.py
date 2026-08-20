@@ -593,6 +593,27 @@ def test_adres_arkusza_zmienia_sie_po_zmianie_pliku(klient, tmp_path, monkeypatc
     assert main.wersja_zasobow() != przed
 
 
+def test_odstepy_nad_pierwsza_karta_sa_takie_jak_miedzy_kartami():
+    """Pasek przycisków, linijka ze ścieżką katalogu i karty trzymają **jeden** odstęp.
+
+    Gdy któryś się rozjedzie, strona wygląda na poskładaną z dwóch kawałków: jedna
+    przerwa ciasna, druga luźna. Wszystkie trzy reguły mają więc tę samą wartość.
+    """
+    import re
+
+    from app.config import WEB
+
+    style = (WEB / "static" / "style.css").read_text(encoding="utf-8")
+
+    def margines(selektor: str) -> str:
+        blok = style.split(selektor + " {")[1].split("}")[0]
+        return re.search(r"margin:\s*([^;]+);", blok).group(1).strip()
+
+    assert margines("fieldset").endswith("0 0 18px")
+    assert margines(".pasek") == "18px 0"
+    assert margines(".przy-pasku") == "18px 0"
+
+
 def test_nazwy_kart_maja_kolor_akcentu():
     """Formularz operatu ma kilkanaście kart i przy przewijaniu szuka się właśnie ich
     nazw — czarne na tle czarnego tekstu zlewały się w jedno.

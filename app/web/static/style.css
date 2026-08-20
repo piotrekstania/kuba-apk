@@ -171,7 +171,10 @@ table.lista tr.notatka span { display: block; margin-left: 2px; padding-left: 10
 .opis-operatu { background: var(--panel); border: 1px solid var(--linia); border-radius: 8px;
                 padding: 10px 14px; white-space: pre-wrap; tab-size: var(--tabulator); }
 /* Ścieżka do katalogu tuż pod paskiem przycisków — należy do nich, więc bez odstępu. */
-.przy-pasku { margin: -12px 0 0; font-size: 13px; }
+/* Linijka ze ścieżką katalogu stoi między paskiem przycisków a pierwszą kartą, więc
+   trzyma **ten sam odstęp co karty między sobą** (18 px) — inaczej jedna przerwa jest
+   ciasna, druga luźna i strona wygląda na poskładaną z dwóch kawałków. */
+.przy-pasku { margin: 18px 0; font-size: 13px; }
 /* Treść zapisanego opisu na liście w Ustawieniach. `pre-wrap` zostawia łamanie wierszy
    tak, jak brat je wpisał — opis bywa kilkoma akapitami, a zlepiony w jeden przestaje
    być tym, co zapisywał. */
@@ -271,7 +274,7 @@ button.usun:hover { color: var(--zle); border-color: var(--zle); }
 button.dodaj-wiersz, .wklej { margin-top: 8px; font-size: 13px; padding: 5px 12px; }
 .wklej { padding: 2px 8px; }
 
-.pasek { display: flex; gap: 10px; align-items: center; margin: 20px 0; flex-wrap: wrap; }
+.pasek { display: flex; gap: 10px; align-items: center; margin: 18px 0; flex-wrap: wrap; }
 
 @media (max-width: 720px) {
   .siatka { grid-template-columns: 1fr; }
