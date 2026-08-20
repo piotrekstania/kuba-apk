@@ -3,6 +3,10 @@
 Co doszło w kolejnych wersjach programu. Ten sam opis pokazuje się raz, na stronie
 głównej, zaraz po tym jak program sam się zaktualizuje.
 
+## 2026.08.20-98 — 2026-08-20
+
+Wykaz działki ma nowy układ użytków: OFU, OZU, OZK i PPU [ha] stoją obok siebie pod każdym stanem — jeden użytek to jedna linijka we wszystkich czterech kolumnach naraz, więc wszystko trzyma poziom. Numer działki i pole powierzchni idą na całą szerokość stanu, tabela jest domknięta z prawej i ma tę samą szerokość co tabela wykazu budynku. Formularz i strona operatu pokazują dokładnie ten sam układ, z oznaczeniami nad polami.
+
 ## 2026.08.20-97 — 2026-08-20
 
 Wyrównanie komórek w wykazach jest teraz mądrzejsze: wiersz, w którym wpisałeś kilka linijek (OFU, OZU, OZK, pole użytków), jest wyrównany do góry — puste linijki nadal dosuwają wpis do właściwego użytku — a wiersz z pojedynczymi wartościami wraca na środek, równo z nazwą atrybutu obok. O układzie decyduje to, co naprawdę wpisałeś, osobno dla każdego wiersza.
