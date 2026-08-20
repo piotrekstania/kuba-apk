@@ -827,16 +827,22 @@ def _dane_w_grupach(pola: list[szablony.Pole],
     # `tekst.oczysc`. Reszta zostaje eskejpowana, bo bierze się wprost z tego, co ktoś
     # wpisał, i nawias trójkątny w uwagach nie ma prawa stać się znacznikiem.
     def dopisz(nazwa: str, klucz: str, html: bool = False, sekcje: list | None = None,
-               kolumny: list | None = None, podkolumny: list | None = None) -> None:
+               kolumny: list | None = None, podkolumny: list | None = None,
+               etykieta: str = "") -> None:
         grupy.setdefault(nazwa, []).append(
-            {"klucz": klucz, "wartosc": wartosci[klucz], "html": html,
+            {"klucz": klucz, "etykieta": etykieta or klucz,
+             "wartosc": wartosci[klucz], "html": html,
              "sekcje": sekcje or [], "kolumny": kolumny or [],
              "podkolumny": podkolumny or []})
         uzyte.add(klucz)
 
     for pole in pola:
         if pole.klucz in wartosci and pole.klucz not in uzyte:
+            # Etykieta z opisu szablonu — ta sama, którą brat widzi w formularzu.
+            # Klucz techniczny („wykazy_dzialek”) nic mu nie mówi; zostaje przy polach
+            # spoza szablonu, bo tam nie ma czego wziąć.
             dopisz(pole.grupa, pole.klucz, html=pole.formatowanie,
+                   etykieta=pole.etykieta,
                    sekcje=_wypelnione_sekcje(pole, wartosci[pole.klucz]),
                    kolumny=[k.get("etykieta", "") for k in pole.kolumny],
                    podkolumny=[k.get("etykieta", "") for k in pole.podkolumny])

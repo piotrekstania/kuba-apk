@@ -40,12 +40,16 @@
 {# Kolejność i podział na grupy biorą się z opisu szablonu (`.json`), czyli z tego
    samego miejsca, po którym formularz układa karty. Dzięki temu strona operatu czyta
    się w tej samej kolejności, w jakiej się go wypełniało. #}
-<table class="lista">
-  {% for grupa in grupy %}
-  <tr class="grupa"><th colspan="2">{{ grupa.nazwa }}</th></tr>
+{# Każda grupa to osobna karta z niebieskim tytułem — dokładnie taka jak w formularzu.
+   Jedna długa tabela z szarymi paskami grup wyglądała jak co innego niż strona, na
+   której te dane się wpisuje, a to ten sam podział z tego samego `.json`. #}
+{% for grupa in grupy %}
+<section class="karta-danych">
+  <h3>{{ grupa.nazwa }}</h3>
+  <table class="lista">
   {% for pole in grupa.pola %}
   <tr>
-    <th class="waski">{{ pole.klucz }}</th>
+    <th class="waski" title="{{ pole.klucz }}">{{ pole.etykieta }}</th>
     <td>
       {% set wartosc = pole.wartosc %}
       {% if pole.sekcje %}
@@ -127,8 +131,9 @@
     </td>
   </tr>
   {% endfor %}
-  {% endfor %}
-</table>
+  </table>
+</section>
+{% endfor %}
 
 <form method="post" action="/dokument/{{ dokument.id }}/usun"
       onsubmit="return confirm('Usunąć operat wraz z całym katalogiem {{ dokument.katalog }} — także z plikami, które sam tam włożyłeś?')">

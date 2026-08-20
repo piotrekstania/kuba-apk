@@ -77,6 +77,26 @@ def test_strona_glowna_pokazuje_tylko_szablony_glowne(klient):
     assert "Sprawozdanie techniczne" not in tresc
 
 
+def test_wpisane_dane_to_karty_jak_w_formularzu(klient):
+    """Strona operatu i formularz pokazują ten sam podział na grupy — więc mają go
+    pokazywać tak samo. Jedna długa tabela z szarymi paskami wyglądała jak co innego
+    niż strona, na której te dane się wpisuje.
+
+    Nazwy pól to etykiety z opisu szablonu, nie klucze techniczne; klucz zostaje
+    w `title`, bo po nim rozpoznaje się pole przy szukaniu usterki.
+    """
+    _dodaj_operat(klient)
+    klient.post("/generuj/spis_tresci_wzor", data=FORMULARZ, follow_redirects=False)
+
+    strona = klient.get(f"/dokument/{db.dokumenty()[0]['id']}").text
+
+    assert '<section class="karta-danych">' in strona
+    assert "<h3>Dane</h3>" in strona, "grupa bez własnej karty"   # grupa domyślna
+    assert 'class="grupa"' not in strona, "został stary pasek grupy"
+    assert '<th class="waski" title="nr_roboty">Nr roboty</th>' in strona
+    assert 'title="nr_operatu">nr_operatu<' not in strona, "klucz zamiast etykiety"
+
+
 def test_nowa_robota_to_przycisk_przy_naglowku_listy(klient):
     """Zaczęcie roboty to jedno kliknięcie. Karta z opisem szablonu i liczbą pól
     zajmowała ćwierć ekranu nad listą operatów, czyli nad tym, po co brat tu wchodzi.
@@ -155,7 +175,7 @@ def test_strona_operatu_pokazuje_nadany_numer(klient):
     strona = klient.get(f"/dokument/{wpis['id']}").text
 
     assert wpis["nr_operatu"] in strona, "numeru operatu nie ma nigdzie na stronie"
-    krata = re.search(r'<th class="waski">nr_operatu</th>\s*<td>(.*?)</td>',
+    krata = re.search(r'<th class="waski" title="nr_operatu">.*?</th>\s*<td>(.*?)</td>',
                       strona, re.DOTALL)
     assert krata and wpis["nr_operatu"] in krata.group(1), \
         "przy nr_operatu została pusta krata"
@@ -189,8 +209,8 @@ def test_wpisane_dane_ida_grupami_z_szablonu(klient):
                 follow_redirects=False)
     strona = klient.get(f"/dokument/{db.dokumenty()[0]['id']}").text
 
-    uklad = re.findall(r'<tr class="grupa"><th colspan="2">(.*?)</th>|<th class="waski">(.*?)</th>',
-                       strona)
+    uklad = re.findall(r'<section class="karta-danych">\s*<h3>(.*?)</h3>'
+                       r'|<th class="waski" title="(.*?)">', strona)
     assert [g or p for g, p in uklad] == [
         "Robota", "nr_roboty", "nr_operatu", "data_zakonczenia", "Opis", "uwagi"]
 
