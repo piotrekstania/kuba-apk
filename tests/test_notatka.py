@@ -168,6 +168,24 @@ def test_opis_stoi_nad_wpisanymi_danymi(klient):
         "opis wrócił nad przyciski — sekcje mają iść po akcjach, nie przed nimi"
 
 
+def test_opis_zaczyna_sie_w_tej_samej_linii_co_dane(klient):
+    """Notatka stoi w tej samej siatce co wartości pól niżej.
+
+    Zaczynała się przy lewej krawędzi karty, a wszystkie dane 190 px dalej — strona
+    traciła pionową linię, wzdłuż której się ją czyta. Kolumna podpisów nie zostaje
+    pusta: mieści uwagę, że to jedyna rzecz na tej stronie, której w dokumentach nie ma.
+    """
+    _dodaj_operat(klient)
+    _wyslij(klient, notatka=OPIS)
+
+    strona = klient.get(f"/dokument/{db.dokumenty()[0]['id']}").text
+    karta = strona.split("<legend>Opis</legend>")[1].split("</fieldset>")[0]
+
+    assert '<th class="waski"' in karta, "opis poza siatką — nie trafi w kolumnę wartości"
+    assert "<td>" in karta.split("opis-operatu")[0], "opis nie stoi w kolumnie wartości"
+    assert "dokument" in karta.split("opis-operatu")[0], "zniknęła uwaga o dokumentach"
+
+
 def test_karty_na_stronie_operatu_sa_pozamykane(klient):
     """Niedomknięta karta wciąga w siebie wszystkie następne.
 

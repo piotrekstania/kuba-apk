@@ -172,8 +172,12 @@ table.lista tr.notatka span { display: block; margin-left: 2px; padding-left: 10
    własny strój (kreska z lewej, mały nagłówek w środku) i to on robił bałagan w górnej
    części strony — trzy różne pudełka jedno pod drugim. Etykietę niesie teraz nagłówek
    sekcji, więc w środku został sam tekst. */
-.karta-danych > .opis-operatu { border: none; padding: 0; background: transparent;
-                                margin: 0; }
+/* Wewnątrz karty panel maluje sama karta — notatka jest tu zwykłym tekstem, bez
+   drugiej ramki dookoła (pudełko w pudełku). Selektor jest „gdziekolwiek w karcie”,
+   a nie „bezpośrednie dziecko”: notatka siedzi w komórce tabeli, żeby zaczynać się
+   w tej samej pionowej linii co wszystkie wartości niżej. */
+.karta-danych .opis-operatu { border: none; padding: 0; background: transparent;
+                              margin: 0; }
 .opis-operatu { background: var(--panel); border: 1px solid var(--linia); border-radius: 8px;
                 padding: 10px 14px; white-space: pre-wrap; tab-size: var(--tabulator); }
 /* Ścieżka do katalogu tuż pod paskiem przycisków — należy do nich, więc bez odstępu. */
@@ -407,3 +411,7 @@ table.sekcja-siatka input { padding: 5px 8px; }
 .karta-danych table.lista th.waski { background: transparent; vertical-align: top;
                                      font-weight: 600; width: 190px; }
 .karta-danych table.lista tr:last-child > * { border-bottom: none; }
+/* Podpis, który nie jest nazwą pola, tylko uwagą do niego (notatka „Opis”): szary
+   i nie pogrubiony, żeby nie czytało się go jak etykietę danych z dokumentu. */
+.uwaga-pola { font-weight: 400; color: var(--szary); font-size: 12.5px; line-height: 1.4;
+              display: block; }
