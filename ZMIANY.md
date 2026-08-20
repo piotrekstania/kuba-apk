@@ -3,6 +3,10 @@
 Co doszło w kolejnych wersjach programu. Ten sam opis pokazuje się raz, na stronie
 głównej, zaraz po tym jak program sam się zaktualizuje.
 
+## 2026.08.20-97 — 2026-08-20
+
+Wyrównanie komórek w wykazach jest teraz mądrzejsze: wiersz, w którym wpisałeś kilka linijek (OFU, OZU, OZK, pole użytków), jest wyrównany do góry — puste linijki nadal dosuwają wpis do właściwego użytku — a wiersz z pojedynczymi wartościami wraca na środek, równo z nazwą atrybutu obok. O układzie decyduje to, co naprawdę wpisałeś, osobno dla każdego wiersza.
+
 ## 2026.08.19-96 — 2026-08-19
 
 Podgląd operatu (strona „Wpisane dane”) wyrównuje komórki wykazów do góry, tak samo jak gotowy dokument — przy różnej liczbie linijek w dwóch stanach linijki trzymają poziom także na ekranie, nie tylko w PDF.
