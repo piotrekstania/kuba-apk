@@ -15,9 +15,13 @@
 </head>
 <body>
 <header>
+  {# Numer wersji pod nazwą programu: w stopce mówił to samo na każdej stronie i ginął
+     pod treścią, a tutaj jest tam, gdzie i tak pada wzrok przy szukaniu „co to za
+     program”. Wyrównany do prawej krawędzi nazwy, więc obie linijki kończą się razem. #}
   <a class="logo" href="/">
-    <img src="/static/logo.svg?v={{ zasoby }}" alt="" width="26" height="26">
-    Generator operatów</a>
+    <img src="/static/logo.svg?v={{ zasoby }}" alt="">
+    <span class="logo-napis">Generator operatów
+      <span class="logo-wersja">{{ wersja }}</span></span></a>
   <nav>
     {# „Złóż PDF” nie ma tu własnej pozycji: to była druga lista tych samych operatów.
        Składanie zaczyna się przy konkretnym operacie — na liście albo na jego stronie. #}

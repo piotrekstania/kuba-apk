@@ -170,6 +170,21 @@ def test_stopka_bez_numeru_wersji(klient):
         "wersji nie ma już nigdzie — brat nie dopasuje zgłoszenia do wydania"
 
 
+def test_numer_wersji_stoi_w_naglowku(klient):
+    """Wersja przeniosła się ze stopki pod nazwę programu (decyzja brata).
+
+    W stopce ginęła pod treścią i mówiła to samo przy każdym wejściu; w nagłówku stoi
+    tam, gdzie i tak pada wzrok przy pytaniu „co to za program i który”.
+    """
+    from app import aktualizacja
+
+    numer = aktualizacja.wersja_lokalna()[0]
+    naglowek = klient.get("/").text.split("</header>")[0]
+
+    assert numer in naglowek, "numer wersji zniknął z nagłówka"
+    assert "logo-wersja" in naglowek
+
+
 def test_kreska_stopki_ma_szerokosc_tresci():
     """Kreska nad licznikami kończy się tam, gdzie tabela nad nią.
 

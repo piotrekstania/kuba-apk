@@ -44,7 +44,18 @@ header {
 }
 .logo { font-weight: 700; text-decoration: none; color: var(--tekst); font-size: 17px;
         display: flex; align-items: center; gap: 9px; }
-.logo img { display: block; }        /* bez tego linia bazowa tekstu dokłada pod ikoną odstęp */
+/* Ikona wysoka na oba wiersze napisu: 28 px to wysokość bloku od góry „G” do dołu cyfr
+   wersji (17 px + 11 px przy interlinii 1,15). Rozmiar jest wpisany, a nie liczony
+   `align-self: stretch` — przy `aspect-ratio` obrazek rozpychał się wtedy w kółko:
+   szerszy obrazek zawijał napis, wyższy napis rozciągał obrazek, i tak do skutku.
+   `display: block` zdejmuje odstęp, który linia bazowa tekstu dokłada pod obrazkiem. */
+.logo img { display: block; width: 28px; height: 28px; }
+/* Nazwa programu i numer wersji jedna pod drugą; ikona jest wysoka na oba wiersze,
+   więc `line-height` obu linijek jest tu ustawiony na sztywno — inaczej wysokość
+   bloku zależałaby od domyślnej interlinii i ikona przestawałaby się z nim równać. */
+.logo-napis { display: block; line-height: 1.15; }
+.logo-wersja { display: block; text-align: right; font-size: 11px; line-height: 1.15;
+               color: var(--akcent); }
 nav { display: flex; gap: 18px; align-items: center; }
 nav a { color: var(--szary); text-decoration: none; }
 nav a:hover { color: var(--akcent); }
