@@ -58,43 +58,9 @@ start.bat
 Wszystko od ostatniego wydania — numer i skrót commita znajdziesz w `ZMIANY.md`
 i `git log`. Dopisuj punkty przy każdej rundzie zmian, kasuj po wydaniu.
 
-Runda **czysto ekranowa**: żaden `.docx`, `app/generator.py` ani ścieżka PDF nie były
-ruszane (`git diff --stat 564a6cc..HEAD` — same `main.py`, szablony HTML, CSS i testy).
-Word sprawdzasz więc tylko przez stały rytuał z części A, a resztę okiem w przeglądarce:
-
-1. **Strona operatu (`Podgląd`) w kartach z niebieskimi tytułami** — te same co
-   w formularzu (`fieldset` + `legend`), tytuł siedzi na górnej kresce, czarnych
-   nagłówków „Opis" i „Wpisane dane" już nie ma. Sprawdź, czy któraś karta nie
-   połknęła reszty strony (raz już się to zdarzyło przez zgubione `</section>`).
-2. **Nagłówek pozycji wykazu w jednej linijce**: `Działka 1: 119/80`, numer pogrubiony.
-   Przy wykazie budynku (bez podpola wspólnego) ma zostawać samo `Wykaz 1`.
-3. **Tabele wykazów**: nagłówki stanów i wartości wyśrodkowane, pionowa kreska między
-   stanem dotychczasowym a nowym. Obejrzyj oba wykazy — z podkolumnami (działka)
-   i bez nich (budynek).
-4. **Odstępy nad pierwszą kartą**: przyciski → linijka ze ścieżką katalogu → karta
-   „Opis" mają być takie same jak między kartami.
-5. Operat **sprzed** tej rundy (np. z historii) — czy strona podglądu nadal się
-   otwiera i pokazuje stare dane.
-6. **Podpisy pól na stronie operatu**: „Nr roboty", „Data zgłoszenia pracy
-   geodezyjnej" — nazwy z opisu szablonu, a nie klucze techniczne. Klucz w tym
-   miejscu znaczy, że serwer chodzi na starym kodzie (brak restartu) albo że pole
-   nie ma etykiety w `.json`.
-7. **Spis treści w pionie, ponumerowany** — numery mają się zgadzać z gotowym
-   dokumentem, więc porównaj stronę z wydrukiem spisu.
-8. **Opis (notatka)**: zaczyna się w tej samej pionowej linii co wartości pól,
-   a w kolumnie podpisów stoi „Opis".
-9. **Stopka**: same liczniki, liczby w kolorze akcentu, kreska nad nimi równa
-   z tabelą. Numeru wersji tam już nie ma — jest w nagłówku pod nazwą programu
-   i na stronie Pomoc → Historia wersji („masz tę wersję").
-10. **Nagłówek**: numer wersji pod nazwą, wyrównany do prawej, ikona wysoka na oba
-   wiersze. Sprawdź przy zwężonym oknie (Windows, mniejszy ekran), czy napis się
-   nie zawija i nie rozpycha ikony.
-11. **Strona błędu**: wejdź na zmyślony adres (np. `/nie-ma-takiej-strony`) — ma
-   przyjść cała strona z nagłówkiem, menu i stylami, a nie sam czarny napis na białym
-   tle. Do tej pory szedł goły HTML (pułapka 28).
-12. **Start programu**: konsola ma się schować po podniesieniu serwera. To sprawdza,
-   czy nie zginął znacznik „Generator operatów", po którym `uruchom.py` poznaje
-   nasz serwer — stopka była sprzątana, a on jest w nagłówku (pułapka 21).
+*(pusto — wydanie 2026.08.20-100 poszło 20.08; dwanaście punktów rundy ekranowej
+sprawdzone w przeglądarce na kopii roboczej, stary operat z 14.08 otwiera się
+normalnie)*
 
 ---
 
