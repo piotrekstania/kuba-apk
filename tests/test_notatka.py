@@ -168,6 +168,24 @@ def test_opis_stoi_nad_wpisanymi_danymi(klient):
         "opis wrócił nad przyciski — sekcje mają iść po akcjach, nie przed nimi"
 
 
+def test_karty_na_stronie_operatu_sa_pozamykane(klient):
+    """Niedomknięta karta wciąga w siebie wszystkie następne.
+
+    Zdarzyło się to przy przejściu z `section` na `fieldset`: zamiana objęła znacznik
+    otwierający, a zamykający `</section>` został — i cała strona operatu wjechała
+    do środka karty „Opis”. Testy tego nie widziały, bo sprawdzały obecność napisów,
+    a nie strukturę.
+    """
+    _dodaj_operat(klient)
+    _wyslij(klient, notatka=OPIS)
+
+    strona = klient.get(f"/dokument/{db.dokumenty()[0]['id']}").text
+
+    assert strona.count("<fieldset") == strona.count("</fieldset>"), \
+        "karta bez zamknięcia — reszta strony wpadnie do środka"
+    assert "</section>" not in strona, "została sierota po dawnym znaczniku"
+
+
 def test_sciezka_katalogu_nie_krzyczy_glosniej_niz_opis(klient):
     """Ścieżka do katalogu była niebieskim pudełkiem `komunikat` — najgłośniejszą rzeczą
     na stronie, choć mówi to samo przy każdym operacie od zawsze.
