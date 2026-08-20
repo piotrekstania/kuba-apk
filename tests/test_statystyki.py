@@ -147,6 +147,29 @@ def test_zasiew_robi_sie_tylko_raz(srodowisko):
     assert statystyki.podsumowanie() == pierwsze
 
 
+def test_stopka_bez_numeru_wersji(klient):
+    """Numer wersji i zdanie o aktualizacjach zniknęły ze stopki (decyzja brata).
+
+    Mówiły to samo przy każdym wejściu na każdą stronę, i to o rzeczy, która dzieje się
+    sama. Wersja zostaje tam, gdzie się jej szuka — w Pomocy, na liście zmian.
+
+    Przy okazji pilnujemy znacznika, po którym `uruchom.py` poznaje, że **nasz** serwer
+    wstał: sprząta się w stopce, a wywala się start programu (patrz pułapka 21).
+    """
+    import uruchom
+    from app import aktualizacja
+
+    numer = aktualizacja.wersja_lokalna()[0]
+    tresc = klient.get("/").text
+
+    assert "Nowe wersje program pobiera sam" not in tresc
+    assert f"wersja {numer}" not in tresc
+    assert uruchom.ZNACZNIK in tresc[:4096], \
+        "zniknął znacznik z nagłówka — program po starcie uzna, że serwer nie wstał"
+    assert numer in klient.get("/pomoc/historia").text, \
+        "wersji nie ma już nigdzie — brat nie dopasuje zgłoszenia do wydania"
+
+
 def test_stopka_pokazuje_liczniki(klient):
     """Brat widzi te liczby na każdej stronie — muszą trafić do HTML-a."""
     _dodaj_szablon(klient.srodowisko)

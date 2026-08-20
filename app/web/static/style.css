@@ -75,7 +75,9 @@ footer { max-width: 1040px; margin: 0 auto; padding: 12px 28px 28px;
          font-size: 14px; border-top: 1px solid var(--linia); }
 footer p { margin: 4px 0; }
 .liczniki span { margin-right: 22px; white-space: nowrap; }
-.liczniki strong { font-size: 16px; }
+/* Same liczby na akcent: w stopce zostały bez zdania o wersji, więc to one są jej
+   treścią — a czarne na szarym opisie zlewały się z nim w jeden ciąg. */
+.liczniki strong { font-size: 16px; color: var(--akcent); }
 
 h1 { font-size: 24px; margin: 0 0 6px; }
 h2 { font-size: 17px; margin: 32px 0 10px; }

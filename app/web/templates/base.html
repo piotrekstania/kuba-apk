@@ -47,8 +47,10 @@
 </main>
 
 <footer>
-  <p class="szary">Generator operatów — wersja {{ wersja }}.
-    Nowe wersje program pobiera sam przy uruchamianiu.</p>
+  {# Numer wersji i zdanie o aktualizacjach stały tu na każdej stronie, a mówiły to samo
+     przy każdym wejściu — i to o rzeczy, która dzieje się sama, bez udziału brata.
+     Wersję (razem z „masz tę wersję”) pokazuje Pomoc → Historia wersji, czyli miejsce,
+     do którego zagląda się właśnie po to. W stopce zostają liczniki pracy. #}
   <p class="liczniki" title="Liczone przy generowaniu, a nie z plików na dysku — przeniesienie gotowych operatów do archiwum ich nie kasuje">
     <span><strong>{{ statystyki.operat }}</strong> operatów</span>
     <span><strong>{{ statystyki.dokument }}</strong> dokumentów Worda</span>
