@@ -55,9 +55,20 @@
       <div class="sekcja-podglad">
         {# Numer pozycji i jej najważniejsza dana w **jednej** linijce: „Działka 1
            numer: 119/80”. Dwie linijki pod sobą wyglądały jak dwa osobne nagłówki. #}
-        <p class="naglowek-pozycji"><strong>{{ sekcja.naglowek }}</strong>{% for pod in sekcja.wspolne %}
-          <span>{{ pod.etykieta }}: <strong>{{ pod.wartosc }}</strong></span>{% endfor %}
+        {# Przy sekcji z tabelą wartość wspólna (numer działki) dopisuje się do nagłówka
+           bez etykiety: „Działka 1: 119/80”. Powtórzone słowo („Działka 1 działka: …”)
+           tylko zabierało miejsce. Sekcja płaska tabeli nie ma, więc tam pary
+           „etykieta: wartość” są jedyną treścią i etykiety zostają. #}
+        <p class="naglowek-pozycji"><strong>{{ sekcja.naglowek }}</strong>
+          {%- if sekcja.wiersze and sekcja.wspolne %}:
+          {%- for pod in sekcja.wspolne %} <strong>{{ pod.wartosc }}</strong>
+          {{- "," if not loop.last }}{% endfor %}{% endif %}
         </p>
+        {% if not sekcja.wiersze %}
+        {% for pod in sekcja.wspolne %}
+        <p class="szary">{{ pod.etykieta }}: <strong>{{ pod.wartosc }}</strong></p>
+        {% endfor %}
+        {% endif %}
         {% if sekcja.wiersze %}
         <table class="wiersze{{ ' ma-podkolumny' if pole.podkolumny }}">
           {% if pole.kolumny %}

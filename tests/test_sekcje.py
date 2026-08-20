@@ -950,8 +950,8 @@ def test_stany_sa_rozdzielone_kreska_i_wysrodkowane(klient):
 def test_naglowek_pozycji_i_numer_sa_w_jednej_linijce(klient):
     """„Działka 1” i jej numer w dwóch linijkach wyglądały jak dwa osobne nagłówki.
 
-    Słowo przy numerze bierze się z `etykieta_krotka` w opisie szablonu — sama etykieta
-    powtarzałaby wyraz z nagłówka („Działka 1 działka: 119/80”).
+    W nagłówku stoi sama wartość — „Działka 1: 119/80”. Etykieta powtarzałaby wyraz
+    z nagłówka, więc pojawia się tylko wtedy, gdy opis szablonu wprost ją poda.
     """
     klient.srodowisko.dodaj_szablon(
         "spis_tresci_wzor", ["{{ nr_roboty }}"],
@@ -959,17 +959,19 @@ def test_naglowek_pozycji_i_numer_sa_w_jednej_linijce(klient):
               "pola": [{"klucz": "nr_roboty", "etykieta": "Nr roboty"},
                        {"klucz": "wykazy", "etykieta": "Działki", "typ": "sekcje",
                         "etykieta_pozycji": "Działka",
-                        "podpola": [{"klucz": "dzialka", "etykieta": "Działka",
-                                     "etykieta_krotka": "numer"},
-                                    {"klucz": "uwagi", "etykieta": "Uwagi"}]}]})
+                        "kolumny": [{"klucz": "dotychczas", "etykieta": "Stan dotychczasowy"},
+                                    {"klucz": "nowy", "etykieta": "Stan nowy"}],
+                        "podpola": [{"klucz": "dzialka", "etykieta": "Działka"},
+                                    {"klucz": "numer_nowy", "wiersz": "Numer działki",
+                                     "kolumna": "nowy"}]}]})
     _wyslij(klient, **{"sek__wykazy__0__dzialka": "119/80",
-                       "sek__wykazy__0__uwagi": "cokolwiek"})
+                       "sek__wykazy__0__numer_nowy": "119/81"})
 
     strona = klient.get(f"/dokument/{db.dokumenty()[0]['id']}").text
     naglowek = strona.split('class="naglowek-pozycji"')[1].split("</p>")[0]
 
-    assert "<strong>Działka 1</strong>" in naglowek
-    assert "numer: <strong>119/80</strong>" in naglowek
+    assert "<strong>Działka 1</strong>:" in naglowek
+    assert "<strong>119/80</strong>" in naglowek
     assert "działka:" not in naglowek.lower().replace("działka 1", ""), \
         "etykieta powtarza wyraz z nagłówka"
 
