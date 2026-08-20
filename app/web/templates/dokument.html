@@ -32,11 +32,12 @@
 {# Opis nad „Wpisanymi danymi” i w tym samym stroju: nagłówek sekcji plus biały panel.
    To też są dane operatu, tylko wpisane dla siebie, a nie do dokumentu. #}
 {% if dokument.notatka %}
-<h2>Opis</h2>
-<div class="opis-operatu">{{ dokument.notatka }}</div>
+<section class="karta-danych">
+  <h3>Opis</h3>
+  <div class="opis-operatu">{{ dokument.notatka }}</div>
+</section>
 {% endif %}
 
-<h2>Wpisane dane</h2>
 {# Kolejność i podział na grupy biorą się z opisu szablonu (`.json`), czyli z tego
    samego miejsca, po którym formularz układa karty. Dzięki temu strona operatu czyta
    się w tej samej kolejności, w jakiej się go wypełniało. #}

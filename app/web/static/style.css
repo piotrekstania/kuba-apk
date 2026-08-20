@@ -166,6 +166,7 @@ table.lista tr.notatka span { display: block; margin-left: 2px; padding-left: 10
    własny strój (kreska z lewej, mały nagłówek w środku) i to on robił bałagan w górnej
    części strony — trzy różne pudełka jedno pod drugim. Etykietę niesie teraz nagłówek
    sekcji, więc w środku został sam tekst. */
+.karta-danych > .opis-operatu { border: none; padding: 0; background: transparent; }
 .opis-operatu { background: var(--panel); border: 1px solid var(--linia); border-radius: 8px;
                 padding: 10px 14px; white-space: pre-wrap; tab-size: var(--tabulator); }
 /* Ścieżka do katalogu tuż pod paskiem przycisków — należy do nich, więc bez odstępu. */
@@ -389,9 +390,12 @@ table.sekcja-siatka input { padding: 5px 8px; }
    z `legend`), tylko bez pól do wpisywania. Tytuł siada na krawędzi ramki: własne tło
    wycina pod nim kreskę, tak jak przeglądarka robi to legendzie. */
 .karta-danych { background: var(--panel); border: 1px solid var(--linia);
-                border-radius: 10px; padding: 4px 16px 14px; margin: 0 0 14px; }
-.karta-danych > h3 { display: inline-block; margin: -12px 0 8px -6px; padding: 0 6px;
-                     background: var(--panel); font-size: 15px; font-weight: 600;
+                border-radius: 10px; padding: 8px 18px 18px; margin: 0 0 18px; }
+/* Tytuł siada **na górnej krawędzi** ramki, tak jak `legend` w karcie formularza:
+   własne tło wycina pod nim kreskę. Ujemny margines to połowa wysokości wiersza,
+   a `-6px` z lewej ustawia napis w tej samej pionowej linii co treść karty. */
+.karta-danych > h3 { display: inline-block; margin: -17px 0 6px 0; padding: 0 6px;
+                     background: var(--panel); font: inherit; font-weight: 600;
                      color: var(--akcent); }
 .karta-danych table.lista { background: transparent; }
 /* Nazwa pola bez szarego paska i przy górnej krawędzi: przy wykazie działek ta komórka

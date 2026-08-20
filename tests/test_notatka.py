@@ -149,9 +149,9 @@ def test_opis_widac_po_wejsciu_w_operat(klient):
 def test_opis_stoi_nad_wpisanymi_danymi(klient):
     """Kolejność sekcji na stronie operatu (decyzja brata).
 
-    Opis to też dane operatu — tyle że wpisane dla siebie, a nie do dokumentu —
-    więc idzie własną sekcją tuż nad „Wpisanymi danymi”, w tym samym stroju:
-    nagłówek `h2` nad białym panelem.
+    Opis to też dane operatu — tyle że wpisane dla siebie, a nie do dokumentu — więc
+    idzie własną kartą tuż nad kartami z wpisanymi danymi, w tym samym stroju co one
+    i co karty formularza: niebieski tytuł na krawędzi białej ramki.
     """
     _dodaj_operat(klient)
     _wyslij(klient, notatka=OPIS)
@@ -159,11 +159,12 @@ def test_opis_stoi_nad_wpisanymi_danymi(klient):
 
     strona = klient.get(f"/dokument/{wpis['id']}").text
 
-    assert strona.index("<h2>Opis</h2>") < strona.index("<h2>Wpisane dane</h2>")
-    assert strona.index("opis-operatu") < strona.index("<h2>Wpisane dane</h2>")
-    # …a nie gdziekolwiek wyżej: nad paskiem przycisków opis też jest „nad Wpisanymi
+    assert strona.index("<h3>Opis</h3>") < strona.index("<h3>Dane</h3>"), \
+        "opis ma stać nad kartami z wpisanymi danymi"
+    assert strona.index("opis-operatu") < strona.index("<h3>Dane</h3>")
+    # …a nie gdziekolwiek wyżej: nad paskiem przycisków opis też jest „nad wpisanymi
     # danymi”, a to jest właśnie miejsce, z którego go zabraliśmy
-    assert strona.index('class="pasek"') < strona.index("<h2>Opis</h2>"), \
+    assert strona.index('class="pasek"') < strona.index("<h3>Opis</h3>"), \
         "opis wrócił nad przyciski — sekcje mają iść po akcjach, nie przed nimi"
 
 
