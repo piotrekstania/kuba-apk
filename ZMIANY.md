@@ -3,6 +3,10 @@
 Co doszło w kolejnych wersjach programu. Ten sam opis pokazuje się raz, na stronie
 głównej, zaraz po tym jak program sam się zaktualizuje.
 
+## 2026.08.20-99 — 2026-08-20
+
+W wykazie działki oznaczenia OFU, OZU, OZK i PPU [ha] stoją teraz dopiero przy wierszu użytków — jako część punktu 3, tuż nad wartościami — a nie w nagłówku tabeli, gdzie wisiały też nad numerem działki i polem powierzchni. Nagłówek tabeli ma jedno piętro: tylko stan dotychczasowy i nowy.
+
 ## 2026.08.20-98 — 2026-08-20
 
 Wykaz działki ma nowy układ użytków: OFU, OZU, OZK i PPU [ha] stoją obok siebie pod każdym stanem — jeden użytek to jedna linijka we wszystkich czterech kolumnach naraz, więc wszystko trzyma poziom. Numer działki i pole powierzchni idą na całą szerokość stanu, tabela jest domknięta z prawej i ma tę samą szerokość co tabela wykazu budynku. Formularz i strona operatu pokazują dokładnie ten sam układ, z oznaczeniami nad polami.
