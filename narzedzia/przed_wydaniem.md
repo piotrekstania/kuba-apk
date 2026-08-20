@@ -58,16 +58,31 @@ start.bat
 Wszystko od ostatniego wydania — numer i skrót commita znajdziesz w `ZMIANY.md`
 i `git log`. Dopisuj punkty przy każdej rundzie zmian, kasuj po wydaniu.
 
-*(pusto — wydanie 2026.08.20-99 poszło 20.08; przeprowadzka oznaczeń użytków
-pod punkt 2 zaakceptowana przez użytkownika na PDF z prawdziwego Worda)*
+Runda **czysto ekranowa**: żaden `.docx`, `app/generator.py` ani ścieżka PDF nie były
+ruszane (`git diff --stat 564a6cc..HEAD` — same `main.py`, szablony HTML, CSS i testy).
+Word sprawdzasz więc tylko przez stały rytuał z części A, a resztę okiem w przeglądarce:
+
+1. **Strona operatu (`Podgląd`) w kartach z niebieskimi tytułami** — te same co
+   w formularzu (`fieldset` + `legend`), tytuł siedzi na górnej kresce, czarnych
+   nagłówków „Opis" i „Wpisane dane" już nie ma. Sprawdź, czy któraś karta nie
+   połknęła reszty strony (raz już się to zdarzyło przez zgubione `</section>`).
+2. **Nagłówek pozycji wykazu w jednej linijce**: `Działka 1: 119/80`, numer pogrubiony.
+   Przy wykazie budynku (bez podpola wspólnego) ma zostawać samo `Wykaz 1`.
+3. **Tabele wykazów**: nagłówki stanów i wartości wyśrodkowane, pionowa kreska między
+   stanem dotychczasowym a nowym. Obejrzyj oba wykazy — z podkolumnami (działka)
+   i bez nich (budynek).
+4. **Odstępy nad pierwszą kartą**: przyciski → linijka ze ścieżką katalogu → karta
+   „Opis" mają być takie same jak między kartami.
+5. Operat **sprzed** tej rundy (np. z historii) — czy strona podglądu nadal się
+   otwiera i pokazuje stare dane.
 
 ---
 
 ## C. Zlecenie review (do wklejenia Fable)
 
-> Zrób przegląd kodu zmian z zakresu `1fade12..HEAD` w tym repozytorium
-> (`git log --oneline 1fade12..HEAD`, `git diff 1fade12..HEAD`) — to wszystko, co
-> przyszło po ostatnim wydaniu (`2026.08.20-97`). Kontekst projektu jest w `CLAUDE.md` —
+> Zrób przegląd kodu zmian z zakresu `564a6cc..HEAD` w tym repozytorium
+> (`git log --oneline 564a6cc..HEAD`, `git diff 564a6cc..HEAD`) — to wszystko, co
+> przyszło po ostatnim wydaniu (`2026.08.20-99`). Kontekst projektu jest w `CLAUDE.md` —
 > przeczytaj go najpierw, zwłaszcza listę pułapek i zasady pracy nad kodem.
 > Odpowiadaj po polsku.
 >
@@ -76,46 +91,30 @@ pod punkt 2 zaakceptowana przez użytkownika na PDF z prawdziwego Worda)*
 > uwag o stylu.
 >
 > Na czym się skup:
-> 1. `narzedzia/utworz_wykaz_dzialki.py` — tabela wykazu działki zbudowana od nowa:
->    dwa piętra nagłówka, `gridSpan` na stanach, `vMerge` na L.p. i opisie, krawędzie
->    ustawiane po zbudowaniu wiersza (`_domknij_prawa_krawedz`). Czy siatka `tblGrid`
->    zgadza się z liczbą komórek w każdym wierszu, czy scalenia są poprawne wg schematu
->    OOXML i czy suma szerokości nie przekracza szerokości tekstu? To plik, który
->    LibreOffice składa bez mrugnięcia, a Word potrafi odrzucić. Skrypt klonuje komórki
->    spod **ustalonych indeksów** wierszy formatki budynku — co się stanie, gdy brat
->    przyśle wykaz budynku o innej liczbie wierszy: powie to wprost czy zbuduje
->    dokument bez sensu?
-> 2. `app/generator.py` — `wyrownaj_komorki_stanow`: dopisuje `w:vAlign` do komórek
->    **gotowego** dokumentu, po renderze i przed zapisem, na podstawie liczby linijek
->    w treści. Kolumny stanów liczy teraz od lewej (`KOLUMNY_OPISU = 2`) — czy to trafia
->    w te komórki, o które chodzi, także przy scaleniach pionowych i `gridSpan`,
->    w tabeli o innej liczbie kolumn i w dokumencie bez tabel? Czy kolejność w `tcPr`
->    zostaje poprawna, gdy elementu wcześniej nie było?
-> 3. `app/generator.py` — `sformatuj_pod_znaczniki`, `_zaznacz_zmiany` i `_zmienione`:
->    mechanizm zamienia pola wykazów na `RichText` (czerwień przy zmienionym stanie
->    nowym). Kluczowe pytanie: czy `RichText` może trafić do formatki, która w tym
->    miejscu ma **zwykłe** `{{ }}` — bo taki plik Word odmawia otworzyć. Sprawdź też,
->    co się dzieje, gdy w danych siedzi liczba, `None` albo lista zamiast napisu,
->    i czy oryginalny kontekst na pewno zostaje napisami dla kolejnej formatki.
-> 4. `app/szablony.py` — `podpola_wspolne` i `wiersze_sekcji` (nowy podział na
->    `podkolumny`): co przy niepełnym albo sprzecznym opisie `.json` — podpole bez
->    `wiersz`, kolumna spoza `kolumny`, `podkolumna` spoza `podkolumny`, wiersz mieszany
->    (część podpól z podkolumną, część bez), `opcje` wskazujące nieistniejącą listę?
->    Czy któryś z tych przypadków gubi dane po cichu albo wywala stronę?
-> 4a. `app/web/templates/formularz.html` i `dokument.html` — nagłówki `colspan` i podpisy
->    podkolumn. Czy liczba komórek w wierszu zgadza się z nagłówkiem przy sekcji **bez**
->    podkolumn (wykaz budynku) i przy sekcji z nimi?
-> 5. `app/main.py` — `_wypelnione_sekcje`: dane z bazy bywają starsze niż dzisiejszy
->    szablon (pole skasowane, zmieniony typ, wpis niebędący słownikiem). Czy któraś
->    ścieżka wywala stronę operatu zamiast pominąć dane? Zwróć uwagę na operaty sprzed
->    przebudowy wykazu działki — mają dane pod kluczami, których już nie ma.
-> 6. `app/web/templates/formularz.html` — numeracja pól przy dokładaniu i usuwaniu kart
->    (`sek__<pole>__<nr>__<podpole>`), nowe pola wielolinijkowe i podpola wspólne,
->    strażnik `beforeunload`. Czy da się doprowadzić do stanu, w którym dane trafiają
->    pod zły indeks albo giną?
-> 7. Testy w `tests/test_sekcje.py` — czy sprawdzają zachowanie, czy tylko to, że kod
->    się wykonał. Przy okazji: czy któryś zostawia po sobie pliki w prawdziwych
->    `dane/` albo `wyniki/`?
+> 1. `app/main.py` — `_wypelnione_sekcje` i `_dane_w_grupach`: dane operatu bywają
+>    starsze niż dzisiejszy szablon (pole skasowane, zmieniony typ, wpis niebędący
+>    słownikiem, podpole wspólne, którego wtedy nie było). Czy któraś ścieżka wywala
+>    stronę operatu zamiast pominąć dane? Interesują mnie zwłaszcza operaty sprzed
+>    przebudowy wykazu działki.
+> 2. `app/web/templates/dokument.html` — strona operatu przepisana na `fieldset`
+>    + `legend`. Czy znaczniki domykają się przy **każdej** kombinacji: grupa bez
+>    sekcji, sekcja bez wierszy, wiersz bez podkolumn, brak opisu? Raz już zgubiony
+>    `</section>` wsadził całą stronę do środka pierwszej karty i test tego nie łapał.
+> 3. `dokument.html` i `formularz.html` — nagłówki `colspan` i podpisy podkolumn:
+>    czy liczba komórek w wierszu zgadza się z nagłówkiem przy sekcji **bez**
+>    podkolumn (wykaz budynku) i przy sekcji z nimi (wykaz działki)? Wartości
+>    atrybutów HTML pisane są `{% if %}`, nie `{{ }}` — Jinja escapuje cudzysłowy
+>    i nagłówek rozjeżdżał się po cichu.
+> 4. Nagłówek pozycji (`Działka 1: 119/80`) składany z podpól wspólnych — co przy
+>    kilku podpolach wspólnych, pustej wartości i wartości z HTML-em w środku?
+> 5. `app/main.py` — `wersja_zasobow()` przelicza się teraz w kopii roboczej gita.
+>    Czy u brata (bez `.git`) nadal liczy się raz i czy znacznik nie zmienia się
+>    przy każdym żądaniu, co kasowałoby cache przeglądarki?
+> 6. Testy w `tests/test_sekcje.py`, `test_trasy.py` i `test_notatka.py` — czy
+>    sprawdzają zachowanie, czy tylko to, że kod się wykonał. Test odstępów czyta
+>    `style.css` napisami: czy da się go obejść zapisem, który znaczy to samo?
+>    Przy okazji: czy któryś zostawia po sobie pliki w prawdziwych `dane/`
+>    albo `wyniki/`?
 >
 > Czego **nie** zgłaszać: nazw po polsku (to konwencja projektu), braku typów
 > generycznych, sugestii przejścia na framework frontendowy, propozycji drugiego
