@@ -66,14 +66,17 @@ i `git log`. Dopisuj punkty przy każdej rundzie zmian, kasuj po wydaniu.
 - [ ] Wiersz z **kilkoma linijkami** po którejkolwiek stronie jest wyrównany do góry,
       więc puste linijki dalej dosuwają wpis do właściwego użytku.
 - [ ] To samo w wykazie budynku, gdy wpiszesz kilka linijek w „Uwagi".
+- [ ] **Obejrzyj to w prawdziwym Wordzie**, nie tylko w PDF-ie z podglądu: wyrównanie
+      ustawia generator w gotowym pliku (`w:vAlign` w komórkach stanów), a Word bywa
+      w takich rzeczach bardziej wybredny niż LibreOffice.
 
 ---
 
 ## C. Zlecenie review (do wklejenia Fable)
 
-> Zrób przegląd kodu zmian z zakresu `c9c66c4..HEAD` w tym repozytorium
-> (`git log --oneline c9c66c4..HEAD`, `git diff c9c66c4..HEAD`) — to wszystko, co
-> przyszło po ostatnim wydaniu (`2026.08.19-92`). Kontekst projektu jest w `CLAUDE.md` —
+> Zrób przegląd kodu zmian z zakresu `d746afe..HEAD` w tym repozytorium
+> (`git log --oneline d746afe..HEAD`, `git diff d746afe..HEAD`) — to wszystko, co
+> przyszło po ostatnim wydaniu (`2026.08.19-96`). Kontekst projektu jest w `CLAUDE.md` —
 > przeczytaj go najpierw, zwłaszcza listę pułapek i zasady pracy nad kodem.
 > Odpowiadaj po polsku.
 >
@@ -82,28 +85,33 @@ i `git log`. Dopisuj punkty przy każdej rundzie zmian, kasuj po wydaniu.
 > uwag o stylu.
 >
 > Na czym się skup:
-> 1. `app/generator.py` — `sformatuj_pod_znaczniki`, `_zaznacz_zmiany` i `_zmienione`:
->    nowy mechanizm zamienia pola wykazów na `RichText` (czerwień przy zmienionym stanie
+> 1. `app/generator.py` — `wyrownaj_komorki_stanow`: dopisuje `w:vAlign` do komórek
+>    **gotowego** dokumentu, po renderze i przed zapisem, na podstawie liczby linijek
+>    w treści. Czy trafia zawsze w te komórki, o które chodzi (scalenia pionowe,
+>    `gridSpan`, tabela o innej liczbie kolumn, dokument bez tabel)? Czy kolejność
+>    w `tcPr` zostaje poprawna, gdy elementu wcześniej nie było?
+> 2. `app/generator.py` — `sformatuj_pod_znaczniki`, `_zaznacz_zmiany` i `_zmienione`:
+>    mechanizm zamienia pola wykazów na `RichText` (czerwień przy zmienionym stanie
 >    nowym). Kluczowe pytanie: czy `RichText` może trafić do formatki, która w tym
 >    miejscu ma **zwykłe** `{{ }}` — bo taki plik Word odmawia otworzyć. Sprawdź też,
 >    co się dzieje, gdy w danych siedzi liczba, `None` albo lista zamiast napisu,
 >    i czy oryginalny kontekst na pewno zostaje napisami dla kolejnej formatki.
-> 2. `narzedzia/utworz_wykaz_dzialki.py` — buduje formatkę działki z formatki budynku,
+> 3. `narzedzia/utworz_wykaz_dzialki.py` — buduje formatkę działki z formatki budynku,
 >    klonując komórki spod ustalonych indeksów wierszy. Co się stanie, gdy brat przyśle
 >    wykaz budynku o innej liczbie wierszy? Czy skrypt powie to wprost, czy zbuduje
 >    dokument bez sensu?
-> 3. `app/szablony.py` — `podpola_wspolne` i `wiersze_sekcji`: co przy niepełnym albo
+> 4. `app/szablony.py` — `podpola_wspolne` i `wiersze_sekcji`: co przy niepełnym albo
 >    sprzecznym opisie `.json` (podpole bez `wiersz`, kolumna spoza `kolumny`,
 >    `opcje` wskazujące nieistniejącą listę)?
-> 4. `app/main.py` — `_wypelnione_sekcje`: dane z bazy bywają starsze niż dzisiejszy
+> 5. `app/main.py` — `_wypelnione_sekcje`: dane z bazy bywają starsze niż dzisiejszy
 >    szablon (pole skasowane, zmieniony typ, wpis niebędący słownikiem). Czy któraś
 >    ścieżka wywala stronę operatu zamiast pominąć dane? Zwróć uwagę na operaty sprzed
 >    przebudowy wykazu działki — mają dane pod kluczami, których już nie ma.
-> 5. `app/web/templates/formularz.html` — numeracja pól przy dokładaniu i usuwaniu kart
+> 6. `app/web/templates/formularz.html` — numeracja pól przy dokładaniu i usuwaniu kart
 >    (`sek__<pole>__<nr>__<podpole>`), nowe pola wielolinijkowe i podpola wspólne,
 >    strażnik `beforeunload`. Czy da się doprowadzić do stanu, w którym dane trafiają
 >    pod zły indeks albo giną?
-> 6. Testy w `tests/test_sekcje.py` — czy sprawdzają zachowanie, czy tylko to, że kod
+> 7. Testy w `tests/test_sekcje.py` — czy sprawdzają zachowanie, czy tylko to, że kod
 >    się wykonał. Przy okazji: czy któryś zostawia po sobie pliki w prawdziwych
 >    `dane/` albo `wyniki/`?
 >
