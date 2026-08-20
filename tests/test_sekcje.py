@@ -535,7 +535,7 @@ def test_atrybuty_dzialki_stoja_w_wierszach(baza):
     assert gora[2:6] == ["STAN DOTYCHCZASOWY"] * 4, "stan scalony nad podkolumnami"
     assert gora[6:] == ["STAN NOWY"] * 4
     assert [k.text.strip() for k in tabela.rows[1].cells][2:] == \
-        ["OFU", "OZU", "OZK", "PPU"] * 2
+        ["OFU", "OZU", "OZK", "PPU [ha]"] * 2
 
     opisy = [w.cells[1].text.strip() for w in tabela.rows[2:]]
     assert opisy[0] == "Numer działki"
@@ -598,6 +598,28 @@ def test_kilka_linijek_ciagnie_komorki_stanow_do_gory(baza):
     wiersz = next(w for w in d.tables[0].rows if "Użytki gruntowe" in w.cells[1].text)
     assert {_vAlign(k) for k in wiersz.cells[2:]} == {"top"}
     assert _vAlign(wiersz.cells[1]) == "center", "nazwa atrybutu ma zostać na środku"
+
+
+def test_tabela_wykazu_dzialki_jest_domknieta_z_prawej():
+    """Prawa kreska ma być na ostatniej komórce **każdego** wiersza i tylko na niej.
+
+    Komórki klonujemy z formatki budynku, a tam prawą krawędź ma wyłącznie ostatnia
+    kolumna — użyta jako wzorzec w środku wiersza dokładała kreskę tam, gdzie jej nie
+    trzeba, a na końcu nie domykała tabeli. Na wydruku nagłówek „STAN NOWY” został
+    wtedy bez prawego boku.
+    """
+    from docx.oxml.ns import qn
+
+    tabela = Document(str(szablony.szablon_po_id("wykaz_zmian_dzialki_wzor").plik)).tables[0]
+
+    for numer, wiersz in enumerate(tabela.rows):
+        komorki = wiersz._tr.findall(qn("w:tc"))
+        krawedzie = []
+        for tc in komorki:
+            brzegi = tc.find(qn("w:tcPr")).find(qn("w:tcBorders"))
+            krawedzie.append(brzegi is not None and brzegi.find(qn("w:right")) is not None)
+        assert krawedzie[-1], f"wiersz {numer} nie jest domknięty z prawej"
+        assert not any(krawedzie[:-1]), f"wiersz {numer} ma kreskę w środku"
 
 
 def test_wykaz_dzialek_bez_danych_nie_powstaje():

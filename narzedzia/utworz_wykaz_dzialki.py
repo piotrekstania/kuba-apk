@@ -56,7 +56,10 @@ SZEROKOSC_OZNACZENIA = 2188
 SZEROKOSCI_UZYTKOW = {"ofu": 700, "ozu": 700, "ozk": 700, "pow_uzytkow": 1000}
 
 # Podkolumny stanu — jeden użytek to jedna linijka we wszystkich czterech naraz.
-UZYTKI = [("OFU", "ofu"), ("OZU", "ozu"), ("OZK", "ozk"), ("PPU", "pow_uzytkow")]
+# PPU z jednostką, bo to jedyna z czterech kolumn, w której stoją liczby —
+# reszta to oznaczenia użytków i klas
+UZYTKI = [("OFU", "ofu"), ("OZU", "ozu"), ("OZK", "ozk"),
+          ("PPU [ha]", "pow_uzytkow")]
 
 # Wiersze tabeli: (nazwa atrybutu, klucz). Wartość idzie w komórce scalonej przez cztery
 # podkolumny stanu — te rozdzielają się dopiero w wierszu użytków.
@@ -148,12 +151,40 @@ def _komorka(wzorzec, tekst: str, szerokosc: int = 0, *, span: int = 0, vmerge: 
     return tc
 
 
+def _domknij_prawa_krawedz(tr) -> None:
+    """Prawa kreska tylko na ostatniej komórce wiersza — i na niej zawsze.
+
+    Komórki klonujemy z formatki budynku, a tam prawą krawędź ma wyłącznie ostatnia
+    kolumna. Użyta jako wzorzec w środku wiersza dokłada kreskę tam, gdzie jej nie
+    trzeba, a użyta na końcu — nie domyka tabeli. Widać to było na wydruku: nagłówek
+    „STAN NOWY” został bez prawego boku.
+    """
+    komorki = tr.findall(qn("w:tc"))
+    for numer, tc in enumerate(komorki):
+        tcPr = tc.find(qn("w:tcPr"))
+        brzegi = tcPr.find(qn("w:tcBorders"))
+        if brzegi is None:
+            brzegi = _ustaw_w_tcpr(tcPr, "w:tcBorders")
+        prawa = brzegi.find(qn("w:right"))
+        if numer < len(komorki) - 1:
+            if prawa is not None:
+                brzegi.remove(prawa)
+            continue
+        if prawa is None:
+            prawa = OxmlElement("w:right")
+            brzegi.append(prawa)
+        for atrybut, wartosc in (("val", "single"), ("sz", "4"), ("space", "0"),
+                                 ("color", "000000")):
+            prawa.set(qn(f"w:{atrybut}"), wartosc)
+
+
 def _wiersz(wzorzec_tr, komorki):
     tr = copy.deepcopy(wzorzec_tr)
     for stara in tr.findall(qn("w:tc")):
         tr.remove(stara)
     for tc in komorki:
         tr.append(tc)
+    _domknij_prawa_krawedz(tr)
     return tr
 
 
