@@ -58,17 +58,10 @@ start.bat
 Wszystko od ostatniego wydania — numer i skrót commita znajdziesz w `ZMIANY.md`
 i `git log`. Dopisuj punkty przy każdej rundzie zmian, kasuj po wydaniu.
 
-### Wyrównanie komórek w wykazach zależy od treści
-
-- [ ] Wiersz, w którym obie kolumny mają **po jednej wartości**, ma je na środku —
-      równo z nazwą atrybutu obok (sprawdź wiersz „Pole powierzchni użytków…", gdzie
-      etykieta łamie się na dwie linijki).
-- [ ] Wiersz z **kilkoma linijkami** po którejkolwiek stronie jest wyrównany do góry,
-      więc puste linijki dalej dosuwają wpis do właściwego użytku.
-- [ ] To samo w wykazie budynku, gdy wpiszesz kilka linijek w „Uwagi".
-- [ ] **Obejrzyj to w prawdziwym Wordzie**, nie tylko w PDF-ie z podglądu: wyrównanie
-      ustawia generator w gotowym pliku (`w:vAlign` w komórkach stanów), a Word bywa
-      w takich rzeczach bardziej wybredny niż LibreOffice.
+*(pusto — wydanie 2026.08.20-97 poszło 20.08; wyrównanie wg treści obejrzane
+na PDF z prawdziwego Worda: pojedyncze wartości na środku, wielolinijkowe do góry.
+Uwaga: „kilka linijek w Uwagach budynku" działa w generatorze, ale w formularzu
+to zwykły input — Enter tam nie wejdzie, póki podpole nie dostanie typu textarea)*
 
 ---
 
