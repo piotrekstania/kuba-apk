@@ -3,6 +3,10 @@
 Co doszło w kolejnych wersjach programu. Ten sam opis pokazuje się raz, na stronie
 głównej, zaraz po tym jak program sam się zaktualizuje.
 
+## 2026.08.20-100 — 2026-08-20
+
+Setne wydanie — porządki na ekranie. Strona operatu ma teraz karty z niebieskimi tytułami, jak formularz: opis i dane w jednej siatce, podpisy pól po ludzku (z opisu szablonu, nie klucze techniczne), spis treści w pionie z numerami jak w dokumencie, a w tabelach wykazów wyśrodkowane stany z kreską między dotychczasowym a nowym. Numer wersji przeniósł się ze stopki do nagłówka, pod nazwę programu; w stopce zostały liczniki. Strona błędu znów jest całą stroną z menu i stylami, a nie gołym napisem.
+
 ## 2026.08.20-99 — 2026-08-20
 
 W wykazie działki oznaczenia OFU, OZU, OZK i PPU [ha] stoją teraz dopiero przy wierszu użytków — jako część punktu 3, tuż nad wartościami — a nie w nagłówku tabeli, gdzie wisiały też nad numerem działki i polem powierzchni. Nagłówek tabeli ma jedno piętro: tylko stan dotychczasowy i nowy.
