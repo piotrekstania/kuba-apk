@@ -58,31 +58,8 @@ start.bat
 Wszystko od ostatniego wydania — numer i skrót commita znajdziesz w `ZMIANY.md`
 i `git log`. Dopisuj punkty przy każdej rundzie zmian, kasuj po wydaniu.
 
-### Wykaz działki — użytki obok siebie
-
-- [ ] Tabela ma dwa piętra nagłówka: „STAN DOTYCHCZASOWY" i „STAN NOWY", a pod każdym
-      **OFU | OZU | OZK | PPU**.
-- [ ] „Numer działki" i „Pole powierzchni ewidencyjnej" mają wartość na całą szerokość
-      stanu (scaloną przez cztery podkolumny).
-- [ ] Kilka użytków = kilka linijek; wartości w czterech kolumnach trzymają poziom,
-      a stan nowy stoi równo z pierwszą linijką stanu dotychczasowego.
-- [ ] Tabela mieści się w marginesach i ma **tę samą szerokość co tabela w wykazie
-      budynku** — złóż operat z obydwoma wykazami i porównaj.
-- [ ] Tabela jest **domknięta z prawej we wszystkich wierszach** (na wydruku sprzed
-      poprawki nagłówek „STAN NOWY" nie miał prawego boku) i nie ma kreski w środku
-      tam, gdzie jej nie powinno być.
-- [ ] Nagłówek czwartej kolumny to **PPU [ha]** w obu stanach.
-- [ ] **Formularz i strona operatu mają ten sam układ co dokument**: OFU/OZU/OZK/PPU
-      obok siebie, a numer działki i pole powierzchni na całą szerokość stanu.
-      Sprawdź przy dwóch działkach i po „Popraw ten operat".
-- [ ] Oznaczenia **OFU/OZU/OZK/PPU stoją nad swoimi polami**, a nie w nagłówku tabeli —
-      nad „Numerem działki" i „Polem powierzchni" nie ma ich w ogóle.
-- [ ] Kolumny użytków są **równej szerokości** (dotyczy formularza i strony operatu;
-      w dokumencie szerokości są z formatki).
-- [ ] **Otwórz w prawdziwym Wordzie** — tabela jest zbudowana od nowa przez skrypt
-      (dwa piętra nagłówka, scalenia poziome i pionowe, krawędzie ustawiane po
-      zbudowaniu wiersza). To jest ten rodzaj pliku, który LibreOffice składa bez
-      mrugnięcia, a Word potrafi odrzucić.
+*(pusto — wydanie 2026.08.20-98 poszło 20.08; nowa tabela użytków obejrzana
+na PDF z prawdziwego Worda, szerokości obu wykazów porównane co do twipa)*
 
 ---
 
