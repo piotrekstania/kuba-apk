@@ -58,8 +58,8 @@ start.bat
 Wszystko od ostatniego wydania — numer i skrót commita znajdziesz w `ZMIANY.md`
 i `git log`. Dopisuj punkty przy każdej rundzie zmian, kasuj po wydaniu.
 
-*(pusto — wydanie 2026.08.20-98 poszło 20.08; nowa tabela użytków obejrzana
-na PDF z prawdziwego Worda, szerokości obu wykazów porównane co do twipa)*
+*(pusto — wydanie 2026.08.20-99 poszło 20.08; przeprowadzka oznaczeń użytków
+pod punkt 2 zaakceptowana przez użytkownika na PDF z prawdziwego Worda)*
 
 ---
 
