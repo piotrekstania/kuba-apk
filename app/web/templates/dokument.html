@@ -53,10 +53,11 @@
          a po to właśnie wchodzi się w gotowy operat — żeby zobaczyć, z czym się go oddało. #}
       {% for sekcja in pole.sekcje %}
       <div class="sekcja-podglad">
-        <strong>{{ sekcja.naglowek }}</strong>
-        {% for pod in sekcja.wspolne %}
-        <p class="szary">{{ pod.etykieta }}: <strong>{{ pod.wartosc }}</strong></p>
-        {% endfor %}
+        {# Numer pozycji i jej najważniejsza dana w **jednej** linijce: „Działka 1
+           numer: 119/80”. Dwie linijki pod sobą wyglądały jak dwa osobne nagłówki. #}
+        <p class="naglowek-pozycji"><strong>{{ sekcja.naglowek }}</strong>{% for pod in sekcja.wspolne %}
+          <span>{{ pod.etykieta }}: <strong>{{ pod.wartosc }}</strong></span>{% endfor %}
+        </p>
         {% if sekcja.wiersze %}
         <table class="wiersze{{ ' ma-podkolumny' if pole.podkolumny }}">
           {% if pole.kolumny %}

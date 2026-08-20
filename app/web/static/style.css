@@ -329,8 +329,9 @@ table.sekcja-siatka input { padding: 5px 8px; }
    atrybut i oba stany — bo samo „2 wierszy” nie pozwalało sprawdzić ani numeru działki,
    ani tego, co się w niej zmieniło. */
 .sekcja-podglad { margin: 6px 0 12px; }
-.sekcja-podglad > strong { display: block; font-size: 12px; color: var(--szary);
-                           margin-bottom: 4px; }
+.naglowek-pozycji { font-size: 12px; color: var(--szary); margin: 0 0 4px; }
+.naglowek-pozycji strong { color: var(--tekst); }
+.naglowek-pozycji span { margin-left: 6px; }
 /* Wyrównanie do góry jak w gotowym dokumencie: przeglądarka domyślnie środkuje
    komórki tabeli w pionie, więc przy trzech linijkach po jednej stronie i dwóch
    po drugiej krótsza kolumna pływała — a linijki mają trzymać poziom, bo brat

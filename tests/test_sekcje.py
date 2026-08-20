@@ -947,6 +947,33 @@ def test_stany_sa_rozdzielone_kreska_i_wysrodkowane(klient):
             f"{nazwa}: brak kreski przy pierwszej komórce drugiego stanu"
 
 
+def test_naglowek_pozycji_i_numer_sa_w_jednej_linijce(klient):
+    """„Działka 1” i jej numer w dwóch linijkach wyglądały jak dwa osobne nagłówki.
+
+    Słowo przy numerze bierze się z `etykieta_krotka` w opisie szablonu — sama etykieta
+    powtarzałaby wyraz z nagłówka („Działka 1 działka: 119/80”).
+    """
+    klient.srodowisko.dodaj_szablon(
+        "spis_tresci_wzor", ["{{ nr_roboty }}"],
+        opis={"nazwa": "Operat", "glowny": True,
+              "pola": [{"klucz": "nr_roboty", "etykieta": "Nr roboty"},
+                       {"klucz": "wykazy", "etykieta": "Działki", "typ": "sekcje",
+                        "etykieta_pozycji": "Działka",
+                        "podpola": [{"klucz": "dzialka", "etykieta": "Działka",
+                                     "etykieta_krotka": "numer"},
+                                    {"klucz": "uwagi", "etykieta": "Uwagi"}]}]})
+    _wyslij(klient, **{"sek__wykazy__0__dzialka": "119/80",
+                       "sek__wykazy__0__uwagi": "cokolwiek"})
+
+    strona = klient.get(f"/dokument/{db.dokumenty()[0]['id']}").text
+    naglowek = strona.split('class="naglowek-pozycji"')[1].split("</p>")[0]
+
+    assert "<strong>Działka 1</strong>" in naglowek
+    assert "numer: <strong>119/80</strong>" in naglowek
+    assert "działka:" not in naglowek.lower().replace("działka 1", ""), \
+        "etykieta powtarza wyraz z nagłówka"
+
+
 def test_wykaz_dzialki_ma_cztery_podkolumny_uzytkow():
     """W wydanej formatce jeden użytek to komplet czterech wartości — i tak samo
     ma być w formularzu, więc wszystkie cztery podpola mają swoją podkolumnę."""

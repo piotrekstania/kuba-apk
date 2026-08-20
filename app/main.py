@@ -768,7 +768,9 @@ def _wypelnione_sekcje(pole: szablony.Pole, wartosc: Any) -> list[dict[str, Any]
             continue
         # pola dotyczące całej pozycji (numer działki) — nad tabelą stanów, tak jak
         # w formularzu i jak w nagłówku strony w gotowym dokumencie
-        wspolne = [{"etykieta": pod.get("etykieta", pod["klucz"]),
+        # `etykieta_krotka` idzie do nagłówka pozycji („Działka 1 numer: 119/80”) — sama
+        # `etykieta` powtarzałaby tam słowo z nagłówka („Działka 1 działka: …”)
+        wspolne = [{"etykieta": pod.get("etykieta_krotka") or pod.get("etykieta", pod["klucz"]),
                     "wartosc": str(wpis.get(pod["klucz"], "") or "")}
                    for pod in pole.podpola_wspolne if wpis.get(pod["klucz"])]
         # Wiersz z podziałem (OFU, OZU, OZK, PPU) daje po jednej komórce na podkolumnę

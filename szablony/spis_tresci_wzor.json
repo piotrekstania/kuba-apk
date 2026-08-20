@@ -343,7 +343,8 @@
           "klucz": "dzialka",
           "etykieta": "Działka",
           "szerokosc": "polowa",
-          "podpowiedz": "np. 119/10 — sam numer, bez obrębu"
+          "podpowiedz": "np. 119/10 — sam numer, bez obrębu",
+          "etykieta_krotka": "numer"
         },
         {
           "klucz": "numer_dotychczas",
