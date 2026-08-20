@@ -97,7 +97,10 @@ i `git log`. Dopisuj punkty przy każdej rundzie zmian, kasuj po wydaniu.
 >    ustawiane po zbudowaniu wiersza (`_domknij_prawa_krawedz`). Czy siatka `tblGrid`
 >    zgadza się z liczbą komórek w każdym wierszu, czy scalenia są poprawne wg schematu
 >    OOXML i czy suma szerokości nie przekracza szerokości tekstu? To plik, który
->    LibreOffice składa bez mrugnięcia, a Word potrafi odrzucić.
+>    LibreOffice składa bez mrugnięcia, a Word potrafi odrzucić. Skrypt klonuje komórki
+>    spod **ustalonych indeksów** wierszy formatki budynku — co się stanie, gdy brat
+>    przyśle wykaz budynku o innej liczbie wierszy: powie to wprost czy zbuduje
+>    dokument bez sensu?
 > 2. `app/generator.py` — `wyrownaj_komorki_stanow`: dopisuje `w:vAlign` do komórek
 >    **gotowego** dokumentu, po renderze i przed zapisem, na podstawie liczby linijek
 >    w treści. Kolumny stanów liczy teraz od lewej (`KOLUMNY_OPISU = 2`) — czy to trafia
@@ -110,22 +113,18 @@ i `git log`. Dopisuj punkty przy każdej rundzie zmian, kasuj po wydaniu.
 >    miejscu ma **zwykłe** `{{ }}` — bo taki plik Word odmawia otworzyć. Sprawdź też,
 >    co się dzieje, gdy w danych siedzi liczba, `None` albo lista zamiast napisu,
 >    i czy oryginalny kontekst na pewno zostaje napisami dla kolejnej formatki.
-> 4. `narzedzia/utworz_wykaz_dzialki.py` — buduje formatkę działki z formatki budynku,
->    klonując komórki spod ustalonych indeksów wierszy. Co się stanie, gdy brat przyśle
->    wykaz budynku o innej liczbie wierszy? Czy skrypt powie to wprost, czy zbuduje
->    dokument bez sensu?
-> 5. `app/szablony.py` — `podpola_wspolne` i `wiersze_sekcji`: co przy niepełnym albo
+> 4. `app/szablony.py` — `podpola_wspolne` i `wiersze_sekcji`: co przy niepełnym albo
 >    sprzecznym opisie `.json` (podpole bez `wiersz`, kolumna spoza `kolumny`,
 >    `opcje` wskazujące nieistniejącą listę)?
-> 6. `app/main.py` — `_wypelnione_sekcje`: dane z bazy bywają starsze niż dzisiejszy
+> 5. `app/main.py` — `_wypelnione_sekcje`: dane z bazy bywają starsze niż dzisiejszy
 >    szablon (pole skasowane, zmieniony typ, wpis niebędący słownikiem). Czy któraś
 >    ścieżka wywala stronę operatu zamiast pominąć dane? Zwróć uwagę na operaty sprzed
 >    przebudowy wykazu działki — mają dane pod kluczami, których już nie ma.
-> 7. `app/web/templates/formularz.html` — numeracja pól przy dokładaniu i usuwaniu kart
+> 6. `app/web/templates/formularz.html` — numeracja pól przy dokładaniu i usuwaniu kart
 >    (`sek__<pole>__<nr>__<podpole>`), nowe pola wielolinijkowe i podpola wspólne,
 >    strażnik `beforeunload`. Czy da się doprowadzić do stanu, w którym dane trafiają
 >    pod zły indeks albo giną?
-> 8. Testy w `tests/test_sekcje.py` — czy sprawdzają zachowanie, czy tylko to, że kod
+> 7. Testy w `tests/test_sekcje.py` — czy sprawdzają zachowanie, czy tylko to, że kod
 >    się wykonał. Przy okazji: czy któryś zostawia po sobie pliki w prawdziwych
 >    `dane/` albo `wyniki/`?
 >
