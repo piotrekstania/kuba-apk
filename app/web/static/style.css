@@ -71,8 +71,12 @@ nav a:hover { color: var(--akcent); }
 
 main { max-width: 1040px; margin: 0 auto; padding: 28px; }
 
-footer { max-width: 1040px; margin: 0 auto; padding: 12px 28px 28px;
-         font-size: 14px; border-top: 1px solid var(--linia); }
+/* Kreska nad licznikami idzie po **treści**, nie po całej ramce stopki: postawiona na
+   `footer` obejmowała też jego 28-pikselowe marginesy i wychodziła o 56 px szersza niż
+   tabela nad nią — wystawała wąsami po obu stronach. Na akapicie z licznikami trzyma
+   dokładnie tę samą szerokość co treść strony. */
+footer { max-width: 1040px; margin: 0 auto; padding: 0 28px 28px; font-size: 14px; }
+footer .liczniki { border-top: 1px solid var(--linia); padding-top: 14px; margin-top: 0; }
 footer p { margin: 4px 0; }
 .liczniki span { margin-right: 22px; white-space: nowrap; }
 /* Same liczby na akcent: w stopce zostały bez zdania o wersji, więc to one są jej

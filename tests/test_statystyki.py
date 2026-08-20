@@ -170,6 +170,21 @@ def test_stopka_bez_numeru_wersji(klient):
         "wersji nie ma już nigdzie — brat nie dopasuje zgłoszenia do wydania"
 
 
+def test_kreska_stopki_ma_szerokosc_tresci():
+    """Kreska nad licznikami kończy się tam, gdzie tabela nad nią.
+
+    Postawiona na `footer` obejmowała też jego marginesy i wystawała wąsami po 28 px
+    z każdej strony. Musi siedzieć na akapicie z licznikami — ten ma szerokość treści.
+    """
+    from app.config import WEB
+
+    style = (WEB / "static" / "style.css").read_text(encoding="utf-8")
+
+    stopka = style.split("footer {")[1].split("}")[0]
+    assert "border-top" not in stopka, "kreska wróciła na ramkę stopki — będzie szersza"
+    assert "border-top" in style.split("footer .liczniki {")[1].split("}")[0]
+
+
 def test_stopka_pokazuje_liczniki(klient):
     """Brat widzi te liczby na każdej stronie — muszą trafić do HTML-a."""
     _dodaj_szablon(klient.srodowisko)
