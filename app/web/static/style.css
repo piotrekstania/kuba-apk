@@ -355,3 +355,18 @@ table.sekcja-siatka input { padding: 5px 8px; }
 /* Wielolinijkowe komórki wykazu: kilka użytków jeden pod drugim. Wysokość zostawiamy
    małą — pole rośnie, gdy brat je rozciągnie, a domyślnie nie rozpycha karty. */
 .sekcja-siatka textarea { width: 100%; min-height: 58px; resize: vertical; }
+
+/* Podkolumny stanu (OFU, OZU, OZK, PPU) — drobniejsze niż nagłówek stanu nad nimi,
+   bo to podział wewnątrz kolumny, a nie osobna kolumna. */
+th.podkolumna { font-size: 12px; font-weight: 600; text-align: center; }
+.sekcja-siatka th.podkolumna { padding: 4px 6px; }
+.sekcja-siatka textarea, .sekcja-siatka input { min-width: 0; }
+
+/* Tabela z podkolumnami stanu rozdziela je **po równo**: bez tego przeglądarka daje
+   szerokość według zawartości i „OZK” z dwuznakową wartością robi się trzy razy węższe
+   niż „OFU”. W dokumencie kolumny są równe, więc i tutaj mają być. */
+.ma-podkolumny { table-layout: fixed; }
+.ma-podkolumny th[scope="row"] { width: 32%; }
+/* Łamanie w środku wyrazu tylko w danych — nazwa atrybutu ma się łamać po słowach,
+   inaczej „Pole powierzchni ewidencyjnej” wychodzi jako „powierzch|ni ewidencyj|nej”. */
+.ma-podkolumny td { overflow-wrap: anywhere; }

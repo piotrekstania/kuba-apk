@@ -771,12 +771,21 @@ def _wypelnione_sekcje(pole: szablony.Pole, wartosc: Any) -> list[dict[str, Any]
         wspolne = [{"etykieta": pod.get("etykieta", pod["klucz"]),
                     "wartosc": str(wpis.get(pod["klucz"], "") or "")}
                    for pod in pole.podpola_wspolne if wpis.get(pod["klucz"])]
+        # Wiersz z podziałem (OFU, OZU, OZK, PPU) daje po jednej komórce na podkolumnę
+        # w każdym stanie — tak samo jak w dokumencie i w formularzu.
+        podkolumny = [k.get("klucz", "") for k in pole.podkolumny]
         wiersze = []
         for wiersz in pole.wiersze_sekcji:
-            komorki = [str(wpis.get(wiersz["pola"][k]["klucz"], "") or "")
-                       if k in wiersz["pola"] else "" for k in kolumny]
+            if wiersz["podzial"]:
+                komorki = [str(wpis.get(
+                    wiersz["podzial"].get(kolumna, {}).get(podkolumna, {}).get("klucz", ""),
+                    "") or "") for kolumna in kolumny for podkolumna in podkolumny]
+            else:
+                komorki = [str(wpis.get(wiersz["pola"][k]["klucz"], "") or "")
+                           if k in wiersz["pola"] else "" for k in kolumny]
             if any(komorki):
-                wiersze.append({"etykieta": wiersz["etykieta"], "komorki": komorki})
+                wiersze.append({"etykieta": wiersz["etykieta"], "komorki": komorki,
+                                "podzielony": bool(wiersz["podzial"])})
         if not kolumny:          # sekcja bez układu tabelarycznego — płaska lista pól
             # tylko podpola z `wiersz`: te bez niego są już wyżej w `wspolne`
             # i wypisane drugi raz robiłyby z podglądu echo
@@ -813,18 +822,20 @@ def _dane_w_grupach(pola: list[szablony.Pole],
     # pola opisane w szablonie jako przyjmujące formatowanie — ich treść przeszła przez
     # `tekst.oczysc`. Reszta zostaje eskejpowana, bo bierze się wprost z tego, co ktoś
     # wpisał, i nawias trójkątny w uwagach nie ma prawa stać się znacznikiem.
-    def dopisz(nazwa: str, klucz: str, html: bool = False,
-               sekcje: list | None = None, kolumny: list | None = None) -> None:
+    def dopisz(nazwa: str, klucz: str, html: bool = False, sekcje: list | None = None,
+               kolumny: list | None = None, podkolumny: list | None = None) -> None:
         grupy.setdefault(nazwa, []).append(
             {"klucz": klucz, "wartosc": wartosci[klucz], "html": html,
-             "sekcje": sekcje or [], "kolumny": kolumny or []})
+             "sekcje": sekcje or [], "kolumny": kolumny or [],
+             "podkolumny": podkolumny or []})
         uzyte.add(klucz)
 
     for pole in pola:
         if pole.klucz in wartosci and pole.klucz not in uzyte:
             dopisz(pole.grupa, pole.klucz, html=pole.formatowanie,
                    sekcje=_wypelnione_sekcje(pole, wartosci[pole.klucz]),
-                   kolumny=[k.get("etykieta", "") for k in pole.kolumny])
+                   kolumny=[k.get("etykieta", "") for k in pole.kolumny],
+                   podkolumny=[k.get("etykieta", "") for k in pole.podkolumny])
     for klucz in wartosci:
         if klucz not in uzyte:
             dopisz("Pozostałe dane", klucz)

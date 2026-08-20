@@ -367,51 +367,77 @@
         },
         {
           "klucz": "ofu_dotychczas",
-          "wiersz": "OFU",
+          "wiersz": "Użytki gruntowe i klasy bonitacyjne w działce",
           "kolumna": "dotychczas",
-          "typ": "textarea"
+          "typ": "textarea",
+          "podkolumna": "ofu"
         },
         {
           "klucz": "ofu_nowy",
-          "wiersz": "OFU",
+          "wiersz": "Użytki gruntowe i klasy bonitacyjne w działce",
           "kolumna": "nowy",
-          "typ": "textarea"
+          "typ": "textarea",
+          "podkolumna": "ofu"
         },
         {
           "klucz": "ozu_dotychczas",
-          "wiersz": "OZU",
+          "wiersz": "Użytki gruntowe i klasy bonitacyjne w działce",
           "kolumna": "dotychczas",
-          "typ": "textarea"
+          "typ": "textarea",
+          "podkolumna": "ozu"
         },
         {
           "klucz": "ozu_nowy",
-          "wiersz": "OZU",
+          "wiersz": "Użytki gruntowe i klasy bonitacyjne w działce",
           "kolumna": "nowy",
-          "typ": "textarea"
+          "typ": "textarea",
+          "podkolumna": "ozu"
         },
         {
           "klucz": "ozk_dotychczas",
-          "wiersz": "OZK",
+          "wiersz": "Użytki gruntowe i klasy bonitacyjne w działce",
           "kolumna": "dotychczas",
-          "typ": "textarea"
+          "typ": "textarea",
+          "podkolumna": "ozk"
         },
         {
           "klucz": "ozk_nowy",
-          "wiersz": "OZK",
+          "wiersz": "Użytki gruntowe i klasy bonitacyjne w działce",
           "kolumna": "nowy",
-          "typ": "textarea"
+          "typ": "textarea",
+          "podkolumna": "ozk"
         },
         {
           "klucz": "pow_uzytkow_dotychczas",
-          "wiersz": "PPU — pole powierzchni użytków gruntowych i klas bonitacyjnych [ha]",
+          "wiersz": "Użytki gruntowe i klasy bonitacyjne w działce",
           "kolumna": "dotychczas",
-          "typ": "textarea"
+          "typ": "textarea",
+          "podkolumna": "ppu"
         },
         {
           "klucz": "pow_uzytkow_nowy",
-          "wiersz": "PPU — pole powierzchni użytków gruntowych i klas bonitacyjnych [ha]",
+          "wiersz": "Użytki gruntowe i klasy bonitacyjne w działce",
           "kolumna": "nowy",
-          "typ": "textarea"
+          "typ": "textarea",
+          "podkolumna": "ppu"
+        }
+      ],
+      "podkolumny": [
+        {
+          "klucz": "ofu",
+          "etykieta": "OFU"
+        },
+        {
+          "klucz": "ozu",
+          "etykieta": "OZU"
+        },
+        {
+          "klucz": "ozk",
+          "etykieta": "OZK"
+        },
+        {
+          "klucz": "ppu",
+          "etykieta": "PPU [ha]"
         }
       ]
     },

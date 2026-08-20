@@ -71,6 +71,9 @@ class Pole:
     podpola: list[dict[str, str]] = field(default_factory=list)
     etykieta_pozycji: str = ""  # nagłówek jednego powtórzenia, np. „Wykaz”
     etykieta_dodaj: str = ""    # napis na przycisku dokładającym powtórzenie
+    # Podział stanu na kilka kolumn — w wykazie działki OFU, OZU, OZK i PPU stoją obok
+    # siebie pod każdym stanem, bo jeden użytek to komplet czterech wartości.
+    podkolumny: list[dict[str, str]] = field(default_factory=list)
 
     @property
     def wiersze_sekcji(self) -> list[dict[str, Any]]:
@@ -83,6 +86,10 @@ class Pole:
 
         Grupujemy tutaj, a nie w szablonie: `groupby` w Jinji wymaga posortowania, a to
         rozsypałoby kolejność atrybutów — a ona ma być ta sama co w dokumencie.
+
+        Podpole może mieć jeszcze `podkolumna` — wtedy wiersz dzieli stan na kilka pól
+        obok siebie (OFU, OZU, OZK i PPU w wykazie działki). Taki wiersz ma `podzial`
+        zamiast `pola`, a formularz i strona operatu rysują go jak w dokumencie.
         """
         wiersze: list[dict[str, Any]] = []
         gdzie: dict[str, dict[str, Any]] = {}
@@ -91,9 +98,14 @@ class Pole:
             if not nazwa:
                 continue
             if nazwa not in gdzie:
-                gdzie[nazwa] = {"etykieta": nazwa, "pola": {}}
+                gdzie[nazwa] = {"etykieta": nazwa, "pola": {}, "podzial": {}}
                 wiersze.append(gdzie[nazwa])
-            gdzie[nazwa]["pola"][podpole.get("kolumna", "")] = podpole
+            kolumna = podpole.get("kolumna", "")
+            podkolumna = podpole.get("podkolumna", "")
+            if podkolumna:
+                gdzie[nazwa]["podzial"].setdefault(kolumna, {})[podkolumna] = podpole
+            else:
+                gdzie[nazwa]["pola"][kolumna] = podpole
         return wiersze
 
     @property
@@ -211,6 +223,7 @@ def wczytaj_szablon(plik: Path) -> Szablon:
             dokumenty=dict(surowe.get("dokumenty", {})),
             aktywne_gdy=surowe.get("aktywne_gdy", ""),
             kolumny=list(surowe.get("kolumny", [])),
+            podkolumny=list(surowe.get("podkolumny", [])),
             domyslnie=str(surowe.get("domyslnie", "")),
             zrodlo=surowe.get("zrodlo", ""),
             szerokosc=surowe.get("szerokosc", "pelna"),

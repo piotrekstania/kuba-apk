@@ -72,6 +72,9 @@ i `git log`. Dopisuj punkty przy każdej rundzie zmian, kasuj po wydaniu.
       poprawki nagłówek „STAN NOWY" nie miał prawego boku) i nie ma kreski w środku
       tam, gdzie jej nie powinno być.
 - [ ] Nagłówek czwartej kolumny to **PPU [ha]** w obu stanach.
+- [ ] **Formularz i strona operatu mają ten sam układ co dokument**: dwa piętra
+      nagłówka, OFU/OZU/OZK/PPU obok siebie, a numer działki i pole powierzchni
+      na całą szerokość stanu. Sprawdź przy dwóch działkach i po „Popraw ten operat".
 - [ ] **Otwórz w prawdziwym Wordzie** — tabela jest zbudowana od nowa przez skrypt
       (dwa piętra nagłówka, scalenia poziome i pionowe, krawędzie ustawiane po
       zbudowaniu wiersza). To jest ten rodzaj pliku, który LibreOffice składa bez

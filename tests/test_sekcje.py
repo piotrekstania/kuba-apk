@@ -838,6 +838,80 @@ def test_wartosc_spoza_listy_nie_ginie_przy_poprawianiu(klient):
     assert '<option value="budynek gospodarczy" selected>' in formularz
 
 
+def _operat_z_podkolumnami(klient):
+    """Sekcja, w której stan dzieli się na podkolumny — jak użytki w wykazie działki."""
+    klient.srodowisko.dodaj_szablon(
+        "spis_tresci_wzor", ["{{ nr_roboty }}"],
+        opis={"nazwa": "Operat", "glowny": True,
+              "pola": [{"klucz": "nr_roboty", "etykieta": "Nr roboty"},
+                       {"klucz": "wykazy", "etykieta": "Działki", "typ": "sekcje",
+                        "etykieta_pozycji": "Działka",
+                        "kolumny": [{"klucz": "dotychczas", "etykieta": "Stan dotychczasowy"},
+                                    {"klucz": "nowy", "etykieta": "Stan nowy"}],
+                        "podkolumny": [{"klucz": "ofu", "etykieta": "OFU"},
+                                       {"klucz": "ppu", "etykieta": "PPU [ha]"}],
+                        "podpola": [
+                            {"klucz": "numer_dotychczas", "wiersz": "Numer działki",
+                             "kolumna": "dotychczas"},
+                            {"klucz": "numer_nowy", "wiersz": "Numer działki",
+                             "kolumna": "nowy"},
+                            {"klucz": "ofu_dotychczas", "wiersz": "Użytki",
+                             "kolumna": "dotychczas", "podkolumna": "ofu"},
+                            {"klucz": "ppu_dotychczas", "wiersz": "Użytki",
+                             "kolumna": "dotychczas", "podkolumna": "ppu"},
+                            {"klucz": "ofu_nowy", "wiersz": "Użytki",
+                             "kolumna": "nowy", "podkolumna": "ofu"},
+                            {"klucz": "ppu_nowy", "wiersz": "Użytki",
+                             "kolumna": "nowy", "podkolumna": "ppu"}]}]})
+
+
+def test_formularz_dzieli_stan_na_podkolumny(klient):
+    """Formularz ma wyglądać jak dokument: OFU i PPU obok siebie w każdym stanie,
+    a wartości bez podziału (numer działki) na całą jego szerokość. Brat wpisuje
+    wtedy tam, gdzie potem czyta."""
+    _operat_z_podkolumnami(klient)
+
+    formularz = klient.get("/nowy/spis_tresci_wzor").text
+    karta = formularz.split('data-nazwa="wykazy"')[1]
+
+    assert karta.count('<th colspan="2">') == 4, "dwa stany w karcie i we wzorcu"
+    assert karta.count('class="podkolumna">PPU [ha]</th>') == 4
+    for klucz in ("ofu_dotychczas", "ppu_dotychczas", "ofu_nowy", "ppu_nowy"):
+        assert f'name="sek__wykazy__0__{klucz}"' in karta
+    assert karta.count('<td colspan="2">') >= 4, "numer działki na całą szerokość stanu"
+
+
+def test_strona_operatu_pokazuje_podkolumny(klient):
+    """Ten sam układ na stronie operatu — inaczej nie da się zestawić okiem tego,
+    co w formularzu, z tym, co w dokumencie."""
+    _operat_z_podkolumnami(klient)
+    _wyslij(klient, **{"sek__wykazy__0__numer_dotychczas": "119/80",
+                       "sek__wykazy__0__ofu_dotychczas": "R",
+                       "sek__wykazy__0__ppu_nowy": "0,2140"})
+
+    strona = klient.get(f"/dokument/{db.dokumenty()[0]['id']}").text
+    tabela = strona.split("<strong>Działka 1</strong>")[1].split("</table>")[0]
+
+    assert tabela.count('class="podkolumna">OFU</th>') == 2, "podkolumny w obu stanach"
+    assert '<th colspan="2">Stan dotychczasowy</th>' in tabela
+    wiersz_uzytkow = tabela.split("Użytki")[1].split("</tr>")[0]
+    assert wiersz_uzytkow.count("<td") == 4, "dwie podkolumny razy dwa stany"
+    wiersz_numeru = tabela.split("Numer działki")[1].split("</tr>")[0]
+    assert wiersz_numeru.count('<td colspan="2">') == 2
+
+
+def test_wykaz_dzialki_ma_cztery_podkolumny_uzytkow():
+    """W wydanej formatce jeden użytek to komplet czterech wartości — i tak samo
+    ma być w formularzu, więc wszystkie cztery podpola mają swoją podkolumnę."""
+    pole = next(p for p in szablony.szablon_po_id("spis_tresci_wzor").pola
+                if p.klucz == "wykazy_dzialek")
+
+    assert [k["etykieta"] for k in pole.podkolumny] == ["OFU", "OZU", "OZK", "PPU [ha]"]
+    uzytki = [pod for pod in pole.podpola if pod.get("podkolumna")]
+    assert len(uzytki) == 8, "cztery podkolumny w dwóch stanach"
+    assert {pod["wiersz"] for pod in uzytki} == {"Użytki gruntowe i klasy bonitacyjne w działce"}
+
+
 # --- strona operatu ----------------------------------------------------------
 
 def _operat_z_kolumnami(klient):

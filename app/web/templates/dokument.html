@@ -58,11 +58,23 @@
         <p class="szary">{{ pod.etykieta }}: <strong>{{ pod.wartosc }}</strong></p>
         {% endfor %}
         {% if sekcja.wiersze %}
-        <table class="wiersze">
+        <table class="wiersze{{ ' ma-podkolumny' if pole.podkolumny }}">
           {% if pole.kolumny %}
-          <thead><tr><th></th>
-            {% for kolumna in pole.kolumny %}<th>{{ kolumna }}</th>{% endfor %}
-          </tr></thead>
+          {# Dwa piętra nagłówka, gdy stan dzieli się na podkolumny — układ ten sam
+             co w dokumencie i w formularzu, żeby dało się je zestawić okiem. #}
+          <thead>
+            <tr>
+              {% if pole.podkolumny %}<th rowspan="2"></th>{% else %}<th></th>{% endif %}
+              {% for kolumna in pole.kolumny %}
+              {% if pole.podkolumny %}<th colspan="{{ pole.podkolumny|length }}">{%- else %}<th>{%- endif %}{{ kolumna }}</th>
+              {% endfor %}
+            </tr>
+            {% if pole.podkolumny %}
+            <tr>{% for kolumna in pole.kolumny %}{% for pod in pole.podkolumny %}
+              <th class="podkolumna">{{ pod }}</th>
+            {% endfor %}{% endfor %}</tr>
+            {% endif %}
+          </thead>
           {% endif %}
           <tbody>
             {% for wiersz in sekcja.wiersze %}
@@ -71,7 +83,10 @@
               {# `wielolinijkowa` zostawia łamanie wierszy: OFU/OZU/OZK bywają kilkuwierszowe
                  (kilka użytków w jednej działce) i mają się czytać tak jak w dokumencie #}
               {% for komorka in wiersz.komorki %}
-              <td><span class="wielolinijkowa">{{ komorka or '—' }}</span></td>
+              {% if pole.podkolumny and not wiersz.podzielony %}
+              <td colspan="{{ pole.podkolumny|length }}">
+              {% else %}<td>{% endif %}
+                <span class="wielolinijkowa">{{ komorka or '—' }}</span></td>
               {% endfor %}
             </tr>
             {% endfor %}
