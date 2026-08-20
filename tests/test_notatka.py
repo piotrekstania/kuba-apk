@@ -183,7 +183,7 @@ def test_opis_zaczyna_sie_w_tej_samej_linii_co_dane(klient):
 
     assert '<th class="waski"' in karta, "opis poza siatką — nie trafi w kolumnę wartości"
     assert "<td>" in karta.split("opis-operatu")[0], "opis nie stoi w kolumnie wartości"
-    assert ">opis</th>" in karta, "zniknął podpis kolumny przy opisie"
+    assert ">Opis</th>" in karta, "zniknął podpis kolumny przy opisie"
 
 
 def test_karty_na_stronie_operatu_sa_pozamykane(klient):
