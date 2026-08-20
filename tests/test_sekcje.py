@@ -493,7 +493,7 @@ def test_kazda_dzialka_dostaje_osobna_strone(baza):
                         {"dzialka": "119/11", "numer_dotychczas": "119/11"}])
 
     assert len(d.tables) == 2, "każda działka ma własną tabelę"
-    assert [t.rows[2].cells[2].text.strip() for t in d.tables] == ["119/10", "119/11"]
+    assert [t.rows[1].cells[2].text.strip() for t in d.tables] == ["119/10", "119/11"]
     lamania = sum(1 for p in d.paragraphs
                   for b in p.runs for _ in b._r.findall(
                       "{http://schemas.openxmlformats.org/wordprocessingml/2006/main}br"))
@@ -518,36 +518,54 @@ def test_numer_dzialki_wchodzi_do_naglowka_swojej_strony(baza):
 
 
 def test_atrybuty_dzialki_stoja_w_wierszach(baza):
-    """Nagłówek ma dwa piętra: „STAN DOTYCHCZASOWY” i „STAN NOWY”, a pod każdym cztery
-    podkolumny użytków. Wiersze bez podziału (numer, pole powierzchni) mają wartość
-    scaloną przez wszystkie cztery."""
+    """Nagłówek ma jedno piętro: „STAN DOTYCHCZASOWY” i „STAN NOWY” scalone przez cztery
+    podkolumny. Oznaczenia użytków stoją dopiero przy swoim wierszu (osobny test wyżej),
+    a wiersze bez podziału (numer, pole powierzchni) mają wartość scaloną przez cztery."""
     d = _wykaz_dzialek([{
         "dzialka": "119/10", "numer_dotychczas": "119/10", "numer_nowy": "119/11",
         "pow_ewidencyjna_dotychczas": "5.5241", "pow_ewidencyjna_nowy": "5.5241",
         "ofu_dotychczas": "R", "ofu_nowy": "Ba",
         "ozu_dotychczas": "IVa", "ozk_dotychczas": "II",
-        "pow_uzytkow_dotychczas": "5.5241", "pow_uzytkow_nowy": "5.5241"}]) 
+        "pow_uzytkow_dotychczas": "5.5241", "pow_uzytkow_nowy": "5.5241"}])
 
     tabela = d.tables[0]
-    assert len(tabela.rows) == 2 + 3, "dwa wiersze nagłówka, trzy atrybuty"
+    assert len(tabela.rows) == 1 + 2 + 2, \
+        "nagłówek, dwa atrybuty bez podziału, oznaczenia użytków i ich wartości"
     gora = [k.text.strip() for k in tabela.rows[0].cells]
     assert gora[0] == "L.p." and gora[1] == "Oznaczenie atrybutu działki"
     assert gora[2:6] == ["STAN DOTYCHCZASOWY"] * 4, "stan scalony nad podkolumnami"
     assert gora[6:] == ["STAN NOWY"] * 4
-    assert [k.text.strip() for k in tabela.rows[1].cells][2:] == \
-        ["OFU", "OZU", "OZK", "PPU [ha]"] * 2
 
-    opisy = [w.cells[1].text.strip() for w in tabela.rows[2:]]
+    opisy = [w.cells[1].text.strip() for w in tabela.rows[1:]]
     assert opisy[0] == "Numer działki"
-    assert "Użytki gruntowe" in opisy[2]
+    assert "Użytki gruntowe" in opisy[2] and "Użytki gruntowe" in opisy[3]
     # wiersz bez podziału: jedna wartość na całą szerokość stanu
-    numer = tabela.rows[2]
+    numer = tabela.rows[1]
     assert [k.text.strip() for k in numer.cells[2:6]] == ["119/10"] * 4
     assert [k.text.strip() for k in numer.cells[6:]] == ["119/11"] * 4
     # wiersz użytków: cztery wartości obok siebie w każdym stanie
     uzytki = tabela.rows[4]
     assert [k.text.strip() for k in uzytki.cells[2:6]] == ["R", "IVa", "II", "5.5241"]
     assert [k.text.strip() for k in uzytki.cells[6:]] == ["Ba", "", "", "5.5241"]
+
+
+def test_oznaczenia_uzytkow_nad_wierszem_uzytkow_a_nie_w_naglowku(baza):
+    """Oznaczenia OFU/OZU/OZK/PPU wiszące w nagłówku tabeli stały też nad numerem
+    działki i polem powierzchni, których podział nie dotyczy (zgłoszone na wydruku
+    20.08.2026). Stoją teraz dopiero nad wierszem wartości użytków — scalone z nim
+    w punkt 3., tak jak podwiersze kondygnacji w wykazie budynku."""
+    d = _wykaz_dzialek([{"dzialka": "119/10", "numer_dotychczas": "119/10",
+                         "ofu_dotychczas": "R"}])
+
+    tabela = d.tables[0]
+    teksty = [[k.text.strip() for k in w.cells] for w in tabela.rows]
+    assert len(teksty) == 5
+    assert teksty[1][1] == "Numer działki", "nagłówek ma być jednopiętrowy"
+    for wiersz in teksty[:3]:
+        assert "OFU" not in wiersz, "oznaczenia wiszą nad atrybutami bez podziału"
+    assert teksty[3][2:] == ["OFU", "OZU", "OZK", "PPU [ha]"] * 2
+    assert teksty[3][0] == "3." and "Użytki gruntowe" in teksty[3][1],         "oznaczenia mają należeć do punktu użytków (scalone L.p. i nazwa)"
+    assert teksty[4][0] == "3." and teksty[4][2] == "R"
 
 
 def test_kilka_uzytkow_stoi_jeden_pod_drugim(baza):
@@ -558,7 +576,8 @@ def test_kilka_uzytkow_stoi_jeden_pod_drugim(baza):
                          "ozk_dotychczas": "II\nIIIa\nIIIa",
                          "pow_uzytkow_dotychczas": "0.4013\n5.1014\n0.0138"}])
 
-    uzytki = next(w for w in d.tables[0].rows if "Użytki gruntowe" in w.cells[1].text)
+    # wartości stoją w drugim z dwóch wierszy punktu 3. — pierwszy niesie oznaczenia
+    uzytki = [w for w in d.tables[0].rows if "Użytki gruntowe" in w.cells[1].text][-1]
     assert uzytki.cells[2].text.strip().splitlines() == ["R", "R", "W/R"]
     assert uzytki.cells[4].text.strip().splitlines() == ["II", "IIIa", "IIIa"]
     assert uzytki.cells[5].text.strip().splitlines() == ["0.4013", "5.1014", "0.0138"]
@@ -595,7 +614,7 @@ def test_kilka_linijek_ciagnie_komorki_stanow_do_gory(baza):
     d = _wykaz_dzialek([{"dzialka": "119/80", "ozk_dotychczas": "II\nIIIa\nIIIa",
                          "ofu_nowy": "Ba"}])
 
-    wiersz = next(w for w in d.tables[0].rows if "Użytki gruntowe" in w.cells[1].text)
+    wiersz = [w for w in d.tables[0].rows if "Użytki gruntowe" in w.cells[1].text][-1]
     assert {_vAlign(k) for k in wiersz.cells[2:]} == {"top"}
     assert _vAlign(wiersz.cells[1]) == "center", "nazwa atrybutu ma zostać na środku"
 
@@ -663,13 +682,13 @@ def test_zmieniony_stan_nowy_jest_czerwony_i_pogrubiony(baza):
         return [b for p in wiersz.cells[-1].paragraphs for b in p.runs if b.text.strip()]
 
     tabela = d.tables[0]
-    bez_zmiany, ze_zmiana = tabela.rows[2], tabela.rows[3]
+    bez_zmiany, ze_zmiana = tabela.rows[1], tabela.rows[2]
     assert [b.text for b in biegi(bez_zmiany)] == ["119/10"]
     assert not any(b.bold for b in biegi(bez_zmiany)), "niezmieniony stan ma zostać zwykły"
     assert all(b.bold for b in biegi(ze_zmiana))
     assert all(str(b.font.color.rgb) == "FF0000" for b in biegi(ze_zmiana))
     # wartość wpisana tam, gdzie dotąd było pusto, to też zmiana
-    uzytki = next(w for w in tabela.rows if "Użytki gruntowe" in w.cells[1].text)
+    uzytki = [w for w in tabela.rows if "Użytki gruntowe" in w.cells[1].text][-1]
     ofu_nowy = [b for p in uzytki.cells[6].paragraphs for b in p.runs if b.text.strip()]
     assert all(b.bold and str(b.font.color.rgb) == "FF0000" for b in ofu_nowy)
 

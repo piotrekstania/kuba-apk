@@ -267,19 +267,12 @@ def zbuduj(zrodlo: Path, wyjscie: Path) -> Path:
     szerokosc_stanu = sum(SZEROKOSCI_UZYTKOW.values())
     nowe: list = []
 
-    # --- nagłówek: dwa wiersze, bo stany dzielą się na cztery podkolumny -------
+    # --- nagłówek: jedno piętro — oznaczenia użytków stoją niżej, przy swoim wierszu
     nowe.append(_wiersz(naglowek_wz, [
-        _komorka(naglowek_lp, "L.p.", SZEROKOSC_LP, vmerge="restart"),
-        _komorka(naglowek_opisu, "Oznaczenie atrybutu działki", SZEROKOSC_OZNACZENIA,
-                 vmerge="restart"),
+        _komorka(naglowek_lp, "L.p.", SZEROKOSC_LP),
+        _komorka(naglowek_opisu, "Oznaczenie atrybutu działki", SZEROKOSC_OZNACZENIA),
         _komorka(naglowek_stanu, "STAN DOTYCHCZASOWY", szerokosc_stanu, span=4),
         _komorka(naglowek_stanu, "STAN NOWY", szerokosc_stanu, span=4),
-    ]))
-    nowe.append(_wiersz(naglowek_wz, [
-        _komorka(naglowek_lp, "", SZEROKOSC_LP, vmerge="dalej"),
-        _komorka(naglowek_opisu, "", SZEROKOSC_OZNACZENIA, vmerge="dalej"),
-        *[_komorka(naglowek_stanu, skrot, SZEROKOSCI_UZYTKOW[klucz])
-          for _ in range(2) for skrot, klucz in UZYTKI],
     ]))
 
     # --- atrybuty bez podziału na użytki: wartość na całą szerokość stanu ------
@@ -292,9 +285,20 @@ def zbuduj(zrodlo: Path, wyjscie: Path) -> Path:
         ]))
 
     # --- użytki: cztery kolumny obok siebie, po jednej linijce na użytek -------
+    # Oznaczenia OFU/OZU/OZK/PPU stoją **tutaj**, nie w nagłówku tabeli: w nagłówku
+    # wisiały też nad numerem działki i polem powierzchni, których podział nie dotyczy
+    # (zgłoszone na wydruku 20.08.2026). L.p. i nazwa atrybutu są scalone w pionie
+    # z wierszem wartości — oznaczenia należą do punktu z użytkami, tak jak podwiersze
+    # kondygnacji w wykazie budynku.
     nowe.append(_wiersz(prosty_wz, [
-        _komorka(lp_wz, f"{len(ATRYBUTY) + 1}.", SZEROKOSC_LP),
-        _komorka(opis_wz, WIERSZ_UZYTKOW, SZEROKOSC_OZNACZENIA),
+        _komorka(lp_wz, f"{len(ATRYBUTY) + 1}.", SZEROKOSC_LP, vmerge="restart"),
+        _komorka(opis_wz, WIERSZ_UZYTKOW, SZEROKOSC_OZNACZENIA, vmerge="restart"),
+        *[_komorka(naglowek_stanu, skrot, SZEROKOSCI_UZYTKOW[klucz])
+          for _ in range(2) for skrot, klucz in UZYTKI],
+    ]))
+    nowe.append(_wiersz(prosty_wz, [
+        _komorka(lp_wz, "", SZEROKOSC_LP, vmerge="dalej"),
+        _komorka(opis_wz, "", SZEROKOSC_OZNACZENIA, vmerge="dalej"),
         *[_komorka(dane_wz, "{{ dzialka.%s_dotychczas }}" % klucz, SZEROKOSCI_UZYTKOW[klucz])
           for _, klucz in UZYTKI],
         *[_komorka(dane_wz, "{{r dzialka.%s_nowy }}" % klucz, SZEROKOSCI_UZYTKOW[klucz])
