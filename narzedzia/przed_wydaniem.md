@@ -68,16 +68,22 @@ i `git log`. Dopisuj punkty przy każdej rundzie zmian, kasuj po wydaniu.
       a stan nowy stoi równo z pierwszą linijką stanu dotychczasowego.
 - [ ] Tabela mieści się w marginesach i ma **tę samą szerokość co tabela w wykazie
       budynku** — złóż operat z obydwoma wykazami i porównaj.
+- [ ] Tabela jest **domknięta z prawej we wszystkich wierszach** (na wydruku sprzed
+      poprawki nagłówek „STAN NOWY" nie miał prawego boku) i nie ma kreski w środku
+      tam, gdzie jej nie powinno być.
+- [ ] Nagłówek czwartej kolumny to **PPU [ha]** w obu stanach.
 - [ ] **Otwórz w prawdziwym Wordzie** — tabela jest zbudowana od nowa przez skrypt
-      (scalenia poziome i pionowe w nagłówku).
+      (dwa piętra nagłówka, scalenia poziome i pionowe, krawędzie ustawiane po
+      zbudowaniu wiersza). To jest ten rodzaj pliku, który LibreOffice składa bez
+      mrugnięcia, a Word potrafi odrzucić.
 
 ---
 
 ## C. Zlecenie review (do wklejenia Fable)
 
-> Zrób przegląd kodu zmian z zakresu `d746afe..HEAD` w tym repozytorium
-> (`git log --oneline d746afe..HEAD`, `git diff d746afe..HEAD`) — to wszystko, co
-> przyszło po ostatnim wydaniu (`2026.08.19-96`). Kontekst projektu jest w `CLAUDE.md` —
+> Zrób przegląd kodu zmian z zakresu `1fade12..HEAD` w tym repozytorium
+> (`git log --oneline 1fade12..HEAD`, `git diff 1fade12..HEAD`) — to wszystko, co
+> przyszło po ostatnim wydaniu (`2026.08.20-97`). Kontekst projektu jest w `CLAUDE.md` —
 > przeczytaj go najpierw, zwłaszcza listę pułapek i zasady pracy nad kodem.
 > Odpowiadaj po polsku.
 >
@@ -86,33 +92,40 @@ i `git log`. Dopisuj punkty przy każdej rundzie zmian, kasuj po wydaniu.
 > uwag o stylu.
 >
 > Na czym się skup:
-> 1. `app/generator.py` — `wyrownaj_komorki_stanow`: dopisuje `w:vAlign` do komórek
+> 1. `narzedzia/utworz_wykaz_dzialki.py` — tabela wykazu działki zbudowana od nowa:
+>    dwa piętra nagłówka, `gridSpan` na stanach, `vMerge` na L.p. i opisie, krawędzie
+>    ustawiane po zbudowaniu wiersza (`_domknij_prawa_krawedz`). Czy siatka `tblGrid`
+>    zgadza się z liczbą komórek w każdym wierszu, czy scalenia są poprawne wg schematu
+>    OOXML i czy suma szerokości nie przekracza szerokości tekstu? To plik, który
+>    LibreOffice składa bez mrugnięcia, a Word potrafi odrzucić.
+> 2. `app/generator.py` — `wyrownaj_komorki_stanow`: dopisuje `w:vAlign` do komórek
 >    **gotowego** dokumentu, po renderze i przed zapisem, na podstawie liczby linijek
->    w treści. Czy trafia zawsze w te komórki, o które chodzi (scalenia pionowe,
->    `gridSpan`, tabela o innej liczbie kolumn, dokument bez tabel)? Czy kolejność
->    w `tcPr` zostaje poprawna, gdy elementu wcześniej nie było?
-> 2. `app/generator.py` — `sformatuj_pod_znaczniki`, `_zaznacz_zmiany` i `_zmienione`:
+>    w treści. Kolumny stanów liczy teraz od lewej (`KOLUMNY_OPISU = 2`) — czy to trafia
+>    w te komórki, o które chodzi, także przy scaleniach pionowych i `gridSpan`,
+>    w tabeli o innej liczbie kolumn i w dokumencie bez tabel? Czy kolejność w `tcPr`
+>    zostaje poprawna, gdy elementu wcześniej nie było?
+> 3. `app/generator.py` — `sformatuj_pod_znaczniki`, `_zaznacz_zmiany` i `_zmienione`:
 >    mechanizm zamienia pola wykazów na `RichText` (czerwień przy zmienionym stanie
 >    nowym). Kluczowe pytanie: czy `RichText` może trafić do formatki, która w tym
 >    miejscu ma **zwykłe** `{{ }}` — bo taki plik Word odmawia otworzyć. Sprawdź też,
 >    co się dzieje, gdy w danych siedzi liczba, `None` albo lista zamiast napisu,
 >    i czy oryginalny kontekst na pewno zostaje napisami dla kolejnej formatki.
-> 3. `narzedzia/utworz_wykaz_dzialki.py` — buduje formatkę działki z formatki budynku,
+> 4. `narzedzia/utworz_wykaz_dzialki.py` — buduje formatkę działki z formatki budynku,
 >    klonując komórki spod ustalonych indeksów wierszy. Co się stanie, gdy brat przyśle
 >    wykaz budynku o innej liczbie wierszy? Czy skrypt powie to wprost, czy zbuduje
 >    dokument bez sensu?
-> 4. `app/szablony.py` — `podpola_wspolne` i `wiersze_sekcji`: co przy niepełnym albo
+> 5. `app/szablony.py` — `podpola_wspolne` i `wiersze_sekcji`: co przy niepełnym albo
 >    sprzecznym opisie `.json` (podpole bez `wiersz`, kolumna spoza `kolumny`,
 >    `opcje` wskazujące nieistniejącą listę)?
-> 5. `app/main.py` — `_wypelnione_sekcje`: dane z bazy bywają starsze niż dzisiejszy
+> 6. `app/main.py` — `_wypelnione_sekcje`: dane z bazy bywają starsze niż dzisiejszy
 >    szablon (pole skasowane, zmieniony typ, wpis niebędący słownikiem). Czy któraś
 >    ścieżka wywala stronę operatu zamiast pominąć dane? Zwróć uwagę na operaty sprzed
 >    przebudowy wykazu działki — mają dane pod kluczami, których już nie ma.
-> 6. `app/web/templates/formularz.html` — numeracja pól przy dokładaniu i usuwaniu kart
+> 7. `app/web/templates/formularz.html` — numeracja pól przy dokładaniu i usuwaniu kart
 >    (`sek__<pole>__<nr>__<podpole>`), nowe pola wielolinijkowe i podpola wspólne,
 >    strażnik `beforeunload`. Czy da się doprowadzić do stanu, w którym dane trafiają
 >    pod zły indeks albo giną?
-> 7. Testy w `tests/test_sekcje.py` — czy sprawdzają zachowanie, czy tylko to, że kod
+> 8. Testy w `tests/test_sekcje.py` — czy sprawdzają zachowanie, czy tylko to, że kod
 >    się wykonał. Przy okazji: czy któryś zostawia po sobie pliki w prawdziwych
 >    `dane/` albo `wyniki/`?
 >
