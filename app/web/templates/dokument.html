@@ -62,18 +62,14 @@
           {% if pole.kolumny %}
           {# Dwa piętra nagłówka, gdy stan dzieli się na podkolumny — układ ten sam
              co w dokumencie i w formularzu, żeby dało się je zestawić okiem. #}
+          {# Oznaczenia podkolumn idą nad same wartości, w wierszu, którego dotyczą —
+             w nagłówku tabeli wisiały też nad numerem działki, gdzie podziału nie ma. #}
           <thead>
-            <tr>
-              {% if pole.podkolumny %}<th rowspan="2"></th>{% else %}<th></th>{% endif %}
+            <tr><th></th>
               {% for kolumna in pole.kolumny %}
               {% if pole.podkolumny %}<th colspan="{{ pole.podkolumny|length }}">{%- else %}<th>{%- endif %}{{ kolumna }}</th>
               {% endfor %}
             </tr>
-            {% if pole.podkolumny %}
-            <tr>{% for kolumna in pole.kolumny %}{% for pod in pole.podkolumny %}
-              <th class="podkolumna">{{ pod }}</th>
-            {% endfor %}{% endfor %}</tr>
-            {% endif %}
           </thead>
           {% endif %}
           <tbody>
@@ -86,6 +82,8 @@
               {% if pole.podkolumny and not wiersz.podzielony %}
               <td colspan="{{ pole.podkolumny|length }}">
               {% else %}<td>{% endif %}
+                {% if wiersz.podzielony %}<span class="podkolumna-etykieta">{{
+                  pole.podkolumny[loop.index0 % pole.podkolumny|length] }}</span>{% endif %}
                 <span class="wielolinijkowa">{{ komorka or '—' }}</span></td>
               {% endfor %}
             </tr>

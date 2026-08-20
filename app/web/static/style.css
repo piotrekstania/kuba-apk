@@ -358,8 +358,10 @@ table.sekcja-siatka input { padding: 5px 8px; }
 
 /* Podkolumny stanu (OFU, OZU, OZK, PPU) — drobniejsze niż nagłówek stanu nad nimi,
    bo to podział wewnątrz kolumny, a nie osobna kolumna. */
-th.podkolumna { font-size: 12px; font-weight: 600; text-align: center; }
-.sekcja-siatka th.podkolumna { padding: 4px 6px; }
+/* Oznaczenie podkolumny nad samym polem — drobne, bo to podpis wartości, a nie
+   nagłówek kolumny (w nagłówku tabeli wisiałoby też nad wierszami bez podziału). */
+.podkolumna-etykieta { display: block; font-size: 11px; font-weight: 600;
+                       color: var(--szary); margin-bottom: 3px; }
 .sekcja-siatka textarea, .sekcja-siatka input { min-width: 0; }
 
 /* Tabela z podkolumnami stanu rozdziela je **po równo**: bez tego przeglądarka daje

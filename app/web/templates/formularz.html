@@ -212,21 +212,17 @@
                 {# Nagłówek ma dwa piętra, gdy stan dzieli się na podkolumny (OFU, OZU,
                    OZK, PPU) — tak samo jak w dokumencie, żeby brat wpisywał tam, gdzie
                    potem czyta. #}
+                {# Oznaczenia podkolumn (OFU, OZU, OZK, PPU) stoją **nad samymi polami**,
+                   w wierszu, którego dotyczą. W nagłówku tabeli wisiały też nad numerem
+                   działki i polem powierzchni, gdzie żadnego podziału nie ma — wyglądało
+                   to, jakby numer był wpisany w kolumnie OFU. #}
                 <thead>
-                  <tr>
-                    {% if pole.podkolumny %}<th rowspan="2"></th>{% else %}<th></th>{% endif %}
+                  <tr><th></th>
                     {% for kolumna in pole.kolumny %}
                     {% if pole.podkolumny %}<th colspan="{{ pole.podkolumny|length }}">
                     {%- else %}<th>{%- endif %}{{ kolumna.etykieta }}</th>
                     {% endfor %}
                   </tr>
-                  {% if pole.podkolumny %}
-                  <tr>
-                    {% for kolumna in pole.kolumny %}{% for pod in pole.podkolumny %}
-                    <th class="podkolumna">{{ pod.etykieta }}</th>
-                    {% endfor %}{% endfor %}
-                  </tr>
-                  {% endif %}
                 </thead>
                 <tbody>
                   {% for wiersz in pole.wiersze_sekcji %}
@@ -236,9 +232,10 @@
                     {% if wiersz.podzial %}
                     {% for podkolumna in pole.podkolumny %}
                     {% set pod = wiersz.podzial.get(kolumna.klucz, {}).get(podkolumna.klucz) %}
-                    <td>{% if pod %}{{ pole_sekcji(
-                        pole.klucz, nr, pod, wpis.get(pod.klucz, '') if wpis else '',
-                        podkolumna.etykieta ~ ' — ' ~ kolumna.etykieta) }}{% endif %}</td>
+                    <td>{% if pod %}<span class="podkolumna-etykieta">{{ podkolumna.etykieta }}</span>
+                      {{ pole_sekcji(pole.klucz, nr, pod,
+                                     wpis.get(pod.klucz, '') if wpis else '',
+                                     podkolumna.etykieta ~ ' — ' ~ kolumna.etykieta) }}{% endif %}</td>
                     {% endfor %}
                     {% else %}
                     {% set pod = wiersz.pola.get(kolumna.klucz) %}
@@ -290,21 +287,17 @@
                 {# Nagłówek ma dwa piętra, gdy stan dzieli się na podkolumny (OFU, OZU,
                    OZK, PPU) — tak samo jak w dokumencie, żeby brat wpisywał tam, gdzie
                    potem czyta. #}
+                {# Oznaczenia podkolumn (OFU, OZU, OZK, PPU) stoją **nad samymi polami**,
+                   w wierszu, którego dotyczą. W nagłówku tabeli wisiały też nad numerem
+                   działki i polem powierzchni, gdzie żadnego podziału nie ma — wyglądało
+                   to, jakby numer był wpisany w kolumnie OFU. #}
                 <thead>
-                  <tr>
-                    {% if pole.podkolumny %}<th rowspan="2"></th>{% else %}<th></th>{% endif %}
+                  <tr><th></th>
                     {% for kolumna in pole.kolumny %}
                     {% if pole.podkolumny %}<th colspan="{{ pole.podkolumny|length }}">
                     {%- else %}<th>{%- endif %}{{ kolumna.etykieta }}</th>
                     {% endfor %}
                   </tr>
-                  {% if pole.podkolumny %}
-                  <tr>
-                    {% for kolumna in pole.kolumny %}{% for pod in pole.podkolumny %}
-                    <th class="podkolumna">{{ pod.etykieta }}</th>
-                    {% endfor %}{% endfor %}
-                  </tr>
-                  {% endif %}
                 </thead>
                 <tbody>
                   {% for wiersz in pole.wiersze_sekcji %}
@@ -314,9 +307,9 @@
                     {% if wiersz.podzial %}
                     {% for podkolumna in pole.podkolumny %}
                     {% set pod = wiersz.podzial.get(kolumna.klucz, {}).get(podkolumna.klucz) %}
-                    <td>{% if pod %}{{ pole_sekcji(
-                        pole.klucz, 0, pod, '',
-                        podkolumna.etykieta ~ ' — ' ~ kolumna.etykieta) }}{% endif %}</td>
+                    <td>{% if pod %}<span class="podkolumna-etykieta">{{ podkolumna.etykieta }}</span>
+                      {{ pole_sekcji(pole.klucz, 0, pod, '',
+                                     podkolumna.etykieta ~ ' — ' ~ kolumna.etykieta) }}{% endif %}</td>
                     {% endfor %}
                     {% else %}
                     {% set pod = wiersz.pola.get(kolumna.klucz) %}
