@@ -90,8 +90,8 @@ def test_wpisane_dane_to_karty_jak_w_formularzu(klient):
 
     strona = klient.get(f"/dokument/{db.dokumenty()[0]['id']}").text
 
-    assert '<section class="karta-danych">' in strona
-    assert "<h3>Dane</h3>" in strona, "grupa bez własnej karty"   # grupa domyślna
+    assert '<fieldset class="karta-danych">' in strona
+    assert "<legend>Dane</legend>" in strona, "grupa bez własnej karty"
     assert 'class="grupa"' not in strona, "został stary pasek grupy"
     assert '<th class="waski" title="nr_roboty">Nr roboty</th>' in strona
     assert 'title="nr_operatu">nr_operatu<' not in strona, "klucz zamiast etykiety"
@@ -209,7 +209,7 @@ def test_wpisane_dane_ida_grupami_z_szablonu(klient):
                 follow_redirects=False)
     strona = klient.get(f"/dokument/{db.dokumenty()[0]['id']}").text
 
-    uklad = re.findall(r'<section class="karta-danych">\s*<h3>(.*?)</h3>'
+    uklad = re.findall(r'<fieldset class="karta-danych">\s*<legend>(.*?)</legend>'
                        r'|<th class="waski" title="(.*?)">', strona)
     assert [g or p for g, p in uklad] == [
         "Robota", "nr_roboty", "nr_operatu", "data_zakonczenia", "Opis", "uwagi"]
@@ -608,6 +608,29 @@ def test_nazwy_kart_maja_kolor_akcentu():
     assert "var(--akcent)" in legenda, "nazwy kart bez koloru akcentu"
     podkarta = style.split(".sekcja > legend {")[1].split("}")[0]
     assert "var(--szary)" in podkarta, "podkarty przestały być szare"
+
+
+def test_znacznik_stylow_odswieza_sie_w_kopii_roboczej(klient, monkeypatch):
+    """Serwer nie ma auto-reloadu, a znacznik był liczony raz na uruchomienie — po
+    zmianie CSS-u adres zostawał ten sam i przeglądarka brała arkusz z cache. Poprawka
+    wyglądała wtedy na niedziałającą, choć serwer oddawał już nowy plik.
+
+    U brata (bez `.git`) zostaje jak było: katalog jest niezmienny przez całe
+    uruchomienie, a aktualizacja i tak restartuje program.
+    """
+    from app import aktualizacja, main
+    from app.config import WEB
+
+    monkeypatch.setattr(aktualizacja, "kopia_robocza_gita", lambda: True)
+    monkeypatch.setattr(main, "_ZNACZNIK_ZASOBOW", None)
+    przed = main.wersja_zasobow()
+    (WEB / "static" / "style.css").touch()
+    assert main.wersja_zasobow() != przed, "znacznik nie nadąża za zmianą arkusza"
+
+    monkeypatch.setattr(aktualizacja, "kopia_robocza_gita", lambda: False)
+    stoi = main.wersja_zasobow()
+    (WEB / "static" / "style.css").touch()
+    assert main.wersja_zasobow() == stoi, "u brata znacznik ma być liczony raz"
 
 
 def test_strona_znakuje_arkusz_stylow(klient):

@@ -114,11 +114,17 @@ def wersja_zasobow() -> str:
 
     Dokładamy więc czas zmiany plików statycznych. Nie zastępujemy nim numeru wersji —
     numer zostaje, bo jest czytelny, gdy trzeba dopasować zgłoszenie brata do wydania.
-    Odczyt jest tani (trzy pliki), ale i tak trzymamy wynik: katalog jest niezmienny
-    przez całe uruchomienie, a aktualizacja i tak restartuje program.
+    Odczyt jest tani (trzy pliki), ale u brata i tak trzymamy wynik: katalog jest tam
+    niezmienny przez całe uruchomienie, a aktualizacja restartuje program.
+
+    **W kopii roboczej gita liczymy go za każdym razem.** Przy pracy nad wyglądem plik
+    zmienia się co chwilę, a serwer nie ma auto-reloadu — zapamiętany znacznik dawał
+    stary adres, przeglądarka brała arkusz z cache i poprawka wyglądała na niedziałającą.
+    Kosztowało to dwie rundy „przecież nie wygląda tak samo”, przy czym za pierwszym
+    razem podejrzenie padło na CSS, a nie na cache.
     """
     global _ZNACZNIK_ZASOBOW
-    if _ZNACZNIK_ZASOBOW is None:
+    if _ZNACZNIK_ZASOBOW is None or aktualizacja.kopia_robocza_gita():
         try:
             najnowszy = max(p.stat().st_mtime for p in (WEB / "static").iterdir()
                             if p.is_file())

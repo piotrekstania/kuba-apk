@@ -32,8 +32,8 @@
 {# Opis nad „Wpisanymi danymi” i w tym samym stroju: nagłówek sekcji plus biały panel.
    To też są dane operatu, tylko wpisane dla siebie, a nie do dokumentu. #}
 {% if dokument.notatka %}
-<section class="karta-danych">
-  <h3>Opis</h3>
+<fieldset class="karta-danych">
+  <legend>Opis</legend>
   <div class="opis-operatu">{{ dokument.notatka }}</div>
 </section>
 {% endif %}
@@ -45,8 +45,8 @@
    Jedna długa tabela z szarymi paskami grup wyglądała jak co innego niż strona, na
    której te dane się wpisuje, a to ten sam podział z tego samego `.json`. #}
 {% for grupa in grupy %}
-<section class="karta-danych">
-  <h3>{{ grupa.nazwa }}</h3>
+<fieldset class="karta-danych">
+  <legend>{{ grupa.nazwa }}</legend>
   <table class="lista">
   {% for pole in grupa.pola %}
   <tr>
@@ -133,7 +133,7 @@
   </tr>
   {% endfor %}
   </table>
-</section>
+</fieldset>
 {% endfor %}
 
 <form method="post" action="/dokument/{{ dokument.id }}/usun"

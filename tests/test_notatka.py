@@ -159,12 +159,12 @@ def test_opis_stoi_nad_wpisanymi_danymi(klient):
 
     strona = klient.get(f"/dokument/{wpis['id']}").text
 
-    assert strona.index("<h3>Opis</h3>") < strona.index("<h3>Dane</h3>"), \
+    assert strona.index("<legend>Opis</legend>") < strona.index("<legend>Dane</legend>"), \
         "opis ma stać nad kartami z wpisanymi danymi"
-    assert strona.index("opis-operatu") < strona.index("<h3>Dane</h3>")
+    assert strona.index("opis-operatu") < strona.index("<legend>Dane</legend>")
     # …a nie gdziekolwiek wyżej: nad paskiem przycisków opis też jest „nad wpisanymi
     # danymi”, a to jest właśnie miejsce, z którego go zabraliśmy
-    assert strona.index('class="pasek"') < strona.index("<h3>Opis</h3>"), \
+    assert strona.index('class="pasek"') < strona.index("<legend>Opis</legend>"), \
         "opis wrócił nad przyciski — sekcje mają iść po akcjach, nie przed nimi"
 
 
