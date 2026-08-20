@@ -58,10 +58,18 @@ start.bat
 Wszystko od ostatniego wydania — numer i skrót commita znajdziesz w `ZMIANY.md`
 i `git log`. Dopisuj punkty przy każdej rundzie zmian, kasuj po wydaniu.
 
-*(pusto — wydanie 2026.08.20-97 poszło 20.08; wyrównanie wg treści obejrzane
-na PDF z prawdziwego Worda: pojedyncze wartości na środku, wielolinijkowe do góry.
-Uwaga: „kilka linijek w Uwagach budynku" działa w generatorze, ale w formularzu
-to zwykły input — Enter tam nie wejdzie, póki podpole nie dostanie typu textarea)*
+### Wykaz działki — użytki obok siebie
+
+- [ ] Tabela ma dwa piętra nagłówka: „STAN DOTYCHCZASOWY" i „STAN NOWY", a pod każdym
+      **OFU | OZU | OZK | PPU**.
+- [ ] „Numer działki" i „Pole powierzchni ewidencyjnej" mają wartość na całą szerokość
+      stanu (scaloną przez cztery podkolumny).
+- [ ] Kilka użytków = kilka linijek; wartości w czterech kolumnach trzymają poziom,
+      a stan nowy stoi równo z pierwszą linijką stanu dotychczasowego.
+- [ ] Tabela mieści się w marginesach i ma **tę samą szerokość co tabela w wykazie
+      budynku** — złóż operat z obydwoma wykazami i porównaj.
+- [ ] **Otwórz w prawdziwym Wordzie** — tabela jest zbudowana od nowa przez skrypt
+      (scalenia poziome i pionowe w nagłówku).
 
 ---
 

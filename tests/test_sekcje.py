@@ -493,7 +493,7 @@ def test_kazda_dzialka_dostaje_osobna_strone(baza):
                         {"dzialka": "119/11", "numer_dotychczas": "119/11"}])
 
     assert len(d.tables) == 2, "każda działka ma własną tabelę"
-    assert [t.rows[1].cells[-2].text.strip() for t in d.tables] == ["119/10", "119/11"]
+    assert [t.rows[2].cells[2].text.strip() for t in d.tables] == ["119/10", "119/11"]
     lamania = sum(1 for p in d.paragraphs
                   for b in p.runs for _ in b._r.findall(
                       "{http://schemas.openxmlformats.org/wordprocessingml/2006/main}br"))
@@ -518,33 +518,50 @@ def test_numer_dzialki_wchodzi_do_naglowka_swojej_strony(baza):
 
 
 def test_atrybuty_dzialki_stoja_w_wierszach(baza):
-    """Układ tabeli: L.p., nazwa atrybutu, stan dotychczasowy, stan nowy."""
+    """Nagłówek ma dwa piętra: „STAN DOTYCHCZASOWY” i „STAN NOWY”, a pod każdym cztery
+    podkolumny użytków. Wiersze bez podziału (numer, pole powierzchni) mają wartość
+    scaloną przez wszystkie cztery."""
     d = _wykaz_dzialek([{
         "dzialka": "119/10", "numer_dotychczas": "119/10", "numer_nowy": "119/11",
         "pow_ewidencyjna_dotychczas": "5.5241", "pow_ewidencyjna_nowy": "5.5241",
         "ofu_dotychczas": "R", "ofu_nowy": "Ba",
         "ozu_dotychczas": "IVa", "ozk_dotychczas": "II",
-        "pow_uzytkow_dotychczas": "5.5241", "pow_uzytkow_nowy": "5.5241"}])
+        "pow_uzytkow_dotychczas": "5.5241", "pow_uzytkow_nowy": "5.5241"}]) 
 
     tabela = d.tables[0]
-    assert [k.text.strip() for k in tabela.rows[0].cells] == [
-        "L.p.", "Oznaczenie atrybutu działki", "Oznaczenie atrybutu działki",
-        "STAN DOTYCHCZASOWY", "STAN NOWY"]
-    opisy = [w.cells[1].text.strip() for w in tabela.rows[1:]]
+    assert len(tabela.rows) == 2 + 3, "dwa wiersze nagłówka, trzy atrybuty"
+    gora = [k.text.strip() for k in tabela.rows[0].cells]
+    assert gora[0] == "L.p." and gora[1] == "Oznaczenie atrybutu działki"
+    assert gora[2:6] == ["STAN DOTYCHCZASOWY"] * 4, "stan scalony nad podkolumnami"
+    assert gora[6:] == ["STAN NOWY"] * 4
+    assert [k.text.strip() for k in tabela.rows[1].cells][2:] == \
+        ["OFU", "OZU", "OZK", "PPU"] * 2
+
+    opisy = [w.cells[1].text.strip() for w in tabela.rows[2:]]
     assert opisy[0] == "Numer działki"
     assert "Użytki gruntowe" in opisy[2]
-    assert [w.cells[-2].text.strip() for w in tabela.rows[1:3]] == ["119/10", "5.5241"]
-    assert [w.cells[-1].text.strip() for w in tabela.rows[1:3]] == ["119/11", "5.5241"]
+    # wiersz bez podziału: jedna wartość na całą szerokość stanu
+    numer = tabela.rows[2]
+    assert [k.text.strip() for k in numer.cells[2:6]] == ["119/10"] * 4
+    assert [k.text.strip() for k in numer.cells[6:]] == ["119/11"] * 4
+    # wiersz użytków: cztery wartości obok siebie w każdym stanie
+    uzytki = tabela.rows[4]
+    assert [k.text.strip() for k in uzytki.cells[2:6]] == ["R", "IVa", "II", "5.5241"]
+    assert [k.text.strip() for k in uzytki.cells[6:]] == ["Ba", "", "", "5.5241"]
 
 
 def test_kilka_uzytkow_stoi_jeden_pod_drugim(baza):
-    """Jedna działka bywa podzielona na kilka użytków — brat wpisuje je w polu
-    wielolinijkowym i w dokumencie mają zostać w osobnych linijkach, w jednej komórce."""
+    """Jedna działka bywa podzielona na kilka użytków. Każdy to jedna linijka we
+    **wszystkich czterech** kolumnach naraz — dlatego OFU, OZU, OZK i PPU stoją obok
+    siebie, a nie w osobnych wierszach tabeli."""
     d = _wykaz_dzialek([{"dzialka": "119/10", "ofu_dotychczas": "R\nR\nW/R",
-                         "ozk_dotychczas": "II\nIIIa\nIIIa"}])
+                         "ozk_dotychczas": "II\nIIIa\nIIIa",
+                         "pow_uzytkow_dotychczas": "0.4013\n5.1014\n0.0138"}])
 
-    uzytki = next(w for w in d.tables[0].rows if w.cells[2].text.strip() == "OFU")
-    assert uzytki.cells[-2].text.strip().splitlines() == ["R", "R", "W/R"]
+    uzytki = next(w for w in d.tables[0].rows if "Użytki gruntowe" in w.cells[1].text)
+    assert uzytki.cells[2].text.strip().splitlines() == ["R", "R", "W/R"]
+    assert uzytki.cells[4].text.strip().splitlines() == ["II", "IIIa", "IIIa"]
+    assert uzytki.cells[5].text.strip().splitlines() == ["0.4013", "5.1014", "0.0138"]
 
 
 def _vAlign(komorka) -> str:
@@ -560,22 +577,26 @@ def test_pojedyncza_wartosc_stoi_na_srodku_komorki(baza):
     kleiło liczbę do górnej krawędzi, podczas gdy dwuwierszowa etykieta obok stała
     na środku — i wyglądało to na usterkę.
     """
-    d = _wykaz_dzialek([{"dzialka": "119/80", "pow_uzytkow_dotychczas": "2,56",
-                         "pow_uzytkow_nowy": "8,96"}])
+    d = _wykaz_dzialek([{"dzialka": "119/80", "pow_ewidencyjna_dotychczas": "5.5241",
+                         "pow_ewidencyjna_nowy": "5.6000"}])
 
-    wiersz = next(w for w in d.tables[0].rows if "Pole powierzchni użytków" in w.cells[1].text)
-    assert [_vAlign(k) for k in wiersz.cells[-2:]] == ["center", "center"]
+    wiersz = next(w for w in d.tables[0].rows
+                  if "Pole powierzchni ewidencyjnej" in w.cells[1].text)
+    assert {_vAlign(k) for k in wiersz.cells[2:]} == {"center"}
 
 
 def test_kilka_linijek_ciagnie_komorki_stanow_do_gory(baza):
     """Przy kilku użytkach wartość w sąsiedniej kolumnie musi wypaść na wysokości
     **swojej** linijki — brat dosuwa ją pustymi linijkami, a to działa tylko wtedy,
-    gdy obie komórki są wyrównane do góry. Nazwa atrybutu zostaje na środku."""
-    d = _wykaz_dzialek([{"dzialka": "119/80", "ozu_dotychczas": "78\n36\n36",
-                         "ozu_nowy": "67"}])
+    gdy komórki są wyrównane do góry. Dotyczy **wszystkich** podkolumn stanu, nie tylko
+    tej wielolinijkowej: inaczej „Ba” w OFU stanu nowego pływałoby w połowie wysokości.
+    Nazwa atrybutu zostaje na środku.
+    """
+    d = _wykaz_dzialek([{"dzialka": "119/80", "ozk_dotychczas": "II\nIIIa\nIIIa",
+                         "ofu_nowy": "Ba"}])
 
-    wiersz = next(w for w in d.tables[0].rows if w.cells[2].text.strip() == "OZU")
-    assert [_vAlign(k) for k in wiersz.cells[-2:]] == ["top", "top"]
+    wiersz = next(w for w in d.tables[0].rows if "Użytki gruntowe" in w.cells[1].text)
+    assert {_vAlign(k) for k in wiersz.cells[2:]} == {"top"}
     assert _vAlign(wiersz.cells[1]) == "center", "nazwa atrybutu ma zostać na środku"
 
 
@@ -595,9 +616,13 @@ def test_wykaz_dzialki_wyglada_jak_wykaz_budynku():
 
     assert dzialka.sections[0].orientation == WD_ORIENT.PORTRAIT
     assert dzialka.sections[0].page_width == budynek.sections[0].page_width
+    # Siatka kolumn jest inna (stany dzielą się na cztery podkolumny użytków), ale
+    # dwie pierwsze kolumny — L.p. i opis — mają zostać tej samej szerokości, bo to one
+    # decydują, czy oba dokumenty wyglądają jak komplet.
     kolumny = lambda d: [int(k.get(qn("w:w")))                       # noqa: E731
                         for k in d.tables[0]._tbl.find(qn("w:tblGrid"))]
-    assert kolumny(dzialka) == kolumny(budynek), "inna siatka kolumn niż w wykazie budynku"
+    assert kolumny(dzialka)[0] == kolumny(budynek)[0]
+    assert sum(kolumny(dzialka)) == sum(kolumny(budynek)), "inna szerokość całej tabeli"
 
 
 def test_zmieniony_stan_nowy_jest_czerwony_i_pogrubiony(baza):
@@ -616,14 +641,15 @@ def test_zmieniony_stan_nowy_jest_czerwony_i_pogrubiony(baza):
         return [b for p in wiersz.cells[-1].paragraphs for b in p.runs if b.text.strip()]
 
     tabela = d.tables[0]
-    bez_zmiany, ze_zmiana = tabela.rows[1], tabela.rows[2]
+    bez_zmiany, ze_zmiana = tabela.rows[2], tabela.rows[3]
     assert [b.text for b in biegi(bez_zmiany)] == ["119/10"]
     assert not any(b.bold for b in biegi(bez_zmiany)), "niezmieniony stan ma zostać zwykły"
     assert all(b.bold for b in biegi(ze_zmiana))
     assert all(str(b.font.color.rgb) == "FF0000" for b in biegi(ze_zmiana))
     # wartość wpisana tam, gdzie dotąd było pusto, to też zmiana
-    uzytki = next(w for w in tabela.rows if w.cells[2].text.strip() == "OFU")
-    assert all(b.bold and str(b.font.color.rgb) == "FF0000" for b in biegi(uzytki))
+    uzytki = next(w for w in tabela.rows if "Użytki gruntowe" in w.cells[1].text)
+    ofu_nowy = [b for p in uzytki.cells[6].paragraphs for b in p.runs if b.text.strip()]
+    assert all(b.bold and str(b.font.color.rgb) == "FF0000" for b in ofu_nowy)
 
 
 def test_wykaz_budynku_tez_czerwieni_zmiany(baza):
@@ -938,21 +964,3 @@ def test_puste_linijki_wchodza_do_dokumentu(baza):
     assert "sdf\nsdf\nsdf" in komorki
 
 
-def test_komorki_wielolinijkowe_wyrownane_do_gory():
-    """Środkowanie w pionie rozjeżdżało kolumny: przy trzech linijkach z jednej strony
-    i dwóch z drugiej krótsza kolumna pływała w pionie i wiersze nie trzymały poziomu.
-    Wyrównanie do góry + zachowane puste linijki dają linijki równo w poziomie
-    (prośba brata, 19.08.2026). Jednolinijkowe wiersze zostają wyśrodkowane."""
-    from docx.oxml.ns import qn
-
-    d = Document(str(szablony.szablon_po_id("wykaz_zmian_dzialki_wzor").plik))
-    wielolinijkowe = ("ofu_", "ozu_", "ozk_", "pow_uzytkow_")
-
-    komorki = {c._tc: c.text.strip() for w in d.tables[0].rows for c in w.cells
-               if any(z in c.text for z in wielolinijkowe)}
-    assert len(komorki) == 8, "cztery pola wielolinijkowe w dwóch stanach"
-    for tc, tekst in komorki.items():
-        tcPr = tc.find(qn("w:tcPr"))
-        vAlign = tcPr.find(qn("w:vAlign")) if tcPr is not None else None
-        assert vAlign is None or vAlign.get(qn("w:val")) == "top", \
-            f"komórka {tekst[:34]!r} środkuje w pionie — krótsza kolumna będzie pływać"

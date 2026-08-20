@@ -337,7 +337,7 @@
           "etykieta": "Stan nowy"
         }
       ],
-      "podpowiedz": "Jedna karta na działkę — w dokumencie każda dostaje osobną stronę. Numer działki wchodzi do identyfikatora w nagłówku tej strony. OFU, OZU, OZK i pole powierzchni użytków przyjmują kilka wartości: każdą w osobnej linijce (Enter).",
+      "podpowiedz": "Jedna karta na działkę — w dokumencie każda dostaje osobną stronę. Numer działki wchodzi do identyfikatora w nagłówku tej strony. OFU, OZU, OZK i PPU stoją w dokumencie obok siebie: jeden użytek to jedna linijka we wszystkich czterech naraz, więc wpisuj kolejne użytki w kolejnych linijkach (Enter).",
       "podpola": [
         {
           "klucz": "dzialka",
@@ -403,13 +403,13 @@
         },
         {
           "klucz": "pow_uzytkow_dotychczas",
-          "wiersz": "Pole powierzchni użytków gruntowych i klas bonitacyjnych [ha]",
+          "wiersz": "PPU — pole powierzchni użytków gruntowych i klas bonitacyjnych [ha]",
           "kolumna": "dotychczas",
           "typ": "textarea"
         },
         {
           "klucz": "pow_uzytkow_nowy",
-          "wiersz": "Pole powierzchni użytków gruntowych i klas bonitacyjnych [ha]",
+          "wiersz": "PPU — pole powierzchni użytków gruntowych i klas bonitacyjnych [ha]",
           "kolumna": "nowy",
           "typ": "textarea"
         }

@@ -16,6 +16,12 @@ i w podpisie, bo doszedł tam dłuższy wiersz.
 Numer działki jest **podpolem każdego wykazu** (`dzialka.dzialka`), a nie jednym polem
 na cały dokument: skoro każda działka ma własną stronę, to i własny numer w nagłówku.
 Identyfikatorem jest dopiero całość — obręb, kropka i ten numer — i tak stoi w nagłówku.
+
+Użytki mają **cztery kolumny obok siebie** w każdym stanie: OFU, OZU, OZK i PPU (pole
+powierzchni użytków gruntowych i klas bonitacyjnych w obszarze działki). Wcześniej PPU
+było osobnym, czwartym wierszem tabeli — a jeden użytek to jeden komplet czterech
+wartości, więc czytało się je w dwóch odległych miejscach. Teraz stoją w jednej linijce,
+a kilka użytków to kilka linijek w tych samych czterech kolumnach.
 """
 from __future__ import annotations
 
@@ -39,16 +45,26 @@ TYTUL = ("WYKAZ ZMIAN DANYCH EWIDENCYJNYCH ", "DOTYCZĄCYCH DZIAŁKI EWIDENCYJNE
 WIERSZ_IDENTYFIKATORA = ("Identyfikator działki ewidencyjnej:",
                          "[{{ polozenie_obreb_teryt }}.{{ dzialka.dzialka }}]")
 
-# Atrybuty działki: (nazwa, klucz) albo (nazwa, [(podwiersz, klucz), …]) dla atrybutu
-# rozpisanego na kilka linijek — jak „Liczba kondygnacji” w wykazie budynku.
-ATRYBUTY: list[tuple[str, object]] = [
+# Szerokości kolumn (twipy). Suma musi wyjść **dokładnie** na szerokość tekstu strony —
+# tabela szersza choćby o włos wychodzi poza margines, a Word łamie ją wtedy na drugą
+# stronę. PPU dostaje więcej miejsca niż OFU/OZU/OZK, bo trzyma liczby typu „0.4013”.
+SZEROKOSC_LP = 543
+# 2188: cała tabela wychodzi wtedy na 8931 twipów, dokładnie tyle co tabela
+# w wykazie budynku — oba dokumenty leżą w operacie obok siebie i różnicę
+# szerokości widać na pierwszy rzut oka
+SZEROKOSC_OZNACZENIA = 2188
+SZEROKOSCI_UZYTKOW = {"ofu": 700, "ozu": 700, "ozk": 700, "pow_uzytkow": 1000}
+
+# Podkolumny stanu — jeden użytek to jedna linijka we wszystkich czterech naraz.
+UZYTKI = [("OFU", "ofu"), ("OZU", "ozu"), ("OZK", "ozk"), ("PPU", "pow_uzytkow")]
+
+# Wiersze tabeli: (nazwa atrybutu, klucz). Wartość idzie w komórce scalonej przez cztery
+# podkolumny stanu — te rozdzielają się dopiero w wierszu użytków.
+ATRYBUTY: list[tuple[str, str]] = [
     ("Numer działki", "numer"),
     ("Pole powierzchni ewidencyjnej działki [ha]", "pow_ewidencyjna"),
-    ("Użytki gruntowe i klasy bonitacyjne w działce",
-     [("OFU", "ofu"), ("OZU", "ozu"), ("OZK", "ozk")]),
-    ("Pole powierzchni użytków gruntowych i klas bonitacyjnych w obszarze działki [ha]",
-     "pow_uzytkow"),
 ]
+WIERSZ_UZYTKOW = "Użytki gruntowe i klasy bonitacyjne w działce"
 
 
 def _tekst_komorki(tc, tekst: str) -> None:
@@ -83,8 +99,51 @@ def _tekst_komorki(tc, tekst: str) -> None:
     bieg.append(w_t)
 
 
-def _komorka(wzorzec, tekst: str):
+# Kolejność elementów w `tcPr` jest częścią schematu OOXML — Word odrzuca plik, w którym
+# coś stoi nie na swoim miejscu, a LibreOffice łyka to bez słowa (pułapka 12d).
+KOLEJNOSC_TCPR = ("w:cnfStyle", "w:tcW", "w:gridSpan", "w:hMerge", "w:vMerge",
+                  "w:tcBorders", "w:shd", "w:noWrap", "w:tcMar", "w:textDirection",
+                  "w:tcFitText", "w:vAlign", "w:hideMark")
+
+
+def _ustaw_w_tcpr(tcPr, tag: str, **atrybuty):
+    """Element `tag` w `tcPr` — istniejący albo dołożony we właściwe miejsce."""
+    element = tcPr.find(qn(tag))
+    if element is None:
+        element = OxmlElement(tag)
+        dalsze = [n.split(":")[1] for n in KOLEJNOSC_TCPR[KOLEJNOSC_TCPR.index(tag) + 1:]]
+        for dziecko in tcPr:
+            if dziecko.tag.split("}")[1] in dalsze:
+                dziecko.addprevious(element)
+                break
+        else:
+            tcPr.append(element)
+    for nazwa, wartosc in atrybuty.items():
+        element.set(qn(f"w:{nazwa}"), str(wartosc))
+    return element
+
+
+def _komorka(wzorzec, tekst: str, szerokosc: int = 0, *, span: int = 0, vmerge: str = ""):
     tc = copy.deepcopy(wzorzec)
+    tcPr = tc.find(qn("w:tcPr"))
+
+    stary_span = tcPr.find(qn("w:gridSpan"))
+    if span:
+        _ustaw_w_tcpr(tcPr, "w:gridSpan", val=span)
+    elif stary_span is not None:
+        tcPr.remove(stary_span)
+
+    stary_merge = tcPr.find(qn("w:vMerge"))
+    if stary_merge is not None:
+        tcPr.remove(stary_merge)
+    if vmerge == "restart":
+        _ustaw_w_tcpr(tcPr, "w:vMerge", val="restart")
+    elif vmerge == "dalej":
+        _ustaw_w_tcpr(tcPr, "w:vMerge")
+
+    if szerokosc:
+        _ustaw_w_tcpr(tcPr, "w:tcW", w=szerokosc, type="dxa")
+
     _tekst_komorki(tc, tekst)
     return tc
 
@@ -163,45 +222,66 @@ def zbuduj(zrodlo: Path, wyjscie: Path) -> Path:
         wzorzec_naglowka, WIERSZ_IDENTYFIKATORA[0], WIERSZ_IDENTYFIKATORA[1]))
 
     # --- tabela ---------------------------------------------------------------
+    # Wzorce bierzemy z prawdziwych komórek formatki budynku: krój, rozmiary, kreski
+    # i wyśrodkowanie są tam już takie, jakie mają być w obu wykazach.
     tabela = dokument.tables[0]._tbl
     wiersze = tabela.findall(qn("w:tr"))
     naglowek_wz, prosty_wz = wiersze[0], wiersze[1]
-    z_podwierszami_wz, kontynuacja_wz = wiersze[6], wiersze[7]
-
     komorki_naglowka = naglowek_wz.findall(qn("w:tc"))
     komorki_proste = prosty_wz.findall(qn("w:tc"))
-    komorki_pod = z_podwierszami_wz.findall(qn("w:tc"))
-    komorki_kont = kontynuacja_wz.findall(qn("w:tc"))
+    lp_wz, opis_wz, dane_wz = komorki_proste[0], komorki_proste[1], komorki_proste[3]
+    naglowek_lp, naglowek_opisu, naglowek_stanu = komorki_naglowka[0], komorki_naglowka[1], \
+        komorki_naglowka[2]
 
-    nowe = [_wiersz(naglowek_wz, [
-        _komorka(komorki_naglowka[0], "L.p."),
-        _komorka(komorki_naglowka[1], "Oznaczenie atrybutu działki"),
-        _komorka(komorki_naglowka[2], "STAN DOTYCHCZASOWY"),
-        _komorka(komorki_naglowka[3], "STAN NOWY"),
-    ])]
+    szerokosc_stanu = sum(SZEROKOSCI_UZYTKOW.values())
+    nowe: list = []
 
-    for numer, (nazwa, tresc) in enumerate(ATRYBUTY, start=1):
-        if isinstance(tresc, str):
-            nowe.append(_wiersz(prosty_wz, [
-                _komorka(komorki_proste[0], f"{numer}."),
-                _komorka(komorki_proste[1], nazwa),
-                _komorka(komorki_proste[2], "{{ dzialka.%s_dotychczas }}" % tresc),
-                _komorka(komorki_proste[3], "{{r dzialka.%s_nowy }}" % tresc),
-            ]))
-            continue
-        for kolejny, (podwiersz, klucz) in enumerate(tresc):
-            wzorzec = z_podwierszami_wz if kolejny == 0 else kontynuacja_wz
-            komorki = komorki_pod if kolejny == 0 else komorki_kont
-            nowe.append(_wiersz(wzorzec, [
-                _komorka(komorki[0], f"{numer}." if kolejny == 0 else ""),
-                _komorka(komorki[1], nazwa if kolejny == 0 else ""),
-                _komorka(komorki[2], podwiersz),
-                _komorka(komorki[3], "{{ dzialka.%s_dotychczas }}" % klucz),
-                _komorka(komorki[4], "{{r dzialka.%s_nowy }}" % klucz),
-            ]))
+    # --- nagłówek: dwa wiersze, bo stany dzielą się na cztery podkolumny -------
+    nowe.append(_wiersz(naglowek_wz, [
+        _komorka(naglowek_lp, "L.p.", SZEROKOSC_LP, vmerge="restart"),
+        _komorka(naglowek_opisu, "Oznaczenie atrybutu działki", SZEROKOSC_OZNACZENIA,
+                 vmerge="restart"),
+        _komorka(naglowek_stanu, "STAN DOTYCHCZASOWY", szerokosc_stanu, span=4),
+        _komorka(naglowek_stanu, "STAN NOWY", szerokosc_stanu, span=4),
+    ]))
+    nowe.append(_wiersz(naglowek_wz, [
+        _komorka(naglowek_lp, "", SZEROKOSC_LP, vmerge="dalej"),
+        _komorka(naglowek_opisu, "", SZEROKOSC_OZNACZENIA, vmerge="dalej"),
+        *[_komorka(naglowek_stanu, skrot, SZEROKOSCI_UZYTKOW[klucz])
+          for _ in range(2) for skrot, klucz in UZYTKI],
+    ]))
+
+    # --- atrybuty bez podziału na użytki: wartość na całą szerokość stanu ------
+    for numer, (nazwa, klucz) in enumerate(ATRYBUTY, start=1):
+        nowe.append(_wiersz(prosty_wz, [
+            _komorka(lp_wz, f"{numer}.", SZEROKOSC_LP),
+            _komorka(opis_wz, nazwa, SZEROKOSC_OZNACZENIA),
+            _komorka(dane_wz, "{{ dzialka.%s_dotychczas }}" % klucz, szerokosc_stanu, span=4),
+            _komorka(dane_wz, "{{r dzialka.%s_nowy }}" % klucz, szerokosc_stanu, span=4),
+        ]))
+
+    # --- użytki: cztery kolumny obok siebie, po jednej linijce na użytek -------
+    nowe.append(_wiersz(prosty_wz, [
+        _komorka(lp_wz, f"{len(ATRYBUTY) + 1}.", SZEROKOSC_LP),
+        _komorka(opis_wz, WIERSZ_UZYTKOW, SZEROKOSC_OZNACZENIA),
+        *[_komorka(dane_wz, "{{ dzialka.%s_dotychczas }}" % klucz, SZEROKOSCI_UZYTKOW[klucz])
+          for _, klucz in UZYTKI],
+        *[_komorka(dane_wz, "{{r dzialka.%s_nowy }}" % klucz, SZEROKOSCI_UZYTKOW[klucz])
+          for _, klucz in UZYTKI],
+    ]))
 
     for wiersz in wiersze:
         tabela.remove(wiersz)
+    grid = tabela.find(qn("w:tblGrid"))
+    for kolumna in grid.findall(qn("w:gridCol")):
+        grid.remove(kolumna)
+    for szerokosc in [SZEROKOSC_LP, SZEROKOSC_OZNACZENIA,
+                      *[SZEROKOSCI_UZYTKOW[k] for _, k in UZYTKI] * 2]:
+        kolumna = OxmlElement("w:gridCol")
+        kolumna.set(qn("w:w"), str(szerokosc))
+        grid.append(kolumna)
+    _ustaw_w_tcpr(tabela.find(qn("w:tblPr")), "w:tblW",
+                  w=SZEROKOSC_LP + SZEROKOSC_OZNACZENIA + 2 * szerokosc_stanu, type="dxa")
     for wiersz in nowe:
         tabela.append(wiersz)
 

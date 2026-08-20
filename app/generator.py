@@ -275,9 +275,11 @@ def _ustawienia_biegu(biegi: list, qn) -> tuple[str, int]:
     return "", 0
 
 
-# Ile kolumn od prawej to kolumny stanów („dotychczasowy” i „nowy”). Reszta wiersza —
-# L.p., nazwa atrybutu, podwiersz — zostaje wyśrodkowana zawsze.
-KOLUMNY_STANOW = 2
+# Ile pierwszych kolumn to opis, a nie dane: L.p. i nazwa atrybutu. Wszystko dalej to
+# kolumny stanów — w wykazie budynku dwie, w wykazie działki osiem (OFU, OZU, OZK i PPU
+# razy dwa stany). Dlatego liczymy od lewej, a nie „dwie ostatnie”: przy podziale stanu
+# na podkolumny wyrównywały się wtedy tylko dwie skrajne, a reszta pływała.
+KOLUMNY_OPISU = 2
 
 
 def wyrownaj_komorki_stanow(dokument) -> int:
@@ -303,8 +305,8 @@ def wyrownaj_komorki_stanow(dokument) -> int:
     zmienione = 0
     for tabela in dokument.tables:
         for wiersz in tabela.rows:
-            komorki = wiersz.cells[-KOLUMNY_STANOW:]
-            if len(komorki) < KOLUMNY_STANOW:
+            komorki = wiersz.cells[KOLUMNY_OPISU:]
+            if not komorki:
                 continue
             wielolinijkowa = any(len(k.text.splitlines()) > 1 for k in komorki)
             for komorka in komorki:
