@@ -218,9 +218,11 @@
                    to, jakby numer był wpisany w kolumnie OFU. #}
                 <thead>
                   <tr><th></th>
+                    {# `granica-stanu` na drugim stanie — delikatna kreska oddziela
+                       „dotychczasowy” od „nowego” #}
                     {% for kolumna in pole.kolumny %}
-                    {% if pole.podkolumny %}<th colspan="{{ pole.podkolumny|length }}">
-                    {%- else %}<th>{%- endif %}{{ kolumna.etykieta }}</th>
+                    {% if pole.podkolumny %}<th class="stan{{ ' granica-stanu' if not loop.first }}" colspan="{{ pole.podkolumny|length }}">
+                    {%- else %}<th class="stan{{ ' granica-stanu' if not loop.first }}">{%- endif %}{{ kolumna.etykieta }}</th>
                     {% endfor %}
                   </tr>
                 </thead>
@@ -229,10 +231,11 @@
                   <tr>
                     <th scope="row">{{ wiersz.etykieta }}</th>
                     {% for kolumna in pole.kolumny %}
+                    {% set kolumna_petla = loop %}
                     {% if wiersz.podzial %}
                     {% for podkolumna in pole.podkolumny %}
                     {% set pod = wiersz.podzial.get(kolumna.klucz, {}).get(podkolumna.klucz) %}
-                    <td>{% if pod %}<span class="podkolumna-etykieta">{{ podkolumna.etykieta }}</span>
+                    <td class="wartosc{{ ' granica-stanu' if loop.first and not kolumna_petla.first }}">{% if pod %}<span class="podkolumna-etykieta">{{ podkolumna.etykieta }}</span>
                       {{ pole_sekcji(pole.klucz, nr, pod,
                                      wpis.get(pod.klucz, '') if wpis else '',
                                      podkolumna.etykieta ~ ' — ' ~ kolumna.etykieta) }}{% endif %}</td>
@@ -241,8 +244,8 @@
                     {% set pod = wiersz.pola.get(kolumna.klucz) %}
                     {# wartość bez podziału zajmuje cały stan — jak scalona komórka
                        w dokumencie #}
-                    {% if pole.podkolumny %}<td colspan="{{ pole.podkolumny|length }}">
-                    {% else %}<td>{% endif %}
+                    {% if pole.podkolumny %}<td class="wartosc{{ ' granica-stanu' if not loop.first }}" colspan="{{ pole.podkolumny|length }}">
+                    {% else %}<td class="wartosc{{ ' granica-stanu' if not loop.first }}">{% endif %}
                       {% if pod %}{{ pole_sekcji(
                         pole.klucz, nr, pod, wpis.get(pod.klucz, '') if wpis else '',
                         wiersz.etykieta ~ ' — ' ~ kolumna.etykieta) }}{% endif %}</td>
@@ -293,9 +296,11 @@
                    to, jakby numer był wpisany w kolumnie OFU. #}
                 <thead>
                   <tr><th></th>
+                    {# `granica-stanu` na drugim stanie — delikatna kreska oddziela
+                       „dotychczasowy” od „nowego” #}
                     {% for kolumna in pole.kolumny %}
-                    {% if pole.podkolumny %}<th colspan="{{ pole.podkolumny|length }}">
-                    {%- else %}<th>{%- endif %}{{ kolumna.etykieta }}</th>
+                    {% if pole.podkolumny %}<th class="stan{{ ' granica-stanu' if not loop.first }}" colspan="{{ pole.podkolumny|length }}">
+                    {%- else %}<th class="stan{{ ' granica-stanu' if not loop.first }}">{%- endif %}{{ kolumna.etykieta }}</th>
                     {% endfor %}
                   </tr>
                 </thead>
@@ -304,17 +309,18 @@
                   <tr>
                     <th scope="row">{{ wiersz.etykieta }}</th>
                     {% for kolumna in pole.kolumny %}
+                    {% set kolumna_petla = loop %}
                     {% if wiersz.podzial %}
                     {% for podkolumna in pole.podkolumny %}
                     {% set pod = wiersz.podzial.get(kolumna.klucz, {}).get(podkolumna.klucz) %}
-                    <td>{% if pod %}<span class="podkolumna-etykieta">{{ podkolumna.etykieta }}</span>
+                    <td class="wartosc{{ ' granica-stanu' if loop.first and not kolumna_petla.first }}">{% if pod %}<span class="podkolumna-etykieta">{{ podkolumna.etykieta }}</span>
                       {{ pole_sekcji(pole.klucz, 0, pod, '',
                                      podkolumna.etykieta ~ ' — ' ~ kolumna.etykieta) }}{% endif %}</td>
                     {% endfor %}
                     {% else %}
                     {% set pod = wiersz.pola.get(kolumna.klucz) %}
-                    {% if pole.podkolumny %}<td colspan="{{ pole.podkolumny|length }}">
-                    {% else %}<td>{% endif %}
+                    {% if pole.podkolumny %}<td class="wartosc{{ ' granica-stanu' if not loop.first }}" colspan="{{ pole.podkolumny|length }}">
+                    {% else %}<td class="wartosc{{ ' granica-stanu' if not loop.first }}">{% endif %}
                       {% if pod %}{{ pole_sekcji(
                         pole.klucz, 0, pod, '',
                         wiersz.etykieta ~ ' — ' ~ kolumna.etykieta) }}{% endif %}</td>

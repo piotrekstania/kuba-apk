@@ -372,3 +372,14 @@ table.sekcja-siatka input { padding: 5px 8px; }
 /* Łamanie w środku wyrazu tylko w danych — nazwa atrybutu ma się łamać po słowach,
    inaczej „Pole powierzchni ewidencyjnej” wychodzi jako „powierzch|ni ewidencyj|nej”. */
 .ma-podkolumny td { overflow-wrap: anywhere; }
+
+/* --- czytelność tabel wykazów (formularz i strona operatu) -------------------
+   Wartości i nagłówki stanów wyśrodkowane, tak jak w gotowym dokumencie — te trzy
+   widoki mają wyglądać jak jedno, bo brat porównuje je ze sobą. Etykieta atrybutu
+   zostaje do lewej: to ona prowadzi wzrok w dół tabeli. */
+.wiersze th.stan { text-align: center; }
+.wiersze td.wartosc { text-align: center; }
+.wiersze td.wartosc .wielolinijkowa { display: inline-block; text-align: left; }
+/* Delikatna kreska między „stanem dotychczasowym” a „nowym”: przy ośmiu kolumnach
+   obok siebie wzrok gubił, gdzie kończy się jeden stan, a zaczyna drugi. */
+.wiersze .granica-stanu { border-left: 1px solid var(--linia); }

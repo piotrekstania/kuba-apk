@@ -66,8 +66,12 @@
              w nagłówku tabeli wisiały też nad numerem działki, gdzie podziału nie ma. #}
           <thead>
             <tr><th></th>
+              {# `granica-stanu` na drugim (i dalszym) stanie — delikatna kreska oddziela
+                 „dotychczasowy” od „nowego”, bo przy ośmiu kolumnach obok siebie wzrok
+                 gubił, gdzie kończy się jeden stan #}
               {% for kolumna in pole.kolumny %}
-              {% if pole.podkolumny %}<th colspan="{{ pole.podkolumny|length }}">{%- else %}<th>{%- endif %}{{ kolumna }}</th>
+              {% if pole.podkolumny %}<th class="stan{{ ' granica-stanu' if not loop.first }}" colspan="{{ pole.podkolumny|length }}">
+              {%- else %}<th class="stan{{ ' granica-stanu' if not loop.first }}">{%- endif %}{{ kolumna }}</th>
               {% endfor %}
             </tr>
           </thead>
@@ -79,11 +83,15 @@
               {# `wielolinijkowa` zostawia łamanie wierszy: OFU/OZU/OZK bywają kilkuwierszowe
                  (kilka użytków w jednej działce) i mają się czytać tak jak w dokumencie #}
               {% for komorka in wiersz.komorki %}
+              {# pierwsza komórka każdego stanu poza pierwszym dostaje kreskę po lewej #}
+              {% set ile = pole.podkolumny|length or 1 %}
+              {% set granica = not loop.first and (not wiersz.podzielony
+                                                   or loop.index0 % ile == 0) %}
               {% if pole.podkolumny and not wiersz.podzielony %}
-              <td colspan="{{ pole.podkolumny|length }}">
-              {% else %}<td>{% endif %}
+              <td class="wartosc{{ ' granica-stanu' if granica }}" colspan="{{ ile }}">
+              {% else %}<td class="wartosc{{ ' granica-stanu' if granica }}">{% endif %}
                 {% if wiersz.podzielony %}<span class="podkolumna-etykieta">{{
-                  pole.podkolumny[loop.index0 % pole.podkolumny|length] }}</span>{% endif %}
+                  pole.podkolumny[loop.index0 % ile] }}</span>{% endif %}
                 <span class="wielolinijkowa">{{ komorka or '—' }}</span></td>
               {% endfor %}
             </tr>

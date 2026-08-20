@@ -925,6 +925,26 @@ def test_strona_operatu_pokazuje_podkolumny(klient):
     assert wiersz_numeru.count('<td colspan="2">') == 2
 
 
+def test_stany_sa_rozdzielone_kreska_i_wysrodkowane(klient):
+    """Poprawka czytelności: nagłówki i wartości stanów wyśrodkowane jak w dokumencie,
+    a między „dotychczasowym” a „nowym” cienka kreska — przy ośmiu kolumnach obok siebie
+    wzrok gubił, gdzie kończy się jeden stan.
+    """
+    _operat_z_podkolumnami(klient)
+    _wyslij(klient, **{"sek__wykazy__0__numer_dotychczas": "119/80",
+                       "sek__wykazy__0__ofu_nowy": "R"})
+
+    formularz = klient.get("/nowy/spis_tresci_wzor").text
+    strona = klient.get(f"/dokument/{db.dokumenty()[0]['id']}").text
+
+    for widok, nazwa in ((formularz, "formularz"), (strona, "strona operatu")):
+        naglowki = widok.count('class="stan granica-stanu"')
+        assert naglowki >= 1, f"{nazwa}: brak kreski przy nagłówku drugiego stanu"
+        assert 'class="stan"' in widok, f"{nazwa}: pierwszy stan nie ma klasy"
+        assert 'class="wartosc granica-stanu"' in widok, \
+            f"{nazwa}: brak kreski przy pierwszej komórce drugiego stanu"
+
+
 def test_wykaz_dzialki_ma_cztery_podkolumny_uzytkow():
     """W wydanej formatce jeden użytek to komplet czterech wartości — i tak samo
     ma być w formularzu, więc wszystkie cztery podpola mają swoją podkolumnę."""
