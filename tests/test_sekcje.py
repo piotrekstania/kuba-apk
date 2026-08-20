@@ -893,7 +893,8 @@ def test_formularz_dzieli_stan_na_podkolumny(klient):
     formularz = klient.get("/nowy/spis_tresci_wzor").text
     karta = formularz.split('data-nazwa="wykazy"')[1]
 
-    assert karta.count('<th colspan="2">') == 4, "dwa stany w karcie i we wzorcu"
+    assert karta.count('colspan="2">') >= 8, \
+        "dwa stany i wartości bez podziału, w karcie i we wzorcu"
     # oznaczenia podkolumn stoją nad polami, a nie w nagłówku tabeli — inaczej wisiałyby
     # też nad numerem działki, gdzie żadnego podziału nie ma
     assert 'class="podkolumna">' not in karta, "oznaczenie zostało w nagłówku tabeli"
@@ -901,7 +902,8 @@ def test_formularz_dzieli_stan_na_podkolumny(klient):
         "podpis nad polem w obu stanach, w karcie i we wzorcu"
     for klucz in ("ofu_dotychczas", "ppu_dotychczas", "ofu_nowy", "ppu_nowy"):
         assert f'name="sek__wykazy__0__{klucz}"' in karta
-    assert karta.count('<td colspan="2">') >= 4, "numer działki na całą szerokość stanu"
+    assert 'class="wartosc granica-stanu" colspan="2"' in karta, \
+        "numer działki na całą szerokość stanu"
 
 
 def test_strona_operatu_pokazuje_podkolumny(klient):
@@ -918,11 +920,11 @@ def test_strona_operatu_pokazuje_podkolumny(klient):
     assert tabela.count('class="podkolumna-etykieta">OFU</span>') == 2, \
         "podpis nad wartością w obu stanach"
     assert 'class="podkolumna">' not in tabela, "oznaczenie zostało w nagłówku tabeli"
-    assert '<th colspan="2">Stan dotychczasowy</th>' in tabela
+    assert '>Stan dotychczasowy</th>' in tabela and 'colspan="2"' in tabela
     wiersz_uzytkow = tabela.split("Użytki")[1].split("</tr>")[0]
     assert wiersz_uzytkow.count("<td") == 4, "dwie podkolumny razy dwa stany"
     wiersz_numeru = tabela.split("Numer działki")[1].split("</tr>")[0]
-    assert wiersz_numeru.count('<td colspan="2">') == 2
+    assert wiersz_numeru.count('colspan="2">') == 2, "wartość na całą szerokość stanu"
 
 
 def test_stany_sa_rozdzielone_kreska_i_wysrodkowane(klient):
