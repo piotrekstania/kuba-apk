@@ -128,11 +128,35 @@ def test_nieznany_adres_daje_polska_strone_bledu(klient):
 
 
 def test_bledny_identyfikator_nie_pokazuje_angielskiego_json(klient):
-    """/dokument/abc zamiast /dokument/12 — brat ma zobaczyć polską stronę."""
+    """/dokument/abc zamiast /dokument/12 — brat ma zobaczyć polską stronę.
+
+    Szukamy klucza `detail` z JSON-a FastAPI, a nie napisu „detail” gdziekolwiek:
+    strona ma w menu `<details>` i luźne dopasowanie czerwieniało od własnego HTML-a.
+    """
     odpowiedz = klient.get("/dokument/abc")
     assert odpowiedz.status_code == 404
-    assert "detail" not in odpowiedz.text
+    assert odpowiedz.headers["content-type"].startswith("text/html")
+    assert '{"detail"' not in odpowiedz.text
     assert "Nie ma takiej strony" in odpowiedz.text
+
+
+def test_strona_bledu_jest_cala_strona_a_nie_golym_html(klient):
+    """Strona błędu ma nagłówek, menu i style — nie sam komunikat na białym tle.
+
+    `strona_bledu` budowała własny, okrojony kontekst i brakowało w nim liczników
+    ze stopki. Odczyt pola z nieistniejącej zmiennej to w Jinja **wyjątek**, więc
+    render padał i szedł zapasowy goły HTML: po polsku, ale bez niczego wokół.
+    Testy tego nie widziały, bo sprawdzały samą treść komunikatu.
+    """
+    import uruchom
+
+    odpowiedz = klient.get("/nie-ma-takiej-strony")
+
+    assert odpowiedz.status_code == 404
+    tresc = odpowiedz.text
+    assert tresc.lstrip().startswith("<!doctype"), "strona błędu poszła jako goły HTML"
+    assert uruchom.ZNACZNIK in tresc, "brak nagłówka programu"
+    assert "style.css" in tresc, "brak arkusza stylów"
 
 
 def test_nieznany_szablon_nie_wywala_aplikacji(klient):

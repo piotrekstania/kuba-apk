@@ -75,6 +75,26 @@ Word sprawdzasz więc tylko przez stały rytuał z części A, a resztę okiem w
    „Opis" mają być takie same jak między kartami.
 5. Operat **sprzed** tej rundy (np. z historii) — czy strona podglądu nadal się
    otwiera i pokazuje stare dane.
+6. **Podpisy pól na stronie operatu**: „Nr roboty", „Data zgłoszenia pracy
+   geodezyjnej" — nazwy z opisu szablonu, a nie klucze techniczne. Klucz w tym
+   miejscu znaczy, że serwer chodzi na starym kodzie (brak restartu) albo że pole
+   nie ma etykiety w `.json`.
+7. **Spis treści w pionie, ponumerowany** — numery mają się zgadzać z gotowym
+   dokumentem, więc porównaj stronę z wydrukiem spisu.
+8. **Opis (notatka)**: zaczyna się w tej samej pionowej linii co wartości pól,
+   a w kolumnie podpisów stoi „Opis".
+9. **Stopka**: same liczniki, liczby w kolorze akcentu, kreska nad nimi równa
+   z tabelą. Numeru wersji tam już nie ma — jest w nagłówku pod nazwą programu
+   i na stronie Pomoc → Historia wersji („masz tę wersję").
+10. **Nagłówek**: numer wersji pod nazwą, wyrównany do prawej, ikona wysoka na oba
+   wiersze. Sprawdź przy zwężonym oknie (Windows, mniejszy ekran), czy napis się
+   nie zawija i nie rozpycha ikony.
+11. **Strona błędu**: wejdź na zmyślony adres (np. `/nie-ma-takiej-strony`) — ma
+   przyjść cała strona z nagłówkiem, menu i stylami, a nie sam czarny napis na białym
+   tle. Do tej pory szedł goły HTML (pułapka 28).
+12. **Start programu**: konsola ma się schować po podniesieniu serwera. To sprawdza,
+   czy nie zginął znacznik „Generator operatów", po którym `uruchom.py` poznaje
+   nasz serwer — stopka była sprzątana, a on jest w nagłówku (pułapka 21).
 
 ---
 
@@ -110,11 +130,15 @@ Word sprawdzasz więc tylko przez stały rytuał z części A, a resztę okiem w
 > 5. `app/main.py` — `wersja_zasobow()` przelicza się teraz w kopii roboczej gita.
 >    Czy u brata (bez `.git`) nadal liczy się raz i czy znacznik nie zmienia się
 >    przy każdym żądaniu, co kasowałoby cache przeglądarki?
-> 6. Testy w `tests/test_sekcje.py`, `test_trasy.py` i `test_notatka.py` — czy
->    sprawdzają zachowanie, czy tylko to, że kod się wykonał. Test odstępów czyta
->    `style.css` napisami: czy da się go obejść zapisem, który znaczy to samo?
->    Przy okazji: czy któryś zostawia po sobie pliki w prawdziwych `dane/`
->    albo `wyniki/`?
+> 6. `app/web/templates/base.html` — numer wersji przeniesiony ze stopki do nagłówka.
+>    Czy `wersja` na pewno dociera do **każdej** strony, łącznie z `blad.html`
+>    (globalne uchwyty budują kontekst same) i stroną 404? Pusty numer w nagłówku
+>    byłby cichy, a znaczyłby, że któraś trasa renderuje bez kontekstu.
+> 7. Testy w `tests/test_sekcje.py`, `test_trasy.py`, `test_notatka.py`
+>    i `test_statystyki.py` — czy sprawdzają zachowanie, czy tylko to, że kod się
+>    wykonał. Trzy z nich czytają `style.css` napisami (odstępy, kreska stopki):
+>    czy da się je obejść zapisem, który znaczy to samo? Przy okazji: czy któryś
+>    zostawia po sobie pliki w prawdziwych `dane/` albo `wyniki/`?
 >
 > Czego **nie** zgłaszać: nazw po polsku (to konwencja projektu), braku typów
 > generycznych, sugestii przejścia na framework frontendowy, propozycji drugiego

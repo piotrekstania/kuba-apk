@@ -443,6 +443,17 @@ też brat. Interfejs w całości po polsku.
    `_przytnij_wielolinijkowe`, które ucina tylko ogon i spacje przed pierwszym
    znakiem, ale nie początkowe entery.
 
+28. **Strona błędu miała własny, okrojony kontekst — i przez to nie była stroną.**
+   `strona_bledu` budowała słownik z ręki (`naglowek`, `wyjasnienie`, `konwerter`,
+   `wersja`), a `base.html` czyta w stopce `statystyki.operat`. Odczyt **pola**
+   z nieistniejącej zmiennej to w Jinja `UndefinedError`, nie pustka — render padał
+   i wchodził zapasowy `HTMLResponse` z gołym `<h1>` i `<p>`. Brat dostawał więc
+   komunikat po polsku, ale bez stylów, nagłówka i menu, czyli dokładnie wtedy,
+   gdy najbardziej potrzebuje drogi powrotnej. Testy tego nie widziały, bo sprawdzały
+   samą treść komunikatu, a ta jest w obu wersjach ta sama. Wniosek: **kontekst stron
+   buduj jednym miejscem** (`_widok`), a testy stron błędu pytaj o to, czy przyszła
+   cała strona (`<!doctype`, znacznik nagłówka, arkusz stylów).
+
 ## Stan na teraz — przetestowane end-to-end
 
 Formularz → `.docx` → PDF → sklejenie kilku PDF-ów w jeden. Działa: powtarzalne wiersze tabeli

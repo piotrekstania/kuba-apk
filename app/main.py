@@ -137,12 +137,13 @@ def wersja_zasobow() -> str:
 _ZNACZNIK_ZASOBOW: str | None = None
 
 
-def _widok(request: Request, nazwa: str, **kontekst: Any) -> HTMLResponse:
+def _widok(request: Request, nazwa: str, status: int = 200,
+           **kontekst: Any) -> HTMLResponse:
     kontekst.setdefault("konwerter", pdf.dostepny_konwerter())
     kontekst.setdefault("wersja", aktualizacja.wersja_lokalna()[0])
     kontekst.setdefault("zasoby", f"{aktualizacja.wersja_lokalna()[0]}-{wersja_zasobow()}")
     kontekst.setdefault("statystyki", statystyki.podsumowanie())
-    return widoki.TemplateResponse(request, nazwa, kontekst)
+    return widoki.TemplateResponse(request, nazwa, kontekst, status_code=status)
 
 
 # --- błędy: użytkownik nie jest programistą i nie może zobaczyć angielskiego 500 ----
@@ -166,13 +167,13 @@ def zapisz_blad(request: Request, wyjatek: BaseException) -> str:
 def strona_bledu(request: Request, naglowek: str, wyjasnienie: str,
                  szczegoly: str = "", status: int = 500) -> HTMLResponse:
     try:
-        return widoki.TemplateResponse(
-            request, "blad.html",
-            {"naglowek": naglowek, "wyjasnienie": wyjasnienie, "szczegoly": szczegoly,
-             "konwerter": pdf.dostepny_konwerter(),
-             "wersja": aktualizacja.wersja_lokalna()[0]},
-            status_code=status,
-        )
+        # Ten sam kontekst co każda inna strona (`_widok`), a nie własny, okrojony:
+        # brakowało w nim liczników ze stopki, a odczyt pola z nieistniejącej zmiennej
+        # to w Jinja **wyjątek**, nie pustka. Strona błędu leciała więc do zapasowego
+        # gołego HTML-a — po polsku, ale bez stylów, nagłówka i menu. Widać to było
+        # tylko na prawdziwym błędzie, bo testy sprawdzały samą treść komunikatu.
+        return _widok(request, "blad.html", status=status, naglowek=naglowek,
+                      wyjasnienie=wyjasnienie, szczegoly=szczegoly)
     except Exception:
         # Sama strona błędu też potrafi paść (np. po nieudanej aktualizacji brakuje
         # pliku szablonu) — wtedy zostaje goły HTML, ale nadal po polsku.
