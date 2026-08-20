@@ -50,7 +50,10 @@
   <table class="lista">
   {% for pole in grupa.pola %}
   <tr>
-    <th class="waski" title="{{ pole.klucz }}">{{ pole.etykieta }}</th>
+    {# Bez etykiety pokazujemy klucz techniczny. Pusta kolumna podpisów jest
+       gorsza niż brzydki napis: przy dwóch datach obok siebie nie da się wtedy
+       poznać, która jest która. #}
+    <th class="waski" title="{{ pole.klucz }}">{{ pole.etykieta or pole.klucz }}</th>
     <td>
       {% set wartosc = pole.wartosc %}
       {% if pole.sekcje %}

@@ -215,6 +215,42 @@ def test_wpisane_dane_ida_grupami_z_szablonu(klient):
         "Robota", "nr_roboty", "nr_operatu", "data_zakonczenia", "Opis", "uwagi"]
 
 
+def test_strona_operatu_podpisuje_pola_etykietami(klient):
+    """Podpisy pól są **jedynym** sposobem odróżnienia dwóch dat od siebie.
+
+    Etykieta jest ta sama co w formularzu; pole, które jej nie ma, dostaje nazwę
+    wyprowadzoną z klucza. Pusta kolumna podpisów nie wchodzi w grę — z „2026-07-30”
+    i „2026-08-05” pod sobą nie da się wtedy poznać, która jest która.
+    """
+    import re
+
+    klient.srodowisko.dodaj_szablon(
+        "spis_tresci_wzor",
+        ["{{ nr_roboty }} {{ nr_operatu }} {{ data_zgloszenia }} {{ data_zakonczenia }}"],
+        opis={**OPIS_OPERATU, "pola": [
+            {"klucz": "nr_roboty", "etykieta": "Nr roboty", "grupa": "Robota"},
+            {"klucz": "nr_operatu", "typ": "auto_numer", "domyslnie": "{numer3}/{rok}",
+             "etykieta": "Nr operatu", "grupa": "Robota"},
+            {"klucz": "data_zgloszenia", "typ": "date",
+             "etykieta": "Data zgłoszenia pracy geodezyjnej", "grupa": "Robota"},
+            # bez `etykieta` w opisie — podpis ma się wziąć z klucza
+            {"klucz": "data_zakonczenia", "typ": "date", "grupa": "Robota"},
+        ]})
+
+    klient.post("/generuj/spis_tresci_wzor",
+                data={"pole__nr_roboty": "GK.1.2026", "pole__nr_operatu": "",
+                      "pole__data_zgloszenia": "2026-07-30",
+                      "pole__data_zakonczenia": "2026-08-05"},
+                follow_redirects=False)
+    strona = klient.get(f"/dokument/{db.dokumenty()[0]['id']}").text
+
+    podpisy = dict(re.findall(r'<th class="waski" title="(.*?)">(.*?)</th>', strona))
+    assert podpisy["data_zgloszenia"] == "Data zgłoszenia pracy geodezyjnej"
+    assert podpisy["nr_roboty"] == "Nr roboty"
+    assert podpisy["data_zakonczenia"], "pole bez etykiety zostało bez podpisu"
+    assert not [k for k, v in podpisy.items() if not v.strip()]
+
+
 def test_pole_zbiorcze_dokumentow_nie_pokazuje_sie_puste(klient):
     """Kafelek „Wygeneruj też” zbiera dokumenty, których nie wziął żaden inny.
 
