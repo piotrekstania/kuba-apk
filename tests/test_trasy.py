@@ -215,6 +215,37 @@ def test_wpisane_dane_ida_grupami_z_szablonu(klient):
         "Robota", "nr_roboty", "nr_operatu", "data_zakonczenia", "Opis", "uwagi"]
 
 
+def test_lista_pozycji_stoi_w_pionie_z_numerami(klient):
+    """Spis treści czyta się na stronie operatu tak jak w gotowym dokumencie.
+
+    Sklejony średnikami zawijał się w akapit, w którym nie dało się ani policzyć
+    pozycji, ani sprawdzić, czy ta jedna szukana w ogóle jest. Numery są te same,
+    bo formatka numeruje `loop.index` po tej samej liście.
+    """
+    klient.srodowisko.dodaj_szablon(
+        "spis_tresci_wzor",
+        ["{{ nr_roboty }} {{ nr_operatu }}", "{{ spis_tresci }}"],
+        opis={**OPIS_OPERATU, "pola": [
+            {"klucz": "nr_roboty", "etykieta": "Nr roboty", "grupa": "Robota"},
+            {"klucz": "nr_operatu", "typ": "auto_numer", "domyslnie": "{numer3}/{rok}",
+             "etykieta": "Nr operatu", "grupa": "Robota"},
+            {"klucz": "spis_tresci", "typ": "wybor_wielokrotny", "grupa": "Spis treści",
+             "opcje": ["Spis treści", "Sprawozdanie techniczne", "Mapa z projektem"]},
+        ]})
+
+    klient.post("/generuj/spis_tresci_wzor",
+                data={"pole__nr_roboty": "GK.1.2026", "pole__nr_operatu": "",
+                      "pole__spis_tresci": ["Spis treści", "Mapa z projektem"]},
+                follow_redirects=False)
+    strona = klient.get(f"/dokument/{db.dokumenty()[0]['id']}").text
+
+    assert "Spis treści; Mapa z projektem" not in strona, "pozycje nadal w jednej linijce"
+    lista = strona.split('<ol class="pozycje">')[1].split("</ol>")[0]
+    assert lista.count("<li>") == 2
+    # kolejność zachowana — numer na stronie ma znaczyć to samo co w dokumencie
+    assert lista.index("Spis treści") < lista.index("Mapa z projektem")
+
+
 def test_strona_operatu_podpisuje_pola_etykietami(klient):
     """Podpisy pól są **jedynym** sposobem odróżnienia dwóch dat od siebie.
 

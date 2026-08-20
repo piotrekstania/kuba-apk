@@ -138,6 +138,12 @@ table.lista th { background: #f0f2f5; font-size: 13px; }
 table.wiersze th { background: #f0f2f5; font-size: 12px; color: var(--szary); }
 table.wiersze td { padding: 4px 6px; }
 th.waski { width: 220px; }
+
+/* Spis treści na stronie operatu: pozycja pod pozycją, z numerami jak w dokumencie.
+   Numer wisi w marginesie (`list-style-position` domyślne), więc zawinięta pozycja
+   nie chowa się pod nim, tylko trzyma równą lewą krawędź z pierwszym wierszem. */
+ol.pozycje { margin: 0; padding-left: 22px; }
+ol.pozycje li { margin: 2px 0; }
 /* Separator grup na liście wpisanych danych — ma rozdzielać, a nie krzyczeć,
    więc drobnym pismem i bez tła; pierwsza grupa nie potrzebuje kreski nad sobą. */
 tr.grupa th { font-size: 12px; font-weight: 600; letter-spacing: .04em;

@@ -123,7 +123,14 @@
       {% endfor %}
       {% elif wartosc is iterable and wartosc is not string %}
         {# lista tekstów (np. spis treści) czyta się sama; lista słowników to tabela #}
-        {% if wartosc and wartosc[0] is string %}{{ wartosc | join('; ') }}
+        {# Pozycja pod pozycją i z numerami — tak samo jak w gotowym dokumencie, gdzie
+           spis treści numeruje `loop.index` po tej samej liście. Sklejone średnikami
+           zawijały się w akapit, w którym nie dało się ani policzyć pozycji, ani
+           sprawdzić, czy ta jedna szukana w ogóle jest. #}
+        {% if wartosc and wartosc[0] is string %}
+        <ol class="pozycje">
+          {% for pozycja in wartosc %}<li>{{ pozycja }}</li>{% endfor %}
+        </ol>
         {% else %}{{ wartosc | length }} wierszy{% endif %}
       {# `wielolinijkowa` zostawia łamanie wierszy: opis przebiegu prac bywa kilkoma
          akapitami, a bez tego zlewały się tu w jeden ciąg i wyglądało to jak zgubione
