@@ -35,8 +35,10 @@
 {% if operaty %}
 <table class="lista">
   <thead>
+    {# „Utworzono”, nie „Data”: w samym operacie są jeszcze data zgłoszenia i data
+       zakończenia pracy, więc gołe „Data” kazało się domyślać, o którą chodzi. #}
     <tr><th class="waski">Nr operatu</th><th>Nr roboty</th>
-        <th>Data</th><th></th></tr>
+        <th>Utworzono</th><th></th></tr>
   </thead>
   {# Jeden operat = jedna grupa <tbody>, także wtedy, gdy nie ma opisu. Dzięki temu
      kreska rozdzielająca pozycje listy idzie **pod grupą**, a nie między jej wierszami

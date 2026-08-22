@@ -517,6 +517,21 @@ def test_menu_nie_ma_juz_pozycji_zloz_pdf(klient):
     assert '<a href="/scal">' not in tresc
 
 
+def test_kolumna_daty_mowi_ktora_to_data(klient):
+    """W operacie są trzy daty: utworzenia, zgłoszenia i zakończenia pracy.
+
+    Nagłówek „Data” kazał się domyślać, którą pokazuje lista — a pokazuje tę,
+    której nigdzie indziej nie widać.
+    """
+    _dodaj_operat(klient)
+    klient.post("/generuj/spis_tresci_wzor", data=FORMULARZ, follow_redirects=False)
+
+    naglowki = klient.get("/").text.split("<thead>")[1].split("</thead>")[0]
+
+    assert "<th>Utworzono</th>" in naglowki
+    assert "<th>Data</th>" not in naglowki
+
+
 def test_lista_ma_komplet_akcji_co_strona_operatu(klient):
     """Na liście ma być to samo, co po wejściu w operat — w tym „Popraw”.
 
