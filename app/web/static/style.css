@@ -266,12 +266,10 @@ th.numer, td.numer { width: 44px; text-align: right; white-space: nowrap; }
 .uldk.uwaga { color: #9a6700; }
 .akcje a { margin-right: 10px; font-size: 13px; }
 
-/* Lista operatów: numer roboty i data pośrodku swoich kolumn (razem z nagłówkami),
-   akcje przy prawej krawędzi. Wcześniej wszystko lgnęło do lewej i przy szerokim oknie
-   między datą a akcjami zostawała pusta połowa tabeli. `last-child` w nagłówku to
-   pusta komórka nad akcjami — bez niej kolumna nie ma czego wyrównać. */
-.lista.operaty th:nth-child(2), .lista.operaty tbody td:nth-child(2),
-.lista.operaty th:nth-child(3), .lista.operaty tbody td:nth-child(3) { text-align: center; }
+/* Lista operatów: akcje przy prawej krawędzi, reszta do lewej. Wyśrodkowanie numeru
+   roboty i daty było wypróbowane i odrzucone — kolumny czyta się w dół, a wtedy wzrok
+   wraca do innego miejsca w każdym wierszu. `last-child` w nagłówku to pusta komórka
+   nad akcjami; bez niej kolumna nie ma czego wyrównać. */
 .lista.operaty td.akcje, .lista.operaty th:last-child { text-align: right; }
 /* Odstęp **między** akcjami, a nie za ostatnią — inaczej „Usuń” nie dochodzi do krawędzi. */
 .akcje a { margin-right: 0; margin-left: 10px; }
