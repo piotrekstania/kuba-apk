@@ -67,15 +67,21 @@
       {# przy operacie w archiwum nie ma czego składać — przycisk, który po cichu
          odsyła z powrotem na listę, jest gorszy niż brak przycisku #}
       {% if operat.katalog and operat.na_dysku %}
-      <a href="/scal/{{ operat.katalog | urlencode }}">Złóż PDF</a>{% endif %}
+      <a class="glowny" href="/scal/{{ operat.katalog | urlencode }}">Złóż PDF</a>{% endif %}
+      {% if operat.id and operat.na_dysku %}
+      {# katalogu operatu przeniesionego do archiwum nie ma czego otwierać #}
+      <form method="post" action="/dokument/{{ operat.id }}/otworz-katalog">
+        <button type="submit" class="wtorny">Otwórz katalog</button>
+      </form>
+      {% endif %}
       {% if operat.id %}
       {# ten sam komplet co na stronie operatu — poprawka literówki nie ma wymagać
          wchodzenia w dokument tylko po to, żeby kliknąć drugi raz #}
-      <a href="/nowy/{{ operat.szablon }}?edytuj={{ operat.id }}">Popraw</a>
-      <a href="/nowy/{{ operat.szablon }}?kopiuj={{ operat.id }}">Powiel</a>
+      <a class="wtorny" href="/nowy/{{ operat.szablon }}?edytuj={{ operat.id }}">Popraw</a>
+      <a class="wtorny" href="/nowy/{{ operat.szablon }}?kopiuj={{ operat.id }}">Powiel</a>
       <form method="post" action="/dokument/{{ operat.id }}/usun"
             onsubmit="return confirm('Usunąć operat {{ operat.nr_operatu or operat.katalog }} wraz z całym katalogiem — także z plikami, które sam tam włożyłeś?')">
-        <button type="submit">Usuń</button>
+        <button class="niebezpieczny" type="submit">Usuń</button>
       </form>
       {% endif %}
     </td>

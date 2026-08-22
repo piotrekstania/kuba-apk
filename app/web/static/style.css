@@ -264,16 +264,32 @@ th.numer, td.numer { width: 44px; text-align: right; white-space: nowrap; }
 .uldk { font-weight: 600; }
 .uldk.dobrze { color: #1a7f4b; }
 .uldk.uwaga { color: #9a6700; }
-.akcje a { margin-right: 10px; font-size: 13px; }
+
 
 /* Lista operatów: akcje przy prawej krawędzi, reszta do lewej. Wyśrodkowanie numeru
    roboty i daty było wypróbowane i odrzucone — kolumny czyta się w dół, a wtedy wzrok
    wraca do innego miejsca w każdym wierszu. `last-child` w nagłówku to pusta komórka
    nad akcjami; bez niej kolumna nie ma czego wyrównać. */
 .lista.operaty td.akcje, .lista.operaty th:last-child { text-align: right; }
-/* Odstęp **między** akcjami, a nie za ostatnią — inaczej „Usuń” nie dochodzi do krawędzi. */
-.akcje a { margin-right: 0; margin-left: 10px; }
-.akcje form { margin-left: 10px; }
+/* Akcje jako przyciski — te same co na stronie operatu, tylko mniejsze: cała ich
+   wysokość musi zmieścić się w tym, co wiersz i tak zajmuje przez numer operatu
+   w pierwszej kolumnie (zmierzone: 38 px). Stąd mniejszy krój i ciaśniejsze wypełnienie
+   komórki niż w pozostałych kolumnach — inaczej lista rośnie o kilka pikseli na wiersz
+   i przy kilkunastu operatach robi się z tego pół ekranu.
+   Odstęp jest **między** akcjami, a nie za ostatnią, żeby „Usuń” dochodziło do krawędzi. */
+/* `table.lista td` narzuca 8 px z góry i z dołu i wygrywa specyficznością — stąd
+   selektor z nazwą tabeli, nie samo `.akcje`. Bez tego przyciski rozpychały wiersz. */
+.lista td.akcje { padding-top: 4px; padding-bottom: 4px; white-space: nowrap; }
+/* Wygląd bierze się ze wspólnych klas przycisków (`glowny`, `wtorny`, `niebezpieczny`),
+   więc lista i strona operatu mają dokładnie ten sam strój. Tutaj zmieniamy **tylko
+   rozmiar**: cała wysokość przycisku musi zmieścić się w tym, co wiersz i tak zajmuje
+   przez numer operatu w pierwszej kolumnie (zmierzone: 38 px), inaczej lista rośnie
+   o kilka pikseli na wiersz i przy kilkunastu operatach robi się z tego pół ekranu. */
+.akcje .glowny, .akcje .wtorny, .akcje button { margin-left: 6px; padding: 3px 9px;
+                                                font-size: 12.5px; line-height: 1.4;
+                                                vertical-align: middle; }
+.akcje .niebezpieczny { margin-top: 0; }
+.akcje form { display: inline; }
 .rzad-pliku { display: flex; gap: 8px; align-items: center; margin-bottom: 8px; }
 
 /* kafelki plików operatu — układanie kolejności myszą */
@@ -358,11 +374,7 @@ button.dodaj-wiersz, .wklej { margin-top: 8px; font-size: 13px; padding: 5px 12p
 .pole.nieaktywne label { cursor: default; }
 input:disabled, textarea:disabled, select:disabled { background: #f3f4f6; cursor: default; }
 
-/* „Usuń” w kolumnie akcji — ma wyglądać jak pozostałe odnośniki, nie jak przycisk */
-.akcje form { display: inline; }
-.akcje button { border: none; background: none; padding: 0; font: inherit;
-                font-size: 13px; color: var(--zle); cursor: pointer; }
-.akcje button:hover { color: var(--zle); text-decoration: underline; }
+
 
 /* Powtarzalne sekcje (np. wykazy zmian danych budynku). Jedno powtórzenie to karta
    z kompletem pól, a nie wiersz — przy 15 atrybutach w dwóch stanach wiersz miałby
