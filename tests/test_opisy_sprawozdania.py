@@ -426,3 +426,19 @@ def test_trasa_czyszczaca_wklejke(klient):
 
 def test_trasa_czyszczaca_znosi_pustke(klient):
     assert klient.post("/tekst/oczysc", json={}).json()["html"] == ""
+
+
+def test_edytor_da_sie_powiekszyc():
+    """Opisy przebiegu prac bywają na pół strony, a pole ma 120 px wysokości.
+
+    `contenteditable` nie dostaje uchwytu sam z siebie — trzeba go włączyć, i to na
+    `.tresc`, bo `overflow: hidden` na obudowie przycinałoby go na zaokrągleniu.
+    """
+    from app.config import WEB
+
+    style = (WEB / "static" / "style.css").read_text(encoding="utf-8")
+
+    tresc = style.split(".edytor .tresc {")[1].split("}")[0]
+    assert "resize: vertical" in tresc, "edytora nie da się powiększyć myszą"
+    obudowa = style.split(".edytor {")[1].split("}")[0]
+    assert "overflow: hidden" not in obudowa, "obudowa znów przycina uchwyt"

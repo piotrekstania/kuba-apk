@@ -213,14 +213,19 @@ td.opis-tresc { white-space: pre-wrap; tab-size: var(--tabulator); }
 
 /* Edytor z pogrubieniem, kursywą i podkreśleniem. Ma wyglądać jak zwykłe pole
    wielolinijkowe z paskiem nad spodem — brat nie ma powodu wiedzieć, że to nie textarea. */
-.edytor { border: 1px solid var(--linia); border-radius: 8px; background: var(--panel);
-          overflow: hidden; }
+/* Bez `overflow: hidden` — ono przycinało uchwyt powiększania w prawym dolnym rogu.
+   Zaokrąglenie rogów biorą więc na siebie sam pasek (góra) i pole tekstu (dół). */
+.edytor { border: 1px solid var(--linia); border-radius: 8px; background: var(--panel); }
 .pasek-formatu { display: flex; gap: 4px; padding: 5px 6px; background: #f7f8fa;
-                 border-bottom: 1px solid var(--linia); }
+                 border-bottom: 1px solid var(--linia);
+                 border-radius: 8px 8px 0 0; }
 .pasek-formatu button { min-width: 30px; padding: 2px 8px; line-height: 1.5;
                         font-size: 14px; }
+/* `resize: vertical` daje uchwyt w prawym dolnym rogu — opisy przebiegu prac bywają
+   na pół strony i w polu na 120 px pisze się je przez okienko. */
 .edytor .tresc { min-height: 120px; padding: 10px 12px; font: inherit; overflow-y: auto;
-                 white-space: pre-wrap; outline: none; tab-size: var(--tabulator); }
+                 white-space: pre-wrap; outline: none; tab-size: var(--tabulator);
+                 resize: vertical; border-bottom-right-radius: 8px; }
 .edytor:focus-within { border-color: var(--akcent); box-shadow: 0 0 0 2px #bcd6fb; }
 /* Wyszarzenie sekcji zależnej dotyczy też edytora — `disabled` na nim nie działa. */
 .pole.nieaktywne .edytor { background: #f4f6f8; }
