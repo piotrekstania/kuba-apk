@@ -66,9 +66,9 @@ normalnie)*
 
 ## C. Zlecenie review (do wklejenia Fable)
 
-> Zrób przegląd kodu zmian z zakresu `564a6cc..HEAD` w tym repozytorium
-> (`git log --oneline 564a6cc..HEAD`, `git diff 564a6cc..HEAD`) — to wszystko, co
-> przyszło po ostatnim wydaniu (`2026.08.20-99`). Kontekst projektu jest w `CLAUDE.md` —
+> Zrób przegląd kodu zmian z zakresu `40a63b8..HEAD` w tym repozytorium
+> (`git log --oneline 40a63b8..HEAD`, `git diff 40a63b8..HEAD`) — to wszystko, co
+> przyszło po ostatnim wydaniu (`2026.08.20-100`). Kontekst projektu jest w `CLAUDE.md` —
 > przeczytaj go najpierw, zwłaszcza listę pułapek i zasady pracy nad kodem.
 > Odpowiadaj po polsku.
 >
@@ -76,35 +76,19 @@ normalnie)*
 > u niego sama przy starcie — więc szukam **błędów, które on zobaczy**, a nie
 > uwag o stylu.
 >
-> Na czym się skup:
-> 1. `app/main.py` — `_wypelnione_sekcje` i `_dane_w_grupach`: dane operatu bywają
->    starsze niż dzisiejszy szablon (pole skasowane, zmieniony typ, wpis niebędący
->    słownikiem, podpole wspólne, którego wtedy nie było). Czy któraś ścieżka wywala
->    stronę operatu zamiast pominąć dane? Interesują mnie zwłaszcza operaty sprzed
->    przebudowy wykazu działki.
-> 2. `app/web/templates/dokument.html` — strona operatu przepisana na `fieldset`
->    + `legend`. Czy znaczniki domykają się przy **każdej** kombinacji: grupa bez
->    sekcji, sekcja bez wierszy, wiersz bez podkolumn, brak opisu? Raz już zgubiony
->    `</section>` wsadził całą stronę do środka pierwszej karty i test tego nie łapał.
-> 3. `dokument.html` i `formularz.html` — nagłówki `colspan` i podpisy podkolumn:
->    czy liczba komórek w wierszu zgadza się z nagłówkiem przy sekcji **bez**
->    podkolumn (wykaz budynku) i przy sekcji z nimi (wykaz działki)? Wartości
->    atrybutów HTML pisane są `{% if %}`, nie `{{ }}` — Jinja escapuje cudzysłowy
->    i nagłówek rozjeżdżał się po cichu.
-> 4. Nagłówek pozycji (`Działka 1: 119/80`) składany z podpól wspólnych — co przy
->    kilku podpolach wspólnych, pustej wartości i wartości z HTML-em w środku?
-> 5. `app/main.py` — `wersja_zasobow()` przelicza się teraz w kopii roboczej gita.
->    Czy u brata (bez `.git`) nadal liczy się raz i czy znacznik nie zmienia się
->    przy każdym żądaniu, co kasowałoby cache przeglądarki?
-> 6. `app/web/templates/base.html` — numer wersji przeniesiony ze stopki do nagłówka.
->    Czy `wersja` na pewno dociera do **każdej** strony, łącznie z `blad.html`
->    (globalne uchwyty budują kontekst same) i stroną 404? Pusty numer w nagłówku
->    byłby cichy, a znaczyłby, że któraś trasa renderuje bez kontekstu.
-> 7. Testy w `tests/test_sekcje.py`, `test_trasy.py`, `test_notatka.py`
->    i `test_statystyki.py` — czy sprawdzają zachowanie, czy tylko to, że kod się
->    wykonał. Trzy z nich czytają `style.css` napisami (odstępy, kreska stopki):
->    czy da się je obejść zapisem, który znaczy to samo? Przy okazji: czy któryś
->    zostawia po sobie pliki w prawdziwych `dane/` albo `wyniki/`?
+> Na czym się skup — **te punkty dopisujesz pod bieżącą rundę** (skasuj po wydaniu
+> razem z częścią B). Poniżej zostaje to, o co warto pytać przy każdej rundzie:
+> 1. `app/main.py` — dane operatu bywają starsze niż dzisiejszy szablon: pole
+>    skasowane, zmieniony typ, wpis niebędący słownikiem, podpole, którego wtedy
+>    nie było. Czy któraś ścieżka wywala stronę zamiast pominąć dane?
+> 2. Szablony HTML — czy znaczniki domykają się przy **każdej** kombinacji danych
+>    (grupa bez sekcji, sekcja bez wierszy, brak opisu)? Niedomknięta karta wciąga
+>    w siebie resztę strony, a testy patrzące na napisy tego nie widzą.
+> 3. Kontekst stron budowany poza `_widok` — brak jednej zmiennej to w Jinja wyjątek,
+>    nie pustka, i strona po cichu leci do zapasowego gołego HTML-a (pułapka 28).
+> 4. Testy dołożone w tej rundzie — czy sprawdzają zachowanie, czy tylko to, że kod
+>    się wykonał. Te czytające `style.css` napisami: czy da się je obejść zapisem,
+>    który znaczy to samo? Czy któryś zostawia pliki w prawdziwych `dane/`/`wyniki/`?
 >
 > Czego **nie** zgłaszać: nazw po polsku (to konwencja projektu), braku typów
 > generycznych, sugestii przejścia na framework frontendowy, propozycji drugiego
