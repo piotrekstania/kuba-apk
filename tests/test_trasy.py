@@ -205,7 +205,7 @@ def test_szczyt_operatu_to_numer_data_i_przyciski(klient):
 
     szczyt = _szczyt(klient, wpis)
 
-    assert f"<h1>{wpis['nr_operatu']}</h1>" in szczyt
+    assert f"<h1>Operat: {wpis['nr_operatu']}</h1>" in szczyt
     assert "GK.6640.1.2026" not in szczyt, "numer roboty wrócił na szczyt strony"
     assert szczyt.index("<h1>") < szczyt.index('class="lekki"') < szczyt.index("Otwórz katalog")
 
