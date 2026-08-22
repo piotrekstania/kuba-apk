@@ -204,12 +204,15 @@ def test_karty_na_stronie_operatu_sa_pozamykane(klient):
     assert "</section>" not in strona, "została sierota po dawnym znaczniku"
 
 
-def test_sciezka_katalogu_nie_krzyczy_glosniej_niz_opis(klient):
-    """Ścieżka do katalogu była niebieskim pudełkiem `komunikat` — najgłośniejszą rzeczą
-    na stronie, choć mówi to samo przy każdym operacie od zawsze.
+def test_strona_operatu_bez_linijek_pomocy(klient):
+    """Ścieżka do katalogu i nazwa szablonu zniknęły ze strony (decyzja brata).
+
+    Obie mówiły to samo przy każdym operacie od zawsze i stały dokładnie tam, gdzie
+    wzrok szuka treści — nad i pod paskiem przycisków. Do katalogu prowadzi przycisk,
+    a co do niego włożyć, tłumaczy Pomoc.
 
     Klasa `komunikat` zostaje zarezerwowana dla rzeczy, które naprawdę się wydarzyły
-    (błędy, wynik składania) — stała informacja o katalogu ma być cicha.
+    (błędy, wynik składania).
     """
     _dodaj_operat(klient)
     _wyslij(klient, notatka=OPIS)
@@ -217,7 +220,9 @@ def test_sciezka_katalogu_nie_krzyczy_glosniej_niz_opis(klient):
 
     strona = klient.get(f"/dokument/{wpis['id']}").text
 
-    assert "wyniki\\" in strona, "ścieżka do katalogu ma zostać — brat tam wkłada mapy"
+    assert "wyniki\\" not in strona, "wróciła linijka ze ścieżką katalogu"
+    assert "szablon:" not in strona, "wróciła linijka z nazwą szablonu"
+    assert "Otwórz katalog" in strona, "zniknęła jedyna droga do katalogu"
     assert 'class="komunikat"' not in strona
 
 

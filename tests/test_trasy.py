@@ -184,32 +184,80 @@ def test_generowanie_z_formularza(klient):
     assert zapisane["punkty"] == [{"numer": "101", "x": "5712345.12"}]   # pusty wiersz odpadł
 
 
-def test_naglowek_operatu_czyta_sie_jak_wiersz_listy(klient):
-    """Numer operatu, numer roboty, data utworzenia — w tej samej kolejności co na liście.
+def _szczyt(klient, wpis):
+    """Górny blok strony operatu: numer, data i przyciski."""
+    tresc = klient.get(f"/dokument/{wpis['id']}").text
+    return tresc.split('<div class="szczyt">')[1].split("<fieldset")[0]
 
-    Data jest do sprawdzenia „czy to ten operat”, więc idzie mniejsza i bez pogrubienia;
-    w wielkości nagłówka ciągnęła wzrok na siebie.
+
+def test_szczyt_operatu_to_numer_data_i_przyciski(klient):
+    """Numer operatu, pod nim data utworzenia, obok przyciski — jeden wiersz.
+
+    Numer roboty stoi w karcie „Robota” niżej; w nagłówku był kolejnym członem
+    do przeczytania, zanim wzrok trafi w treść. Data jest mniejsza i szara: służy
+    do sprawdzenia „czy to ten operat”, a nie do czytania w pierwszej kolejności.
     """
-    import re
-
     from app.config import WEB
 
     _dodaj_operat(klient)
     klient.post("/generuj/spis_tresci_wzor", data=FORMULARZ, follow_redirects=False)
     wpis = db.dokumenty()[0]
 
-    naglowek = re.search(r"<h1>(.*?)</h1>",
-                         klient.get(f"/dokument/{wpis['id']}").text, re.S).group(1)
+    szczyt = _szczyt(klient, wpis)
 
-    assert naglowek.index(wpis["nr_operatu"]) < naglowek.index("GK.6640.1.2026")
-    assert "lekki" in naglowek, "data utworzenia bez własnego stylu — będzie pogrubiona"
-    assert naglowek.index("GK.6640.1.2026") < naglowek.index('class="lekki"')
-    # data w nawiasie — czyta się jako przypis do numerów, a nie trzeci równorzędny człon
-    assert "(" in naglowek.split('class="lekki"')[1].split(">")[1]
+    assert f"<h1>{wpis['nr_operatu']}</h1>" in szczyt
+    assert "GK.6640.1.2026" not in szczyt, "numer roboty wrócił na szczyt strony"
+    assert szczyt.index("<h1>") < szczyt.index('class="lekki"') < szczyt.index("Otwórz katalog")
 
     style = (WEB / "static" / "style.css").read_text(encoding="utf-8")
-    lekki = style.split("h1 .lekki {")[1].split("}")[0]
-    assert "font-weight: 400" in lekki and "font-size" in lekki
+    lekki = style.split(".szczyt .lekki {")[1].split("}")[0]
+    assert "font-size" in lekki, "data w wielkości nagłówka ciągnie wzrok na siebie"
+    blok = style.split(".szczyt {")[1].split("}")[0]
+    assert "space-between" in blok, "przyciski nie odsuną się na prawo"
+
+
+def test_szczyt_bez_licznika_mowi_to_samo_co_lista(klient):
+    """Szablon bez licznika numeru nie nadaje — zostaje nazwa katalogu.
+
+    Szczyt ma wtedy pokazywać dokładnie to, co lista operatów: inaczej ten sam operat
+    nazywałby się na dwóch stronach dwiema różnymi rzeczami.
+    """
+    klient.srodowisko.dodaj_szablon(
+        "spis_tresci_wzor", ["{{ nr_roboty }}"],
+        opis={"nazwa": "Operat", "glowny": True,
+              "pola": [{"klucz": "nr_roboty", "etykieta": "Nr roboty"}]})
+
+    klient.post("/generuj/spis_tresci_wzor", data={"pole__nr_roboty": "GK.9.2026"},
+                follow_redirects=False)
+    wpis = db.dokumenty()[0]
+
+    assert wpis["nr_operatu"] in _szczyt(klient, wpis)
+    assert wpis["nr_operatu"] in klient.get("/").text
+
+
+def test_przyciski_bedace_linkami_tez_reaguja_na_najechanie():
+    """„Popraw” i „Powiel” to linki, „Otwórz katalog” to przycisk formularza.
+
+    Wyglądają tak samo, więc muszą tak samo reagować — link bez podświetlenia wygląda
+    jak nieaktywny, choć robi to samo co sąsiad obok.
+    """
+    from app.config import WEB
+
+    style = (WEB / "static" / "style.css").read_text(encoding="utf-8")
+
+    assert ".wtorny:hover" in style
+
+
+def test_karta_przegladarki_nazywa_sie_numerem_operatu(klient):
+    """Przy kilku otwartych operatach karty rozróżnia się po tytule."""
+    _dodaj_operat(klient)
+    klient.post("/generuj/spis_tresci_wzor", data=FORMULARZ, follow_redirects=False)
+    wpis = db.dokumenty()[0]
+
+    strona = klient.get(f"/dokument/{wpis['id']}").text
+    tytul = strona.split("<title>")[1].split("</title>")[0]
+
+    assert tytul.strip() == f"Operat: {wpis['nr_operatu']}"
 
 
 def test_strona_operatu_pokazuje_nadany_numer(klient):
@@ -728,10 +776,10 @@ def test_adres_arkusza_zmienia_sie_po_zmianie_pliku(klient, tmp_path, monkeypatc
 
 
 def test_odstepy_nad_pierwsza_karta_sa_takie_jak_miedzy_kartami():
-    """Pasek przycisków, linijka ze ścieżką katalogu i karty trzymają **jeden** odstęp.
+    """Pasek przycisków i karty trzymają **jeden** odstęp.
 
     Gdy któryś się rozjedzie, strona wygląda na poskładaną z dwóch kawałków: jedna
-    przerwa ciasna, druga luźna. Wszystkie trzy reguły mają więc tę samą wartość.
+    przerwa ciasna, druga luźna.
     """
     import re
 
@@ -744,8 +792,9 @@ def test_odstepy_nad_pierwsza_karta_sa_takie_jak_miedzy_kartami():
         return re.search(r"margin:\s*([^;]+);", blok).group(1).strip()
 
     assert margines("fieldset").endswith("0 0 18px")
-    assert margines(".pasek") == "18px 0"
-    assert margines(".przy-pasku") == "18px 0"
+    assert margines(".szczyt").startswith("0 0 18px")
+    # kreska oddzielająca szczyt strony od kart z danymi
+    assert "border-bottom" in style.split(".szczyt {")[1].split("}")[0]
 
 
 def test_nazwy_kart_maja_kolor_akcentu():

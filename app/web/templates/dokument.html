@@ -1,34 +1,38 @@
 {% extends "base.html" %}
-{% block tytul %}{{ dokument.tytul }}{% endblock %}
+{# Nazwa karty przeglądarki: „Operat: 004/2026” — przy kilku otwartych kartach szuka się
+   po numerze, a samo „004/2026” bez słowa nie mówiło, czego dotyczy. #}
+{% block tytul %}Operat: {{ dokument.nr_operatu or dokument.tytul }}{% endblock %}
 {% block tresc %}
 
-{# Nagłówek czyta się jak wiersz listy operatów: numer operatu, numer roboty, data
-   utworzenia. Numer operatu jest pierwszy, bo to po nim rozpoznaje się robotę
-   w ośrodku. Data zostaje bez pogrubienia — jest do sprawdzenia „czy to ten operat”,
-   a nie do czytania w pierwszej kolejności. #}
-<h1>{% if dokument.nr_operatu %}{{ dokument.nr_operatu }} · {% endif %}{{ dokument.tytul }}
-  <span class="lekki">({{ dokument.utworzono.replace('T', ' ') }})</span></h1>
-<p class="szary">szablon: {{ dokument.szablon }}</p>
-
-{# Kolejność na tej stronie: nagłówek → przyciski → Opis → Wpisane dane. Wcześniej przed
-   pierwszą treścią stały cztery bloki w czterech różnych stylach (szara linijka, biały
-   panel z opisem, niebieskie pudełko, pasek przycisków) i robiło się z tego tłok. #}
-<div class="pasek">
-  <form method="post" action="/dokument/{{ dokument.id }}/otworz-katalog">
-    <button class="wtorny" type="submit">Otwórz katalog</button>
-  </form>
-  {% if dokument.katalog %}<a class="glowny" href="/scal/{{ dokument.katalog | urlencode }}">Złóż PDF operatu</a>{% endif %}
-  <a class="wtorny" href="/nowy/{{ dokument.szablon }}?edytuj={{ dokument.id }}">Popraw ten operat</a>
-  <a class="wtorny" href="/nowy/{{ dokument.szablon }}?kopiuj={{ dokument.id }}">Powiel jako nowy</a>
+{# Szczyt strony to jeden wiersz: po lewej numer operatu z datą utworzenia pod nim,
+   po prawej przyciski. Wcześniej te trzy rzeczy szły jedna pod drugą i zjadały ekran,
+   zanim zaczęła się treść. W nagłówku jest sam numer operatu — to po nim rozpoznaje się
+   robotę w ośrodku; numer roboty stoi w karcie „Robota” niżej. Szablon bez licznika
+   numeru nie nadaje, więc zostaje wtedy tytuł, czyli numer roboty: sama data nic
+   by nie mówiła. #}
+<div class="szczyt">
+  <div>
+    <h1>{{ dokument.nr_operatu or dokument.tytul }}</h1>
+    <p class="lekki">{{ dokument.utworzono.replace('T', ' ') }}</p>
+  </div>
+  <div class="pasek">
+    {# „Złóż PDF” pierwszy: po to najczęściej wchodzi się na stronę gotowego operatu. #}
+    {% if dokument.katalog %}<a class="glowny" href="/scal/{{ dokument.katalog | urlencode }}">Złóż PDF</a>{% endif %}
+    <form method="post" action="/dokument/{{ dokument.id }}/otworz-katalog">
+      <button class="wtorny" type="submit">Otwórz katalog</button>
+    </form>
+    <a class="wtorny" href="/nowy/{{ dokument.szablon }}?edytuj={{ dokument.id }}">Popraw</a>
+    <a class="wtorny" href="/nowy/{{ dokument.szablon }}?kopiuj={{ dokument.id }}">Powiel</a>
+    {# Kasowanie w tym samym pasku co reszta akcji — na dole strony trzeba było
+       przewinąć kilkanaście kart z danymi, żeby je znaleźć. Stoi ostatnie, ma własny
+       (czerwony) strój i pyta o potwierdzenie, więc bliskość „Powiel”
+       nie jest groźna. #}
+    <form method="post" action="/dokument/{{ dokument.id }}/usun"
+          onsubmit="return confirm('Usunąć operat wraz z całym katalogiem {{ dokument.katalog }} — także z plikami, które sam tam włożyłeś?')">
+      <button class="niebezpieczny" type="submit">Usuń</button>
+    </form>
+  </div>
 </div>
-
-{# Ścieżka do katalogu była wcześniej niebieskim pudełkiem — czyli najgłośniejszą rzeczą
-   na stronie, choć mówi to samo przy każdym operacie od zawsze. Zostaje przy przyciskach,
-   których dotyczy, ale cicho; instrukcja „co tam włożyć” jest w Pomocy. #}
-{% if dokument.katalog %}
-<p class="szary przy-pasku">Pliki tego operatu leżą w <code>wyniki\{{ dokument.katalog }}</code>
-  — tam wkładasz mapy, szkice i wykaz z C-Geo przed złożeniem PDF-a.</p>
-{% endif %}
 
 {# Opis nad „Wpisanymi danymi” i w tym samym stroju: nagłówek sekcji plus biały panel.
    To też są dane operatu, tylko wpisane dla siebie, a nie do dokumentu. #}
@@ -164,10 +168,5 @@
   </table>
 </fieldset>
 {% endfor %}
-
-<form method="post" action="/dokument/{{ dokument.id }}/usun"
-      onsubmit="return confirm('Usunąć operat wraz z całym katalogiem {{ dokument.katalog }} — także z plikami, które sam tam włożyłeś?')">
-  <button class="niebezpieczny" type="submit">Usuń operat i jego katalog</button>
-</form>
 
 {% endblock %}

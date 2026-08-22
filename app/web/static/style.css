@@ -89,16 +89,28 @@ main { max-width: 1040px; margin: 0 auto; padding: 28px; }
 footer { max-width: 1040px; margin: 0 auto; padding: 0 28px 28px; font-size: 14px; }
 footer .liczniki { border-top: 1px solid var(--linia); padding-top: 14px; margin-top: 0; }
 footer p { margin: 4px 0; }
-.liczniki span { margin-right: 22px; white-space: nowrap; }
+/* Liczniki przy prawej krawędzi — stopka jest wtedy przeciwwagą dla treści, która
+   zaczyna się po lewej. Flex zamiast `text-align`, bo odstęp między pozycjami ma zostać
+   **między** nimi, a nie za ostatnią (`margin-right` zostawiał puste 22 px przy krawędzi). */
+.liczniki { display: flex; justify-content: flex-end; gap: 22px; flex-wrap: wrap; }
+.liczniki span { white-space: nowrap; }
 /* Same liczby na akcent: w stopce zostały bez zdania o wersji, więc to one są jej
    treścią — a czarne na szarym opisie zlewały się z nim w jeden ciąg. */
 .liczniki strong { font-size: 16px; color: var(--akcent); }
 
 h1 { font-size: 24px; margin: 0 0 6px; }
-/* Data utworzenia w nagłówku operatu — mniejsza i bez pogrubienia: jest do sprawdzenia
-   „czy to ten operat”, a nie do czytania w pierwszej kolejności. W wielkości nagłówka
-   ciągnęła wzrok na siebie i rozpychała wiersz. */
-h1 .lekki { font-weight: 400; font-size: 16px; }
+/* Szczyt strony operatu: po lewej numer z datą pod nim, po prawej przyciski — jeden
+   wiersz zamiast trzech bloków jeden pod drugim. Odstęp do pierwszej karty taki sam
+   jak między kartami (18 px). `wrap` na wąskim oknie zsuwa przyciski pod numer,
+   zamiast je ucinać. */
+.szczyt { display: flex; justify-content: space-between; align-items: center;
+          gap: 16px; flex-wrap: wrap; margin: 0 0 18px;
+          border-bottom: 1px solid var(--linia); padding-bottom: 16px; }
+.szczyt h1 { margin: 0; }
+.szczyt .pasek { margin: 0; }
+/* Data mniejsza i bez pogrubienia: jest do sprawdzenia „czy to ten operat”, a nie
+   do czytania w pierwszej kolejności. */
+.szczyt .lekki { margin: 2px 0 0; font-size: 16px; color: var(--szary); }
 h2 { font-size: 17px; margin: 32px 0 10px; }
 /* Podsekcja wewnątrz karty (`fieldset`) — np. dwie części karty TERYT. Mniejsza
    od nagłówka strony, bo kartę nazywa już jej `legend`. */
@@ -201,11 +213,6 @@ table.lista tr.notatka span { display: block; margin-left: 2px; padding-left: 10
                               margin: 0; }
 .opis-operatu { background: var(--panel); border: 1px solid var(--linia); border-radius: 8px;
                 padding: 10px 14px; white-space: pre-wrap; tab-size: var(--tabulator); }
-/* Ścieżka do katalogu tuż pod paskiem przycisków — należy do nich, więc bez odstępu. */
-/* Linijka ze ścieżką katalogu stoi między paskiem przycisków a pierwszą kartą, więc
-   trzyma **ten sam odstęp co karty między sobą** (18 px) — inaczej jedna przerwa jest
-   ciasna, druga luźna i strona wygląda na poskładaną z dwóch kawałków. */
-.przy-pasku { margin: 18px 0; font-size: 13px; }
 /* Treść zapisanego opisu na liście w Ustawieniach. `pre-wrap` zostawia łamanie wierszy
    tak, jak brat je wpisał — opis bywa kilkoma akapitami, a zlepiony w jeden przestaje
    być tym, co zapisywał. */
@@ -297,7 +304,10 @@ button, .glowny, .wtorny {
   border: 1px solid var(--linia); background: #fff; color: var(--tekst); text-decoration: none;
   display: inline-block;
 }
-button:hover { border-color: var(--akcent); color: var(--akcent); }
+/* Podświetlenie przy najechaniu dostają **wszystkie** przyciski, także te, które są
+   linkami (`<a class="wtorny">`): „Otwórz katalog” to formularz, a „Popraw” i „Powiel”
+   linki — bez tego wyglądały jak nieaktywne, choć robią to samo co sąsiad obok. */
+button:hover, .wtorny:hover { border-color: var(--akcent); color: var(--akcent); }
 .glowny { background: var(--akcent); border-color: var(--akcent); color: #fff; font-weight: 600; }
 .glowny:hover { background: var(--akcent-ciemny); color: #fff; }
 .wtorny { color: var(--szary); }
