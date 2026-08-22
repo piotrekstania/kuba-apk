@@ -516,6 +516,9 @@ def formularz(request: Request, identyfikator: str, kopiuj: int | None = None,
                   warianty_pozycji=_warianty_pozycji(szablon),
                   wybor_wariantow=wybor_wariantow,
                   opisy_biblioteki=db.opisy_sprawozdania(),
+                  # data utworzenia — tylko przy poprawianiu: szczyt formularza ma wtedy
+                  # wyglądać tak samo jak szczyt strony operatu, z której się tu przyszło
+                  utworzono=(zrodlo["utworzono"] if edytuj and zrodlo else ""),
                   notatka=(zrodlo["notatka"] or "") if zrodlo else "")
 
 

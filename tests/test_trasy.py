@@ -235,6 +235,42 @@ def test_szczyt_bez_licznika_mowi_to_samo_co_lista(klient):
     assert wpis["nr_operatu"] in klient.get("/").text
 
 
+def test_szczyt_formularza_przy_poprawianiu_jak_strona_operatu(klient):
+    """Po kliknięciu „Popraw” szczyt ma wyglądać tak samo jak ten, z którego się przyszło.
+
+    Numer operatu w nagłówku, data pod nim, akcje po prawej — i żadnych zdań
+    objaśniających: opis szablonu i notka o numeracji czytały się jak ostrzeżenia.
+    Górny „Zapisz” stoi **poza** formularzem, więc musi wskazywać go przez `form=`;
+    literówka w tym miejscu daje przycisk, który po cichu nic nie robi.
+    """
+    _dodaj_operat(klient)
+    klient.post("/generuj/spis_tresci_wzor", data=FORMULARZ, follow_redirects=False)
+    wpis = db.dokumenty()[0]
+
+    strona = klient.get(f"/nowy/spis_tresci_wzor?edytuj={wpis['id']}").text
+    szczyt = strona.split('<div class="szczyt">')[1].split("</div>\n</div>")[0]
+
+    assert f"Operat: {wpis['nr_operatu']}" in szczyt
+    assert "lekki" in szczyt, "zniknęła data utworzenia"
+    assert "Numer i katalog zostają te same" not in strona
+    assert "Strona tytułowa" not in strona, "opis szablonu wrócił na szczyt"
+
+    assert 'form="operat"' in szczyt, "górny przycisk nie wskazuje formularza"
+    assert 'id="operat"' in strona, "formularz nie ma identyfikatora, na który wskazuje"
+    assert ">Zapisz<" in szczyt
+
+
+def test_szczyt_formularza_przy_nowym_operacie_mowi_o_numerze(klient):
+    """Nowy operat — nagłówek to nazwa szablonu, a numer dopiero będzie nadany."""
+    _dodaj_operat(klient)
+
+    strona = klient.get("/nowy/spis_tresci_wzor").text
+
+    assert "<h1>Operat</h1>" in strona
+    assert "Numer nadany temu dokumentowi" in strona
+    assert ">Generuj dokument<" in strona
+
+
 def test_przyciski_bedace_linkami_tez_reaguja_na_najechanie():
     """„Popraw” i „Powiel” to linki, „Otwórz katalog” to przycisk formularza.
 

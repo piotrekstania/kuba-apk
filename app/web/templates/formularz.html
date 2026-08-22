@@ -34,17 +34,36 @@
 {% block tytul %}{{ szablon.nazwa }}{% endblock %}
 {% block tresc %}
 
-<h1>{{ szablon.nazwa }}</h1>
-{% if szablon.opis %}<p class="szary">{{ szablon.opis }}</p>{% endif %}
-{% if podglad_numeru %}
-<p class="szary">
-  {% if edytuj %}Poprawiasz operat <strong>{{ podglad_numeru }}</strong> — numer i katalog
-  zostają te same, pliki nadpiszą się nowymi.
-  {% else %}Numer nadany temu dokumentowi: <strong>{{ podglad_numeru }}</strong>{% endif %}
-</p>
+{# Szczyt formularza zbudowany tak samo jak szczyt strony operatu: po lewej nazwa
+   z datą pod spodem, po prawej akcje, pod tym kreska. Przy poprawianiu w nagłówku stoi
+   numer operatu — po kliknięciu „Popraw” widać wtedy od razu, że to ten sam operat,
+   a nie nowy. Przyciski są te same co na dole formularza (`form="operat"` pozwala im
+   wysłać formularz mimo że stoją poza nim): przy długim formularzu dojście do zapisu
+   wymagało przewinięcia kilkunastu kart. #}
+<div class="szczyt">
+  <div>
+    {# Przy poprawianiu szczyt jest kopią szczytu strony operatu: numer i data pod nim,
+       bez zdań objaśniających. Kto tu trafia, klika „Popraw” z tamtej strony i wie,
+       co robi — a opis szablonu i notka o numeracji czytały się jak ostrzeżenia.
+       Przy nowym operacie te zdania zostają: tam naprawdę niosą informację. #}
+    <h1>{% if edytuj and podglad_numeru %}Operat: {{ podglad_numeru }}
+        {%- else %}{{ szablon.nazwa }}{% endif %}</h1>
+    {% if edytuj %}{% if utworzono %}
+    <p class="lekki">{{ utworzono.replace('T', ' ') }}</p>
+    {% endif %}
+    {% elif szablon.opis %}<p class="szary">{{ szablon.opis }}</p>{% endif %}
+  </div>
+  <div class="pasek">
+    <button type="submit" form="operat" class="glowny">{{ 'Zapisz' if edytuj else 'Generuj dokument' }}</button>
+    <a href="{{ '/dokument/' ~ edytuj if edytuj else '/' }}" class="wtorny">Anuluj</a>
+  </div>
+</div>
+{% if podglad_numeru and not edytuj %}
+<p class="szary pod-szczytem">Numer nadany temu dokumentowi:
+  <strong>{{ podglad_numeru }}</strong></p>
 {% endif %}
 
-<form method="post" action="/generuj/{{ szablon.id }}{% if edytuj %}?edytuj={{ edytuj }}{% endif %}">
+<form id="operat" method="post" action="/generuj/{{ szablon.id }}{% if edytuj %}?edytuj={{ edytuj }}{% endif %}">
   {# Notatka do roboty — na samej górze, bo po to najczęściej wchodzi się w operat
      ponownie, a stojąc pod czternastoma polami wymagała przewijania przez cały
      formularz. Stoi poza pętlą po polach szablonu, bo nie jest daną dokumentu:
@@ -462,8 +481,10 @@
   </fieldset>
   {% endif %}
 
-  <div class="pasek">
-    <button type="submit" class="glowny">{{ 'Zapisz poprawki' if edytuj else 'Generuj dokument' }}</button>
+  {# Ten sam komplet co na górze formularza i po tej samej stronie — wzrok wraca
+     do zapisu w to samo miejsce, niezależnie od tego, czy formularz się przewinął. #}
+  <div class="pasek do-prawej">
+    <button type="submit" class="glowny">{{ 'Zapisz' if edytuj else 'Generuj dokument' }}</button>
     <a href="{{ '/dokument/' ~ edytuj if edytuj else '/' }}" class="wtorny">Anuluj</a>
   </div>
 </form>
@@ -855,7 +876,7 @@ document.querySelectorAll('.edytor').forEach(edytor => {
 //    lata temu (podszywały się pod systemowe ostrzeżenia), więc `returnValue` musi być
 //    ustawione, ale jego wartość nic nie zmienia. Przyciski są „Opuść stronę / Zostań”
 //    — nie ma jak dołożyć tam „Zapisz”.
-// 2. **Okienko wychodzi też przy „Anuluj”.** Anuluj stoi tuż obok „Zapisz poprawki”,
+// 2. **Okienko wychodzi też przy „Anuluj”.** Anuluj stoi tuż obok „Zapisz”,
 //    więc chybione kliknięcie kosztuje dokładnie tyle samo co odświeżenie.
 (function () {
   const formularz = document.querySelector('form[action^="/generuj/"]');

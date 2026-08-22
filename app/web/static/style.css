@@ -108,6 +108,10 @@ h1 { font-size: 24px; margin: 0 0 6px; }
           border-bottom: 1px solid var(--linia); padding-bottom: 16px; }
 .szczyt h1 { margin: 0; }
 .szczyt .pasek { margin: 0; }
+.pasek.do-prawej { justify-content: flex-end; }
+/* Zdanie o numeracji stoi pod kreską, tuż nad pierwszą kartą — dotyczy tego, co się
+   zaraz wypełnia, więc nie ma go po co wciągać do nagłówka. */
+.pod-szczytem { margin: -4px 0 14px; font-size: 13px; }
 /* Data mniejsza i bez pogrubienia: jest do sprawdzenia „czy to ten operat”, a nie
    do czytania w pierwszej kolejności. */
 .szczyt .lekki { margin: 2px 0 0; font-size: 16px; color: var(--szary); }
