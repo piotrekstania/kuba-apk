@@ -7,7 +7,7 @@
    w ośrodku. Data zostaje bez pogrubienia — jest do sprawdzenia „czy to ten operat”,
    a nie do czytania w pierwszej kolejności. #}
 <h1>{% if dokument.nr_operatu %}{{ dokument.nr_operatu }} · {% endif %}{{ dokument.tytul }}
-  <span class="lekki">· {{ dokument.utworzono.replace('T', ' ') }}</span></h1>
+  <span class="lekki">({{ dokument.utworzono.replace('T', ' ') }})</span></h1>
 <p class="szary">szablon: {{ dokument.szablon }}</p>
 
 {# Kolejność na tej stronie: nagłówek → przyciski → Opis → Wpisane dane. Wcześniej przed

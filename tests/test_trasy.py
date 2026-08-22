@@ -204,6 +204,8 @@ def test_naglowek_operatu_czyta_sie_jak_wiersz_listy(klient):
     assert naglowek.index(wpis["nr_operatu"]) < naglowek.index("GK.6640.1.2026")
     assert "lekki" in naglowek, "data utworzenia bez własnego stylu — będzie pogrubiona"
     assert naglowek.index("GK.6640.1.2026") < naglowek.index('class="lekki"')
+    # data w nawiasie — czyta się jako przypis do numerów, a nie trzeci równorzędny człon
+    assert "(" in naglowek.split('class="lekki"')[1].split(">")[1]
 
     style = (WEB / "static" / "style.css").read_text(encoding="utf-8")
     lekki = style.split("h1 .lekki {")[1].split("}")[0]
