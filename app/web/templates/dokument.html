@@ -28,7 +28,7 @@
        (czerwony) strój i pyta o potwierdzenie, więc bliskość „Powiel”
        nie jest groźna. #}
     <form method="post" action="/dokument/{{ dokument.id }}/usun"
-          onsubmit="return confirm('Usunąć operat wraz z całym katalogiem {{ dokument.katalog }} — także z plikami, które sam tam włożyłeś?')">
+          onsubmit="return confirm('{% if dokument.katalog %}Usunąć operat wraz z całym katalogiem {{ dokument.katalog }} — także z plikami, które sam tam włożyłeś?{% else %}Usunąć operat {{ dokument.nr_operatu or dokument.tytul }} z historii?{% endif %}')">
       <button class="niebezpieczny" type="submit">Usuń</button>
     </form>
   </div>

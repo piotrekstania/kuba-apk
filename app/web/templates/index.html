@@ -70,7 +70,9 @@
       <a class="glowny" href="/scal/{{ operat.katalog | urlencode }}">Złóż PDF</a>{% endif %}
       {% if operat.id and operat.na_dysku %}
       {# katalogu operatu przeniesionego do archiwum nie ma czego otwierać #}
-      <form method="post" action="/dokument/{{ operat.id }}/otworz-katalog">
+      {# `powrot=lista`: po otwarciu Eksploratora brat ma zostać na liście, a nie trafić
+         na stronę operatu, o którą nie prosił #}
+      <form method="post" action="/dokument/{{ operat.id }}/otworz-katalog?powrot=lista">
         <button type="submit" class="wtorny">Otwórz katalog</button>
       </form>
       {% endif %}

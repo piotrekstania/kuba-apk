@@ -9,7 +9,7 @@
   <option value="{{ opcja }}"{{ ' selected' if opcja == wartosc }}>{{ opcja }}</option>
   {%- endfor %}
   {#- wartość spoza listy (starszy operat, kod wpisany kiedyś z ręki) zostaje na liście:
-      inaczej samo otwarcie „Popraw ten operat” po cichu by ją skasowało #}
+      inaczej samo otwarcie „Popraw” po cichu by ją skasowało #}
   {%- if wartosc and wartosc not in pod.opcje %}
   <option value="{{ wartosc }}" selected>{{ wartosc }}</option>
   {%- endif %}
@@ -19,7 +19,7 @@
     mieć kilka użytków, każdy w osobnej linijce. Do dokumentu wchodzą tak samo, jedna
     pod drugą — dlatego pole musi przyjmować Enter. Dodatkowe złamanie zaraz po `>`
     jest konieczne: parser HTML ignoruje pierwszy znak nowej linii po <textarea>,
-    więc bez niego każde „Popraw ten operat” zjadałoby jedną pustą linijkę
+    więc bez niego każde „Popraw” zjadałoby jedną pustą linijkę
     z początku wartości — a pustymi linijkami brat wyrównuje wpis do właściwego
     wiersza sąsiedniej kolumny. -#}
 <textarea name="sek__{{ nazwa_pola }}__{{ nr }}__{{ pod.klucz }}" rows="3"
@@ -31,7 +31,9 @@
 {%- endmacro %}
 
 
-{% block tytul %}{{ szablon.nazwa }}{% endblock %}
+{# Nazwa karty jak nagłówek strony: przy poprawianiu numer operatu (z dopiskiem, żeby
+   odróżnić od karty samego operatu), przy nowym — „Nowy operat”. #}
+{% block tytul %}{% if edytuj and podglad_numeru %}Operat: {{ podglad_numeru }} — poprawianie{% else %}Nowy {{ szablon.nazwa | lower }}{% endif %}{% endblock %}
 {% block tresc %}
 
 {# Szczyt formularza zbudowany tak samo jak szczyt strony operatu: po lewej nazwa

@@ -11,6 +11,9 @@ from app import db, operaty
 
 OPIS_OPERATU = {
     "nazwa": "Operat", "glowny": True, "licznik": "operat",
+    # opis jest po to, żeby test szczytu formularza miał co sprawdzać — bez niego
+    # asercja „opis nie wrócił na szczyt” przechodziła na pusto
+    "opis": "Strona tytułowa operatu",
     "wzor_nazwy": "Operat_{nr_roboty}",
     "pola": [
         {"klucz": "nr_roboty", "etykieta": "Nr roboty", "wymagane": True},
@@ -258,6 +261,7 @@ def test_szczyt_formularza_przy_poprawianiu_jak_strona_operatu(klient):
     assert 'form="operat"' in szczyt, "górny przycisk nie wskazuje formularza"
     assert 'id="operat"' in strona, "formularz nie ma identyfikatora, na który wskazuje"
     assert ">Zapisz<" in szczyt
+    assert strona.count(">Zapisz<") == 2, "„Zapisz” ma być na górze i na dole formularza"
 
 
 def test_szczyt_formularza_przy_nowym_operacie(klient):
@@ -272,9 +276,97 @@ def test_szczyt_formularza_przy_nowym_operacie(klient):
 
     assert "<h1>Nowy operat</h1>" in strona
     assert "Numer nadany temu dokumentowi" not in strona
-    assert ">Zapisz<" in strona
+    assert strona.count(">Zapisz<") == 2, "„Zapisz” ma być na górze i na dole formularza"
     numer = f"001/{__import__('datetime').date.today().year}"
     assert f'placeholder="{numer}"' in strona, "zniknął podgląd numeru z pola"
+
+
+def _szczyt_formularza(strona):
+    return strona.split('<div class="szczyt">')[1].split("</div>\n</div>")[0]
+
+
+def test_szczyt_po_bledzie_przy_poprawianiu_nadal_mowi_ktory_operat(klient):
+    """Po „Uzupełnij wymagane pola” formularz ma wrócić jako ten sam operat.
+
+    Powrót na formularz po błędzie budował kontekst osobno i bez numeru operatu —
+    nagłówek przeskakiwał wtedy z „Operat: 001/2026” na „Nowy operat”, a data znikała.
+    Dla brata wyglądało to tak, jakby poprawka przepadła i zakładał nowy operat.
+    """
+    _dodaj_operat(klient)
+    klient.post("/generuj/spis_tresci_wzor", data=FORMULARZ, follow_redirects=False)
+    wpis = db.dokumenty()[0]
+
+    strona = klient.post(f"/generuj/spis_tresci_wzor?edytuj={wpis['id']}",
+                         data={**FORMULARZ, "pole__nr_roboty": ""}).text
+
+    assert "Uzupełnij wymagane pola" in strona
+    szczyt = _szczyt_formularza(strona)
+    assert f"Operat: {wpis['nr_operatu']}" in szczyt
+    assert "Nowy operat" not in szczyt
+    assert "lekki" in szczyt, "zniknęła data utworzenia"
+    assert f'placeholder="{wpis["nr_operatu"]}"' in strona, "pole numeru straciło podpowiedź"
+    assert len(db.dokumenty()) == 1, "nieudana poprawka założyła nowy operat"
+
+
+def test_szczyt_przy_poprawianiu_operatu_bez_licznika(klient):
+    """Szablon bez pola auto_numer: poprawianie też ma się nazywać operatem, nie „Nowy”.
+
+    Numer brało się wyłącznie w pętli po polach `auto_numer`, więc bez takiego pola
+    nagłówek mówił „Nowy operat” — choć strona operatu, z której się przyszło, mówiła
+    „Operat: <nazwa katalogu>”.
+    """
+    klient.srodowisko.dodaj_szablon(
+        "spis_tresci_wzor", ["{{ nr_roboty }}"],
+        opis={"nazwa": "Operat", "glowny": True,
+              "pola": [{"klucz": "nr_roboty", "etykieta": "Nr roboty"}]})
+    klient.post("/generuj/spis_tresci_wzor", data={"pole__nr_roboty": "GK.9.2026"},
+                follow_redirects=False)
+    wpis = db.dokumenty()[0]
+
+    szczyt = _szczyt_formularza(klient.get(f"/nowy/spis_tresci_wzor?edytuj={wpis['id']}").text)
+
+    assert f"Operat: {wpis['nr_operatu']}" in szczyt
+    assert "Nowy operat" not in szczyt
+    assert "lekki" in szczyt
+
+
+def test_poprawianie_skasowanego_operatu_nie_udaje_poprawiania(klient):
+    """Stara zakładka z „Popraw” po skasowaniu operatu.
+
+    Formularz brał wtedy kolejny numer z licznika i ogłaszał „Operat: 003/2026”, jakby
+    poprawiał istniejący — a zapis zakładał nowy. Ma odesłać na listę z wyjaśnieniem.
+    """
+    _dodaj_operat(klient)
+    klient.post("/generuj/spis_tresci_wzor", data=FORMULARZ, follow_redirects=False)
+    wpis = db.dokumenty()[0]
+    klient.post(f"/dokument/{wpis['id']}/usun", follow_redirects=False)
+
+    odpowiedz = klient.get(f"/nowy/spis_tresci_wzor?edytuj={wpis['id']}", follow_redirects=False)
+
+    assert odpowiedz.status_code == 303
+    assert odpowiedz.headers["location"].startswith("/?blad=")
+    assert "nie ma" in klient.get(odpowiedz.headers["location"]).text
+
+
+def test_zapis_poprawki_skasowanego_operatu_zostawia_dane_i_nie_udaje_poprawki(klient):
+    """„Zapisz” w starej zakładce, gdy operat już skasowano.
+
+    Nie wolno po cichu założyć nowego operatu pod pozorem poprawki ani wyrzucić
+    wpisanych danych: formularz wraca z komunikatem, już jako nowy operat.
+    """
+    _dodaj_operat(klient)
+    klient.post("/generuj/spis_tresci_wzor", data=FORMULARZ, follow_redirects=False)
+    wpis = db.dokumenty()[0]
+    klient.post(f"/dokument/{wpis['id']}/usun", follow_redirects=False)
+
+    strona = klient.post(f"/generuj/spis_tresci_wzor?edytuj={wpis['id']}",
+                         data={**FORMULARZ, "pole__nr_roboty": "GK.7.2026"}).text
+
+    assert db.dokumenty() == [], "zapis poprawki skasowanego operatu założył nowy"
+    assert "nie ma" in strona and 'class="komunikat' in strona
+    assert 'value="GK.7.2026"' in strona, "wpisane dane przepadły"
+    assert "Nowy operat" in _szczyt_formularza(strona)
+    assert 'action="/generuj/spis_tresci_wzor"' in strona, "formularz nadal udaje poprawianie"
 
 
 def test_przyciski_bedace_linkami_tez_reaguja_na_najechanie():
@@ -754,6 +846,67 @@ def test_otwarcie_katalogu_archiwalnego_operatu_tlumaczy_dlaczego(klient):
 
     assert "blad=" in odpowiedz.headers["location"]
     assert "archiwum" in unquote(odpowiedz.headers["location"])
+
+
+def test_otwarcie_katalogu_z_listy_zostawia_na_liscie(klient, monkeypatch):
+    """„Otwórz katalog” kliknięte na liście ma wrócić na listę, nie na stronę operatu.
+
+    Trasa wracała zawsze na stronę operatu, więc po kliknięciu z listy strona zmieniała
+    się pod otwieranym Eksploratorem — brat prosił o katalog, a dostawał inną stronę.
+    """
+    from app import operaty
+
+    _dodaj_operat(klient)
+    klient.post("/generuj/spis_tresci_wzor", data=FORMULARZ, follow_redirects=False)
+    wpis = db.dokumenty()[0]
+    otwarte = []
+    monkeypatch.setattr(operaty, "otworz_w_systemie", otwarte.append)
+
+    assert f'action="/dokument/{wpis["id"]}/otworz-katalog?powrot=lista"' in klient.get("/").text
+    z_listy = klient.post(f"/dokument/{wpis['id']}/otworz-katalog?powrot=lista",
+                          follow_redirects=False)
+    ze_strony = klient.post(f"/dokument/{wpis['id']}/otworz-katalog", follow_redirects=False)
+
+    assert z_listy.headers["location"] == "/"
+    assert ze_strony.headers["location"] == f"/dokument/{wpis['id']}"
+    assert [k.name for k in otwarte] == [wpis["katalog"]] * 2
+    # adres spoza listy nie wysyła nigdzie indziej
+    obcy = klient.post(f"/dokument/{wpis['id']}/otworz-katalog?powrot=https://zly.example",
+                       follow_redirects=False)
+    assert obcy.headers["location"] == f"/dokument/{wpis['id']}"
+
+
+def test_usuwanie_wpisu_bez_katalogu_nie_pyta_o_katalog_none(klient):
+    """Wpis sprzed podziału na katalogi ma `katalog` NULL — pytanie mówiło „katalogiem None”."""
+    _dodaj_operat(klient)
+    klient.post("/generuj/spis_tresci_wzor", data=FORMULARZ, follow_redirects=False)
+    wpis = db.dokumenty()[0]
+    with db.polaczenie() as polaczenie:
+        polaczenie.execute("UPDATE dokumenty SET katalog = NULL, nr_operatu = NULL WHERE id = ?",
+                           (wpis["id"],))
+
+    strona = klient.get(f"/dokument/{wpis['id']}").text
+
+    assert "None" not in strona
+    assert "z historii?" in strona
+    assert "Złóż PDF" not in strona.split('<div class="szczyt">')[1].split("<fieldset")[0]
+
+
+def test_karta_formularza_nazywa_sie_jak_naglowek(klient):
+    """Nazwa karty przeglądarki mówiła „Operat” przy nowym i przy poprawianiu — jak
+    strona operatu; przy kilku kartach nie dało się ich rozróżnić."""
+    _dodaj_operat(klient)
+    klient.post("/generuj/spis_tresci_wzor", data=FORMULARZ, follow_redirects=False)
+    wpis = db.dokumenty()[0]
+
+    def tytul(strona):
+        return strona.split("<title>")[1].split("</title>")[0].strip()
+
+    assert tytul(klient.get("/nowy/spis_tresci_wzor").text).startswith("Nowy operat")
+    poprawianie = tytul(klient.get(f"/nowy/spis_tresci_wzor?edytuj={wpis['id']}").text)
+    assert poprawianie.startswith(f"Operat: {wpis['nr_operatu']}")
+    assert poprawianie != tytul(klient.get(f"/dokument/{wpis['id']}").text), \
+        "karta formularza i karta operatu nie do odróżnienia"
 
 
 def test_poprawienie_operatu_z_archiwum_wraca_do_tego_samego_numeru(klient):

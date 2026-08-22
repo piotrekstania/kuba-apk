@@ -468,6 +468,33 @@ def _warianty_pozycji(szablon: szablony.Szablon) -> list[dict[str, Any]]:
     return pozycje
 
 
+def _szczyt_formularza(szablon: szablony.Szablon, poprawiany: Any) -> dict[str, Any]:
+    """Numer i data do szczytu formularza — jedno miejsce dla obu wyświetleń.
+
+    Przy poprawianiu numer się nie zmienia i pochodzi z historii (dla szablonu bez
+    licznika numerem jest nazwa katalogu — to samo, co pokazuje lista i strona operatu);
+    data utworzenia stoi pod nim, żeby szczyt wyglądał jak ten, z którego się przyszło.
+    Przy nowym operacie podglądamy numer, który zostanie nadany — to podpowiedź w polu
+    „Nr operatu”.
+
+    Liczone osobno od reszty kontekstu, bo powrót na formularz po błędzie („Uzupełnij
+    wymagane pola”, literówka w formatce) budował go własnym słownikiem i gubił numer:
+    nagłówek przeskakiwał wtedy z „Operat: 001/2026” na „Nowy operat”, a brat miał
+    prawo sądzić, że poprawka przepadła i zakłada nowy operat.
+    """
+    if poprawiany:
+        return {"podglad_numeru": (poprawiany["nr_operatu"] or poprawiany["katalog"]
+                                   or poprawiany["tytul"]),
+                "utworzono": poprawiany["utworzono"] or ""}
+    podglad = None
+    for pole in szablon.pola:
+        if pole.typ == "auto_numer":
+            numer = db.podglad_numeru(szablon.licznik or szablon.id, date.today().year)
+            wzor = pole.domyslnie or "{numer}/{rok}"
+            podglad = wzor.format(numer=numer, numer3=f"{numer:03d}", rok=date.today().year)
+    return {"podglad_numeru": podglad, "utworzono": ""}
+
+
 @app.get("/nowy/{identyfikator}", response_class=HTMLResponse)
 def formularz(request: Request, identyfikator: str, kopiuj: int | None = None,
               edytuj: int | None = None):
@@ -487,19 +514,15 @@ def formularz(request: Request, identyfikator: str, kopiuj: int | None = None,
                                 else pole.domyslnie)
     # „Powiel” robi nowy operat z tymi samymi danymi, „Popraw” wraca do tego samego
     zrodlo = db.dokument(edytuj or kopiuj) if (edytuj or kopiuj) else None
+    if edytuj and zrodlo is None:
+        # Stara zakładka z „Popraw” po skasowaniu operatu. Formularz brał wtedy kolejny
+        # numer z licznika i ogłaszał „Operat: 003/2026”, jakby poprawiał istniejący —
+        # a zapis zakładał nowy. Nie ma czego poprawiać, więc wracamy na listę.
+        return RedirectResponse("/?blad=" + quote(
+            "Operatu, który chcesz poprawić, nie ma już w historii — pewnie został "
+            "usunięty. Jeśli to nowa robota, zacznij od „Nowy operat”."), status_code=303)
     if zrodlo:
         wartosci.update(json.loads(zrodlo["dane_json"]))
-
-    podglad = None
-    for pole in szablon.pola:
-        if pole.typ == "auto_numer":
-            if edytuj and zrodlo:
-                podglad = zrodlo["nr_operatu"] or zrodlo["katalog"]   # numer się nie zmienia
-            else:
-                numer = db.podglad_numeru(szablon.licznik or szablon.id, date.today().year)
-                wzor = pole.domyslnie or "{numer}/{rok}"
-                podglad = wzor.format(numer=numer, numer3=f"{numer:03d}",
-                                      rok=date.today().year)
 
     # Wybór formatek: przy poprawianiu i powielaniu bierzemy ten zapisany przy operacie
     # (siedzi w `dane_json`), a przy nowym — ostatnio używany z ustawień.
@@ -511,14 +534,12 @@ def formularz(request: Request, identyfikator: str, kopiuj: int | None = None,
     # z resztą: nowa robota zwykle zaczyna się od tych samych uwag, a skasować łatwiej
     # niż przepisać.
     return _widok(request, "formularz.html", szablon=szablon, wartosci=wartosci,
-                  podglad_numeru=podglad, dzisiaj=date.today().isoformat(),
+                  **_szczyt_formularza(szablon, zrodlo if edytuj else None),
+                  dzisiaj=date.today().isoformat(),
                   edytuj=edytuj, listy_dokumentow=_listy_dokumentow(szablon),
                   warianty_pozycji=_warianty_pozycji(szablon),
                   wybor_wariantow=wybor_wariantow,
                   opisy_biblioteki=db.opisy_sprawozdania(),
-                  # data utworzenia — tylko przy poprawianiu: szczyt formularza ma wtedy
-                  # wyglądać tak samo jak szczyt strony operatu, z której się tu przyszło
-                  utworzono=(zrodlo["utworzono"] if edytuj and zrodlo else ""),
                   notatka=(zrodlo["notatka"] or "") if zrodlo else "")
 
 
@@ -535,14 +556,30 @@ async def generuj(request: Request, identyfikator: str, edytuj: int | None = Non
     # przypadkiem zderzyć się ze znacznikiem o tej samej nazwie w formatce Worda.
     notatka = str(formularz_danych.get("notatka") or "").strip()
 
+    poprawiany = db.dokument(edytuj) if edytuj else None
+    komunikat = None
+    if edytuj and poprawiany is None:
+        # „Zapisz” w starej zakładce, gdy operat już skasowano. Dotąd szło to dalej jako
+        # nowy operat — pod pozorem poprawki, z kolejnym numerem z licznika. Danych
+        # nie wyrzucamy (brat właśnie je wpisał), ale formularz wraca już jako nowy
+        # i mówi dlaczego; dopiero następne „Zapisz” założy operat.
+        edytuj = None
+        komunikat = ("Operatu, który poprawiałeś, nie ma już w historii — pewnie został "
+                     "usunięty. Wpisane dane zostały tutaj; „Zapisz” założy go teraz "
+                     "jako nowy operat, z kolejnym numerem.")
+
     # wspólne dla obu powrotów na formularz — po błędzie ma wrócić komplet, razem
-    # z wybranymi formatkami i notatką, żeby nic nie trzeba było ustawiać drugi raz
+    # z numerem operatu, wybranymi formatkami i notatką, żeby nic nie trzeba było
+    # ustawiać drugi raz ani zgadywać, czy to nadal ta sama robota
     powrot = dict(szablon=szablon, wartosci=dane, edytuj=edytuj,
+                  **_szczyt_formularza(szablon, poprawiany),
                   dzisiaj=date.today().isoformat(),
                   listy_dokumentow=_listy_dokumentow(szablon),
                   warianty_pozycji=_warianty_pozycji(szablon),
                   wybor_wariantow=wybor_wariantow, notatka=notatka,
                   opisy_biblioteki=db.opisy_sprawozdania())
+    if komunikat:
+        return _widok(request, "formularz.html", **powrot, blad=komunikat)
 
     # `auto_numer` pomijamy: pole zostaje puste celowo, bo numer nadaje program przy
     # generowaniu. Oznaczenie go jako wymaganego ma sens tylko po to, żeby w formularzu
@@ -554,7 +591,6 @@ async def generuj(request: Request, identyfikator: str, edytuj: int | None = Non
         return _widok(request, "formularz.html", **powrot,
                       blad="Uzupełnij wymagane pola: " + ", ".join(brakujace))
 
-    poprawiany = db.dokument(edytuj) if edytuj else None
     poprzedni_opis = None
     if poprawiany:
         katalog_poprzedni = operaty.katalog_po_nazwie(poprawiany["katalog"] or "")
@@ -863,15 +899,21 @@ def _dane_w_grupach(pola: list[szablony.Pole],
 
 
 @app.post("/dokument/{dokument_id}/otworz-katalog")
-def otworz_katalog_dokumentu(request: Request, dokument_id: int):
+def otworz_katalog_dokumentu(request: Request, dokument_id: int, powrot: str | None = None):
+    # Skąd przyszło kliknięcie, tam wracamy: z listy operatów na listę, ze strony
+    # operatu na stronę operatu. Brat kliknął „Otwórz katalog”, a nie „pokaż operat” —
+    # strona zmieniająca się pod Eksploratorem wyglądała jak pomyłka. Cel jest wybierany
+    # z dwóch wpisanych tu adresów, a nie brany z formularza, żeby nie dało się nim
+    # odesłać nigdzie indziej.
+    cel = "/" if powrot == "lista" else f"/dokument/{dokument_id}"
     wiersz = db.dokument(dokument_id)
     katalog = operaty.katalog_po_nazwie(wiersz["katalog"] or "") if wiersz else None
     if katalog is None:
-        return RedirectResponse(f"/dokument/{dokument_id}?blad=" + quote(
+        return RedirectResponse(cel + "?blad=" + quote(
             "Katalogu tego operatu nie ma już w wyniki — pewnie przeniesiony "
             "do archiwum. Wpis w historii zostaje, ale nie ma czego otworzyć."),
             status_code=303)
-    return _otworz(request, katalog, f"/dokument/{dokument_id}")
+    return _otworz(request, katalog, cel)
 
 
 @app.post("/scal/{nazwa}/otworz-katalog")

@@ -55,7 +55,7 @@
       <form method="post" action="/ustawienia/opisy/usun"
             onsubmit="return confirm('Usunąć opis „{{ pozycja.nazwa }}”? Gotowe operaty zostaną bez zmian.')">
         <input type="hidden" name="opis" value="{{ pozycja.id }}">
-        <button type="submit">Usuń</button>
+        <button class="niebezpieczny" type="submit">Usuń</button>
       </form>
     </td>
   </tr>
@@ -108,7 +108,7 @@
       <form method="post" action="/ustawienia/formatki/usun"
             onsubmit="return confirm('Usunąć formatkę „{{ wariant.nazwa }}”? Gotowe operaty zostaną bez zmian.')">
         <input type="hidden" name="wariant" value="{{ wariant.id }}">
-        <button type="submit">Usuń</button>
+        <button class="niebezpieczny" type="submit">Usuń</button>
       </form>
     </td>
   </tr>

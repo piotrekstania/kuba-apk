@@ -438,7 +438,29 @@ def test_edytor_da_sie_powiekszyc():
 
     style = (WEB / "static" / "style.css").read_text(encoding="utf-8")
 
+    import re
+
     tresc = style.split(".edytor .tresc {")[1].split("}")[0]
     assert "resize: vertical" in tresc, "edytora nie da się powiększyć myszą"
+    # `resize` działa tylko przy `overflow` innym niż `visible` — bez tego uchwyt znika
+    assert re.search(r"overflow(-y)?\s*:\s*(auto|scroll)", tresc), \
+        "bez overflow uchwyt powiększania się nie pokaże"
     obudowa = style.split(".edytor {")[1].split("}")[0]
-    assert "overflow: hidden" not in obudowa, "obudowa znów przycina uchwyt"
+    assert not re.search(r"overflow(-[xy])?\s*:\s*(hidden|clip)", obudowa), \
+        "obudowa znów przycina uchwyt"
+
+
+def test_usun_w_ustawieniach_ma_czerwony_stroj(klient):
+    """Kasowanie opisu wygląda jak kasowanie operatu — i inaczej niż zwykły przycisk.
+
+    Runda z przyciskami na liście operatów skasowała regułę, która robiła z „Usuń”
+    w kolumnie akcji czerwony odnośnik; w Ustawieniach został biały przycisk z czarnym
+    napisem, nieodróżnialny od „Dodaj”. Strój bierze się z klasy, nie z położenia.
+    """
+    klient.post("/ustawienia/opisy", data={"nazwa": "Do skasowania", "opis": "<p>x</p>"},
+                follow_redirects=False)
+
+    strona = klient.get("/ustawienia").text
+
+    assert '<button class="niebezpieczny" type="submit">Usuń</button>' in strona
+    assert '<button type="submit">Usuń</button>' not in strona
