@@ -39,7 +39,7 @@
     },
     {
       "klucz": "data_zgloszenia",
-      "etykieta": "Data zgłoszenia pracy geodezyjnej",
+      "etykieta": "Data zgłoszenia",
       "typ": "date",
       "wymagane": true,
       "grupa": "Robota",
@@ -47,7 +47,7 @@
     },
     {
       "klucz": "data_zakonczenia",
-      "etykieta": "Data zakończenia pracy geodezyjnej",
+      "etykieta": "Data zakończenia",
       "typ": "date",
       "wymagane": true,
       "grupa": "Robota",
