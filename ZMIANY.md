@@ -3,6 +3,10 @@
 Co doszło w kolejnych wersjach programu. Ten sam opis pokazuje się raz, na stronie
 głównej, zaraz po tym jak program sam się zaktualizuje.
 
+## 2026.08.22-101 — 2026-08-22
+
+Runda ekranowa po setce. Strona operatu ma jeden wiersz na szczycie: numer operatu z datą utworzenia po lewej, a po prawej komplet przycisków — „Złóż PDF”, „Otwórz katalog”, „Popraw”, „Powiel” i „Usuń” (kasowanie przeszło z dołu strony na górę; nadal pyta o potwierdzenie i mówi teraz, co naprawdę zniknie — operat przeniesiony do archiwum znika tylko z listy). Formularz ma u góry to samo: przy poprawianiu numer operatu i datę, a „Zapisz” i „Anuluj” stoją na górze i na dole. Na liście operatów akcje są przyciskami, doszło „Otwórz katalog” (wraca na listę), a kolumna „Data” nazywa się „Utworzono”. Pole opisu — w Ustawieniach i w przebiegu prac — da się powiększyć, ciągnąc za prawy dolny róg. Krótsze podpisy dat: „Data zgłoszenia” i „Data zakończenia”. Po przeglądzie kodu: formularz po „Uzupełnij wymagane pola” nie udaje już nowego operatu, „Zapisz” ani „Powiel” w starej karcie skasowanego operatu nie zakładają po cichu nowego, pytanie „Usunąć…?” działa także przy apostrofie w nazwie, a Pomoc nie odsyła już do przycisku „Pobierz PDF”, którego nie ma.
+
 ## 2026.08.20-100 — 2026-08-20
 
 Setne wydanie — porządki na ekranie. Strona operatu ma teraz karty z niebieskimi tytułami, jak formularz: opis i dane w jednej siatce, podpisy pól po ludzku (z opisu szablonu, nie klucze techniczne), spis treści w pionie z numerami jak w dokumencie, a w tabelach wykazów wyśrodkowane stany z kreską między dotychczasowym a nowym. Numer wersji przeniósł się ze stopki do nagłówka, pod nazwę programu; w stopce zostały liczniki. Strona błędu znów jest całą stroną z menu i stylami, a nie gołym napisem.
