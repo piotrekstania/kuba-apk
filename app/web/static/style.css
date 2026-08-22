@@ -430,6 +430,9 @@ table.sekcja-siatka input { padding: 5px 8px; }
 .karta-danych table.lista { background: transparent; }
 /* Nazwa pola bez szarego paska i przy górnej krawędzi: przy wykazie działek ta komórka
    jest wysoka na pół ekranu i wypełniony pasek wyglądał jak pusta kolumna. */
+/* Kolumna podpisów: 150 px. Szersza zabierała miejsce tabelom wykazów, które i tak
+   mają go mało — a najdłuższy podpis („Wykazy zmian danych budynku”) i tak łamie się
+   na dwie linijki, więc dokładanie szerokości niczego nie ratowało. */
 .karta-danych table.lista th.waski { background: transparent; vertical-align: top;
-                                     font-weight: 600; width: 190px; }
+                                     font-weight: 600; width: 150px; }
 .karta-danych table.lista tr:last-child > * { border-bottom: none; }

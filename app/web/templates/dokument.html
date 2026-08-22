@@ -123,7 +123,14 @@
               {% else %}<td class="wartosc{{ ' granica-stanu' if granica }}">{% endif %}
                 {% if wiersz.podzielony %}<span class="podkolumna-etykieta">{{
                   pole.podkolumny[loop.index0 % ile] }}</span>{% endif %}
-                <span class="wielolinijkowa">{{ komorka or '—' }}</span></td>
+                {# Wartość **wpisana w kilku linijkach** (użytki jeden pod drugim) dostaje
+                   blok trzymający równą lewą krawędź — inaczej listy klas przestają się
+                   czytać pionowo. Wartość jednolinijkowa zostaje zwykłym tekstem, więc
+                   środkuje się cała, także wtedy, gdy jest długa i sama się zawinie
+                   (nazwa rodzaju budynku wg KŚT). Przy bloku zawinięcie wyglądało jak
+                   wyrównanie do lewej i obok wyśrodkowanych sąsiadów kłuło w oczy. #}
+                {% if '\n' in komorka %}<span class="wielolinijkowa">{{ komorka }}</span>
+                {%- else %}{{ komorka or '—' }}{% endif %}</td>
               {% endfor %}
             </tr>
             {% endfor %}

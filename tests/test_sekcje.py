@@ -1030,6 +1030,29 @@ def test_strona_operatu_pokazuje_wpisane_wiersze(klient):
         "dane wpadły do niewłaściwego wykazu"
 
 
+def test_dluga_wartosc_zawija_sie_wysrodkowana(klient):
+    """Wartości stanów są wyśrodkowane — także wtedy, gdy same się zawiną.
+
+    Blok `wielolinijkowa` trzyma równą lewą krawędź i o to chodzi przy użytkach
+    wpisanych jeden pod drugim. Ale wartość **jednolinijkowa**, tylko długa (nazwa
+    rodzaju budynku wg KŚT), dostawała go tak samo — i zawinięcie wyglądało jak
+    wyrównanie do lewej, obok wyśrodkowanych sąsiadów.
+    """
+    _operat_z_kolumnami(klient)
+
+    _wyslij(klient, **{"sek__wykazy__0__adres_nowy": "102 - BUDYNKI TRANSPORTU I ŁĄCZNOŚCI",
+                       "sek__wykazy__0__pole_nowy": "R\nŁ\nPs"})
+    strona = klient.get(f"/dokument/{db.dokumenty()[0]['id']}").text
+
+    def komorka(wartosc):
+        return strona[strona.index(wartosc) - 120:strona.index(wartosc) + len(wartosc)]
+
+    assert "wielolinijkowa" not in komorka("102 - BUDYNKI TRANSPORTU I ŁĄCZNOŚCI"), \
+        "jednolinijkowa wartość w bloku — zawinięcie wypadnie do lewej"
+    assert "wielolinijkowa" in komorka("R\nŁ\nPs"), \
+        "wpisane linijki muszą zostać linijkami"
+
+
 def test_strona_operatu_pomija_niewypelnione_atrybuty(klient):
     """Wykaz budynku ma piętnaście atrybutów, a wypełnione bywają dwa.
 
