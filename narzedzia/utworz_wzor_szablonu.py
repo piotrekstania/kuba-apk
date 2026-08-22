@@ -130,9 +130,9 @@ OPIS_POL = {
          "grupa": "Robota", "szerokosc": "polowa"},
 
         # obie daty w jednym rzędzie: „polowa” to trzy z sześciu kolumn siatki
-        {"klucz": "data_zgloszenia", "etykieta": "Data zgłoszenia pracy geodezyjnej",
+        {"klucz": "data_zgloszenia", "etykieta": "Data zgłoszenia",
          "typ": "date", "wymagane": True, "grupa": "Robota", "szerokosc": "polowa"},
-        {"klucz": "data_zakonczenia", "etykieta": "Data zakończenia pracy geodezyjnej",
+        {"klucz": "data_zakonczenia", "etykieta": "Data zakończenia",
          "typ": "date", "wymagane": True, "grupa": "Robota", "szerokosc": "polowa"},
 
         {"klucz": "rodzaj_pracy", "etykieta": "Rodzaj pracy", "typ": "select",

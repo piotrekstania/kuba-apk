@@ -46,9 +46,9 @@ start.bat
    Objaw u brata: przestają powstawać miniatury.
 2. **Obejrzyj złożony PDF** — nie liczby, tylko obrazek: podpisy, marginesy, stopka
    na całą szerokość, dokument niepuchnący na kolejną stronę.
-3. Złóż operat (`Złóż PDF operatu`) i sprawdź, że po konwersji **nie został**
+3. Złóż operat (`Złóż PDF`) i sprawdź, że po konwersji **nie został**
    `WINWORD.EXE` w Menedżerze zadań.
-4. Poprawianie operatu (`Popraw ten operat`): dane wracają do formularza, numer
+4. Poprawianie operatu (`Popraw`): dane wracają do formularza, numer
    operatu **się nie zmienia**, katalog ten sam, układ kafelków zapamiętany.
 
 ---

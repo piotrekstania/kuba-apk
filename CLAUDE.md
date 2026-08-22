@@ -436,7 +436,7 @@ też brat. Interfejs w całości po polsku.
 
 27. **Parser HTML ignoruje pierwszy znak nowej linii po `<textarea>`.** Wartość
    zaczynająca się pustą linijką (brat zsuwa nią wpis OFU do drugiego wiersza
-   sąsiedniej kolumny) traciłaby jedną linijkę **przy każdym** „Popraw ten operat”
+   sąsiedniej kolumny) traciłaby jedną linijkę **przy każdym** „Popraw”
    — po cichu i kumulatywnie, aż wpis wjedzie na złą wysokość. Dlatego makro
    `pole_sekcji` w `formularz.html` wstawia dodatkowe złamanie zaraz po `>`:
    parser zjada to z szablonu, a wartość brata zostaje nietknięta. Drugi zjadacz
