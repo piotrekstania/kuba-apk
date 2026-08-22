@@ -42,26 +42,24 @@
    wymagało przewinięcia kilkunastu kart. #}
 <div class="szczyt">
   <div>
-    {# Przy poprawianiu szczyt jest kopią szczytu strony operatu: numer i data pod nim,
-       bez zdań objaśniających. Kto tu trafia, klika „Popraw” z tamtej strony i wie,
-       co robi — a opis szablonu i notka o numeracji czytały się jak ostrzeżenia.
-       Przy nowym operacie te zdania zostają: tam naprawdę niosą informację. #}
+    {# Szczyt jest kopią szczytu strony operatu: nazwa (przy poprawianiu — numer), data
+       pod nią i akcje po prawej. Bez zdań objaśniających: opis szablonu i notka
+       o numeracji stały nad każdym formularzem, mówiły to samo za każdym razem
+       i czytały się jak ostrzeżenia. Numer, który zostanie nadany, i tak widać
+       w polu „Nr operatu” — stoi tam jako podpowiedź. #}
+    {# „Nowy” przed nazwą szablonu, żeby jednym spojrzeniem odróżnić zakładanie operatu
+       od poprawiania gotowego — oba formularze wyglądają poza tym tak samo. #}
     <h1>{% if edytuj and podglad_numeru %}Operat: {{ podglad_numeru }}
-        {%- else %}{{ szablon.nazwa }}{% endif %}</h1>
-    {% if edytuj %}{% if utworzono %}
+        {%- else %}Nowy {{ szablon.nazwa | lower }}{% endif %}</h1>
+    {% if edytuj and utworzono %}
     <p class="lekki">{{ utworzono.replace('T', ' ') }}</p>
     {% endif %}
-    {% elif szablon.opis %}<p class="szary">{{ szablon.opis }}</p>{% endif %}
   </div>
   <div class="pasek">
-    <button type="submit" form="operat" class="glowny">{{ 'Zapisz' if edytuj else 'Generuj dokument' }}</button>
+    <button type="submit" form="operat" class="glowny">Zapisz</button>
     <a href="{{ '/dokument/' ~ edytuj if edytuj else '/' }}" class="wtorny">Anuluj</a>
   </div>
 </div>
-{% if podglad_numeru and not edytuj %}
-<p class="szary pod-szczytem">Numer nadany temu dokumentowi:
-  <strong>{{ podglad_numeru }}</strong></p>
-{% endif %}
 
 <form id="operat" method="post" action="/generuj/{{ szablon.id }}{% if edytuj %}?edytuj={{ edytuj }}{% endif %}">
   {# Notatka do roboty — na samej górze, bo po to najczęściej wchodzi się w operat
@@ -484,7 +482,7 @@
   {# Ten sam komplet co na górze formularza i po tej samej stronie — wzrok wraca
      do zapisu w to samo miejsce, niezależnie od tego, czy formularz się przewinął. #}
   <div class="pasek do-prawej">
-    <button type="submit" class="glowny">{{ 'Zapisz' if edytuj else 'Generuj dokument' }}</button>
+    <button type="submit" class="glowny">Zapisz</button>
     <a href="{{ '/dokument/' ~ edytuj if edytuj else '/' }}" class="wtorny">Anuluj</a>
   </div>
 </form>

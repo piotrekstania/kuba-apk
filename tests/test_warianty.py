@@ -301,7 +301,7 @@ def test_listy_formatek_nazywaja_dokument_a_nie_szablon(klient):
     ustawienia = klient.get("/ustawienia").text
 
     assert "Operat" in strona_glowna                    # kafelek zostaje operatem
-    assert "<h1>Operat</h1>" in formularz
+    assert "<h1>Nowy operat</h1>" in formularz       # zakładanie, nie poprawianie
     assert "<td>Spis treści</td>" in formularz          # ...ale w tabelce formatek
     assert "Spis treści" in ustawienia
     assert ">Operat</option>" not in ustawienia

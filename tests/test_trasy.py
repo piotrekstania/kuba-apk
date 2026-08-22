@@ -260,15 +260,21 @@ def test_szczyt_formularza_przy_poprawianiu_jak_strona_operatu(klient):
     assert ">Zapisz<" in szczyt
 
 
-def test_szczyt_formularza_przy_nowym_operacie_mowi_o_numerze(klient):
-    """Nowy operat — nagłówek to nazwa szablonu, a numer dopiero będzie nadany."""
+def test_szczyt_formularza_przy_nowym_operacie(klient):
+    """Nowy operat — nagłówek to nazwa szablonu i nic poza nim.
+
+    Numer, który zostanie nadany, widać w polu „Nr operatu” jako podpowiedź, więc
+    zdanie o nim nad formularzem tylko mówiło to samo drugi raz.
+    """
     _dodaj_operat(klient)
 
     strona = klient.get("/nowy/spis_tresci_wzor").text
 
-    assert "<h1>Operat</h1>" in strona
-    assert "Numer nadany temu dokumentowi" in strona
-    assert ">Generuj dokument<" in strona
+    assert "<h1>Nowy operat</h1>" in strona
+    assert "Numer nadany temu dokumentowi" not in strona
+    assert ">Zapisz<" in strona
+    numer = f"001/{__import__('datetime').date.today().year}"
+    assert f'placeholder="{numer}"' in strona, "zniknął podgląd numeru z pola"
 
 
 def test_przyciski_bedace_linkami_tez_reaguja_na_najechanie():

@@ -109,9 +109,6 @@ h1 { font-size: 24px; margin: 0 0 6px; }
 .szczyt h1 { margin: 0; }
 .szczyt .pasek { margin: 0; }
 .pasek.do-prawej { justify-content: flex-end; }
-/* Zdanie o numeracji stoi pod kreską, tuż nad pierwszą kartą — dotyczy tego, co się
-   zaraz wypełnia, więc nie ma go po co wciągać do nagłówka. */
-.pod-szczytem { margin: -4px 0 14px; font-size: 13px; }
 /* Data mniejsza i bez pogrubienia: jest do sprawdzenia „czy to ten operat”, a nie
    do czytania w pierwszej kolejności. */
 .szczyt .lekki { margin: 2px 0 0; font-size: 16px; color: var(--szary); }
@@ -268,6 +265,17 @@ th.numer, td.numer { width: 44px; text-align: right; white-space: nowrap; }
 .uldk.dobrze { color: #1a7f4b; }
 .uldk.uwaga { color: #9a6700; }
 .akcje a { margin-right: 10px; font-size: 13px; }
+
+/* Lista operatów: numer roboty i data pośrodku swoich kolumn (razem z nagłówkami),
+   akcje przy prawej krawędzi. Wcześniej wszystko lgnęło do lewej i przy szerokim oknie
+   między datą a akcjami zostawała pusta połowa tabeli. `last-child` w nagłówku to
+   pusta komórka nad akcjami — bez niej kolumna nie ma czego wyrównać. */
+.lista.operaty th:nth-child(2), .lista.operaty tbody td:nth-child(2),
+.lista.operaty th:nth-child(3), .lista.operaty tbody td:nth-child(3) { text-align: center; }
+.lista.operaty td.akcje, .lista.operaty th:last-child { text-align: right; }
+/* Odstęp **między** akcjami, a nie za ostatnią — inaczej „Usuń” nie dochodzi do krawędzi. */
+.akcje a { margin-right: 0; margin-left: 10px; }
+.akcje form { margin-left: 10px; }
 .rzad-pliku { display: flex; gap: 8px; align-items: center; margin-bottom: 8px; }
 
 /* kafelki plików operatu — układanie kolejności myszą */
