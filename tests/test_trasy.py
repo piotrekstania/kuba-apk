@@ -184,6 +184,32 @@ def test_generowanie_z_formularza(klient):
     assert zapisane["punkty"] == [{"numer": "101", "x": "5712345.12"}]   # pusty wiersz odpadł
 
 
+def test_naglowek_operatu_czyta_sie_jak_wiersz_listy(klient):
+    """Numer operatu, numer roboty, data utworzenia — w tej samej kolejności co na liście.
+
+    Data jest do sprawdzenia „czy to ten operat”, więc idzie mniejsza i bez pogrubienia;
+    w wielkości nagłówka ciągnęła wzrok na siebie.
+    """
+    import re
+
+    from app.config import WEB
+
+    _dodaj_operat(klient)
+    klient.post("/generuj/spis_tresci_wzor", data=FORMULARZ, follow_redirects=False)
+    wpis = db.dokumenty()[0]
+
+    naglowek = re.search(r"<h1>(.*?)</h1>",
+                         klient.get(f"/dokument/{wpis['id']}").text, re.S).group(1)
+
+    assert naglowek.index(wpis["nr_operatu"]) < naglowek.index("GK.6640.1.2026")
+    assert "lekki" in naglowek, "data utworzenia bez własnego stylu — będzie pogrubiona"
+    assert naglowek.index("GK.6640.1.2026") < naglowek.index('class="lekki"')
+
+    style = (WEB / "static" / "style.css").read_text(encoding="utf-8")
+    lekki = style.split("h1 .lekki {")[1].split("}")[0]
+    assert "font-weight: 400" in lekki and "font-size" in lekki
+
+
 def test_strona_operatu_pokazuje_nadany_numer(klient):
     """Numer operatu nadaje program, więc w danych z formularza go nie ma.
 

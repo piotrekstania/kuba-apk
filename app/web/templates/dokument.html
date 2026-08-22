@@ -2,12 +2,13 @@
 {% block tytul %}{{ dokument.tytul }}{% endblock %}
 {% block tresc %}
 
-<h1>{{ dokument.tytul }}</h1>
-{# Numer operatu na wierzchu: to po nim rozpoznaje się robotę w ośrodku, a dotąd
-   nie było go na tej stronie w ogóle — widać było tylko nazwę katalogu. #}
-<p class="szary">{% if dokument.nr_operatu %}Operat <strong>{{ dokument.nr_operatu }}</strong>
-  · {% endif %}szablon: {{ dokument.szablon }}
-  · utworzono {{ dokument.utworzono.replace('T', ' ') }}</p>
+{# Nagłówek czyta się jak wiersz listy operatów: numer operatu, numer roboty, data
+   utworzenia. Numer operatu jest pierwszy, bo to po nim rozpoznaje się robotę
+   w ośrodku. Data zostaje bez pogrubienia — jest do sprawdzenia „czy to ten operat”,
+   a nie do czytania w pierwszej kolejności. #}
+<h1>{% if dokument.nr_operatu %}{{ dokument.nr_operatu }} · {% endif %}{{ dokument.tytul }}
+  <span class="lekki">· {{ dokument.utworzono.replace('T', ' ') }}</span></h1>
+<p class="szary">szablon: {{ dokument.szablon }}</p>
 
 {# Kolejność na tej stronie: nagłówek → przyciski → Opis → Wpisane dane. Wcześniej przed
    pierwszą treścią stały cztery bloki w czterech różnych stylach (szara linijka, biały

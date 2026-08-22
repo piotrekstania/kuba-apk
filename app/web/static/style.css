@@ -95,6 +95,10 @@ footer p { margin: 4px 0; }
 .liczniki strong { font-size: 16px; color: var(--akcent); }
 
 h1 { font-size: 24px; margin: 0 0 6px; }
+/* Data utworzenia w nagłówku operatu — mniejsza i bez pogrubienia: jest do sprawdzenia
+   „czy to ten operat”, a nie do czytania w pierwszej kolejności. W wielkości nagłówka
+   ciągnęła wzrok na siebie i rozpychała wiersz. */
+h1 .lekki { font-weight: 400; font-size: 16px; }
 h2 { font-size: 17px; margin: 32px 0 10px; }
 /* Podsekcja wewnątrz karty (`fieldset`) — np. dwie części karty TERYT. Mniejsza
    od nagłówka strony, bo kartę nazywa już jej `legend`. */
