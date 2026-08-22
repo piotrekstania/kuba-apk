@@ -888,7 +888,7 @@ def test_usuwanie_wpisu_bez_katalogu_nie_pyta_o_katalog_none(klient):
     strona = klient.get(f"/dokument/{wpis['id']}").text
 
     assert "None" not in strona
-    assert "z historii?" in strona
+    assert "z historii razem z jego dokumentami" in strona
     assert "Złóż PDF" not in strona.split('<div class="szczyt">')[1].split("<fieldset")[0]
 
 
@@ -1084,3 +1084,134 @@ def test_podglad_wykazu_wyrownuje_komorki_do_gory():
     assert komorki, "podgląd wykazów zniknął z arkusza stylów"
     assert any("vertical-align: top" in blok.split("}")[0] for blok in komorki), \
         "komórki podglądu środkują w pionie — krótsza kolumna pływa jak kiedyś w PDF"
+
+
+# --- pytania o usunięcie i stare karty po skasowaniu -------------------------
+
+def test_pytanie_o_usuniecie_nie_rozrywa_sie_na_apostrofie(klient):
+    """Apostrof w nazwie opisu wyłączał pytanie „Usunąć…?” — kasowało od razu.
+
+    Jinja zamienia apostrof na `&#39;`, ale parser HTML odkodowuje go z powrotem, zanim
+    przeglądarka skompiluje `onsubmit` — literał JS w apostrofach rozrywał się i `confirm`
+    w ogóle nie był wołany. Treść pytania siedzi więc w atrybucie danych, który Jinja
+    escapuje poprawnie, a JS czyta gotowy napis.
+    """
+    klient.post("/ustawienia/opisy", data={"nazwa": "Wg O'Briena", "opis": "<p>x</p>"},
+                follow_redirects=False)
+    _dodaj_operat(klient)
+    klient.post("/generuj/spis_tresci_wzor", data={**FORMULARZ, "pole__nr_roboty": "GK.1'2026"},
+                follow_redirects=False)
+    wpis = db.dokumenty()[0]
+
+    ustawienia = klient.get("/ustawienia").text
+    lista = klient.get("/").text
+    strona = klient.get(f"/dokument/{wpis['id']}").text
+
+    assert 'data-pytanie="Usunąć opis „Wg O&#39;Briena”?' in ustawienia
+    for tresc in (ustawienia, lista, strona):
+        # statyczne pytania bez wstawianych danych („Wyczyścić zapamiętane obręby?”)
+        # mogą zostać w literale — rozrywa go tylko tekst wpisany przez użytkownika
+        assert "confirm('Usunąć" not in tresc, "treść pytania znów siedzi w literale JS"
+        assert "confirm(this.dataset.pytanie)" in tresc
+
+
+def test_pytanie_o_usuniecie_mowi_co_naprawde_zniknie(klient):
+    """Operat w archiwum: kasuje się sam wpis, a pytanie straszyło katalogiem z mapami.
+
+    Strona operatu w archiwum pokazywała też „Złóż PDF”, które lista już chowa —
+    kliknięcie wyrzucało na listę z komunikatem. Oba ekrany mają mówić to samo.
+    """
+    import shutil
+
+    _dodaj_operat(klient)
+    klient.post("/generuj/spis_tresci_wzor", data=FORMULARZ, follow_redirects=False)
+    wpis = db.dokumenty()[0]
+
+    for tresc in (klient.get("/").text, klient.get(f"/dokument/{wpis['id']}").text):
+        assert f"wraz z całym katalogiem {wpis['katalog']}" in tresc
+
+    shutil.rmtree(klient.srodowisko.wyniki / wpis["katalog"])      # „przeniósł do archiwum”
+    lista = klient.get("/").text
+    strona = klient.get(f"/dokument/{wpis['id']}").text
+
+    for tresc in (lista, strona):
+        assert "z historii? Jego katalogu nie ma już w wyniki" in tresc
+        assert "także z plikami" not in tresc, "pytanie straszy plikami, których nie skasuje"
+    szczyt = strona.split('<div class="szczyt">')[1].split("<fieldset")[0]
+    assert "Złóż PDF" not in szczyt, "strona operatu w archiwum oferuje składanie"
+    assert "w archiwum" in szczyt
+
+
+def test_powielenie_skasowanego_operatu_tlumaczy_dlaczego(klient):
+    """„Powiel” ze starej karty po skasowaniu operatu otwierało pusty formularz bez słowa."""
+    from urllib.parse import unquote
+
+    _dodaj_operat(klient)
+    klient.post("/generuj/spis_tresci_wzor", data=FORMULARZ, follow_redirects=False)
+    wpis = db.dokumenty()[0]
+    klient.post(f"/dokument/{wpis['id']}/usun", follow_redirects=False)
+
+    odpowiedz = klient.get(f"/nowy/spis_tresci_wzor?kopiuj={wpis['id']}", follow_redirects=False)
+
+    assert odpowiedz.status_code == 303
+    assert "powielić" in unquote(odpowiedz.headers["location"])
+
+
+def test_otwarcie_katalogu_skasowanego_wpisu_z_listy(klient, monkeypatch):
+    """Komunikat o archiwum mówił „wpis w historii zostaje” nad listą, na której go nie ma."""
+    from urllib.parse import unquote
+
+    from app import operaty
+
+    monkeypatch.setattr(operaty, "otworz_w_systemie", lambda _: None)
+    _dodaj_operat(klient)
+    klient.post("/generuj/spis_tresci_wzor", data=FORMULARZ, follow_redirects=False)
+    wpis = db.dokumenty()[0]
+    klient.post(f"/dokument/{wpis['id']}/usun", follow_redirects=False)
+
+    odpowiedz = klient.post(f"/dokument/{wpis['id']}/otworz-katalog?powrot=lista",
+                            follow_redirects=False)
+
+    assert odpowiedz.headers["location"].startswith("/?blad=")
+    assert "nie ma już w historii" in unquote(odpowiedz.headers["location"])
+    assert "zostaje" not in unquote(odpowiedz.headers["location"])
+
+
+def test_wiersz_spoza_historii_ma_otworz_katalog(klient, monkeypatch):
+    """Pomoc obiecuje „Otwórz katalog” na liście — także przy operacie przywróconym z archiwum.
+
+    Taki operat nie ma wpisu w bazie, więc przycisk idzie trasą po nazwie katalogu
+    i, jak reszta listy, wraca na listę.
+    """
+    from app import operaty
+
+    otwarte = []
+    monkeypatch.setattr(operaty, "otworz_w_systemie", otwarte.append)
+    katalog = klient.srodowisko.wyniki / "777.2026"
+    katalog.mkdir(parents=True)
+    (katalog / "operat.json").write_text(
+        json.dumps({"nr_operatu": "777/2026", "nr_roboty": "G.99.2026",
+                    "utworzono": "2026-07-20T08:00:00", "dane": {}}, ensure_ascii=False),
+        encoding="utf-8")
+
+    lista = klient.get("/").text
+    assert 'action="/scal/777.2026/otworz-katalog?powrot=lista"' in lista
+
+    odpowiedz = klient.post("/scal/777.2026/otworz-katalog?powrot=lista", follow_redirects=False)
+    assert odpowiedz.headers["location"] == "/"
+    assert [k.name for k in otwarte] == ["777.2026"]
+    # ze strony składania — jak dotąd, z powrotem na nią
+    assert klient.post("/scal/777.2026/otworz-katalog",
+                       follow_redirects=False).headers["location"] == "/scal/777.2026"
+
+
+def test_pomoc_opisuje_ekran_ktory_jest(klient):
+    """Pomoc mówiła o „Pobierz PDF” (przycisk zniknął 31.07), „Wpisanych danych”,
+    „danych stałych” i „pobieraniu pliku Worda” — rzeczach, których na ekranie nie ma."""
+    pomoc = klient.get("/pomoc").text
+
+    for nieaktualne in ("Pobierz PDF", "Wpisanymi danymi", "Popraw ten", "dane stałe",
+                        "da się pobrać", "dwa różne przyciski"):
+        assert nieaktualne not in pomoc, f"Pomoc opisuje ekran, którego nie ma: {nieaktualne!r}"
+    assert "<strong>Usuń</strong>" in pomoc, "Pomoc milczy o czerwonym „Usuń”"
+    assert "prawy dolny róg" in pomoc, "Pomoc nie mówi, że edytor da się powiększyć"

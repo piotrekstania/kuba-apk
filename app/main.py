@@ -514,12 +514,14 @@ def formularz(request: Request, identyfikator: str, kopiuj: int | None = None,
                                 else pole.domyslnie)
     # „Powiel” robi nowy operat z tymi samymi danymi, „Popraw” wraca do tego samego
     zrodlo = db.dokument(edytuj or kopiuj) if (edytuj or kopiuj) else None
-    if edytuj and zrodlo is None:
-        # Stara zakładka z „Popraw” po skasowaniu operatu. Formularz brał wtedy kolejny
-        # numer z licznika i ogłaszał „Operat: 003/2026”, jakby poprawiał istniejący —
-        # a zapis zakładał nowy. Nie ma czego poprawiać, więc wracamy na listę.
+    if (edytuj or kopiuj) and zrodlo is None:
+        # Stara zakładka z „Popraw” albo „Powiel” po skasowaniu operatu. Formularz brał
+        # wtedy kolejny numer z licznika i ogłaszał „Operat: 003/2026”, jakby poprawiał
+        # istniejący — a zapis zakładał nowy; „Powiel” otwierał po cichu pusty formularz,
+        # jakby nie miał czego skopiować. Nie ma czego, więc wracamy na listę i mówimy to.
+        czynnosc = "poprawić" if edytuj else "powielić"
         return RedirectResponse("/?blad=" + quote(
-            "Operatu, który chcesz poprawić, nie ma już w historii — pewnie został "
+            f"Operatu, który chcesz {czynnosc}, nie ma już w historii — pewnie został "
             "usunięty. Jeśli to nowa robota, zacznij od „Nowy operat”."), status_code=303)
     if zrodlo:
         wartosci.update(json.loads(zrodlo["dane_json"]))
@@ -766,7 +768,10 @@ def dokument(request: Request, dokument_id: int, blad: str | None = None):
     if uzyte:
         grupy.append({"nazwa": "Użyte formatki", "pola": uzyte})
 
-    return _widok(request, "dokument.html", dokument=wiersz, blad=blad, grupy=grupy)
+    # Czy katalog jest na dysku — liczone tak samo jak na liście: operat przeniesiony
+    # do archiwum zostaje w historii, ale nie ma czego składać ani kasować z dysku.
+    return _widok(request, "dokument.html", dokument=wiersz, blad=blad, grupy=grupy,
+                  na_dysku=bool(wiersz["katalog"]) and (WYNIKI / wiersz["katalog"]).is_dir())
 
 
 def _uzyte_formatki(wybor: dict[str, str],
@@ -907,7 +912,12 @@ def otworz_katalog_dokumentu(request: Request, dokument_id: int, powrot: str | N
     # odesłać nigdzie indziej.
     cel = "/" if powrot == "lista" else f"/dokument/{dokument_id}"
     wiersz = db.dokument(dokument_id)
-    katalog = operaty.katalog_po_nazwie(wiersz["katalog"] or "") if wiersz else None
+    if wiersz is None:
+        # Stara karta po skasowaniu operatu — komunikat o archiwum mówiłby „wpis
+        # w historii zostaje” nad listą, na której tego wpisu już nie ma.
+        return RedirectResponse("/?blad=" + quote(
+            "Tego operatu nie ma już w historii — pewnie został usunięty."), status_code=303)
+    katalog = operaty.katalog_po_nazwie(wiersz["katalog"] or "")
     if katalog is None:
         return RedirectResponse(cel + "?blad=" + quote(
             "Katalogu tego operatu nie ma już w wyniki — pewnie przeniesiony "
@@ -917,13 +927,15 @@ def otworz_katalog_dokumentu(request: Request, dokument_id: int, powrot: str | N
 
 
 @app.post("/scal/{nazwa}/otworz-katalog")
-def otworz_katalog_operatu(request: Request, nazwa: str):
+def otworz_katalog_operatu(request: Request, nazwa: str, powrot: str | None = None):
+    # `powrot=lista` — z wiersza „spoza historii” na liście (operat bez wpisu w bazie,
+    # więc trasa po identyfikatorze nie ma jak go znaleźć); wraca na listę jak reszta.
     katalog = operaty.katalog_po_nazwie(nazwa)
     if katalog is None:
         return RedirectResponse("/?blad=" + quote(
             f"Katalogu operatu „{nazwa}” nie ma już w wyniki — pewnie przeniesiony "
             "do archiwum."), status_code=303)
-    return _otworz(request, katalog, f"/scal/{quote(nazwa)}")
+    return _otworz(request, katalog, "/" if powrot == "lista" else f"/scal/{quote(nazwa)}")
 
 
 def _otworz(request: Request, katalog: Path, powrot: str) -> RedirectResponse:

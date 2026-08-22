@@ -133,9 +133,9 @@
 </table>
 <p class="szary">Gdy PDF się nie zrobi, a Word jest zainstalowany, najczęstsza przyczyna to
   Word czekający z otwartym oknem (aktywacja pakietu Office, pytanie o zapis, tryb chroniony).
-  Wystarczy otworzyć Worda ręcznie, zamknąć to okno i kliknąć „Pobierz PDF” jeszcze raz.</p>
+  Wystarczy otworzyć Worda ręcznie, zamknąć to okno i kliknąć „Złóż PDF” jeszcze raz.</p>
 <p class="szary">Bez żadnego z nich generowanie plików .docx działa normalnie; nie działa tylko
-  przycisk „Pobierz PDF" i łączenie dokumentów w jeden PDF.</p>
+  „Złóż PDF” — podglądy stron i sklejenie dokumentów w jeden plik.</p>
 
 <h2 id="warunkowe">Pola zależne od innych</h2>
 <p>Pole może być wyszarzone, dopóki nie zaznaczysz innego. Nie znika — widać, że jest,
@@ -190,7 +190,8 @@ Wykonano: brak
   a nie z tego, w jakiej kolejności klikałeś.</p>
 
 <h2 id="poprawianie">Poprawianie gotowego operatu</h2>
-<p>Na stronie operatu są dwa różne przyciski i warto je odróżniać:</p>
+<p>Na stronie operatu i w wierszu listy jest ten sam komplet przycisków: „Złóż PDF”,
+  „Otwórz katalog”, „Popraw”, „Powiel” i „Usuń”. Trzy z nich warto odróżniać:</p>
 <table class="lista">
   <tr><th class="waski">Przycisk</th><th>Co robi</th></tr>
   <tr><td><strong>Popraw</strong></td>
@@ -200,6 +201,11 @@ Wykonano: brak
   <tr><td><strong>Powiel</strong></td>
       <td>nowa robota z tymi samymi danymi na start: nowy numer, nowy katalog.
           Używaj przy kolejnym zleceniu w tym samym obrębie</td></tr>
+  <tr><td><strong>Usuń</strong></td>
+      <td>kasuje operat z historii <strong>razem z całym katalogiem</strong> — także
+          z mapami i skanami, które sam tam włożyłeś; zawsze najpierw pyta.
+          Operat przeniesiony wcześniej do archiwum znika tylko z listy — folder
+          na dysku archiwalnym zostaje</td></tr>
 </table>
 <p class="szary">Przy poprawianiu pliki Worda w katalogu operatu nadpisują się nowymi.
   To, co dołożyłeś sam — mapy, skany, wykaz z C-Geo — zostaje nietknięte.</p>
@@ -220,8 +226,8 @@ Wykonano: brak
 <p><strong>Do żadnego dokumentu to nie wchodzi</strong> — nie ma czego szukać w spisie
   treści ani w sprawozdaniu. Opis jest tylko dla ciebie i widać go w trzech miejscach:
   na liście operatów na stronie głównej (drobniejszym pismem pod operatem), na stronie
-  operatu nad „Wpisanymi danymi” oraz w formularzu, gdy wejdziesz w <em>Popraw ten
-  operat</em>.</p>
+  operatu w karcie „Opis” nad resztą danych oraz w formularzu, gdy wejdziesz
+  w <em>Popraw</em>.</p>
 <p class="szary">Zapisuje się razem z operatem, więc przeżywa aktualizację programu.
   Siedzi w dwóch miejscach naraz — w historii i w pliku <code>operat.json</code>
   w katalogu operatu — dzięki czemu zostaje i wtedy, gdy przeniesiesz katalog do
@@ -233,6 +239,8 @@ Wykonano: brak
   w Ustawieniach) przyjmuje formatowanie. Ustawiasz je przyciskami <strong>B</strong>,
   <em>I</em>, <u>U</u> nad polem albo skrótami <kbd>Ctrl+B</kbd>, <kbd>Ctrl+I</kbd>,
   <kbd>Ctrl+U</kbd>.</p>
+<p>Pole da się powiększyć: złap za jego prawy dolny róg i pociągnij w dół — długi
+  opis przebiegu prac nie musi mieścić się w małym okienku.</p>
 <p><strong>Możesz też wkleić gotowy tekst z Worda</strong> — pogrubienia, kursywa,
   podkreślenie, przekreślenie oraz indeksy górne i dolne przyjadą razem z nim.</p>
 <p class="szary">Czego wklejka <strong>nie</strong> przynosi: kroju i rozmiaru czcionki
@@ -449,7 +457,7 @@ Wykonano: brak
   operatu i na stronie składania) otwiera go od razu w Eksploratorze.</p>
 
 <h2 id="bledy">Gdy program pokaże błąd</h2>
-<p>Nic nie ginie: dokumenty, historia, numeracja i dane stałe zostają na dysku takie, jakie były.
+<p>Nic nie ginie: dokumenty, historia i numeracja zostają na dysku takie, jakie były.
   Zwykle wystarczy wrócić na stronę główną i spróbować jeszcze raz.</p>
 <p>Najczęstsze przyczyny i co z nimi zrobić:</p>
 <table class="lista">
@@ -459,7 +467,7 @@ Wykonano: brak
           np. <code>{{ '{{ nr_roboty }' }}</code> zamiast <code>{{ '{{ nr_roboty }}' }}</code></td></tr>
   <tr><td>PDF-ie</td>
       <td>czy Word nie czeka gdzieś z otwartym oknem (patrz <a href="#pdf">wyżej</a>);
-          sam plik Worda zawsze da się pobrać, nawet gdy PDF się nie uda</td></tr>
+          plik Worda i tak leży w katalogu operatu (<em>Otwórz katalog</em>), nawet gdy PDF się nie uda</td></tr>
   <tr><td>dołączanym pliku</td>
       <td>czy to na pewno PDF albo dokument Worda i czy otwiera się normalnie
           (uszkodzone i zabezpieczone hasłem PDF-y nie dają się skleić)</td></tr>

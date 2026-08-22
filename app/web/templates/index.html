@@ -68,11 +68,12 @@
          odsyła z powrotem na listę, jest gorszy niż brak przycisku #}
       {% if operat.katalog and operat.na_dysku %}
       <a class="glowny" href="/scal/{{ operat.katalog | urlencode }}">Złóż PDF</a>{% endif %}
-      {% if operat.id and operat.na_dysku %}
-      {# katalogu operatu przeniesionego do archiwum nie ma czego otwierać #}
-      {# `powrot=lista`: po otwarciu Eksploratora brat ma zostać na liście, a nie trafić
+      {% if operat.na_dysku %}
+      {# katalogu operatu przeniesionego do archiwum nie ma czego otwierać; operat
+         spoza historii (bez wpisu w bazie) otwiera się trasą po nazwie katalogu.
+         `powrot=lista`: po otwarciu Eksploratora brat ma zostać na liście, a nie trafić
          na stronę operatu, o którą nie prosił #}
-      <form method="post" action="/dokument/{{ operat.id }}/otworz-katalog?powrot=lista">
+      <form method="post" action="{% if operat.id %}/dokument/{{ operat.id }}/otworz-katalog{% else %}/scal/{{ operat.katalog | urlencode }}/otworz-katalog{% endif %}?powrot=lista">
         <button type="submit" class="wtorny">Otwórz katalog</button>
       </form>
       {% endif %}
@@ -81,8 +82,13 @@
          wchodzenia w dokument tylko po to, żeby kliknąć drugi raz #}
       <a class="wtorny" href="/nowy/{{ operat.szablon }}?edytuj={{ operat.id }}">Popraw</a>
       <a class="wtorny" href="/nowy/{{ operat.szablon }}?kopiuj={{ operat.id }}">Powiel</a>
+      {# Pytanie w atrybucie danych, nie w literale JS (apostrof w nazwie rozrywał
+         literał i kasowało bez pytania — patrz dokument.html), i mówiące, co naprawdę
+         zniknie: katalog z plikami brata albo — przy operacie w archiwum — sam wpis. #}
+      {% set nazwa_operatu = operat.nr_operatu or operat.katalog or operat.nr_roboty %}
       <form method="post" action="/dokument/{{ operat.id }}/usun"
-            onsubmit="return confirm('Usunąć operat {{ operat.nr_operatu or operat.katalog }} wraz z całym katalogiem — także z plikami, które sam tam włożyłeś?')">
+            data-pytanie="{% if operat.katalog and operat.na_dysku %}Usunąć operat {{ nazwa_operatu }} wraz z całym katalogiem {{ operat.katalog }} — także z plikami, które sam tam włożyłeś?{% elif operat.katalog %}Usunąć operat {{ nazwa_operatu }} z historii? Jego katalogu nie ma już w wyniki (archiwum), więc z dysku nic nie zniknie.{% else %}Usunąć operat {{ nazwa_operatu }} z historii razem z jego dokumentami w wyniki?{% endif %}"
+            onsubmit="return confirm(this.dataset.pytanie)">
         <button class="niebezpieczny" type="submit">Usuń</button>
       </form>
       {% endif %}
