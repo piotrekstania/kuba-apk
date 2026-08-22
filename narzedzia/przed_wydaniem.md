@@ -58,41 +58,19 @@ start.bat
 Wszystko od ostatniego wydania — numer i skrót commita znajdziesz w `ZMIANY.md`
 i `git log`. Dopisuj punkty przy każdej rundzie zmian, kasuj po wydaniu.
 
-Runda znów **czysto ekranowa** — poza jedną zmianą w `app/main.py` (formularz dostaje
-datę utworzenia poprawianego operatu). Żaden `.docx` ani ścieżka PDF nie były ruszane.
-
-1. **Szczyt strony operatu**: „Operat: 004/2026”, pod spodem data utworzenia, po prawej
-   komplet akcji („Złóż PDF”, „Otwórz katalog”, „Popraw”, „Powiel”, „Usuń”), pod tym
-   kreska. Sprawdź przy **zwężonym oknie**, czy pasek zsuwa się pod numer, zamiast
-   uciekać poza ekran.
-2. **Kasowanie operatu** przeniesione z dołu strony na górę — potwierdzenie ma nadal
-   wyskakiwać, a po skasowaniu ma zniknąć katalog.
-3. **Szczyt formularza**: przy „Popraw” wygląda jak szczyt strony operatu, przy nowym
-   operacie nagłówek to „Nowy operat”. **Górny „Zapisz” musi zapisywać** — stoi poza
-   formularzem i wskazuje go atrybutem `form`, więc kliknij go w prawdziwej przeglądarce
-   (Edge/Chrome u brata), a nie tylko na dole strony.
-4. **Ostrzeżenie o niezapisanych zmianach** nadal wyskakuje przy „Anuluj” i przy
-   zamykaniu karty, a po kliknięciu „Zapisz” już nie.
-5. **Lista operatów**: akcje jako małe przyciski przy prawej krawędzi, wiersz nie urósł.
-   „Otwórz katalog” ma otwierać Eksplorator na wierzchu (pułapka 20) — to jedyna
-   z tych rzeczy, której nie da się sprawdzić na Linuksie.
-6. **Edytor opisów** (Ustawienia i „Przebieg wykonanych prac”): uchwyt w prawym dolnym
-   rogu ma powiększać pole.
-7. **Podpisy pól**: „Data zgłoszenia” i „Data zakończenia” zamiast pełnych nazw;
-   w wykazach długa wartość (rodzaj budynku wg KŚT) ma być wyśrodkowana także wtedy,
-   gdy zawija się na dwie linijki, a użytki wpisane w kilku linijkach mają zostać
-   wyrównane do lewej.
-8. **Kolumna „Utworzono”** na liście zamiast „Data”.
-9. Operat **sprzed** tej rundy (np. z historii) — czy strona i formularz poprawiania
-   nadal się otwierają.
+*(pusto — wydanie 2026.08.22-101 poszło 22.08. Runda była ekranowa, więc rytuał
+przeszedł w całości na Linuksie: pytest, review dwuetapowy, dziewięć punktów części B
+obejrzane w headless Chrome na osobnej instancji i górny „Zapisz” kliknięty
+w prawdziwej przeglądarce. Na Windowsie do sprawdzenia przy okazji: „Otwórz katalog”
+z listy — Eksplorator na wierzchu, a przeglądarka zostaje na liście.)*
 
 ---
 
 ## C. Zlecenie review (do wklejenia Fable)
 
-> Zrób przegląd kodu zmian z zakresu `40a63b8..HEAD` w tym repozytorium
-> (`git log --oneline 40a63b8..HEAD`, `git diff 40a63b8..HEAD`) — to wszystko, co
-> przyszło po ostatnim wydaniu (`2026.08.20-100`). Kontekst projektu jest w `CLAUDE.md` —
+> Zrób przegląd kodu zmian z zakresu `b29bcd0..HEAD` w tym repozytorium
+> (`git log --oneline b29bcd0..HEAD`, `git diff b29bcd0..HEAD`) — to wszystko, co
+> przyszło po ostatnim wydaniu (`2026.08.22-101`). Kontekst projektu jest w `CLAUDE.md` —
 > przeczytaj go najpierw, zwłaszcza listę pułapek i zasady pracy nad kodem.
 > Odpowiadaj po polsku.
 >
