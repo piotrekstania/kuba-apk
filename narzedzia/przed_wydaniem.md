@@ -58,9 +58,33 @@ start.bat
 Wszystko od ostatniego wydania — numer i skrót commita znajdziesz w `ZMIANY.md`
 i `git log`. Dopisuj punkty przy każdej rundzie zmian, kasuj po wydaniu.
 
-*(pusto — wydanie 2026.08.20-100 poszło 20.08; dwanaście punktów rundy ekranowej
-sprawdzone w przeglądarce na kopii roboczej, stary operat z 14.08 otwiera się
-normalnie)*
+Runda znów **czysto ekranowa** — poza jedną zmianą w `app/main.py` (formularz dostaje
+datę utworzenia poprawianego operatu). Żaden `.docx` ani ścieżka PDF nie były ruszane.
+
+1. **Szczyt strony operatu**: „Operat: 004/2026”, pod spodem data utworzenia, po prawej
+   komplet akcji („Złóż PDF”, „Otwórz katalog”, „Popraw”, „Powiel”, „Usuń”), pod tym
+   kreska. Sprawdź przy **zwężonym oknie**, czy pasek zsuwa się pod numer, zamiast
+   uciekać poza ekran.
+2. **Kasowanie operatu** przeniesione z dołu strony na górę — potwierdzenie ma nadal
+   wyskakiwać, a po skasowaniu ma zniknąć katalog.
+3. **Szczyt formularza**: przy „Popraw” wygląda jak szczyt strony operatu, przy nowym
+   operacie nagłówek to „Nowy operat”. **Górny „Zapisz” musi zapisywać** — stoi poza
+   formularzem i wskazuje go atrybutem `form`, więc kliknij go w prawdziwej przeglądarce
+   (Edge/Chrome u brata), a nie tylko na dole strony.
+4. **Ostrzeżenie o niezapisanych zmianach** nadal wyskakuje przy „Anuluj” i przy
+   zamykaniu karty, a po kliknięciu „Zapisz” już nie.
+5. **Lista operatów**: akcje jako małe przyciski przy prawej krawędzi, wiersz nie urósł.
+   „Otwórz katalog” ma otwierać Eksplorator na wierzchu (pułapka 20) — to jedyna
+   z tych rzeczy, której nie da się sprawdzić na Linuksie.
+6. **Edytor opisów** (Ustawienia i „Przebieg wykonanych prac”): uchwyt w prawym dolnym
+   rogu ma powiększać pole.
+7. **Podpisy pól**: „Data zgłoszenia” i „Data zakończenia” zamiast pełnych nazw;
+   w wykazach długa wartość (rodzaj budynku wg KŚT) ma być wyśrodkowana także wtedy,
+   gdy zawija się na dwie linijki, a użytki wpisane w kilku linijkach mają zostać
+   wyrównane do lewej.
+8. **Kolumna „Utworzono”** na liście zamiast „Data”.
+9. Operat **sprzed** tej rundy (np. z historii) — czy strona i formularz poprawiania
+   nadal się otwierają.
 
 ---
 
