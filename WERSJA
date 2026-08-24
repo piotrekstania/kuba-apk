@@ -1,4 +1,3 @@
-2026.08.24-110
+2026.08.24-111
 Zmiany:
-- okno „co nowego” przewija samą listę wydań, a przycisk OK stoi na dole i widać go od razu — przy kilku wydaniach naraz okno otwierało się przewinięte na sam koniec, więc numer nowej wersji i najświeższe zmiany zostawały nad krawędzią ekranu
-- nad przyciskiem OK jest kreska, żeby było widać, że treść nad nią się przewija
+- numery operatów na liście mają teraz kolor akcentu i nie zmieniają go po kliknięciu — wcześniej odwiedzony operat robił się fioletowy i lista miała numery w dwóch kolorach naraz

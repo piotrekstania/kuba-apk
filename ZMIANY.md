@@ -3,6 +3,11 @@
 Co doszło w kolejnych wersjach programu. Ten sam opis pokazuje się raz, na stronie
 głównej, zaraz po tym jak program sam się zaktualizuje.
 
+## 2026.08.24-111 — 2026-08-24
+
+Zmiany:
+- numery operatów na liście mają teraz kolor akcentu i nie zmieniają go po kliknięciu — wcześniej odwiedzony operat robił się fioletowy i lista miała numery w dwóch kolorach naraz
+
 ## 2026.08.24-110 — 2026-08-24
 
 Zmiany:
