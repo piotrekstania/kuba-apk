@@ -58,8 +58,9 @@ start.bat
 Wszystko od ostatniego wydania — numer i skrót commita znajdziesz w `ZMIANY.md`
 i `git log`. Dopisuj punkty przy każdej rundzie zmian, kasuj po wydaniu.
 
-*(pusto — wydanie 2026.08.24-108 poszło 24.08 jako porządkowe: użytkownik testuje
-przeskok -106 -> -108 na swojej kopii — okno ma pokazać listy -108 i -107 naraz)*
+*(pusto — wydanie 2026.08.24-109 poszło 24.08; rozruch z nazwy kopii sprawdzony
+na plikach odtworzonych ze zgłoszenia: przeskok -106 -> -108 bez pliku OK dał okno
+z oboma wydaniami. U użytkownika okno -109 pokaże jedno wydanie — plik OK już ma)*
 
 ---
 
