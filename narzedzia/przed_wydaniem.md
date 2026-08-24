@@ -66,9 +66,9 @@ przypadkach łącznie z „0," w połowie pisania)*
 
 ## C. Zlecenie review (do wklejenia Fable)
 
-> Zrób przegląd kodu zmian z zakresu `b29bcd0..HEAD` w tym repozytorium
-> (`git log --oneline b29bcd0..HEAD`, `git diff b29bcd0..HEAD`) — to wszystko, co
-> przyszło po ostatnim wydaniu (`2026.08.22-101`). Kontekst projektu jest w `CLAUDE.md` —
+> Zrób przegląd kodu zmian z zakresu `6683bfa..HEAD` w tym repozytorium
+> (`git log --oneline 6683bfa..HEAD`, `git diff 6683bfa..HEAD`) — to wszystko, co
+> przyszło po ostatnim wydaniu (`2026.08.24-102`). Kontekst projektu jest w `CLAUDE.md` —
 > przeczytaj go najpierw, zwłaszcza listę pułapek i zasady pracy nad kodem.
 > Odpowiadaj po polsku.
 >
@@ -76,28 +76,21 @@ przypadkach łącznie z „0," w połowie pisania)*
 > u niego sama przy starcie — więc szukam **błędów, które on zobaczy**, a nie
 > uwag o stylu.
 >
-> Na czym się skup:
-> 1. `app/generator.py` — `_zmienione_w_wierszu` i grupowanie kluczy po wierszu formatki
->    (`_wiersz_tabeli`, próg „więcej niż dwa klucze”). Czy da się doprowadzić do
->    zaczerwienienia czegoś, co się nie zmieniło: scalone komórki, wiersz z trzema
->    parami, dwa różne wykazy w jednym pliku, pętla obejmująca cały wiersz? Czy wykaz
->    budynku na pewno zachowuje się jak dotąd?
-> 2. `formularz.html` — kontrola sumy PPU (JS): parsowanie kropki i przecinka, wpis
->    w połowie pisania (`0,`), rozdzielanie enterem/spacją/średnikiem, wartości ujemne
->    i bardzo długie listy, klonowanie karty, „Popraw” z danymi z bazy. Czy komunikat
->    może trafić do **cudzej** karty albo cudzego stanu? Czy tolerancja 0,00005 nie daje
->    fałszywego „zgadza się” przy danych z czterema miejscami po przecinku?
-> 3. `formularz.html` + `.json` — `suma_rowna` i wiersz `kontrola-sum`: czy liczba
->    komórek zgadza się z nagłówkiem tabeli przy sekcji **bez** podkolumn i czy wiersz
->    nie pojawia się w sekcji, która nie ma czego kontrolować? Czy wzorzec do klonowania
->    ma dokładnie to samo co karta pierwsza?
-> 4. `app/main.py` — dane operatu bywają starsze niż dzisiejszy szablon: pole skasowane,
->    zmieniony typ, wpis niebędący słownikiem. Czy któraś ścieżka wywala stronę zamiast
->    pominąć dane?
-> 5. Testy dołożone w tej rundzie — czy sprawdzają zachowanie, czy tylko to, że kod się
->    wykonał; czy któryś zostawia pliki w prawdziwych `dane/`/`wyniki/`? Kontrola sumy
->    jest w JS, więc pytest sprawdza samo podpięcie — czy da się je zepsuć tak, żeby
->    testy nadal przechodziły?
+> Na czym się skup — **te punkty dopisujesz pod bieżącą rundę** (skasuj po wydaniu
+> razem z częścią B). Poniżej zostaje to, o co warto pytać przy każdej rundzie:
+> 1. `app/main.py` — dane operatu bywają starsze niż dzisiejszy szablon: pole
+>    skasowane, zmieniony typ, wpis niebędący słownikiem, podpole, którego wtedy
+>    nie było. Czy któraś ścieżka wywala stronę zamiast pominąć dane?
+> 2. Szablony HTML — czy znaczniki domykają się przy **każdej** kombinacji danych
+>    (grupa bez sekcji, sekcja bez wierszy, brak opisu)? Czy wzorzec do klonowania
+>    kart ma dokładnie to samo co karta pierwsza?
+> 3. Kontekst stron budowany poza `_widok` — brak jednej zmiennej to w Jinja wyjątek,
+>    nie pustka, i strona po cichu leci do zapasowego gołego HTML-a (pułapka 28).
+> 4. Cokolwiek, co zapamiętuje węzły XML — nie po `id()` obiektu lxml (pułapka 29):
+>    ten sam `id()` bywa po zebraniu śmieci użyty dla innego węzła, a objaw wychodzi
+>    dopiero w CI.
+> 5. Testy dołożone w tej rundzie — czy sprawdzają zachowanie, czy tylko to, że kod
+>    się wykonał; czy któryś zostawia pliki w prawdziwych `dane/`/`wyniki/`?
 
 > Czego **nie** zgłaszać: nazw po polsku (to konwencja projektu), braku typów
 > generycznych, sugestii przejścia na framework frontendowy, propozycji drugiego
