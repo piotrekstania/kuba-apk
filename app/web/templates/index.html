@@ -20,12 +20,21 @@
 <dialog class="okno-nowosci" id="co-nowego">
   <h2>Program zaktualizował się do wersji
     <span class="wersja-nowosci">{{ co_nowego.wersja }}</span></h2>
-  {% if co_nowego.wstep %}<p class="wstep-wydania">{{ co_nowego.wstep }}</p>{% endif %}
-  {% for grupa in co_nowego.grupy %}
+  {# Wydania **od ostatniego „OK”**, od najnowszego. Brat uruchamia program co kilka
+     dni, a wydania idą częściej — przy pokazywaniu samego ostatniego gubiło się
+     wszystko, co doszło po drodze. Przy jednym wydaniu nagłówek z numerem byłby
+     powtórzeniem tego z góry, więc pokazuje się dopiero od dwóch. #}
+  {% for wydanie in co_nowego.wydania %}
+  {% if co_nowego.wydania | length > 1 %}
+  <h3 class="wersja-nowosci">{{ wydanie.wersja }}</h3>
+  {% endif %}
+  {% if wydanie.wstep %}<p class="wstep-wydania">{{ wydanie.wstep }}</p>{% endif %}
+  {% for grupa in wydanie.grupy %}
   {% if grupa.tytul %}<p class="tytul-listy">{{ grupa.tytul }}:</p>{% endif %}
   <ul class="punkty-wydania">
     {% for punkt in grupa.punkty %}<li>{{ punkt }}</li>{% endfor %}
   </ul>
+  {% endfor %}
   {% endfor %}
   <form method="post" action="/nowosci/przeczytane" class="pasek do-prawej">
     <button class="glowny" autofocus>OK</button>

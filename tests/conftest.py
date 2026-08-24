@@ -180,6 +180,8 @@ def srodowisko(tmp_path, monkeypatch):
     monkeypatch.setattr(aktualizacja, "PLIK_WERSJI", tmp_path / "WERSJA")
     monkeypatch.setattr(aktualizacja, "KOPIE", dane_kat / "kopie")
     monkeypatch.setattr(aktualizacja, "ZNACZNIK_NOWOSCI", dane_kat / "co_nowego.txt")
+    monkeypatch.setattr(aktualizacja, "ZNACZNIK_PRZECZYTANE",
+                        dane_kat / "wersja_przeczytana.txt")
 
     db.init()
 

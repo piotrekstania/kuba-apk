@@ -138,7 +138,20 @@ _ZNACZNIK_ZASOBOW: str | None = None
 
 
 def _co_nowego() -> dict[str, Any] | None:
-    """Komunikat po aktualizacji, rozebrany tak samo jak wpis w historii wersji.
+    """Komunikat po aktualizacji: **wszystkie wydania od ostatniego „OK”**.
+
+    Brat uruchamia program co kilka dni, a wydania idą częściej — potrafi więc
+    przeskoczyć z wersji 105 na 110 za jednym startem. Pokazanie samego 110 gubiło
+    wszystko, co doszło po drodze, więc okno bierze wpisy z `ZMIANY.md` **do** wersji
+    potwierdzonej ostatnim „OK” (bez niej samej).
+
+    Kolejność bierzemy z pliku, a nie z porównywania numerów: `ZMIANY.md` jest od
+    najnowszego, a numery wersji porównujemy **wyłącznie na równość** (pułapka 7c —
+    `2026.08.06-82` jest w porządku znakowym *mniejsze* niż `2026.08.06.3`).
+
+    Gdy potwierdzonej wersji nie ma w historii (świeża instalacja, dziura w pliku),
+    pokazujemy sam wpis wersji zainstalowanej — okno nie ma prawa wysypać na brata
+    stu wydań naraz.
 
     Opis bierzemy **z ZMIANY.md, nie ze znacznika**: znacznik pisze aktualizator
     z wersji, którą użytkownik miał *przed* chwilą (pułapka 7b), a jego
@@ -152,10 +165,23 @@ def _co_nowego() -> dict[str, Any] | None:
         return None
     wersja, _, opis = tresc.partition("\n")
     wersja = wersja.strip()
-    wpis = next((w for w in zmiany.wpisy() if w["wersja"] == wersja), None)
-    if wpis and (wpis["grupy"] or wpis["wstep"]):
-        return {"wersja": wersja, "wstep": wpis["wstep"], "grupy": wpis["grupy"]}
-    return {"wersja": wersja, **zmiany.rozbierz_opis(opis)}
+    wpisy = zmiany.wpisy()
+    przeczytana = aktualizacja.wersja_przeczytana()
+
+    nowe: list[dict[str, Any]] = []
+    if przeczytana and any(w["wersja"] == przeczytana for w in wpisy):
+        for wpis in wpisy:                       # plik jest od najnowszego
+            if wpis["wersja"] == przeczytana:
+                break
+            nowe.append(wpis)
+    else:
+        nowe = [w for w in wpisy if w["wersja"] == wersja]
+
+    wydania = [{"wersja": w["wersja"], "wstep": w["wstep"], "grupy": w["grupy"]}
+               for w in nowe if w["grupy"] or w["wstep"]]
+    if not wydania:                              # dziura w historii — zostaje znacznik
+        wydania = [{"wersja": wersja, **zmiany.rozbierz_opis(opis)}]
+    return {"wersja": wydania[0]["wersja"], "wydania": wydania}
 
 
 def _widok(request: Request, nazwa: str, status: int = 200,
@@ -354,7 +380,9 @@ def nowosci_przeczytane():
     # odczycie zjadała kontrola startu (`uruchom.serwer_odpowiada` pobiera stronę
     # główną — pułapka 21), a zamknięcie przeglądarki bez „OK” ma zostawić okno
     # na następne wejście.
-    aktualizacja.nowosci_przeczytane()
+    # zapamiętujemy potwierdzoną wersję — po niej wiadomo, ile wydań pokazać następnym
+    # razem, gdy brat przeskoczy kilka aktualizacji naraz
+    aktualizacja.nowosci_przeczytane(aktualizacja.wersja_lokalna()[0])
     return RedirectResponse("/", status_code=303)
 
 

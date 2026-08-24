@@ -42,6 +42,11 @@ PLIK_WERSJI = BAZA / "WERSJA"
 KOPIE = DANE / "kopie"
 ILE_KOPII = 5                          # tyle ostatnich kopii sprzed aktualizacji zostaje
 ZNACZNIK_NOWOSCI = DANE / "co_nowego.txt"   # czyta go strona główna, żeby pokazać komunikat
+# Wersja, którą użytkownik potwierdził przyciskiem „OK”. Po niej wiadomo, ile wydań
+# ma pokazać okno nowości: brat bywa parę wydań w tyle (aktualizacje idą przy starcie,
+# a program uruchamia raz na kilka dni), więc pokazanie samego ostatniego gubiło
+# wszystko, co doszło po drodze.
+ZNACZNIK_PRZECZYTANE = DANE / "wersja_przeczytana.txt"
 
 # Co podmieniamy przy aktualizacji: kod i szablony. `szablony` są na tej liście
 # celowo — jeden katalog, zawsze taki jak w repozytorium. Ta sama lista służy do
@@ -239,9 +244,27 @@ def co_nowego() -> str | None:
     return tresc or None
 
 
-def nowosci_przeczytane() -> None:
-    """Użytkownik kliknął „OK” pod oknem nowości — dopiero to gasi komunikat."""
+def wersja_przeczytana() -> str:
+    """Ostatnia wersja potwierdzona przyciskiem „OK”. Brak pliku to pusty napis."""
+    try:
+        return ZNACZNIK_PRZECZYTANE.read_text(encoding="utf-8").strip()
+    except OSError:
+        return ""
+
+
+def nowosci_przeczytane(wersja: str = "") -> None:
+    """Użytkownik kliknął „OK” pod oknem nowości — dopiero to gasi komunikat.
+
+    Zapamiętujemy przy okazji, co potwierdził: następne okno pokaże wydania **po**
+    tej wersji, a nie samo ostatnie.
+    """
     ZNACZNIK_NOWOSCI.unlink(missing_ok=True)
+    if wersja:
+        try:
+            ZNACZNIK_PRZECZYTANE.parent.mkdir(parents=True, exist_ok=True)
+            ZNACZNIK_PRZECZYTANE.write_text(wersja.strip() + "\n", encoding="utf-8")
+        except OSError:
+            pass          # brak miejsca na dysku nie może zablokować zamknięcia okna
 
 
 def kopia_robocza_gita() -> bool:

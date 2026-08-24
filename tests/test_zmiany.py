@@ -148,6 +148,86 @@ def test_okno_pokazuje_znacznik_gdy_wersji_nie_ma_w_historii(klient, tmp_path, m
     assert "<li>rzecz spoza historii</li>" in strona
 
 
+def test_okno_pokazuje_wszystkie_wydania_od_ostatniego_ok(klient, tmp_path, monkeypatch):
+    """Brat uruchamia program co kilka dni, a wydania idą częściej — potrafi przeskoczyć
+    z wersji 105 na 108 za jednym startem. Okno ma wtedy pokazać **wszystko, co doszło
+    po drodze**, a nie samo ostatnie wydanie."""
+    from app import aktualizacja
+
+    plik = tmp_path / "ZMIANY.md"
+    plik.write_text("""# Historia zmian
+
+## 2026.08.24-108 — 2026-08-24
+
+Zmiany:
+- trzecia rzecz
+
+## 2026.08.24-107 — 2026-08-24
+
+Zmiany:
+- druga rzecz
+
+## 2026.08.24-106 — 2026-08-24
+
+Zmiany:
+- pierwsza rzecz
+
+## 2026.08.24-105 — 2026-08-24
+
+Zmiany:
+- to widzial juz wczesniej
+""", encoding="utf-8")
+    monkeypatch.setattr(zmiany, "PLIK", plik)
+    aktualizacja.ZNACZNIK_PRZECZYTANE.parent.mkdir(parents=True, exist_ok=True)
+    aktualizacja.ZNACZNIK_PRZECZYTANE.write_text("2026.08.24-105", encoding="utf-8")
+    _znacznik_nowosci("2026.08.24-108\nZmiany:\n- trzecia rzecz\n")
+
+    okno = klient.get("/").text.split("<dialog")[1].split("</dialog>")[0]
+
+    assert "trzecia rzecz" in okno and "druga rzecz" in okno and "pierwsza rzecz" in okno
+    assert "to widzial juz wczesniej" not in okno, "wydanie sprzed „OK” wróciło do okna"
+    # przy kilku wydaniach każde ma swój numer nad listą
+    assert "2026.08.24-107" in okno and "2026.08.24-106" in okno
+
+
+def test_swieza_instalacja_nie_wysypuje_calej_historii(klient, tmp_path, monkeypatch):
+    """Bez zapamiętanego „OK” nie wiadomo, co brat już widział — pokazujemy sam wpis
+    zainstalowanej wersji, a nie sto wydań naraz."""
+    plik = tmp_path / "ZMIANY.md"
+    plik.write_text("""# Historia zmian
+
+## 2026.08.24-108 — 2026-08-24
+
+Zmiany:
+- nowe wydanie
+
+## 2026.08.24-107 — 2026-08-24
+
+Zmiany:
+- stare wydanie
+""", encoding="utf-8")
+    monkeypatch.setattr(zmiany, "PLIK", plik)
+    _znacznik_nowosci("2026.08.24-108\nZmiany:\n- nowe wydanie\n")
+
+    okno = klient.get("/").text.split("<dialog")[1].split("</dialog>")[0]
+
+    assert "nowe wydanie" in okno
+    assert "stare wydanie" not in okno
+
+
+def test_ok_zapamietuje_potwierdzona_wersje(klient):
+    """Po „OK” zapisujemy, co brat widział — inaczej następne okno znów nie wiedziałoby,
+    od którego wydania zacząć."""
+    from app import aktualizacja
+
+    _znacznik_nowosci("2026.08.24-108\nZmiany:\n- coś\n")
+    klient.get("/")
+    klient.post("/nowosci/przeczytane", follow_redirects=False)
+
+    assert not aktualizacja.ZNACZNIK_NOWOSCI.exists()
+    assert aktualizacja.wersja_przeczytana() == aktualizacja.wersja_lokalna()[0]
+
+
 def test_okno_z_nowosciami_wraca_dopoki_nie_klikniesz_ok(klient):
     """Znacznik gaśnie dopiero po „OK”, nie przy samym pokazaniu strony.
 
