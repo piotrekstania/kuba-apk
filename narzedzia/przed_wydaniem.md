@@ -58,32 +58,9 @@ start.bat
 Wszystko od ostatniego wydania — numer i skrót commita znajdziesz w `ZMIANY.md`
 i `git log`. Dopisuj punkty przy każdej rundzie zmian, kasuj po wydaniu.
 
-Ta runda **zmienia treść dokumentu**, więc rytuał windowsowy z części A obowiązuje
-w całości: `.docx` otwierany w prawdziwym Wordzie i obejrzany na kartce. Formatek nikt
-nie ruszał (`git diff b29bcd0..HEAD -- szablony/` pokazuje sam `.json`, i to jedną
-rzecz: deklarację `suma_rowna` przy polach PPU).
-
-1. **Czerwień w wykazie działki obejmuje cały użytek.** Wypełnij działkę tak, żeby
-   w użytku zmieniła się **tylko jedna** wartość — np. OFU `R` → `R`+`B` przy tej samej
-   klasie `IIIb` i zmienionym PPU. W dokumencie **wszystkie cztery** wartości stanu
-   nowego (OFU, OZU, OZK, PPU) mają być czerwone i pogrubione, także ta niezmieniona.
-   To jest ta poprawka, którą Kuba nanosił dotąd ręcznie.
-2. **Numer działki i pole powierzchni zostają czarne**, jeśli się nie zmieniły —
-   czerwienieje użytek, a nie cała tabela.
-3. **Wykaz budynku bez zmian**: tam w wierszu stoi jedna para, więc czerwienieje sam
-   zmieniony atrybut. Wygeneruj oba wykazy w jednym operacie i porównaj.
-4. **Kontrola sumy PPU** w formularzu, pod tabelą stanów: zielono, gdy suma zgadza się
-   z polem powierzchni, czerwono z różnicą, gdy nie. Sprawdź **kropkę i przecinek**
-   (`0.3110` i `0,3110`) — brat pisze inaczej niż autor — oraz to, że przy wpisywaniu
-   („0,”) nie wyskakuje „nie rozumiem”.
-5. **Puste PPU przy wypełnionym polu powierzchni** ma być czerwone; obie rzeczy puste —
-   cicho (świeżo dołożona karta nie ma straszyć).
-6. **Druga działka**: dołóż kartę przyciskiem i sprawdź, że każda liczy swoje, a po
-   „Popraw” komunikaty wracają policzone od danych z bazy.
-7. Kontrola **nie blokuje** zapisu — zapisz operat z niezgodną sumą i sprawdź, że
-   dokument powstał. To ta sama zasada co przy numerze działki z ULDK.
-8. Przy okazji, jeśli nie było sprawdzane po 101: **„Otwórz katalog” z listy** — czy
-   Eksplorator wychodzi na wierzch (pułapka 20).
+*(pusto — wydanie 2026.08.24-102 poszło 24.08; czerwień całego użytku obejrzana
+w DOCX i na PDF z prawdziwego Worda, kontrola sumy przeklikana w siedmiu
+przypadkach łącznie z „0," w połowie pisania)*
 
 ---
 
