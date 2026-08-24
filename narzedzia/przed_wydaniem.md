@@ -58,11 +58,32 @@ start.bat
 Wszystko od ostatniego wydania — numer i skrót commita znajdziesz w `ZMIANY.md`
 i `git log`. Dopisuj punkty przy każdej rundzie zmian, kasuj po wydaniu.
 
-*(pusto — wydanie 2026.08.22-101 poszło 22.08. Runda była ekranowa, więc rytuał
-przeszedł w całości na Linuksie: pytest, review dwuetapowy, dziewięć punktów części B
-obejrzane w headless Chrome na osobnej instancji i górny „Zapisz” kliknięty
-w prawdziwej przeglądarce. Na Windowsie do sprawdzenia przy okazji: „Otwórz katalog”
-z listy — Eksplorator na wierzchu, a przeglądarka zostaje na liście.)*
+Ta runda **zmienia treść dokumentu**, więc rytuał windowsowy z części A obowiązuje
+w całości: `.docx` otwierany w prawdziwym Wordzie i obejrzany na kartce. Formatek nikt
+nie ruszał (`git diff b29bcd0..HEAD -- szablony/` pokazuje sam `.json`, i to jedną
+rzecz: deklarację `suma_rowna` przy polach PPU).
+
+1. **Czerwień w wykazie działki obejmuje cały użytek.** Wypełnij działkę tak, żeby
+   w użytku zmieniła się **tylko jedna** wartość — np. OFU `R` → `R`+`B` przy tej samej
+   klasie `IIIb` i zmienionym PPU. W dokumencie **wszystkie cztery** wartości stanu
+   nowego (OFU, OZU, OZK, PPU) mają być czerwone i pogrubione, także ta niezmieniona.
+   To jest ta poprawka, którą Kuba nanosił dotąd ręcznie.
+2. **Numer działki i pole powierzchni zostają czarne**, jeśli się nie zmieniły —
+   czerwienieje użytek, a nie cała tabela.
+3. **Wykaz budynku bez zmian**: tam w wierszu stoi jedna para, więc czerwienieje sam
+   zmieniony atrybut. Wygeneruj oba wykazy w jednym operacie i porównaj.
+4. **Kontrola sumy PPU** w formularzu, pod tabelą stanów: zielono, gdy suma zgadza się
+   z polem powierzchni, czerwono z różnicą, gdy nie. Sprawdź **kropkę i przecinek**
+   (`0.3110` i `0,3110`) — brat pisze inaczej niż autor — oraz to, że przy wpisywaniu
+   („0,”) nie wyskakuje „nie rozumiem”.
+5. **Puste PPU przy wypełnionym polu powierzchni** ma być czerwone; obie rzeczy puste —
+   cicho (świeżo dołożona karta nie ma straszyć).
+6. **Druga działka**: dołóż kartę przyciskiem i sprawdź, że każda liczy swoje, a po
+   „Popraw” komunikaty wracają policzone od danych z bazy.
+7. Kontrola **nie blokuje** zapisu — zapisz operat z niezgodną sumą i sprawdź, że
+   dokument powstał. To ta sama zasada co przy numerze działki z ULDK.
+8. Przy okazji, jeśli nie było sprawdzane po 101: **„Otwórz katalog” z listy** — czy
+   Eksplorator wychodzi na wierzch (pułapka 20).
 
 ---
 
@@ -78,20 +99,29 @@ z listy — Eksplorator na wierzchu, a przeglądarka zostaje na liście.)*
 > u niego sama przy starcie — więc szukam **błędów, które on zobaczy**, a nie
 > uwag o stylu.
 >
-> Na czym się skup — **te punkty dopisujesz pod bieżącą rundę** (skasuj po wydaniu
-> razem z częścią B). Poniżej zostaje to, o co warto pytać przy każdej rundzie:
-> 1. `app/main.py` — dane operatu bywają starsze niż dzisiejszy szablon: pole
->    skasowane, zmieniony typ, wpis niebędący słownikiem, podpole, którego wtedy
->    nie było. Czy któraś ścieżka wywala stronę zamiast pominąć dane?
-> 2. Szablony HTML — czy znaczniki domykają się przy **każdej** kombinacji danych
->    (grupa bez sekcji, sekcja bez wierszy, brak opisu)? Niedomknięta karta wciąga
->    w siebie resztę strony, a testy patrzące na napisy tego nie widzą.
-> 3. Kontekst stron budowany poza `_widok` — brak jednej zmiennej to w Jinja wyjątek,
->    nie pustka, i strona po cichu leci do zapasowego gołego HTML-a (pułapka 28).
-> 4. Testy dołożone w tej rundzie — czy sprawdzają zachowanie, czy tylko to, że kod
->    się wykonał. Te czytające `style.css` napisami: czy da się je obejść zapisem,
->    który znaczy to samo? Czy któryś zostawia pliki w prawdziwych `dane/`/`wyniki/`?
->
+> Na czym się skup:
+> 1. `app/generator.py` — `_zmienione_w_wierszu` i grupowanie kluczy po wierszu formatki
+>    (`_wiersz_tabeli`, próg „więcej niż dwa klucze”). Czy da się doprowadzić do
+>    zaczerwienienia czegoś, co się nie zmieniło: scalone komórki, wiersz z trzema
+>    parami, dwa różne wykazy w jednym pliku, pętla obejmująca cały wiersz? Czy wykaz
+>    budynku na pewno zachowuje się jak dotąd?
+> 2. `formularz.html` — kontrola sumy PPU (JS): parsowanie kropki i przecinka, wpis
+>    w połowie pisania (`0,`), rozdzielanie enterem/spacją/średnikiem, wartości ujemne
+>    i bardzo długie listy, klonowanie karty, „Popraw” z danymi z bazy. Czy komunikat
+>    może trafić do **cudzej** karty albo cudzego stanu? Czy tolerancja 0,00005 nie daje
+>    fałszywego „zgadza się” przy danych z czterema miejscami po przecinku?
+> 3. `formularz.html` + `.json` — `suma_rowna` i wiersz `kontrola-sum`: czy liczba
+>    komórek zgadza się z nagłówkiem tabeli przy sekcji **bez** podkolumn i czy wiersz
+>    nie pojawia się w sekcji, która nie ma czego kontrolować? Czy wzorzec do klonowania
+>    ma dokładnie to samo co karta pierwsza?
+> 4. `app/main.py` — dane operatu bywają starsze niż dzisiejszy szablon: pole skasowane,
+>    zmieniony typ, wpis niebędący słownikiem. Czy któraś ścieżka wywala stronę zamiast
+>    pominąć dane?
+> 5. Testy dołożone w tej rundzie — czy sprawdzają zachowanie, czy tylko to, że kod się
+>    wykonał; czy któryś zostawia pliki w prawdziwych `dane/`/`wyniki/`? Kontrola sumy
+>    jest w JS, więc pytest sprawdza samo podpięcie — czy da się je zepsuć tak, żeby
+>    testy nadal przechodziły?
+
 > Czego **nie** zgłaszać: nazw po polsku (to konwencja projektu), braku typów
 > generycznych, sugestii przejścia na framework frontendowy, propozycji drugiego
 > generatora PDF — te decyzje są opisane w `CLAUDE.md` wraz z powodami.

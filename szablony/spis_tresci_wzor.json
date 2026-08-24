@@ -412,13 +412,17 @@
           "wiersz": "Użytki gruntowe i klasy bonitacyjne w działce",
           "kolumna": "dotychczas",
           "typ": "textarea",
-          "podkolumna": "ppu", "suma_rowna": "pow_ewidencyjna_dotychczas"},
+          "podkolumna": "ppu",
+          "suma_rowna": "pow_ewidencyjna_dotychczas"
+        },
         {
           "klucz": "pow_uzytkow_nowy",
           "wiersz": "Użytki gruntowe i klasy bonitacyjne w działce",
           "kolumna": "nowy",
           "typ": "textarea",
-          "podkolumna": "ppu", "suma_rowna": "pow_ewidencyjna_nowy"}
+          "podkolumna": "ppu",
+          "suma_rowna": "pow_ewidencyjna_nowy"
+        }
       ],
       "podkolumny": [
         {
