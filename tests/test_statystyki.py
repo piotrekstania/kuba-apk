@@ -197,7 +197,17 @@ def test_kreska_stopki_ma_szerokosc_tresci():
 
     stopka = style.split("footer {")[1].split("}")[0]
     assert "border-top" not in stopka, "kreska wróciła na ramkę stopki — będzie szersza"
-    assert "border-top" in style.split("footer .liczniki {")[1].split("}")[0]
+    assert "border-top" in style.split("footer .stopka-tresc {")[1].split("}")[0]
+
+
+def test_stopka_ma_stopke_firmy_z_biezacym_rokiem(klient):
+    """Po lewej stronie stopki stoi firma — inaczej cała jej treść wisiała przy prawej
+    krawędzi. Rok liczy się przy renderze, więc 1 stycznia zmienia się sam."""
+    from datetime import date
+
+    tresc = klient.get("/").text
+
+    assert f"© {date.today().year} ProCAD Geodezja" in tresc
 
 
 def test_stopka_pokazuje_liczniki(klient):

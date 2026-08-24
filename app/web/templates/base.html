@@ -55,11 +55,17 @@
      przy każdym wejściu — i to o rzeczy, która dzieje się sama, bez udziału brata.
      Wersję (razem z „masz tę wersję”) pokazuje Pomoc → Historia wersji, czyli miejsce,
      do którego zagląda się właśnie po to. W stopce zostają liczniki pracy. #}
-  <p class="liczniki" title="Liczone przy generowaniu, a nie z plików na dysku — przeniesienie gotowych operatów do archiwum ich nie kasuje">
-    <span><strong>{{ statystyki.operat }}</strong> operatów</span>
-    <span><strong>{{ statystyki.dokument }}</strong> dokumentów Worda</span>
-    <span><strong>{{ statystyki.pdf }}</strong> złożonych PDF-ów</span>
-  </p>
+  <div class="stopka-tresc">
+    {# Po lewej firma, po prawej liczniki — inaczej stopka wisiała całym ciężarem
+       przy prawej krawędzi. Rok liczy się przy renderze, więc 1 stycznia zmienia się
+       sam i nikt nie musi o nim pamiętać. #}
+    <p class="prawa-autorskie">© {{ rok }} ProCAD Geodezja</p>
+    <p class="liczniki" title="Liczone przy generowaniu, a nie z plików na dysku — przeniesienie gotowych operatów do archiwum ich nie kasuje">
+      <span><strong>{{ statystyki.operat }}</strong> operatów</span>
+      <span><strong>{{ statystyki.dokument }}</strong> dokumentów Worda</span>
+      <span><strong>{{ statystyki.pdf }}</strong> złożonych PDF-ów</span>
+    </p>
+  </div>
 </footer>
 </body>
 </html>

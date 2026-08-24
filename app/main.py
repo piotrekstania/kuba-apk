@@ -157,6 +157,8 @@ def _widok(request: Request, nazwa: str, status: int = 200,
     kontekst.setdefault("wersja", aktualizacja.wersja_lokalna()[0])
     kontekst.setdefault("zasoby", f"{aktualizacja.wersja_lokalna()[0]}-{wersja_zasobow()}")
     kontekst.setdefault("statystyki", statystyki.podsumowanie())
+    # rok w stopce — liczony przy renderze, nie wpisany: 1 stycznia sam się zmienia
+    kontekst.setdefault("rok", date.today().year)
     return widoki.TemplateResponse(request, nazwa, kontekst, status_code=status)
 
 

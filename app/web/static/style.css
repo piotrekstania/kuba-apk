@@ -87,7 +87,14 @@ main { max-width: 1040px; margin: 0 auto; padding: 28px; }
    tabela nad nią — wystawała wąsami po obu stronach. Na akapicie z licznikami trzyma
    dokładnie tę samą szerokość co treść strony. */
 footer { max-width: 1040px; margin: 0 auto; padding: 0 28px 28px; font-size: 14px; }
-footer .liczniki { border-top: 1px solid var(--linia); padding-top: 14px; margin-top: 0; }
+/* Kreska obejmuje całą treść stopki (firma + liczniki), a nie same liczniki. Siedzi
+   na wewnętrznym bloku, a nie na `footer`, bo ten ma jeszcze 28 px marginesu z każdej
+   strony i kreska wychodziła szersza niż tabela nad nią. */
+footer .stopka-tresc { display: flex; justify-content: space-between; align-items: baseline;
+                       gap: 22px; flex-wrap: wrap;
+                       border-top: 1px solid var(--linia); padding-top: 14px; }
+footer .liczniki { margin: 0; }
+.prawa-autorskie { margin: 0; color: var(--szary); }
 footer p { margin: 4px 0; }
 /* Liczniki przy prawej krawędzi — stopka jest wtedy przeciwwagą dla treści, która
    zaczyna się po lewej. Flex zamiast `text-align`, bo odstęp między pozycjami ma zostać
