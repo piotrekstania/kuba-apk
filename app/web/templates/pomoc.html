@@ -311,6 +311,21 @@ Wykonano: brak
   czerwono i pogrubiony</strong>. Wartość przepisana bez zmian zostaje czarna.</p>
 <p class="szary">Wpisanie czegoś tam, gdzie wcześniej było pusto, też jest zmianą.
   Puste pole w stanie nowym nie jest — brak wpisu nie znaczy „wykreślono”.</p>
+<p class="szary">W wykazie działki <strong>użytek liczy się jako całość</strong>: gdy
+  zmieni się choć jedna z czterech wartości (OFU, OZU, OZK, PPU), na czerwono idą
+  wszystkie cztery. Klasa czerwona wśród czarnych sąsiadów wyglądałaby na pomyłkę,
+  a ośrodek czyta użytek jednym spojrzeniem.</p>
+
+<h3>Kontrola sumy PPU</h3>
+<p>Pod użytkami program liczy na bieżąco, przy każdym naciśnięciu klawisza, czy
+  <strong>suma PPU zgadza się z polem powierzchni ewidencyjnej</strong> — osobno dla
+  stanu dotychczasowego i nowego. Zgadza się: zielone „✓”. Nie zgadza się: czerwony
+  komunikat z różnicą, np. <em>brakuje 0,0100</em>.</p>
+<p>Kropka i przecinek znaczą to samo, więc <code>0,3110</code> i <code>0.3110</code>
+  są równie dobre. Puste PPU przy wypełnionym polu powierzchni też jest czerwone —
+  te dwie liczby muszą być sobie równe, bo bez PPU wykaz nie ma czego pokazać.</p>
+<p class="szary">To jest <strong>podpowiedź, nie blokada</strong> — formularz da się
+  wysłać zawsze. Program mówi, co widzi; decyzja należy do ciebie.</p>
 
 <h2 id="dokumenty">Kilka dokumentów za jednym razem</h2>
 <p>Jeden operat to zwykle kilka plików Worda. Wszystkie trafiają do <strong>tego samego

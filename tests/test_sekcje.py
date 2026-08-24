@@ -693,6 +693,60 @@ def test_zmieniony_stan_nowy_jest_czerwony_i_pogrubiony(baza):
     assert all(b.bold and str(b.font.color.rgb) == "FF0000" for b in ofu_nowy)
 
 
+def test_kontrola_sumy_jest_podpieta_w_formularzu(klient):
+    """Suma PPU musi się zgadzać z polem powierzchni — formularz liczy to na bieżąco.
+
+    Sprawdzamy **podpięcie**, nie samą arytmetykę (ta jest w JS): pole ma wiedzieć,
+    z czym się porównuje (`data-suma-rowna`) i w której kolumnie stoi, a w tabeli ma być
+    komórka na komunikat dla każdego stanu. Bez którejkolwiek z tych trzech rzeczy
+    kontrola cicho nic nie robi.
+    """
+    klient.srodowisko.dodaj_szablon(
+        "spis_tresci_wzor", ["{{ nr_roboty }}"],
+        opis={"nazwa": "Operat", "glowny": True,
+              "pola": [{"klucz": "nr_roboty", "etykieta": "Nr roboty"},
+                       {"klucz": "wykazy", "etykieta": "Działki", "typ": "sekcje",
+                        "etykieta_pozycji": "Działka",
+                        "kolumny": [{"klucz": "dotychczas", "etykieta": "Stan dotychczasowy"},
+                                    {"klucz": "nowy", "etykieta": "Stan nowy"}],
+                        "podkolumny": [{"klucz": "ppu", "etykieta": "PPU [ha]"}],
+                        "podpola": [
+                            {"klucz": "pole_dotychczas", "wiersz": "Pole powierzchni",
+                             "kolumna": "dotychczas"},
+                            {"klucz": "pole_nowy", "wiersz": "Pole powierzchni",
+                             "kolumna": "nowy"},
+                            {"klucz": "ppu_dotychczas", "wiersz": "Użytki", "typ": "textarea",
+                             "kolumna": "dotychczas", "podkolumna": "ppu",
+                             "suma_rowna": "pole_dotychczas"},
+                            {"klucz": "ppu_nowy", "wiersz": "Użytki", "typ": "textarea",
+                             "kolumna": "nowy", "podkolumna": "ppu",
+                             "suma_rowna": "pole_nowy"}]}]})
+
+    strona = klient.get("/nowy/spis_tresci_wzor").text
+
+    assert 'data-suma-rowna="pole_dotychczas"' in strona
+    assert 'data-suma-rowna="pole_nowy"' in strona
+    assert 'data-kolumna="dotychczas"' in strona and 'data-kolumna="nowy"' in strona
+    assert 'class="kontrola-sum"' in strona
+    assert 'data-kontrola="dotychczas"' in strona and 'data-kontrola="nowy"' in strona
+    # wzorzec do klonowania musi mieć to samo — inaczej druga działka jest bez kontroli
+    wzorzec = strona.split('<template class="wzorzec-sekcji">')[1].split("</template>")[0]
+    assert 'data-suma-rowna="pole_nowy"' in wzorzec and "kontrola-sum" in wzorzec
+
+
+def test_opis_szablonu_mowi_ktore_pole_sumuje_sie_do_ktorego():
+    """Reguła siedzi w `.json`, nie w skrypcie — inaczej nowa kolumna wymagałaby
+    dopisania nazwy pola w JS-ie, a to jest dokładnie ta lista, której w kodzie nie ma
+    prawa być (zasada centralna z CLAUDE.md)."""
+    pole = next(p for p in szablony.szablon_po_id("spis_tresci_wzor").pola
+                if p.klucz == "wykazy_dzialek")
+    sumy = {pod["klucz"]: pod.get("suma_rowna") for pod in pole.podpola
+            if pod.get("suma_rowna")}
+
+    assert sumy == {"pow_uzytkow_dotychczas": "pow_ewidencyjna_dotychczas",
+                    "pow_uzytkow_nowy": "pow_ewidencyjna_nowy"}
+
+
 def test_uzytek_czerwieni_sie_w_calosci(baza):
     """OFU, OZU, OZK i PPU to **jeden** wpis — zmiana jednej wartości czerwieni wszystkie.
 

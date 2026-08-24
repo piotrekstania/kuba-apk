@@ -155,7 +155,9 @@ def test_hektary_zaokraglone_do_dwoch_miejsc(klient):
     tresc = klient.get("/nowy/spis_tresci_wzor").text
 
     assert "(m / 10000).toFixed(2)" in tresc, "hektary mają być zaokrąglone do 2 miejsc"
-    assert "toFixed(4)" not in tresc
+    # pytamy o **ten** wzór, a nie o „gdziekolwiek na stronie nie ma toFixed(4)” —
+    # kontrola sumy PPU liczy w hektarach do czwartego miejsca i ma do tego prawo
+    assert "(m / 10000).toFixed(4)" not in tresc
     assert "Math.round(w.powierzchnia)" in tresc, "metry kwadratowe zostają pełne"
 
 

@@ -264,6 +264,12 @@ th.numer, td.numer { width: 44px; text-align: right; white-space: nowrap; }
 .uldk { font-weight: 600; }
 .uldk.dobrze { color: #1a7f4b; }
 .uldk.uwaga { color: #9a6700; }
+/* Kontrola sumy PPU pod polem użytków: zielono, gdy się zgadza, czerwono, gdy nie.
+   Czerwień jest tu twarda (nie pomarańcz jak przy ULDK), bo to nie jest podpowiedź
+   z niepewnego źródła — te dwie liczby po prostu muszą być sobie równe. */
+.suma { font-weight: 600; margin: 4px 0 0; }
+.suma.dobrze { color: #1a7f4b; }
+.suma.zle { color: var(--zle); }
 
 
 /* Lista operatów: akcje przy prawej krawędzi, reszta do lewej. Wyśrodkowanie numeru

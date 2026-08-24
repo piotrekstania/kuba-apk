@@ -22,7 +22,12 @@
     więc bez niego każde „Popraw” zjadałoby jedną pustą linijkę
     z początku wartości — a pustymi linijkami brat wyrównuje wpis do właściwego
     wiersza sąsiedniej kolumny. -#}
+{#- `suma_rowna` w opisie szablonu włącza kontrolę: suma linijek tego pola ma się
+    zgadzać z polem wskazanym kluczem. Nazwa pola-celu jedzie do JS-a atrybutem,
+    więc lista pól zostaje w `.json`, a skrypt nie musi znać żadnych nazw. -#}
 <textarea name="sek__{{ nazwa_pola }}__{{ nr }}__{{ pod.klucz }}" rows="3"
+          {% if pod.suma_rowna %}data-suma-rowna="{{ pod.suma_rowna }}"
+          data-kolumna="{{ pod.kolumna }}"{% endif %}
           aria-label="{{ etykieta }}">{{ "\n" }}{{ wartosc }}</textarea>
 {%- else -%}
 <input name="sek__{{ nazwa_pola }}__{{ nr }}__{{ pod.klucz }}" value="{{ wartosc }}"
@@ -272,6 +277,19 @@
                     {% endfor %}
                   </tr>
                   {% endfor %}
+                  {# Wiersz na wynik kontroli — jeden komunikat na stan, przez całą jego
+                     szerokość. W komórce PPU nie było na niego miejsca: zdanie łamało się
+                     na cztery linijki i rozpychało wiersz użytków. #}
+                  {% if pole.podpola | selectattr('suma_rowna') | list %}
+                  <tr class="kontrola-sum">
+                    <th scope="row"></th>
+                    {% for kolumna in pole.kolumny %}
+                    <td class="wartosc{{ ' granica-stanu' if not loop.first }}"
+                        colspan="{{ pole.podkolumny | length or 1 }}"
+                        data-kontrola="{{ kolumna.klucz }}"></td>
+                    {% endfor %}
+                  </tr>
+                  {% endif %}
                 </tbody>
               </table>
               {% elif not pole.podpola_wspolne %}
@@ -347,6 +365,19 @@
                     {% endfor %}
                   </tr>
                   {% endfor %}
+                  {# Wiersz na wynik kontroli — jeden komunikat na stan, przez całą jego
+                     szerokość. W komórce PPU nie było na niego miejsca: zdanie łamało się
+                     na cztery linijki i rozpychało wiersz użytków. #}
+                  {% if pole.podpola | selectattr('suma_rowna') | list %}
+                  <tr class="kontrola-sum">
+                    <th scope="row"></th>
+                    {% for kolumna in pole.kolumny %}
+                    <td class="wartosc{{ ' granica-stanu' if not loop.first }}"
+                        colspan="{{ pole.podkolumny | length or 1 }}"
+                        data-kontrola="{{ kolumna.klucz }}"></td>
+                    {% endfor %}
+                  </tr>
+                  {% endif %}
                 </tbody>
               </table>
               {% elif not pole.podpola_wspolne %}
@@ -662,6 +693,74 @@ document.querySelectorAll('.teryt').forEach(blok => {
     await zaladujObreby(d.gmina, d.obreb);
   })();
 });
+
+// --- kontrola: suma powierzchni użytków a pole powierzchni działki ---------
+//
+// Obie liczby muszą być sobie równe — inaczej wykaz zmian działki jest wewnętrznie
+// sprzeczny i ośrodek odeśle operat. Program tego **nie blokuje** (ta sama zasada co
+// przy sprawdzaniu numeru w ULDK), tylko mówi na bieżąco, jak jest: liczy przy każdym
+// naciśnięciu klawisza, żeby było widać, że coś się dzieje, gdy się wpisuje.
+//
+// Które pole z którym — mówi `.json` szablonu (`suma_rowna`), a nie ten skrypt.
+// Kropka i przecinek znaczą tu to samo: użytkownik pisze z przecinkiem, brat z kropką.
+function liczbaZWpisu(tekst) {
+  const czysty = tekst.trim().replace(',', '.');
+  return /^\d+([.]\d+)?$/.test(czysty) ? parseFloat(czysty) : NaN;
+}
+
+function sprawdzSumy(zakres) {
+  (zakres || document).querySelectorAll('[data-suma-rowna]').forEach(pole => {
+    const karta = pole.closest('.sekcja') || document;
+    const cel = karta.querySelector(`[name$="__${pole.dataset.sumaRowna}"]`);
+    // komunikat stoi w osobnym wierszu tabeli, pod całym stanem — nie w komórce PPU
+    const komorka = karta.querySelector(`.kontrola-sum [data-kontrola="${pole.dataset.kolumna}"]`);
+    if (!komorka) return;
+    let wynik = komorka.querySelector('.suma');
+    if (!wynik) {
+      wynik = document.createElement('p');
+      komorka.appendChild(wynik);
+    }
+    const pokaz = (tekst, klasa) => {
+      wynik.textContent = tekst;
+      wynik.className = 'suma podpowiedz' + (klasa ? ' ' + klasa : '');
+    };
+    const pisz = x => x.toFixed(4).replace('.', ',');
+
+    const wpisy = pole.value.split(/[\s;]+/).filter(Boolean);
+    const powierzchnia = cel ? liczbaZWpisu(cel.value || '') : NaN;
+    if (!wpisy.length) {
+      // Pusto po obu stronach to jeszcze nie błąd — karta bywa dopiero co dołożona.
+      // Ale gdy pole powierzchni jest wypełnione, brak PPU **jest** błędem: bez niego
+      // wykaz nie ma czego pokazać.
+      return Number.isNaN(powierzchnia)
+        ? pokaz('')
+        : pokaz(`Brak PPU — suma ma wynosić ${pisz(powierzchnia)}.`, 'zle');
+    }
+    const zle = wpisy.filter(w => Number.isNaN(liczbaZWpisu(w)));
+    if (zle.length) {
+      return pokaz(`Nie rozumiem wpisu: ${zle.join(', ')}.`, 'zle');
+    }
+    const suma = wpisy.reduce((s, w) => s + liczbaZWpisu(w), 0);
+    if (Number.isNaN(powierzchnia)) {
+      return pokaz(`Suma PPU: ${pisz(suma)} — brak pola powierzchni do porównania.`, 'zle');
+    }
+    const roznica = suma - powierzchnia;
+    if (Math.abs(roznica) < 0.00005) {           // równe co do czwartego miejsca
+      pokaz(`✓ Suma PPU ${pisz(suma)} zgadza się z polem powierzchni.`, 'dobrze');
+    } else {
+      pokaz(`✗ Suma PPU ${pisz(suma)} ≠ pole ${pisz(powierzchnia)}`
+            + ` — ${roznica > 0 ? 'za dużo' : 'brakuje'} ${pisz(Math.abs(roznica))}.`, 'zle');
+    }
+  });
+}
+
+// przeliczamy przy każdej zmianie w karcie wykazu — także w polu powierzchni, bo ono
+// jest drugą stroną tego samego równania
+document.addEventListener('input', z => {
+  const karta = z.target.closest && z.target.closest('.sekcja');
+  if (karta) sprawdzSumy(karta);
+});
+sprawdzSumy();
 
 // --- podpowiedź: czy ULDK zna taką działkę ---------------------------------
 //
