@@ -207,7 +207,10 @@ def test_stopka_ma_stopke_firmy_z_biezacym_rokiem(klient):
 
     tresc = klient.get("/").text
 
-    assert f"© {date.today().year} ProCAD Geodezja" in tresc
+    stopka = tresc.split("<footer>")[1]
+    assert f"© {date.today().year}" in stopka
+    assert 'href="https://www.procadgeodezja.pl"' in stopka, "firma bez linku do strony"
+    assert 'target="_blank"' in stopka, "link zabrałby brata z programu"
 
 
 def test_stopka_pokazuje_liczniki(klient):

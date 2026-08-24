@@ -59,7 +59,13 @@
     {# Po lewej firma, po prawej liczniki — inaczej stopka wisiała całym ciężarem
        przy prawej krawędzi. Rok liczy się przy renderze, więc 1 stycznia zmienia się
        sam i nikt nie musi o nim pamiętać. #}
-    <p class="prawa-autorskie">© {{ rok }} ProCAD Geodezja</p>
+    {# Adres wzięty ze stopki formatek — ta sama firma, ten sam adres. Otwiera się
+       w nowej karcie: program chodzi lokalnie i wyjście z niego na stronę zamykałoby
+       to, nad czym brat akurat pracuje. W terenie bez internetu link po prostu nie
+       zadziała, co jest oczywiste i niczego nie psuje. #}
+    <p class="prawa-autorskie">© {{ rok }}
+      <a href="https://www.procadgeodezja.pl" target="_blank"
+         rel="noopener">ProCAD Geodezja</a></p>
     <p class="liczniki" title="Liczone przy generowaniu, a nie z plików na dysku — przeniesienie gotowych operatów do archiwum ich nie kasuje">
       <span><strong>{{ statystyki.operat }}</strong> operatów</span>
       <span><strong>{{ statystyki.dokument }}</strong> dokumentów Worda</span>
