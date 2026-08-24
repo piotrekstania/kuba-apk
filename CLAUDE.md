@@ -455,6 +455,15 @@ też brat. Interfejs w całości po polsku.
    buduj jednym miejscem** (`_widok`), a testy stron błędu pytaj o to, czy przyszła
    cała strona (`<!doctype`, znacznik nagłówka, arkusz stylów).
 
+29. **`id()` obiektu lxml nie jest identyfikatorem węzła.** python-docx/lxml tworzą
+   obiekty opakowujące węzły XML **w locie**: `akapit.getparent()` daje nowy obiekt,
+   który po wyjściu z zasięgu idzie do śmieci, a `id()` bywa potem użyty ponownie dla
+   **innego** węzła. Słownik `{id(wiersz): klucze}` scalał więc czasem dwa wiersze
+   tabeli w jedną grupę (przy czerwienieniu użytków). Objaw jest podręcznikowo mylący:
+   **u autora zielono, w CI czerwono** — inna wersja Pythona, inne momenty zbierania
+   śmieci, więc kolizja `id()` trafia gdzie indziej. Trzymaj referencje (lista par
+   `(element, dane)`) i porównuj tożsamość, albo klucz po czymś trwałym z samego XML-a.
+
 ## Stan na teraz — przetestowane end-to-end
 
 Formularz → `.docx` → PDF → sklejenie kilku PDF-ów w jeden. Działa: powtarzalne wiersze tabeli
