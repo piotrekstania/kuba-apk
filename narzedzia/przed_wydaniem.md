@@ -58,10 +58,9 @@ start.bat
 Wszystko od ostatniego wydania — numer i skrót commita znajdziesz w `ZMIANY.md`
 i `git log`. Dopisuj punkty przy każdej rundzie zmian, kasuj po wydaniu.
 
-*(pusto — wydanie 2026.08.24-104 poszło 24.08; okno nowości po poprawce z pułapki 30
-sprawdzone na żywo: wraca przy kolejnych wejściach, gaśnie dopiero po „OK”.
-Przy najbliższej instalacji testowej warto zerknąć, że okno faktycznie staje
-po prawdziwej aktualizacji — to wydanie jest pierwszym testem tej ścieżki)*
+*(pusto — wydanie 2026.08.24-105 poszło 24.08; okno nowości bierze opis
+z ZMIANY.md — użytkownik sprawdza na swojej kopii, czy po aktualizacji do -105
+okno staje i ma listy punktów)*
 
 ---
 
