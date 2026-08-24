@@ -32,10 +32,16 @@ def _git(*argumenty: str) -> str:
 
 
 def _rozbij(tresc: str) -> tuple[str, str]:
-    czesci = [l.strip() for l in tresc.replace("﻿", "").strip().splitlines()]
+    """Pierwsza linijka to numer, reszta — opis dla użytkownika.
+
+    Opis zostaje **wielolinijkowy**: od wydania 103 są w nim listy punktów
+    („Zmienione:”, „Nowe:”), a sklejenie wszystkiego w jeden akapit zrobiłoby z nich
+    z powrotem ścianę tekstu.
+    """
+    czesci = [l.rstrip() for l in tresc.replace("﻿", "").strip().splitlines()]
     if not czesci:
         return "", ""
-    return czesci[0], " ".join(czesci[1:]).strip()
+    return czesci[0].strip(), "\n".join(czesci[1:]).strip()
 
 
 def wydania_zacommitowane() -> list[tuple[str, str, str]]:

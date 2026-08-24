@@ -8,7 +8,19 @@ Format jest celowo prosty, żeby dało się go poprawić w Notatniku:
 
     ## 2026.08.02.7 — 2026-08-02
 
-    Opis dla użytkownika, jedno albo kilka zdań.
+    Jedno–dwa zdania, o co w tym wydaniu chodzi.
+
+    Zmienione:
+    - co działa inaczej niż dotąd
+    - i druga taka rzecz
+
+    Nowe:
+    - co doszło
+
+    Wydanie to zwykle kilkanaście commitów, więc jeden akapit robił się ścianą tekstu,
+    w której nie dało się znaleźć konkretnej zmiany. Nagłówek listy to linijka
+    zakończona dwukropkiem, punkt zaczyna się od myślnika. **Opisy sprzed tej zmiany
+    czytają się nadal** — akapit bez myślników jest po prostu samym wstępem.
 """
 from __future__ import annotations
 
@@ -19,6 +31,38 @@ from .config import BAZA
 
 PLIK = BAZA / "ZMIANY.md"
 MYSLNIK = "—"
+PUNKTORY = ("- ", "* ", "• ")
+# Nagłówek listy to krótka linijka z dwukropkiem („Zmienione:", „Nowe:”). Ograniczenie
+# długości jest po to, żeby zdanie ze wstępu zakończone dwukropkiem nie zrobiło się
+# nagłówkiem pustej listy.
+DLUGOSC_NAGLOWKA = 40
+
+
+def rozbierz_opis(tekst: str) -> dict[str, Any]:
+    """Opis wydania na wstęp i listy punktów.
+
+    Zwraca `{"wstep": str, "grupy": [{"tytul": str, "punkty": [str, ...]}]}`.
+    Linijka bez myślnika, stojąca pod punktem, jest **dalszym ciągiem tego punktu** —
+    w Notatniku długi punkt sam się zawija i nie ma to znaczyć nowej pozycji.
+    """
+    wstep: list[str] = []
+    grupy: list[dict[str, Any]] = []
+    for linia in tekst.splitlines():
+        tresc = linia.strip()
+        if not tresc or tresc.startswith("#"):
+            continue
+        if tresc.startswith(PUNKTORY):
+            if not grupy:
+                grupy.append({"tytul": "", "punkty": []})
+            grupy[-1]["punkty"].append(tresc[2:].strip())
+        elif tresc.endswith(":") and len(tresc) <= DLUGOSC_NAGLOWKA:
+            grupy.append({"tytul": tresc[:-1].strip(), "punkty": []})
+        elif grupy and grupy[-1]["punkty"]:
+            grupy[-1]["punkty"][-1] += " " + tresc
+        else:
+            wstep.append(tresc)
+    return {"wstep": " ".join(wstep),
+            "grupy": [g for g in grupy if g["punkty"]]}
 
 
 def _rozbij_naglowek(linia: str) -> tuple[str, str]:
@@ -49,6 +93,7 @@ def wpisy(limit: int | None = None) -> list[dict[str, Any]]:
     # ile wydań już było, więc wpisany osobno mógłby się z listą rozjechać. Lista jest
     # od najnowszego, czyli pierwszy wpis dostaje najwyższy numer.
     for numer, wpis in enumerate(zebrane, start=1):
-        wpis["opis"] = " ".join(wpis["opis"])
+        wpis.update(rozbierz_opis("\n".join(wpis["opis"])))
+        wpis["opis"] = " ".join(wpis["opis"])      # cała treść jednym ciągiem, do szukania
         wpis["numer"] = len(zebrane) - numer + 1
     return zebrane[:limit] if limit else zebrane

@@ -107,8 +107,23 @@ i nie mogę go odpalić za ciebie).
 
 ## Po zielonym review
 
+Opis pisze się w stałym kształcie — jedno–dwa zdania, a pod nimi listy. Najwygodniej
+podać go przez wejście standardowe (`-`), bo wtedy nie trzeba walczyć z cudzysłowami:
+
 ```bat
 .venv\Scripts\python narzedzia\wydaj.py "opis dla brata"
+```
+
+```bash
+.venv/bin/python narzedzia/wydaj.py - <<'OPIS'
+Jedno–dwa zdania, o co w tym wydaniu chodzi.
+
+Zmienione:
+- co działa inaczej niż dotąd
+
+Nowe:
+- co doszło
+OPIS
 ```
 
 Numer i `ZMIANY.md` stempluje skrypt — **nie wpisuj ich ręcznie** (oba człony już się

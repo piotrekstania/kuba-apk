@@ -1,10 +1,18 @@
 {% extends "base.html" %}
 {% block tresc %}
 
+{# Ten sam kształt co na stronie historii: zdanie wstępu, a pod nim listy. Rozbiera
+   to `app/zmiany.py`, żeby jedno i drugie miejsce czytało opis tak samo. #}
 {% if co_nowego %}
 <div class="komunikat">
-  <strong>Program zaktualizował się do wersji {{ co_nowego.split('\n')[0] }}.</strong>
-  {{ co_nowego.split('\n')[1:] | join(' ') }}
+  <strong>Program zaktualizował się do wersji {{ co_nowego.wersja }}.</strong>
+  {{ co_nowego.wstep }}
+  {% for grupa in co_nowego.grupy %}
+  {% if grupa.tytul %}<p class="tytul-listy">{{ grupa.tytul }}:</p>{% endif %}
+  <ul class="punkty-wydania">
+    {% for punkt in grupa.punkty %}<li>{{ punkt }}</li>{% endfor %}
+  </ul>
+  {% endfor %}
 </div>
 {% endif %}
 

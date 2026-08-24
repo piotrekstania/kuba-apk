@@ -137,6 +137,20 @@ def wersja_zasobow() -> str:
 _ZNACZNIK_ZASOBOW: str | None = None
 
 
+def _co_nowego() -> dict[str, Any] | None:
+    """Komunikat po aktualizacji, rozebrany tak samo jak wpis w historii wersji.
+
+    Pierwsza linijka pliku to numer wersji, reszta — opis dla użytkownika (wstęp
+    i listy punktów). Czyta to `app/zmiany.py`, żeby obie strony pokazywały to samo
+    tym samym kształtem.
+    """
+    tresc = aktualizacja.co_nowego()
+    if not tresc:
+        return None
+    wersja, _, opis = tresc.partition("\n")
+    return {"wersja": wersja.strip(), **zmiany.rozbierz_opis(opis)}
+
+
 def _widok(request: Request, nazwa: str, status: int = 200,
            **kontekst: Any) -> HTMLResponse:
     kontekst.setdefault("konwerter", pdf.dostepny_konwerter())
@@ -322,7 +336,7 @@ def strona_glowna(request: Request, blad: str | None = None):
                   szablony=glowne,
                   operaty=_lista_operatow(),
                   blad=blad,
-                  co_nowego=aktualizacja.co_nowego())   # pokazuje się raz, po aktualizacji
+                  co_nowego=_co_nowego())   # pokazuje się raz, po aktualizacji
 
 
 LIMIT_LISTY = 500          # zapas na lata pracy; przy 50 operatach rocznie to długo

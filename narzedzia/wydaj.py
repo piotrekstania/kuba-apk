@@ -1,6 +1,19 @@
 """Stempluje nowe wydanie: ustala numer, zapisuje `WERSJA` i przebudowuje `ZMIANY.md`.
 
-    python narzedzia/wydaj.py "Opis dla brata, jednym akapitem."
+    python narzedzia/wydaj.py "Opis dla brata."
+    python narzedzia/wydaj.py -    # opis wielolinijkowy z wejścia standardowego
+
+Opis pisze się dla użytkownika i ma stały kształt: jedno–dwa zdania, o co chodzi,
+a pod nimi listy punktów. Wydanie to zwykle kilkanaście commitów, więc jeden akapit
+robił się ścianą tekstu:
+
+    Jedno–dwa zdania wstępu.
+
+    Zmienione:
+    - co działa inaczej niż dotąd
+
+    Nowe:
+    - co doszło
 
 Numer ma postać `rok.miesiąc.dzień-kolejny`, np. `2026.08.06-82`: data z dnia wydania
 i **numer po kolei od pierwszego wydania**. Oba człony liczy skrypt — data z zegara,
@@ -53,9 +66,13 @@ def wydaj(opis: str, dzien: date | None = None) -> str:
 
 if __name__ == "__main__":
     parser = argparse.ArgumentParser(description=__doc__.splitlines()[0])
-    parser.add_argument("opis", help="opis zmian dla użytkownika, w cudzysłowie")
+    parser.add_argument("opis", help="opis zmian dla użytkownika w cudzysłowie "
+                                     "albo `-`, żeby wczytać go z wejścia standardowego")
     argumenty = parser.parse_args()
 
-    nadany = wydaj(argumenty.opis)
+    # „-” zamiast opisu: wielolinijkowy tekst z listami wygodniej podać przez here-doc
+    # niż wpisywać w cudzysłowie z zachowaniem złamań wierszy.
+    opis = sys.stdin.read() if argumenty.opis == "-" else argumenty.opis
+    nadany = wydaj(opis)
     print(f"Wydanie {nadany}. Zapisane: WERSJA i ZMIANY.md.")
     print("Teraz: sprawdź `git diff`, zacommituj oba pliki i wypchnij.")

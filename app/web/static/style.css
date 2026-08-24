@@ -177,6 +177,14 @@ th.waski { width: 220px; }
    Numer wisi w marginesie (`list-style-position` domyślne), więc zawinięta pozycja
    nie chowa się pod nim, tylko trzyma równą lewą krawędź z pierwszym wierszem. */
 ol.pozycje { margin: 0; padding-left: 22px; }
+
+/* Opis wydania: zdanie wstępu, a pod nim listy „Zmienione:” i „Nowe:”. Wydanie to
+   kilkanaście commitów, więc jeden akapit robił się ścianą tekstu, w której nie dało
+   się znaleźć konkretnej zmiany. */
+.wstep-wydania { margin: 0 0 8px; }
+.tytul-listy { margin: 8px 0 2px; font-weight: 600; font-size: 13px; }
+.punkty-wydania { margin: 0; padding-left: 20px; }
+.punkty-wydania li { margin: 2px 0; }
 ol.pozycje li { margin: 2px 0; }
 /* Separator grup na liście wpisanych danych — ma rozdzielać, a nie krzyczeć,
    więc drobnym pismem i bez tła; pierwsza grupa nie potrzebuje kreski nad sobą. */

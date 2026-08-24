@@ -38,6 +38,86 @@ def test_czyta_wydania_od_najnowszego(tmp_path, monkeypatch):
     assert wpisy[1]["opis"].endswith("Druga linia opisu.")
 
 
+def test_opis_wydania_rozbija_sie_na_wstep_i_listy(tmp_path, monkeypatch):
+    """Wydanie to kilkanaście commitów, więc opis ma stały kształt: zdanie–dwa wstępu,
+    a pod nimi listy „Zmienione:” i „Nowe:”. Jednym akapitem robiła się z tego ściana
+    tekstu, w której nie dało się znaleźć konkretnej zmiany."""
+    plik = tmp_path / "ZMIANY.md"
+    plik.write_text("""# Historia zmian
+
+## 2026.08.25-103 — 2026-08-25
+
+Porządki w wykazach. Drugie zdanie wstępu.
+
+Zmienione:
+- czerwień obejmuje cały użytek, a punkt bywa długi
+  i zawija się w Notatniku na drugą linijkę
+- numer działki sprawdza się też w karcie wykazu
+
+Nowe:
+- kontrola sumy PPU
+""", encoding="utf-8")
+    monkeypatch.setattr(zmiany, "PLIK", plik)
+
+    wpis = zmiany.wpisy()[0]
+
+    assert wpis["wstep"] == "Porządki w wykazach. Drugie zdanie wstępu."
+    assert [g["tytul"] for g in wpis["grupy"]] == ["Zmienione", "Nowe"]
+    assert wpis["grupy"][0]["punkty"][0].endswith("na drugą linijkę"), \
+        "zawinięty punkt rozpadł się na dwa"
+    assert len(wpis["grupy"][0]["punkty"]) == 2
+    assert wpis["grupy"][1]["punkty"] == ["kontrola sumy PPU"]
+
+
+def test_stary_opis_bez_list_czyta_sie_dalej(tmp_path, monkeypatch):
+    """W historii jest sto wydań opisanych jednym akapitem — mają wyglądać jak dotąd."""
+    plik = tmp_path / "ZMIANY.md"
+    plik.write_text(PRZYKLAD, encoding="utf-8")
+    monkeypatch.setattr(zmiany, "PLIK", plik)
+
+    wpis = zmiany.wpisy()[0]
+
+    assert wpis["wstep"] == "Drobne sprzątanie przy pierwszym uruchomieniu."
+    assert wpis["grupy"] == []
+
+
+def test_komunikat_po_aktualizacji_tez_ma_listy(klient):
+    """Ten sam opis, ten sam kształt — brat czyta go raz po aktualizacji, na stronie
+    głównej, i drugi raz w historii wersji. Rozbiera to jedno miejsce w kodzie."""
+    from app import aktualizacja
+
+    aktualizacja.ZNACZNIK_NOWOSCI.parent.mkdir(parents=True, exist_ok=True)
+    aktualizacja.ZNACZNIK_NOWOSCI.write_text(
+        "2026.08.25-103\nWstęp wydania.\n\nNowe:\n- kontrola sumy PPU\n",
+        encoding="utf-8")
+
+    strona = klient.get("/").text
+
+    assert "zaktualizował się do wersji 2026.08.25-103" in strona
+    assert "Wstęp wydania." in strona
+    assert "<li>kontrola sumy PPU</li>" in strona
+
+
+def test_strona_historii_pokazuje_listy(klient, tmp_path, monkeypatch):
+    """Punkty mają dojechać do brata jako lista, a nie jako ciąg myślników w akapicie."""
+    plik = tmp_path / "ZMIANY.md"
+    plik.write_text("""# Historia zmian
+
+## 2026.08.25-103 — 2026-08-25
+
+Wstęp.
+
+Nowe:
+- kontrola sumy PPU
+""", encoding="utf-8")
+    monkeypatch.setattr(zmiany, "PLIK", plik)
+
+    strona = klient.get("/pomoc/historia").text
+
+    assert "<li>kontrola sumy PPU</li>" in strona
+    assert "Nowe:" in strona
+
+
 def test_wydania_sa_ponumerowane_od_pierwszego(tmp_path, monkeypatch):
     """Lista idzie od najnowszego, więc numery maleją: ostatnie wydanie ma najwyższy.
 

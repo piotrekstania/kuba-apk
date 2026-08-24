@@ -20,7 +20,19 @@
       {% if wpis.wersja == wersja %}<br><span class="teraz">masz tę wersję</span>{% endif %}
     </td>
     <td class="szary">{{ wpis.data }}</td>
-    <td>{{ wpis.opis }}</td>
+    {# Wstęp jednym akapitem, a pod nim listy („Zmienione:”, „Nowe:”). Wydanie to
+       kilkanaście commitów, więc opis pisany ciągiem robił się ścianą tekstu.
+       Starsze wpisy nie mają list i pokazują sam akapit — parser rozbiera jedno
+       i drugie. #}
+    <td>
+      {% if wpis.wstep %}<p class="wstep-wydania">{{ wpis.wstep }}</p>{% endif %}
+      {% for grupa in wpis.grupy %}
+      {% if grupa.tytul %}<p class="tytul-listy">{{ grupa.tytul }}:</p>{% endif %}
+      <ul class="punkty-wydania">
+        {% for punkt in grupa.punkty %}<li>{{ punkt }}</li>{% endfor %}
+      </ul>
+      {% endfor %}
+    </td>
   </tr>
   {% endfor %}
 </table>
