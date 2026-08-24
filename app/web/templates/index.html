@@ -89,7 +89,7 @@
   <tr>
     <td>
       {% if operat.id %}
-      <a href="/dokument/{{ operat.id }}"><strong>{{ operat.nr_operatu or '—' }}</strong></a>
+      <a class="nr-operatu" href="/dokument/{{ operat.id }}"><strong>{{ operat.nr_operatu or '—' }}</strong></a>
       {% if not operat.na_dysku %}<br>
       <span class="spoza" title="Tego operatu nie ma już w katalogu wyniki — pewnie
              przeniesiony do archiwum. Wpis w historii zostaje, ale żeby złożyć PDF,

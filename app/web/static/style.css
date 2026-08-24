@@ -242,6 +242,17 @@ table.lista tr.grupa:first-child th { padding-top: 8px; border-top: none; }
    Uwaga przy sprawdzaniu takich zmian: adres arkusza znakuje `main.wersja_zasobow`,
    ale **serwer trzeba zrestartować** — inaczej ogląda się stary CSS i wygląda to jak
    niedziałająca poprawka (patrz historia tego pliku). */
+/* Numer operatu w kolorze akcentu, w obu stanach. Bez własnej reguły przeglądarka
+   maluje go domyślnym niebieskim linku, a po wejściu w operat przestawia na fioletowy
+   (`:visited`) — lista miała wtedy numery w dwóch kolorach naraz, a fiolet nie znaczył
+   nic poza „byłeś tu kiedyś”. To jedna lista jednego rodzaju rzeczy, więc ma się czytać
+   jednym kolorem — tym samym, co numer wersji w nagłówku i w oknie nowości.
+   `:visited` wypisane osobno, żeby reguła przetrwała dołożenie globalnego `a:visited`.
+   Reguła celuje w **klasę numeru**, a nie we wszystkie linki wiersza: obok stoją
+   `a.glowny` („Złóż PDF”) i `a.wtorny` („Popraw”, „Powiel”), czyli przyciski — szerszy
+   selektor przebijał im kolor tekstu specyficznością i „Złóż PDF” wychodził niebieskim
+   napisem na niebieskim tle. */
+.nr-operatu, .nr-operatu:visited { color: var(--akcent); }
 table.lista tbody.operat > tr > td { border-bottom: none; }
 table.lista tbody.operat { border-bottom: 1px solid var(--linia); }
 table.lista tr.notatka td { padding: 0 10px 9px; }

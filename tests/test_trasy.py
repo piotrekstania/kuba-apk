@@ -6,6 +6,7 @@ i bez LibreOffice'a. Sprawdzamy zachowanie aplikacji, nie jakość PDF-a.
 from __future__ import annotations
 
 import json
+from pathlib import Path
 
 from app import db, operaty
 
@@ -1215,3 +1216,26 @@ def test_pomoc_opisuje_ekran_ktory_jest(klient):
         assert nieaktualne not in pomoc, f"Pomoc opisuje ekran, którego nie ma: {nieaktualne!r}"
     assert "<strong>Usuń</strong>" in pomoc, "Pomoc milczy o czerwonym „Usuń”"
     assert "prawy dolny róg" in pomoc, "Pomoc nie mówi, że edytor da się powiększyć"
+def test_numer_operatu_ma_kolor_akcentu_takze_po_kliknieciu(klient):
+    """Numer operatu to link, więc przeglądarka malowała go domyślnym niebieskim,
+    a po wejściu w operat przestawiała na fioletowy (`:visited`). Lista miała wtedy
+    numery w dwóch kolorach naraz, a fiolet nie niósł żadnej informacji poza tym,
+    że ktoś tam kiedyś zajrzał.
+
+    Kolor wolno nałożyć **tylko na numer**. W tym samym wierszu stoją `a.glowny`
+    („Złóż PDF”) i `a.wtorny` („Popraw”, „Powiel”) — to przyciski, nie odnośniki.
+    Selektor obejmujący wszystkie linki wiersza przebija im kolor tekstu
+    specyficznością i „Złóż PDF” wychodzi niebieskim napisem na niebieskim tle
+    (zdarzyło się przy pisaniu tej zmiany).
+    """
+    korzen = Path(__file__).resolve().parent.parent
+
+    _dodaj_operat(klient)
+    klient.post("/generuj/spis_tresci_wzor", data=FORMULARZ, follow_redirects=False)
+
+    tresc = klient.get("/").text
+    css = (korzen / "app" / "web" / "static" / "style.css").read_text(encoding="utf-8")
+
+    assert 'class="nr-operatu"' in tresc, "numer operatu stracił swoją klasę"
+    assert ".nr-operatu, .nr-operatu:visited { color: var(--akcent); }" in css,         "numer musi trzymać kolor akcentu także jako odwiedzony link"
+    assert "tbody.operat a" not in css,         "kolor nałożony na wszystkie linki wiersza zabiera przyciskom ich własny"
