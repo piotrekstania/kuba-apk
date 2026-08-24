@@ -1,4 +1,4 @@
-2026.08.24-109
+2026.08.24-110
 Zmiany:
-- okno nowości pokazuje komplet przeskoczonych wydań także wtedy, gdy nigdy wcześniej nie kliknąłeś OK — wersję startową bierze wtedy z kopii sprzed aktualizacji; przy tym przeskoku z -106 na -108 zgubiło się -107 i to jest ta poprawka
-- przy wielu wydaniach naraz okno przewija się w środku, zamiast wypychać przycisk OK poza ekran
+- okno „co nowego” przewija samą listę wydań, a przycisk OK stoi na dole i widać go od razu — przy kilku wydaniach naraz okno otwierało się przewinięte na sam koniec, więc numer nowej wersji i najświeższe zmiany zostawały nad krawędzią ekranu
+- nad przyciskiem OK jest kreska, żeby było widać, że treść nad nią się przewija

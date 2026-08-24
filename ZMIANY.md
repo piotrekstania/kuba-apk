@@ -3,6 +3,12 @@
 Co doszło w kolejnych wersjach programu. Ten sam opis pokazuje się raz, na stronie
 głównej, zaraz po tym jak program sam się zaktualizuje.
 
+## 2026.08.24-110 — 2026-08-24
+
+Zmiany:
+- okno „co nowego” przewija samą listę wydań, a przycisk OK stoi na dole i widać go od razu — przy kilku wydaniach naraz okno otwierało się przewinięte na sam koniec, więc numer nowej wersji i najświeższe zmiany zostawały nad krawędzią ekranu
+- nad przyciskiem OK jest kreska, żeby było widać, że treść nad nią się przewija
+
 ## 2026.08.24-109 — 2026-08-24
 
 Zmiany:
