@@ -1,3 +1,3 @@
-2026.08.24-106
+2026.08.24-107
 Zmiany:
-- numer wersji w oknie nowości jest niebieski, taki sam jak przy nazwie programu w nagłówku
+- okno nowości pokazuje wszystkie wydania od twojego ostatniego OK, każde ze swoim numerem — gdy nie uruchamiasz programu kilka dni i przeskoczysz parę wersji, przeczytasz wszystko za jednym razem, a nie tylko ostatnią zmianę

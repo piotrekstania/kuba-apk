@@ -3,6 +3,11 @@
 Co doszło w kolejnych wersjach programu. Ten sam opis pokazuje się raz, na stronie
 głównej, zaraz po tym jak program sam się zaktualizuje.
 
+## 2026.08.24-107 — 2026-08-24
+
+Zmiany:
+- okno nowości pokazuje wszystkie wydania od twojego ostatniego OK, każde ze swoim numerem — gdy nie uruchamiasz programu kilka dni i przeskoczysz parę wersji, przeczytasz wszystko za jednym razem, a nie tylko ostatnią zmianę
+
 ## 2026.08.24-106 — 2026-08-24
 
 Zmiany:
