@@ -58,8 +58,26 @@ start.bat
 Wszystko od ostatniego wydania — numer i skrót commita znajdziesz w `ZMIANY.md`
 i `git log`. Dopisuj punkty przy każdej rundzie zmian, kasuj po wydaniu.
 
-*(pusto — wydanie 2026.08.24-106 poszło 24.08; okno nowości potwierdzone przez
-użytkownika na prawdziwej aktualizacji do -105, niebieski numer sprawdzony na żywo)*
+Runda **ekranowa** i mała: okno nowości pokazuje teraz wszystkie wydania od ostatniego
+„OK”. Formatki, generator i ścieżka PDF nietknięte (`git diff --stat 826f452..HEAD`).
+Rzecz w tym, że **to się sprawdza tylko na prawdziwej aktualizacji** — u autora
+instancja podglądowa nie przechodzi przez `uruchom.py` i właśnie na tym poległo
+wydanie 103 (pułapka 30).
+
+1. **Okno po przeskoku kilku wersji.** Na instalacji testowej „jak u brata”:
+   po aktualizacji, **przed** kliknięciem „OK”, wpisz do `dane/wersja_przeczytana.txt`
+   numer starszego wydania (np. `2026.08.24-103`) i odśwież stronę główną. Okno ma
+   pokazać **wszystkie** wydania po tej wersji, każde ze swoim numerem nad listami,
+   od najnowszego.
+2. **„OK” zapamiętuje wersję**: po kliknięciu ma powstać `dane/wersja_przeczytana.txt`
+   z numerem zainstalowanej wersji, a okno ma zniknąć na dobre (odśwież parę razy).
+3. **Esc** zamyka okno tylko do końca tej wizyty — po wejściu na stronę główną
+   ponownie ma wrócić, dopóki nie padnie „OK”.
+4. **Świeża instalacja** (skasuj `dane/wersja_przeczytana.txt`, zostaw znacznik
+   `dane/co_nowego.txt`): okno ma pokazać **sam wpis zainstalowanej wersji**, a nie
+   całą historię.
+5. **Historia wersji** obok — wpisy mają wyglądać tak jak dotąd; okno i historia biorą
+   opis z tego samego pliku, więc rozjazd między nimi znaczy błąd.
 
 ---
 
@@ -75,25 +93,23 @@ użytkownika na prawdziwej aktualizacji do -105, niebieski numer sprawdzony na �
 > u niego sama przy starcie — więc szukam **błędów, które on zobaczy**, a nie
 > uwag o stylu.
 >
-> Na czym się skup — **te punkty dopisujesz pod bieżącą rundę** (skasuj po wydaniu
-> razem z częścią B). Poniżej zostaje to, o co warto pytać przy każdej rundzie:
-> 1. `app/main.py` — dane operatu bywają starsze niż dzisiejszy szablon: pole
->    skasowane, zmieniony typ, wpis niebędący słownikiem, podpole, którego wtedy
->    nie było. Czy któraś ścieżka wywala stronę zamiast pominąć dane?
-> 2. Szablony HTML — czy znaczniki domykają się przy **każdej** kombinacji danych,
->    a wzorzec do klonowania kart ma dokładnie to samo co karta pierwsza?
-> 3. Kontekst stron budowany poza `_widok` — brak jednej zmiennej to w Jinja wyjątek,
->    nie pustka, i strona po cichu leci do zapasowego gołego HTML-a (pułapka 28).
-> 4. Cokolwiek jednorazowego (komunikat, znacznik, kolejka) — czy gaśnie dopiero
->    po **potwierdzeniu przez użytkownika**? Sam render nie jest dowodem, że ktoś to
->    widział: stronę główną pobiera też kontrola startu (pułapki 21 i 30).
-> 5. Cokolwiek, co zapamiętuje węzły XML — nie po `id()` obiektu lxml (pułapka 29):
->    ten sam `id()` bywa po zebraniu śmieci użyty dla innego węzła, a objaw wychodzi
->    dopiero w CI.
-> 6. Zmiana wpięta w samą aktualizację działa dopiero od **następnej** (pułapka 7b) —
->    czy da się ją zrobić o piętro wyżej, tak żeby zadziałała od razu?
-> 7. Testy dołożone w tej rundzie — czy sprawdzają zachowanie, czy tylko to, że kod
->    się wykonał; czy któryś zostawia pliki w prawdziwych `dane/`/`wyniki/`?
+> Na czym się skup:
+> 1. `app/main.py` — `_co_nowego`: zakres wydań liczony z **kolejności wpisów**
+>    w `ZMIANY.md` (nigdy z porównywania numerów — pułapka 7c). Co przy potwierdzonej
+>    wersji nowszej niż zainstalowana (cofnięta aktualizacja), przy tym samym numerze
+>    dwa razy w pliku, przy pustym `ZMIANY.md`, przy stu wydaniach do pokazania?
+>    Czy okno może wysypać całą historię komuś, kto ma świeżą instalację?
+> 2. `app/aktualizacja.py` — `nowosci_przeczytane` zapisuje wersję do
+>    `dane/wersja_przeczytana.txt`. Czy brak miejsca na dysku albo prawa do zapisu
+>    zablokują zamknięcie okna? Czy plik przeżywa aktualizację (jest w `dane/`)?
+> 3. `index.html` — pętla po wydaniach: czy przy jednym wydaniu nie dubluje się numer
+>    (raz w nagłówku okna, raz nad listą), a przy kilkunastu okno da się przewinąć?
+> 4. Cokolwiek jednorazowego — czy gaśnie dopiero po **potwierdzeniu przez
+>    użytkownika**? Sam render nie jest dowodem, że ktoś to widział: stronę główną
+>    pobiera też kontrola startu (pułapki 21 i 30).
+> 5. Testy dołożone w tej rundzie — czy sprawdzają zachowanie, czy tylko to, że kod
+>    się wykonał; czy któryś zostawia pliki w prawdziwych `dane/`/`wyniki/`
+>    (pułapka 25 — w tej rundzie już raz się zdarzyło)?
 
 > Czego **nie** zgłaszać: nazw po polsku (to konwencja projektu), braku typów
 > generycznych, sugestii przejścia na framework frontendowy, propozycji drugiego
