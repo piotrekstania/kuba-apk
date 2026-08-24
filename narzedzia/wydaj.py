@@ -9,10 +9,10 @@ robił się ścianą tekstu:
 
     Jedno–dwa zdania wstępu.
 
-    Zmienione:
+    Zmiany:
     - co działa inaczej niż dotąd
 
-    Nowe:
+    Nowości:
     - co doszło
 
 Numer ma postać `rok.miesiąc.dzień-kolejny`, np. `2026.08.06-82`: data z dnia wydania

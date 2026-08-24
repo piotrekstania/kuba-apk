@@ -178,7 +178,7 @@ th.waski { width: 220px; }
    nie chowa się pod nim, tylko trzyma równą lewą krawędź z pierwszym wierszem. */
 ol.pozycje { margin: 0; padding-left: 22px; }
 
-/* Opis wydania: zdanie wstępu, a pod nim listy „Zmienione:” i „Nowe:”. Wydanie to
+/* Opis wydania: zdanie wstępu, a pod nim listy „Zmiany:” i „Nowości:”. Wydanie to
    kilkanaście commitów, więc jeden akapit robił się ścianą tekstu, w której nie dało
    się znaleźć konkretnej zmiany. */
 .wstep-wydania { margin: 0 0 8px; }

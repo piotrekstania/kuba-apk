@@ -118,10 +118,10 @@ podać go przez wejście standardowe (`-`), bo wtedy nie trzeba walczyć z cudzy
 .venv/bin/python narzedzia/wydaj.py - <<'OPIS'
 Jedno–dwa zdania, o co w tym wydaniu chodzi.
 
-Zmienione:
+Zmiany:
 - co działa inaczej niż dotąd
 
-Nowe:
+Nowości:
 - co doszło
 OPIS
 ```

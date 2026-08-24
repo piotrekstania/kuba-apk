@@ -10,11 +10,11 @@ Format jest celowo prosty, żeby dało się go poprawić w Notatniku:
 
     Jedno–dwa zdania, o co w tym wydaniu chodzi.
 
-    Zmienione:
+    Zmiany:
     - co działa inaczej niż dotąd
     - i druga taka rzecz
 
-    Nowe:
+    Nowości:
     - co doszło
 
     Wydanie to zwykle kilkanaście commitów, więc jeden akapit robił się ścianą tekstu,
@@ -32,7 +32,7 @@ from .config import BAZA
 PLIK = BAZA / "ZMIANY.md"
 MYSLNIK = "—"
 PUNKTORY = ("- ", "* ", "• ")
-# Nagłówek listy to krótka linijka z dwukropkiem („Zmienione:", „Nowe:”). Ograniczenie
+# Nagłówek listy to krótka linijka z dwukropkiem („Zmiany:", „Nowości:”). Ograniczenie
 # długości jest po to, żeby zdanie ze wstępu zakończone dwukropkiem nie zrobiło się
 # nagłówkiem pustej listy.
 DLUGOSC_NAGLOWKA = 40

@@ -35,7 +35,7 @@ def _rozbij(tresc: str) -> tuple[str, str]:
     """Pierwsza linijka to numer, reszta — opis dla użytkownika.
 
     Opis zostaje **wielolinijkowy**: od wydania 103 są w nim listy punktów
-    („Zmienione:”, „Nowe:”), a sklejenie wszystkiego w jeden akapit zrobiłoby z nich
+    („Zmiany:”, „Nowości:”), a sklejenie wszystkiego w jeden akapit zrobiłoby z nich
     z powrotem ścianę tekstu.
     """
     czesci = [l.rstrip() for l in tresc.replace("﻿", "").strip().splitlines()]
