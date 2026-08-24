@@ -3,6 +3,10 @@
 Co doszło w kolejnych wersjach programu. Ten sam opis pokazuje się raz, na stronie
 głównej, zaraz po tym jak program sam się zaktualizuje.
 
+## 2026.08.24-102 — 2026-08-24
+
+W wykazie działki zmiana w użytku czerwieni cały wpis: gdy zmieni się choć jedna z czterech wartości (OFU, OZU, OZK, PPU), stan nowy całego użytku wychodzi czerwony i pogrubiony — tak jak dotąd nanosiłeś to ręcznie. Numer działki i pole powierzchni czerwienią się osobno, tylko gdy same się zmieniły. Pod tabelą użytków formularz liczy na bieżąco sumę PPU i porównuje ją z polem powierzchni — mówi, ile brakuje albo ile jest za dużo, przyjmuje kropkę i przecinek, a zapisu nigdy nie blokuje.
+
 ## 2026.08.22-101 — 2026-08-22
 
 Runda ekranowa po setce. Strona operatu ma jeden wiersz na szczycie: numer operatu z datą utworzenia po lewej, a po prawej komplet przycisków — „Złóż PDF”, „Otwórz katalog”, „Popraw”, „Powiel” i „Usuń” (kasowanie przeszło z dołu strony na górę; nadal pyta o potwierdzenie i mówi teraz, co naprawdę zniknie — operat przeniesiony do archiwum znika tylko z listy). Formularz ma u góry to samo: przy poprawianiu numer operatu i datę, a „Zapisz” i „Anuluj” stoją na górze i na dole. Na liście operatów akcje są przyciskami, doszło „Otwórz katalog” (wraca na listę), a kolumna „Data” nazywa się „Utworzono”. Pole opisu — w Ustawieniach i w przebiegu prac — da się powiększyć, ciągnąc za prawy dolny róg. Krótsze podpisy dat: „Data zgłoszenia” i „Data zakończenia”. Po przeglądzie kodu: formularz po „Uzupełnij wymagane pola” nie udaje już nowego operatu, „Zapisz” ani „Powiel” w starej karcie skasowanego operatu nie zakładają po cichu nowego, pytanie „Usunąć…?” działa także przy apostrofie w nazwie, a Pomoc nie odsyła już do przycisku „Pobierz PDF”, którego nie ma.
