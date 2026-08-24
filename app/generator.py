@@ -186,6 +186,8 @@ def sformatuj_pod_znaczniki(dokument: DocxTemplate, kontekst: dict[str, Any]) ->
     dokument.init_docx(reload=False)
     gotowy = dict(kontekst)
     w_petli: dict[str, tuple[str, int]] = {}
+    # klucze stojące w **jednym wierszu tabeli** — patrz `_zaznacz_zmiany`
+    wiersze: dict[int, set[str]] = {}
     for akapit in dokument.docx.element.body.iter(qn("w:p")):
         biegi = list(akapit.iter(qn("w:r")))
         tekst_akapitu = "".join(w.text or "" for b in biegi for w in b.iter(qn("w:t")))
@@ -195,15 +197,28 @@ def sformatuj_pod_znaczniki(dokument: DocxTemplate, kontekst: dict[str, Any]) ->
                 # `{{r dzialka.numer_nowy }}` — pole wewnątrz pętli po liście słowników.
                 # Nie wiemy tutaj, po której liście chodzi pętla, więc zapamiętujemy sam
                 # klucz i podmieniamy go wszędzie, gdzie występuje (patrz `_zaznacz_zmiany`).
-                w_petli[nazwa.split(".", 1)[1]] = (krój, rozmiar)
+                klucz = nazwa.split(".", 1)[1]
+                w_petli[klucz] = (krój, rozmiar)
+                wiersz = _wiersz_tabeli(akapit, qn)
+                if wiersz is not None:
+                    wiersze.setdefault(id(wiersz), set()).add(klucz)
                 continue
             wartosc = kontekst.get(nazwa)
             if not isinstance(wartosc, str):
                 continue
             gotowy[nazwa] = na_richtext(wartosc, krój, rozmiar)
     if w_petli:
-        gotowy = _zaznacz_zmiany(gotowy, w_petli)
+        grupy = [k for k in wiersze.values() if len(k) > 2]
+        gotowy = _zaznacz_zmiany(gotowy, w_petli, grupy)
     return gotowy
+
+
+def _wiersz_tabeli(element, qn):
+    """Najbliższy `w:tr` nad akapitem — albo `None`, gdy akapit nie stoi w tabeli."""
+    rodzic = element.getparent()
+    while rodzic is not None and rodzic.tag != qn("w:tr"):
+        rodzic = rodzic.getparent()
+    return rodzic
 
 
 # Stan nowy różny od dotychczasowego wyróżniamy w wykazie **na czerwono i grubo** —
@@ -229,8 +244,28 @@ def _zmienione(wpis: dict[str, Any], klucz: str) -> bool:
     return nowa != str(poprzednia or "").strip()
 
 
+def _zmienione_w_wierszu(wpis: dict[str, Any], grupy: list[set[str]]) -> set[str]:
+    """Klucze do zaczerwienienia, z **wierszem tabeli jako całością**.
+
+    Użytek gruntowy to komplet czterech wartości stojących obok siebie: OFU, OZU, OZK
+    i PPU. Gdy zmieni się choć jedna, ośrodek czyta cały wpis jako zmieniony — a brat
+    i tak dopisywał resztę czerwienią ręcznie, bo wykaz z jedną czerwoną klasą wśród
+    czarnych sąsiadów wygląda na pomyłkę. Wiersz bierzemy z **formatki**: klucze
+    złapane w tym samym `w:tr` to jedna rzecz. Wiersz z jedną parą (atrybut i jego stan
+    nowy) zachowuje się jak dotąd, bo grupy krótsze niż trzy klucze w ogóle nie wchodzą.
+    """
+    zmienione = {klucz for klucz in wpis if _zmienione(wpis, klucz)}
+    for grupa in grupy:
+        if not zmienione & grupa:
+            continue
+        zmienione |= {klucz for klucz in grupa
+                      if klucz.endswith(SUFIKS_NOWY) and str(wpis.get(klucz, "") or "").strip()}
+    return zmienione
+
+
 def _zaznacz_zmiany(kontekst: dict[str, Any],
-                    w_petli: dict[str, tuple[str, int]]) -> dict[str, Any]:
+                    w_petli: dict[str, tuple[str, int]],
+                    grupy: list[set[str]] | None = None) -> dict[str, Any]:
     """Zamienia pola z list (wykazy) na `RichText`, czerwieniąc zmienione stany nowe.
 
     Kopiujemy listy i słowniki, zamiast poprawiać je w miejscu: ten sam kontekst wypełnia
@@ -248,14 +283,15 @@ def _zaznacz_zmiany(kontekst: dict[str, Any],
                 nowa_lista.append(wpis)
                 continue
             kopia = dict(wpis)
+            zmienione = _zmienione_w_wierszu(wpis, grupy or [])
             for klucz, (krój, rozmiar) in w_petli.items():
                 tresc = kopia.get(klucz)
                 if not isinstance(tresc, str):
                     continue
                 kopia[klucz] = RichText(
                     tresc, font=krój or None, size=rozmiar or None,
-                    color=CZERWONY if _zmienione(wpis, klucz) else None,
-                    bold=_zmienione(wpis, klucz))
+                    color=CZERWONY if klucz in zmienione else None,
+                    bold=klucz in zmienione)
             nowa_lista.append(kopia)
         gotowy[nazwa] = nowa_lista
     return gotowy

@@ -693,6 +693,44 @@ def test_zmieniony_stan_nowy_jest_czerwony_i_pogrubiony(baza):
     assert all(b.bold and str(b.font.color.rgb) == "FF0000" for b in ofu_nowy)
 
 
+def test_uzytek_czerwieni_sie_w_calosci(baza):
+    """OFU, OZU, OZK i PPU to **jeden** wpis — zmiana jednej wartości czerwieni wszystkie.
+
+    Przy znakowaniu wartość po wartości wychodziło tak, że zmieniona klasa (OZK) była
+    czerwona, a jej własne OFU i powierzchnia obok — czarne. Ośrodek czyta użytek jako
+    całość i brat dopisywał resztę czerwienią ręcznie w Wordzie, czyli dokładnie to,
+    czego program ma go pozbawić. Grupę wyznacza **formatka**: klucze stojące w jednym
+    wierszu tabeli to jedna rzecz.
+    """
+    d = _wykaz_dzialek([{"dzialka": "861/2",
+                         "numer_dotychczas": "861/2", "numer_nowy": "861/2",
+                         "pow_ewidencyjna_dotychczas": "0.3610",
+                         "pow_ewidencyjna_nowy": "0.3610",
+                         # zmienia się tylko klasa; OFU i powierzchnia bez zmian
+                         "ofu_dotychczas": "R", "ofu_nowy": "R",
+                         "ozk_dotychczas": "IIIb", "ozk_nowy": "IVa",
+                         "pow_uzytkow_dotychczas": "0.3610",
+                         "pow_uzytkow_nowy": "0.3610"}])
+
+    tabela = d.tables[0]
+    uzytki = [w for w in tabela.rows if "Użytki gruntowe" in w.cells[1].text][-1]
+
+    def biegi(komorka):
+        return [b for p in komorka.paragraphs for b in p.runs if b.text.strip()]
+
+    # stan nowy użytku: cztery komórki na końcu wiersza (OFU, OZU, OZK, PPU)
+    stan_nowy = [k for k in uzytki.cells[-4:] if biegi(k)]
+    assert len(stan_nowy) == 3, "zmienił się układ wiersza — test sprawdza co innego"
+    for komorka in stan_nowy:
+        assert all(b.bold and str(b.font.color.rgb) == "FF0000" for b in biegi(komorka)), \
+            f"„{komorka.text.strip()}” zostało czarne, choć użytek się zmienił"
+
+    # …a wiersze spoza użytku liczą się dalej po swojemu
+    numer = [w for w in tabela.rows if "Numer działki" in w.cells[1].text][0]
+    assert not any(b.bold for b in biegi(numer.cells[-1])), \
+        "niezmieniony numer działki nie ma prawa się zaczerwienić"
+
+
 def test_wykaz_budynku_tez_czerwieni_zmiany(baza):
     """Ta sama zasada w obu wykazach — inaczej brat musiałby pamiętać, gdzie działa."""
     sz = szablony.szablon_po_id("wykaz_zmian_budynku_wzor")
