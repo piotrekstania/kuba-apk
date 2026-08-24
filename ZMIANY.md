@@ -3,6 +3,16 @@
 Co doszło w kolejnych wersjach programu. Ten sam opis pokazuje się raz, na stronie
 głównej, zaraz po tym jak program sam się zaktualizuje.
 
+## 2026.08.24-103 — 2026-08-24
+
+Zmiany:
+- opis nowego wydania pokazuje się w oknie na środku ekranu, w punktach — zamykasz przyciskiem OK i już nie wraca
+- w stopce po lewej stoi firma z odnośnikiem do jej strony, po prawej liczniki
+
+Nowości:
+- numer działki wpisany w karcie wykazu działki jest sprawdzany w ewidencji, tak jak numer w Położeniu — przy trafieniu z powierzchnią z obrysu; podpowiada, nigdy nie blokuje
+- każda karta działki sprawdza swój numer, a odpowiedź zawsze dotyczy tego, co wpisane teraz, także tuż po zmianie obrębu
+
 ## 2026.08.24-102 — 2026-08-24
 
 W wykazie działki zmiana w użytku czerwieni cały wpis: gdy zmieni się choć jedna z czterech wartości (OFU, OZU, OZK, PPU), stan nowy całego użytku wychodzi czerwony i pogrubiony — tak jak dotąd nanosiłeś to ręcznie. Numer działki i pole powierzchni czerwienią się osobno, tylko gdy same się zmieniły. Pod tabelą użytków formularz liczy na bieżąco sumę PPU i porównuje ją z polem powierzchni — mówi, ile brakuje albo ile jest za dużo, przyjmuje kropkę i przecinek, a zapisu nigdy nie blokuje.
