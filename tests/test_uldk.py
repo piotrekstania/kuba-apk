@@ -212,3 +212,32 @@ def test_brak_geometrii_nie_psuje_odpowiedzi(monkeypatch):
 
     assert wynik["stan"] == teryt.DZIALKA_JEST
     assert wynik["powierzchnia"] is None
+
+
+def test_numer_dzialki_w_karcie_wykazu_tez_jest_sprawdzany(klient):
+    """Sprawdzanie ma działać też przy numerze w karcie wykazu, nie tylko w Położeniu.
+
+    Formularz sam rozpoznaje takie pole po kluczu (`POLA_DZIALKI`), więc pilnujemy
+    trzech rzeczy: znacznik na polu, miejsce na wynik obok niego i to samo we wzorcu
+    do klonowania — bez wzorca sprawdzanie miałaby tylko pierwsza działka.
+    """
+    klient.srodowisko.dodaj_szablon(
+        "spis_tresci_wzor", ["{{ nr_roboty }}"],
+        opis={"nazwa": "Operat", "glowny": True,
+              "pola": [{"klucz": "nr_roboty", "etykieta": "Nr roboty"},
+                       {"klucz": "wykazy", "etykieta": "Działki", "typ": "sekcje",
+                        "etykieta_pozycji": "Działka",
+                        "podpola": [{"klucz": "dzialka", "etykieta": "Działka"},
+                                    {"klucz": "numer_dotychczas", "wiersz": "Numer",
+                                     "kolumna": "dotychczas"}],
+                        "kolumny": [{"klucz": "dotychczas",
+                                     "etykieta": "Stan dotychczasowy"}]}]})
+
+    strona = klient.get("/nowy/spis_tresci_wzor").text
+    karta = strona.split('<div class="sekcje-lista">')[1].split("</fieldset>")[0]
+    wzorzec = strona.split('<template class="wzorzec-sekcji">')[1].split("</template>")[0]
+
+    assert 'data-dzialka="1"' in karta, "pole działki w karcie bez znacznika sprawdzania"
+    assert 'class="uldk podpowiedz"' in karta, "brak miejsca na wynik sprawdzenia"
+    assert 'data-dzialka="1"' in wzorzec and "uldk" in wzorzec, \
+        "kolejna działka byłaby bez sprawdzania"

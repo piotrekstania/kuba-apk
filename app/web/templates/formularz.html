@@ -31,6 +31,7 @@
           aria-label="{{ etykieta }}">{{ "\n" }}{{ wartosc }}</textarea>
 {%- else -%}
 <input name="sek__{{ nazwa_pola }}__{{ nr }}__{{ pod.klucz }}" value="{{ wartosc }}"
+       {% if pod.klucz in POLA_DZIALKI %}data-dzialka="1"{% endif %}
        aria-label="{{ etykieta }}">
 {%- endif -%}
 {%- endmacro %}
@@ -223,6 +224,9 @@
                   <label>{{ pod.etykieta }}</label>
                   {{ pole_sekcji(pole.klucz, nr, pod,
                                  wpis.get(pod.klucz, '') if wpis else '', pod.etykieta) }}
+                  {# ta sama podpowiedź co przy „Nr działki” w Położeniu; obręb bierze się
+                     stamtąd, więc numer w wykazie sprawdza się dokładnie tak samo #}
+                  {% if pod.klucz in POLA_DZIALKI %}<p class="uldk podpowiedz"></p>{% endif %}
                   {% if pod.podpowiedz %}<p class="podpowiedz">{{ pod.podpowiedz }}</p>{% endif %}
                 </div>
                 {% endfor %}
@@ -317,6 +321,7 @@
                 <div class="pole {{ pod.szerokosc or 'polowa' }}">
                   <label>{{ pod.etykieta }}</label>
                   {{ pole_sekcji(pole.klucz, 0, pod, '', pod.etykieta) }}
+                  {% if pod.klucz in POLA_DZIALKI %}<p class="uldk podpowiedz"></p>{% endif %}
                   {% if pod.podpowiedz %}<p class="podpowiedz">{{ pod.podpowiedz }}</p>{% endif %}
                 </div>
                 {% endfor %}
@@ -771,8 +776,15 @@ sprawdzSumy();
 // „zły numer”: ULDK nie zna wszystkich działek (przy pobieraniu obrębów kilkanaście
 // jednostek w ogóle nie odpowiedziało), a fałszywy alarm nauczyłby ignorowania
 // komunikatów — czyli zepsułby też te prawdziwe.
-document.querySelectorAll('input[data-dzialka]').forEach(pole => {
+// Podpinamy **per pole**, a nie raz na wszystkie: numer działki jest też w każdej
+// karcie wykazu, a karty dokładają się w trakcie wypełniania (przycisk „+ dodaj kolejną
+// działkę”). Świeżo doklonowana karta wołałaby inaczej o podpowiedź, której nikt jej nie
+// podpiął — i sprawdzanie działałoby tylko w pierwszej.
+function podepnijSprawdzanieDzialki(pole) {
+  if (pole.dataset.sprawdzanie) return;          // ta sama karta bywa przenumerowana
+  pole.dataset.sprawdzanie = '1';
   const wynik = pole.parentElement.querySelector('.uldk');
+  if (!wynik) return;
   const obreb = () => document.querySelector('select[data-poziom="obreb"]')?.value || '';
   let ostatnie = '';
 
@@ -793,6 +805,10 @@ document.querySelectorAll('input[data-dzialka]').forEach(pole => {
       const odpowiedz = await fetch(`/teryt/dzialka?obreb=${encodeURIComponent(obreb())}`
                                     + `&numery=${encodeURIComponent(numery)}`);
       const dane = await odpowiedz.json();
+      // Odpowiedź na **poprzednie** pytanie już nas nie interesuje: gdy ktoś zmieni
+      // obręb i od razu poprawi numer, w locie są dwa zapytania i wygrywa to, które
+      // wróci później — czyli w polu potrafiła zostać podpowiedź o starym numerze.
+      if (podpis !== ostatnie) return;
       const brakujace = dane.wyniki.filter(w => w.stan === 'brak').map(w => w.numer);
       const sprawdzone = dane.wyniki.filter(w => w.stan !== 'nieznane');
       if (!sprawdzone.length) {
@@ -828,7 +844,9 @@ document.querySelectorAll('input[data-dzialka]').forEach(pole => {
     ostatnie = '';                            // zmiana obrębu unieważnia poprzedni wynik
     sprawdz();
   });
-});
+}
+
+document.querySelectorAll('input[data-dzialka]').forEach(podepnijSprawdzanieDzialki);
 
 // „Załaduj” przy polu z biblioteką gotowych opisów: wybrany tekst ląduje w polu i dalej
 // jest zwykłą treścią do poprawiania — o to chodzi, bo każda robota różni się szczegółami.
@@ -890,6 +908,11 @@ document.querySelectorAll('.sekcje').forEach(blok => {
   blok.querySelector('.dodaj-sekcje').addEventListener('click', () => {
     lista.appendChild(wzorzec.content.cloneNode(true));
     przenumeruj();
+    // nowa karta ma dostać to samo co pierwsza: sprawdzanie numeru w ewidencji
+    // i przeliczoną kontrolę sumy
+    lista.lastElementChild.querySelectorAll('input[data-dzialka]')
+         .forEach(podepnijSprawdzanieDzialki);
+    sprawdzSumy(lista.lastElementChild);
     lista.lastElementChild.querySelector('input, select, textarea')?.focus();
   });
 
