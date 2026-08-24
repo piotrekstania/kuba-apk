@@ -3,6 +3,11 @@
 Co doszło w kolejnych wersjach programu. Ten sam opis pokazuje się raz, na stronie
 głównej, zaraz po tym jak program sam się zaktualizuje.
 
+## 2026.08.24-106 — 2026-08-24
+
+Zmiany:
+- numer wersji w oknie nowości jest niebieski, taki sam jak przy nazwie programu w nagłówku
+
 ## 2026.08.24-105 — 2026-08-24
 
 Zmiany:
