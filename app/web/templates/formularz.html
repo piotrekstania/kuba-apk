@@ -705,7 +705,10 @@ document.querySelectorAll('.teryt').forEach(blok => {
 // Kropka i przecinek znaczą tu to samo: użytkownik pisze z przecinkiem, brat z kropką.
 function liczbaZWpisu(tekst) {
   const czysty = tekst.trim().replace(',', '.');
-  return /^\d+([.]\d+)?$/.test(czysty) ? parseFloat(czysty) : NaN;
+  // Wpis w połowie pisania też jest liczbą: „0,” i „0.” znaczą zero, „,5” — pół.
+  // Bez tego komunikat „nie rozumiem” wyskakiwał na jedno naciśnięcie klawisza,
+  // za każdym razem, gdy ktoś dochodził do przecinka — czyli przy każdej wartości.
+  return /^\d+[.]?\d*$|^[.]\d+$/.test(czysty) ? parseFloat(czysty) : NaN;
 }
 
 function sprawdzSumy(zakres) {
