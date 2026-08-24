@@ -107,6 +107,45 @@ def test_co_nowego_pokazuje_sie_w_oknie_na_srodku(klient):
     assert "<li>kontrola sumy PPU</li>" in strona
 
 
+def test_okno_bierze_opis_z_historii_a_nie_ze_znacznika(klient, tmp_path, monkeypatch):
+    """Znacznik pisze STARY aktualizator (pułapka 7b), a jego `_czytaj_wersje` skleja
+    opis w jedną linijkę — okno pokazywało ścianę tekstu z myślnikami w środku, choć
+    historia obok miała listy (zgłoszone zrzutem z instalacji testowej, 24.08.2026).
+    ZMIANY.md przyjeżdża w tej samej paczce co nowy kod, więc wpis świeżo
+    zainstalowanej wersji zawsze tam jest — i to on ma zasilać okno."""
+    _znacznik_nowosci("2026.08.25-105\nZmiany: - pierwsza rzecz - druga rzecz")
+    plik = tmp_path / "ZMIANY.md"
+    plik.write_text("""# Historia zmian
+
+## 2026.08.25-105 — 2026-08-25
+
+Zmiany:
+- pierwsza rzecz
+- druga rzecz
+""", encoding="utf-8")
+    monkeypatch.setattr(zmiany, "PLIK", plik)
+
+    strona = klient.get("/").text
+
+    assert "<li>pierwsza rzecz</li>" in strona, \
+        "okno pokazuje sklejony znacznik zamiast list z ZMIANY.md"
+    assert "<li>druga rzecz</li>" in strona
+    assert "Zmiany: - pierwsza" not in strona, "ściana tekstu ze znacznika została w oknie"
+
+
+def test_okno_pokazuje_znacznik_gdy_wersji_nie_ma_w_historii(klient, tmp_path, monkeypatch):
+    """Zapas na wypadek dziury w ZMIANY.md — lepszy sklejony opis niż puste okno."""
+    _znacznik_nowosci("2026.08.25-106\nNowości:\n- rzecz spoza historii")
+    plik = tmp_path / "ZMIANY.md"
+    plik.write_text("# Historia zmian\n", encoding="utf-8")
+    monkeypatch.setattr(zmiany, "PLIK", plik)
+
+    strona = klient.get("/").text
+
+    assert "zaktualizował się do wersji 2026.08.25-106" in strona
+    assert "<li>rzecz spoza historii</li>" in strona
+
+
 def test_okno_z_nowosciami_wraca_dopoki_nie_klikniesz_ok(klient):
     """Znacznik gaśnie dopiero po „OK”, nie przy samym pokazaniu strony.
 

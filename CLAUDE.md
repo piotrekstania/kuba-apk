@@ -249,7 +249,11 @@ też brat. Interfejs w całości po polsku.
    `test_nowy_plik_dojezdza_juz_przy_tej_aktualizacji`.
    **Ta sama pułapka wraca przy każdej zmianie wpiętej w samą aktualizację.** Drugi raz
    kosztowała sprzątanie `dane/kopie/`: kod trafił do brata, ale ponieważ wołało go
-   `_kopia_zapasowa`, u niego dalej leżało 40 kopii. Wniosek ogólny: **wszystko, co ma
+   `_kopia_zapasowa`, u niego dalej leżało 40 kopii. Trzeci raz — okno nowości: opis
+   w znaczniku skleja w jedną linijkę `_czytaj_wersje` **starego** aktualizatora, więc
+   listy punktów rozsypywały się w ścianę tekstu; dlatego `_co_nowego` czyta opis
+   z `ZMIANY.md` świeżo przyjechanej paczki, a znacznik jest tylko wyzwalaczem
+   z numerem. Wniosek ogólny: **wszystko, co ma
    działać u użytkownika od razu, wieszaj na starcie programu, a nie na aktualizacji.**
 8. **Aktualizator nie może importować niczego spoza stdlib.** Chodzi z `.venv`, w którym
    nowych zależności jeszcze nie ma — `start.bat` woła go *przed* `pip install`, właśnie

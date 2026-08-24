@@ -140,15 +140,22 @@ _ZNACZNIK_ZASOBOW: str | None = None
 def _co_nowego() -> dict[str, Any] | None:
     """Komunikat po aktualizacji, rozebrany tak samo jak wpis w historii wersji.
 
-    Pierwsza linijka pliku to numer wersji, reszta — opis dla użytkownika (wstęp
-    i listy punktów). Czyta to `app/zmiany.py`, żeby obie strony pokazywały to samo
-    tym samym kształtem.
+    Opis bierzemy **z ZMIANY.md, nie ze znacznika**: znacznik pisze aktualizator
+    z wersji, którą użytkownik miał *przed* chwilą (pułapka 7b), a jego
+    `_czytaj_wersje` skleja opis w jedną linijkę — okno pokazywało ścianę tekstu
+    z myślnikami w środku, choć historia obok miała listy. ZMIANY.md przyjeżdża
+    w tej samej paczce co nowy kod, więc wpis świeżo zainstalowanej wersji zawsze
+    tam jest; treść ze znacznika zostaje jako zapas na dziurę w historii.
     """
     tresc = aktualizacja.co_nowego()
     if not tresc:
         return None
     wersja, _, opis = tresc.partition("\n")
-    return {"wersja": wersja.strip(), **zmiany.rozbierz_opis(opis)}
+    wersja = wersja.strip()
+    wpis = next((w for w in zmiany.wpisy() if w["wersja"] == wersja), None)
+    if wpis and (wpis["grupy"] or wpis["wstep"]):
+        return {"wersja": wersja, "wstep": wpis["wstep"], "grupy": wpis["grupy"]}
+    return {"wersja": wersja, **zmiany.rozbierz_opis(opis)}
 
 
 def _widok(request: Request, nazwa: str, status: int = 200,
