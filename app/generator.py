@@ -186,8 +186,13 @@ def sformatuj_pod_znaczniki(dokument: DocxTemplate, kontekst: dict[str, Any]) ->
     dokument.init_docx(reload=False)
     gotowy = dict(kontekst)
     w_petli: dict[str, tuple[str, int]] = {}
-    # klucze stojące w **jednym wierszu tabeli** — patrz `_zaznacz_zmiany`
-    wiersze: dict[int, set[str]] = {}
+    # Klucze stojące w **jednym wierszu tabeli** — patrz `_zaznacz_zmiany`. Trzymamy
+    # (element, klucze) na liście, a nie w słowniku po `id(element)`: lxml tworzy obiekty
+    # opakowujące węzły w locie, więc po zebraniu śmieci ten sam `id()` potrafi wskazywać
+    # **inny** wiersz. Objawiło się to jak zmyślony błąd — u autora zielono, w CI czerwono,
+    # bo zbieranie śmieci trafiało gdzie indziej. Lista trzyma referencje, więc obiekty
+    # żyją do końca funkcji i porównanie tożsamości ma sens.
+    wiersze: list[tuple[Any, set[str]]] = []
     for akapit in dokument.docx.element.body.iter(qn("w:p")):
         biegi = list(akapit.iter(qn("w:r")))
         tekst_akapitu = "".join(w.text or "" for b in biegi for w in b.iter(qn("w:t")))
@@ -201,14 +206,19 @@ def sformatuj_pod_znaczniki(dokument: DocxTemplate, kontekst: dict[str, Any]) ->
                 w_petli[klucz] = (krój, rozmiar)
                 wiersz = _wiersz_tabeli(akapit, qn)
                 if wiersz is not None:
-                    wiersze.setdefault(id(wiersz), set()).add(klucz)
+                    for element, klucze in wiersze:
+                        if element is wiersz:
+                            klucze.add(klucz)
+                            break
+                    else:
+                        wiersze.append((wiersz, {klucz}))
                 continue
             wartosc = kontekst.get(nazwa)
             if not isinstance(wartosc, str):
                 continue
             gotowy[nazwa] = na_richtext(wartosc, krój, rozmiar)
     if w_petli:
-        grupy = [k for k in wiersze.values() if len(k) > 2]
+        grupy = [klucze for _, klucze in wiersze if len(klucze) > 2]
         gotowy = _zaznacz_zmiany(gotowy, w_petli, grupy)
     return gotowy
 

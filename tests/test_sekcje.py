@@ -693,6 +693,38 @@ def test_zmieniony_stan_nowy_jest_czerwony_i_pogrubiony(baza):
     assert all(b.bold and str(b.font.color.rgb) == "FF0000" for b in ofu_nowy)
 
 
+def test_grupa_nie_wychodzi_poza_swoj_wiersz(baza):
+    """Zmiana w jednym wierszu nie czerwieni sąsiadów.
+
+    Grupy powstają z wierszy formatki i muszą się na nich kończyć. Gdyby klucze z dwóch
+    wierszy trafiły do jednej grupy (a tak było, dopóki wiersze rozpoznawaliśmy po
+    `id()` obiektu lxml — te bywają po zebraniu śmieci użyte ponownie), zmiana numeru
+    działki zaczerwieniłaby przepisany bez zmian użytek.
+    """
+    d = _wykaz_dzialek([{"dzialka": "861/2",
+                         # zmienia się **tylko** numer działki
+                         "numer_dotychczas": "861/2", "numer_nowy": "861/3",
+                         "pow_ewidencyjna_dotychczas": "0.3610",
+                         "pow_ewidencyjna_nowy": "0.3610",
+                         "ofu_dotychczas": "R", "ofu_nowy": "R",
+                         "ozk_dotychczas": "IIIb", "ozk_nowy": "IIIb",
+                         "pow_uzytkow_dotychczas": "0.3610",
+                         "pow_uzytkow_nowy": "0.3610"}])
+
+    def biegi(wiersz):
+        return [b for k in wiersz.cells[-4:] for p in k.paragraphs
+                for b in p.runs if b.text.strip()]
+
+    tabela = d.tables[0]
+    numer = [w for w in tabela.rows if "Numer działki" in w.cells[1].text][0]
+    uzytki = [w for w in tabela.rows if "Użytki gruntowe" in w.cells[1].text][-1]
+
+    assert all(b.bold for b in biegi(numer)), "zmieniony numer ma być czerwony"
+    assert biegi(uzytki), "wiersz użytków jest pusty — test sprawdza co innego"
+    assert not any(b.bold for b in biegi(uzytki)), \
+        "użytek przepisany bez zmian zaczerwienił się od sąsiedniego wiersza"
+
+
 def test_kontrola_sumy_jest_podpieta_w_formularzu(klient):
     """Suma PPU musi się zgadzać z polem powierzchni — formularz liczy to na bieżąco.
 
