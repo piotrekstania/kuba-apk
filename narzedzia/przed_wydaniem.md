@@ -65,9 +65,9 @@ użytkownika na prawdziwej aktualizacji do -105, niebieski numer sprawdzony na �
 
 ## C. Zlecenie review (do wklejenia Fable)
 
-> Zrób przegląd kodu zmian z zakresu `6683bfa..HEAD` w tym repozytorium
-> (`git log --oneline 6683bfa..HEAD`, `git diff 6683bfa..HEAD`) — to wszystko, co
-> przyszło po ostatnim wydaniu (`2026.08.24-102`). Kontekst projektu jest w `CLAUDE.md` —
+> Zrób przegląd kodu zmian z zakresu `826f452..HEAD` w tym repozytorium
+> (`git log --oneline 826f452..HEAD`, `git diff 826f452..HEAD`) — to wszystko, co
+> przyszło po ostatnim wydaniu (`2026.08.24-106`). Kontekst projektu jest w `CLAUDE.md` —
 > przeczytaj go najpierw, zwłaszcza listę pułapek i zasady pracy nad kodem.
 > Odpowiadaj po polsku.
 >
@@ -75,28 +75,24 @@ użytkownika na prawdziwej aktualizacji do -105, niebieski numer sprawdzony na �
 > u niego sama przy starcie — więc szukam **błędów, które on zobaczy**, a nie
 > uwag o stylu.
 >
-> Na czym się skup:
-> 1. `formularz.html` — `podepnijSprawdzanieDzialki`: podpinanie per pole, znacznik
->    `data-sprawdzanie`, listener na obrębie zakładany raz na pole (przy dziesięciu
->    kartach jest ich dziesięć — czy to gdzieś boli?), odrzucanie odpowiedzi na
->    nieaktualne pytanie. Czy komunikat może trafić do cudzej karty? Czy klon karty
->    dostaje wszystko, co ma pierwsza?
-> 2. `app/zmiany.py` — `rozbierz_opis`: nagłówek listy rozpoznawany po dwukropku
->    i długości, punkt po myślniku, linijka bez myślnika doklejana do poprzedniego
->    punktu. Co przy opisie z samymi myślnikami bez nagłówka, z dwukropkiem w środku
->    zdania, z pustym punktem („- ”), z myślnikiem w treści punktu? Czy sto starych
->    wpisów na pewno czyta się jak dotąd?
-> 3. `app/main.py` — `_co_nowego` i `index.html`: znacznik kasuje się przy odczycie,
->    więc okno ma się pokazać **raz**. Czy da się doprowadzić do sytuacji, w której
->    zniknie, zanim ktokolwiek je zobaczy (błąd renderu strony głównej, przekierowanie,
->    drugie okno przeglądarki otwarte równolegle)?
-> 4. `<dialog>` + `showModal()` — czy strona działa, gdy skrypt się nie wykona
->    (okno zostanie zamknięte, ale treść ukryta?), i czy „OK” w `<form method="dialog">`
->    nie wysyła przypadkiem formularza operatu?
-> 5. `narzedzia/wydaj.py` i `zbuduj_zmiany.py` — opis wielolinijkowy z wejścia
->    standardowego: puste wejście, sam numer bez opisu, BOM, znaki `\r\n` z Windowsa.
->    Czy `ZMIANY.md` po przebudowie zgadza się z `WERSJA` co do znaku?
-> 6. Testy dołożone w tej rundzie — czy sprawdzają zachowanie, czy tylko to, że kod
+> Na czym się skup — **te punkty dopisujesz pod bieżącą rundę** (skasuj po wydaniu
+> razem z częścią B). Poniżej zostaje to, o co warto pytać przy każdej rundzie:
+> 1. `app/main.py` — dane operatu bywają starsze niż dzisiejszy szablon: pole
+>    skasowane, zmieniony typ, wpis niebędący słownikiem, podpole, którego wtedy
+>    nie było. Czy któraś ścieżka wywala stronę zamiast pominąć dane?
+> 2. Szablony HTML — czy znaczniki domykają się przy **każdej** kombinacji danych,
+>    a wzorzec do klonowania kart ma dokładnie to samo co karta pierwsza?
+> 3. Kontekst stron budowany poza `_widok` — brak jednej zmiennej to w Jinja wyjątek,
+>    nie pustka, i strona po cichu leci do zapasowego gołego HTML-a (pułapka 28).
+> 4. Cokolwiek jednorazowego (komunikat, znacznik, kolejka) — czy gaśnie dopiero
+>    po **potwierdzeniu przez użytkownika**? Sam render nie jest dowodem, że ktoś to
+>    widział: stronę główną pobiera też kontrola startu (pułapki 21 i 30).
+> 5. Cokolwiek, co zapamiętuje węzły XML — nie po `id()` obiektu lxml (pułapka 29):
+>    ten sam `id()` bywa po zebraniu śmieci użyty dla innego węzła, a objaw wychodzi
+>    dopiero w CI.
+> 6. Zmiana wpięta w samą aktualizację działa dopiero od **następnej** (pułapka 7b) —
+>    czy da się ją zrobić o piętro wyżej, tak żeby zadziałała od razu?
+> 7. Testy dołożone w tej rundzie — czy sprawdzają zachowanie, czy tylko to, że kod
 >    się wykonał; czy któryś zostawia pliki w prawdziwych `dane/`/`wyniki/`?
 
 > Czego **nie** zgłaszać: nazw po polsku (to konwencja projektu), braku typów
