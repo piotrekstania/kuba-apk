@@ -199,18 +199,32 @@ ol.pozycje { margin: 0; padding-left: 22px; }
    trafił w treść — to jedyny moment, w którym brat dowiaduje się o zmianach, a pasek
    nad listą dawało się przewinąć i nie przeczytać. Rozmycie robi `backdrop-filter`;
    gdzie go nie ma, zostaje samo przyciemnienie i okno działa tak samo. */
-/* Wysokość ograniczona, bo po przeskoku wielu wersji okno niesie kilka wydań naraz —
-   dłuższa treść ma się przewijać w środku, a nie wypychać przycisku „OK” poza ekran. */
-.okno-nowosci { max-width: 620px; max-height: 85vh; overflow-y: auto;
+/* Okno ma stałą wysokość, a przewija się **sama treść** — „OK” stoi na dole i widać
+   go zawsze. Wcześniej przewijało się całe okno razem z przyciskiem, a że przycisk ma
+   `autofocus`, przeglądarka otwierała okno przewinięte na sam dół: przy kilku wydaniach
+   naraz — czyli po to, po co to okno powstało — nagłówek z numerem wersji i najnowsze
+   zmiany lądowały nad krawędzią ekranu (zmierzone przy dziewięciu wydaniach: 1410 px
+   przewinięcia z 1953). `display: flex` **wyłącznie przy `[open]`**: reguła autorska
+   przebija `dialog:not([open]) { display: none }` z przeglądarki niezależnie od
+   specyficzności, więc bez tego okno zamknięte Esc zostałoby na stronie. */
+.okno-nowosci { max-width: 620px; max-height: 85vh;
                 padding: 22px 26px 18px; border: 1px solid var(--linia);
                 border-radius: 12px; background: var(--panel); color: var(--tekst);
                 box-shadow: 0 18px 48px rgba(15, 23, 42, .28); }
+.okno-nowosci[open] { display: flex; flex-direction: column; }
+/* `min-height: 0` jest tu konieczne: bez niego element w kolumnie flex nie kurczy się
+   poniżej swojej treści i przewijanie w ogóle nie rusza. */
+.okno-nowosci .tresc-nowosci { overflow-y: auto; min-height: 0; }
 .okno-nowosci::backdrop { background: rgba(15, 23, 42, .45); backdrop-filter: blur(3px); }
-.okno-nowosci h2 { margin: 0 0 10px; font-size: 18px; }
+.okno-nowosci h2 { margin: 0 0 10px; font-size: 18px; flex: none; }
 /* Numer wersji w tym samym niebieskim co w nagłówku strony (`.logo-wersja`) —
    to ten sam numer, ma się czytać jako ta sama rzecz. */
 .okno-nowosci .wersja-nowosci { color: var(--akcent); }
-.okno-nowosci .pasek { margin: 18px 0 0; }
+/* Kreska nad przyciskiem mówi, że treść pod nią się kończy — przy przewijanej liście
+   bez niej wygląda to na tekst ucięty w połowie. `flex: none`, żeby pasek nie oddał
+   miejsca treści i nie zniknął przy długiej liście. */
+.okno-nowosci .pasek { margin: 14px 0 0; padding: 14px 0 0; flex: none;
+                       border-top: 1px solid var(--linia); }
 ol.pozycje li { margin: 2px 0; }
 /* Separator grup na liście wpisanych danych — ma rozdzielać, a nie krzyczeć,
    więc drobnym pismem i bez tła; pierwsza grupa nie potrzebuje kreski nad sobą. */

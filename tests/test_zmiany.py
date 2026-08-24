@@ -418,6 +418,73 @@ def test_menu_pomocy_prowadzi_do_obu_stron(klient):
     assert 'href="/pomoc/historia"' in tresc
 
 
+def _okno_z_kilkoma_wydaniami(klient, tmp_path, monkeypatch) -> str:
+    """Strona główna z oknem nowości, w którym stoją trzy wydania."""
+    from app import aktualizacja
+
+    plik = tmp_path / "ZMIANY.md"
+    plik.write_text("""# Historia zmian
+
+## 2026.08.24-108 — 2026-08-24
+
+Zmiany:
+- trzecia rzecz
+
+## 2026.08.24-107 — 2026-08-24
+
+Zmiany:
+- druga rzecz
+
+## 2026.08.24-106 — 2026-08-24
+
+Zmiany:
+- pierwsza rzecz
+""", encoding="utf-8")
+    monkeypatch.setattr(zmiany, "PLIK", plik)
+    aktualizacja.ZNACZNIK_PRZECZYTANE.parent.mkdir(parents=True, exist_ok=True)
+    aktualizacja.ZNACZNIK_PRZECZYTANE.write_text("2026.08.24-106", encoding="utf-8")
+    _znacznik_nowosci("2026.08.24-108\nZmiany:\n- trzecia rzecz\n")
+    return klient.get("/").text
+
+
+def test_ok_zostaje_poza_przewijana_trescia(klient, tmp_path, monkeypatch):
+    """Przewija się lista wydań, a nie całe okno — inaczej „OK” otwiera je na dole.
+
+    Przycisk ma `autofocus`, więc przeglądarka przewija okno tak, żeby go pokazać.
+    Dopóki wydanie było jedno, treść mieściła się w oknie i nic się nie działo; odkąd
+    okno pokazuje wszystko od ostatniego „OK”, przy dziewięciu wydaniach otwierało się
+    przewinięte o 1410 px z 1953 — nagłówek z numerem wersji i najnowsze zmiany stały
+    nad krawędzią ekranu, a brat widział koniec **najstarszego** wpisu i przycisk.
+    """
+    strona = _okno_z_kilkoma_wydaniami(klient, tmp_path, monkeypatch)
+
+    poczatek = strona.index('<div class="tresc-nowosci">')
+    koniec = strona.index("</div>", poczatek)
+    przewijane = strona[poczatek:koniec]
+
+    assert "<li>trzecia rzecz</li>" in przewijane,         "lista wydań wypadła z przewijanego pudełka — przewijać będzie się całe okno"
+    assert "<li>druga rzecz</li>" in przewijane, "wydanie po drodze wypadło z listy"
+    assert "/nowosci/przeczytane" not in przewijane,         "„OK” wjechał do przewijanej treści — okno znów otworzy się na samym dole"
+    assert strona.index('action="/nowosci/przeczytane"') > koniec,         "pasek z „OK” ma stać pod przewijaną listą"
+
+
+def test_zamkniete_okno_nowosci_znika_ze_strony():
+    """`display: flex` na oknie wolno włączyć **tylko** przy `[open]`.
+
+    Reguła autorska przebija `dialog:not([open]) { display: none }` z przeglądarki
+    niezależnie od specyficzności, więc `.okno-nowosci { display: flex }` zostawiłoby
+    okno na stronie po zamknięciu klawiszem Esc — nieprzyciemnione, w środku listy
+    operatów, bez sposobu na pozbycie się go inaczej niż przeładowaniem.
+    """
+    css = (BAZA / "app" / "web" / "static" / "style.css").read_text(encoding="utf-8")
+
+    assert ".okno-nowosci[open] { display: flex;" in css,         "układ okna musi być przypięty do [open]"
+    poczatek = css.index(".okno-nowosci {")
+    blok = css[poczatek:css.index("}", poczatek)]
+
+    assert "display:" not in blok,         "display na .okno-nowosci bez [open] pokaże zamknięte okno"
+
+
 # --- stempel nowego wydania --------------------------------------------------
 
 def test_numer_wydania_ma_date_i_kolejny_numer():

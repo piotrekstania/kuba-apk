@@ -58,9 +58,26 @@ start.bat
 Wszystko od ostatniego wydania — numer i skrót commita znajdziesz w `ZMIANY.md`
 i `git log`. Dopisuj punkty przy każdej rundzie zmian, kasuj po wydaniu.
 
-*(pusto — wydanie 2026.08.24-109 poszło 24.08; rozruch z nazwy kopii sprawdzony
-na plikach odtworzonych ze zgłoszenia: przeskok -106 -> -108 bez pliku OK dał okno
-z oboma wydaniami. U użytkownika okno -109 pokaże jedno wydanie — plik OK już ma)*
+- **Okno nowości: przewija się sama lista, „OK” stoi na dole.** Przycisk ma `autofocus`,
+  więc przeglądarka przewijała okno tak, żeby go pokazać — a odkąd okno pokazuje komplet
+  wydań od ostatniego „OK”, otwierało się na samym dole. Zmierzone przy dziewięciu
+  wydaniach: 1410 px przewinięcia z 1953, nagłówek z numerem wersji 1387 px nad krawędzią
+  okna. Brat widział koniec opisu **najstarszego** wydania i przycisk, a wszystko, po co
+  to okno powstało, było poza ekranem. Treść siedzi teraz w `.tresc-nowosci`, pasek z „OK”
+  pod nim, oddzielony kreską. Sprawdzone w przeglądarce na tych samych dziewięciu
+  wydaniach: okno nie przewija się wcale, treść owszem (384 px z 1832), nagłówek,
+  najnowsze wydanie i przycisk widoczne od razu.
+- `display: flex` na oknie jest **przypięte do `[open]`**: reguła autorska przebija
+  `dialog:not([open]) { display: none }` z przeglądarki niezależnie od specyficzności,
+  więc bez tego okno zamknięte Esc zostałoby na stronie. Sprawdzone: po `close()`
+  wyliczony `display` to `none`. Pilnuje tego `test_zamkniete_okno_nowosci_znika_ze_strony`.
+- Przy okazji: opis wydania `2026.08.24-109`, które brat **już dostał**, obiecywał, że
+  okno „przewija się w środku, zamiast wypychać przycisk OK poza ekran”. Kod tego nie
+  robił — dopiero ta poprawka czyni ten wpis prawdziwym, więc `ZMIANY.md` zostaje bez zmian.
+
+**Do obejrzenia okiem przed wydaniem:** jak wygląda kreska nad „OK” przy **jednym,
+krótkim** wydaniu — czyli w sytuacji, którą brat zobaczy najczęściej. Nie miałem tego
+scenariusza pod ręką przy sprawdzaniu (testowałem dziewięcioma wydaniami).
 
 ---
 

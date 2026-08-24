@@ -23,7 +23,12 @@
   {# Wydania **od ostatniego „OK”**, od najnowszego. Brat uruchamia program co kilka
      dni, a wydania idą częściej — przy pokazywaniu samego ostatniego gubiło się
      wszystko, co doszło po drodze. Przy jednym wydaniu nagłówek z numerem byłby
-     powtórzeniem tego z góry, więc pokazuje się dopiero od dwóch. #}
+     powtórzeniem tego z góry, więc pokazuje się dopiero od dwóch.
+
+     Lista siedzi w osobnym pudełku, bo przewijać ma się **ona**, a nie całe okno:
+     „OK” ma `autofocus`, więc przy przewijalnym oknie przeglądarka otwierała je
+     na samym dole — nagłówek i najnowsze wydania lądowały nad krawędzią ekranu. #}
+  <div class="tresc-nowosci">
   {% for wydanie in co_nowego.wydania %}
   {% if co_nowego.wydania | length > 1 %}
   <h3 class="wersja-nowosci">{{ wydanie.wersja }}</h3>
@@ -36,6 +41,7 @@
   </ul>
   {% endfor %}
   {% endfor %}
+  </div>
   <form method="post" action="/nowosci/przeczytane" class="pasek do-prawej">
     <button class="glowny" autofocus>OK</button>
   </form>
