@@ -3,6 +3,12 @@
 Co doszło w kolejnych wersjach programu. Ten sam opis pokazuje się raz, na stronie
 głównej, zaraz po tym jak program sam się zaktualizuje.
 
+## 2026.08.24-109 — 2026-08-24
+
+Zmiany:
+- okno nowości pokazuje komplet przeskoczonych wydań także wtedy, gdy nigdy wcześniej nie kliknąłeś OK — wersję startową bierze wtedy z kopii sprzed aktualizacji; przy tym przeskoku z -106 na -108 zgubiło się -107 i to jest ta poprawka
+- przy wielu wydaniach naraz okno przewija się w środku, zamiast wypychać przycisk OK poza ekran
+
 ## 2026.08.24-108 — 2026-08-24
 
 Zmiany:

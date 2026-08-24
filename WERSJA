@@ -1,3 +1,4 @@
-2026.08.24-108
+2026.08.24-109
 Zmiany:
-- wydanie porządkowe, bez zmian w programie — sprawdza, czy okno nowości poprawnie skleja kilka wydań przy przeskoku o więcej niż jedną wersję
+- okno nowości pokazuje komplet przeskoczonych wydań także wtedy, gdy nigdy wcześniej nie kliknąłeś OK — wersję startową bierze wtedy z kopii sprzed aktualizacji; przy tym przeskoku z -106 na -108 zgubiło się -107 i to jest ta poprawka
+- przy wielu wydaniach naraz okno przewija się w środku, zamiast wypychać przycisk OK poza ekran
