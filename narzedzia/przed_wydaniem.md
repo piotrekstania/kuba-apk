@@ -107,8 +107,9 @@ i nie mogę go odpalić za ciebie).
 
 ## Po zielonym review
 
-Opis pisze się w stałym kształcie — jedno–dwa zdania, a pod nimi listy. Najwygodniej
-podać go przez wejście standardowe (`-`), bo wtedy nie trzeba walczyć z cudzysłowami:
+Opis pisze się w stałym kształcie: **same punkty**, w dwóch listach, bez zdań wstępu.
+Najwygodniej podać go przez wejście standardowe (`-`), bo wtedy nie trzeba walczyć
+z cudzysłowami:
 
 ```bat
 .venv\Scripts\python narzedzia\wydaj.py "opis dla brata"
@@ -116,8 +117,6 @@ podać go przez wejście standardowe (`-`), bo wtedy nie trzeba walczyć z cudzy
 
 ```bash
 .venv/bin/python narzedzia/wydaj.py - <<'OPIS'
-Jedno–dwa zdania, o co w tym wydaniu chodzi.
-
 Zmiany:
 - co działa inaczej niż dotąd
 

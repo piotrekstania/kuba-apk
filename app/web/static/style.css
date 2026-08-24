@@ -185,6 +185,17 @@ ol.pozycje { margin: 0; padding-left: 22px; }
 .tytul-listy { margin: 8px 0 2px; font-weight: 600; font-size: 13px; }
 .punkty-wydania { margin: 0; padding-left: 20px; }
 .punkty-wydania li { margin: 2px 0; }
+
+/* Okno „co nowego” po aktualizacji. Tło przyciemnione i lekko rozmyte, żeby wzrok
+   trafił w treść — to jedyny moment, w którym brat dowiaduje się o zmianach, a pasek
+   nad listą dawało się przewinąć i nie przeczytać. Rozmycie robi `backdrop-filter`;
+   gdzie go nie ma, zostaje samo przyciemnienie i okno działa tak samo. */
+.okno-nowosci { max-width: 620px; padding: 22px 26px 18px; border: 1px solid var(--linia);
+                border-radius: 12px; background: var(--panel); color: var(--tekst);
+                box-shadow: 0 18px 48px rgba(15, 23, 42, .28); }
+.okno-nowosci::backdrop { background: rgba(15, 23, 42, .45); backdrop-filter: blur(3px); }
+.okno-nowosci h2 { margin: 0 0 10px; font-size: 18px; }
+.okno-nowosci .pasek { margin: 18px 0 0; }
 ol.pozycje li { margin: 2px 0; }
 /* Separator grup na liście wpisanych danych — ma rozdzielać, a nie krzyczeć,
    więc drobnym pismem i bez tła; pierwsza grupa nie potrzebuje kreski nad sobą. */

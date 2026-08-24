@@ -8,8 +8,6 @@ Format jest celowo prosty, żeby dało się go poprawić w Notatniku:
 
     ## 2026.08.02.7 — 2026-08-02
 
-    Jedno–dwa zdania, o co w tym wydaniu chodzi.
-
     Zmiany:
     - co działa inaczej niż dotąd
     - i druga taka rzecz
@@ -17,10 +15,11 @@ Format jest celowo prosty, żeby dało się go poprawić w Notatniku:
     Nowości:
     - co doszło
 
-    Wydanie to zwykle kilkanaście commitów, więc jeden akapit robił się ścianą tekstu,
-    w której nie dało się znaleźć konkretnej zmiany. Nagłówek listy to linijka
-    zakończona dwukropkiem, punkt zaczyna się od myślnika. **Opisy sprzed tej zmiany
-    czytają się nadal** — akapit bez myślników jest po prostu samym wstępem.
+    **Cała treść idzie w punktach**, bez zdań wstępu (decyzja z 24.08.2026): wydanie to
+    zwykle kilkanaście commitów, a akapit robił się ścianą tekstu, w której nie dało się
+    znaleźć konkretnej zmiany. Nagłówek listy to linijka zakończona dwukropkiem, punkt
+    zaczyna się od myślnika. **Opisy sprzed tej zmiany czytają się nadal** — akapit bez
+    myślników jest po prostu wstępem i tak też się pokazuje.
 """
 from __future__ import annotations
 

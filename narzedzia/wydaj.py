@@ -3,11 +3,9 @@
     python narzedzia/wydaj.py "Opis dla brata."
     python narzedzia/wydaj.py -    # opis wielolinijkowy z wejścia standardowego
 
-Opis pisze się dla użytkownika i ma stały kształt: jedno–dwa zdania, o co chodzi,
-a pod nimi listy punktów. Wydanie to zwykle kilkanaście commitów, więc jeden akapit
-robił się ścianą tekstu:
-
-    Jedno–dwa zdania wstępu.
+Opis pisze się dla użytkownika i ma stały kształt: **same punkty**, w dwóch listach.
+Wydanie to zwykle kilkanaście commitów, więc opis pisany zdaniami robił się ścianą
+tekstu, w której nie dało się znaleźć konkretnej zmiany:
 
     Zmiany:
     - co działa inaczej niż dotąd

@@ -1,19 +1,33 @@
 {% extends "base.html" %}
 {% block tresc %}
 
-{# Ten sam kształt co na stronie historii: zdanie wstępu, a pod nim listy. Rozbiera
+{# Co nowego po aktualizacji: okno na środku, reszta strony przyciemniona i rozmyta.
+   Pasek nad listą operatów dawało się przewinąć i nie przeczytać, a to jedyny moment,
+   w którym brat dowiaduje się, co się zmieniło. Pokazuje się **raz** — plik znacznika
+   kasuje się przy odczycie (`aktualizacja.co_nowego`).
+
+   `<dialog>` zamiast własnego pudełka z JS-em: przyciemnienie (`::backdrop`), klawisz
+   Esc i pułapka na Tab są w przeglądarce, a przycisk „OK” w `<form method="dialog">`
+   zamyka okno bez ani jednej linii skryptu. Sam skrypt jest potrzebny tylko do
+   otwarcia, bo `<dialog open>` nie jest modalne — nie przyciemnia tła.
+
+   Ten sam kształt co na stronie historii: zdanie wstępu, a pod nim listy. Rozbiera
    to `app/zmiany.py`, żeby jedno i drugie miejsce czytało opis tak samo. #}
 {% if co_nowego %}
-<div class="komunikat">
-  <strong>Program zaktualizował się do wersji {{ co_nowego.wersja }}.</strong>
-  {{ co_nowego.wstep }}
+<dialog class="okno-nowosci" id="co-nowego">
+  <h2>Program zaktualizował się do wersji {{ co_nowego.wersja }}</h2>
+  {% if co_nowego.wstep %}<p class="wstep-wydania">{{ co_nowego.wstep }}</p>{% endif %}
   {% for grupa in co_nowego.grupy %}
   {% if grupa.tytul %}<p class="tytul-listy">{{ grupa.tytul }}:</p>{% endif %}
   <ul class="punkty-wydania">
     {% for punkt in grupa.punkty %}<li>{{ punkt }}</li>{% endfor %}
   </ul>
   {% endfor %}
-</div>
+  <form method="dialog" class="pasek do-prawej">
+    <button class="glowny" autofocus>OK</button>
+  </form>
+</dialog>
+<script>document.getElementById('co-nowego').showModal();</script>
 {% endif %}
 
 {% if not szablony %}

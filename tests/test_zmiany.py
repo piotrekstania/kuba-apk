@@ -81,21 +81,37 @@ def test_stary_opis_bez_list_czyta_sie_dalej(tmp_path, monkeypatch):
     assert wpis["grupy"] == []
 
 
-def test_komunikat_po_aktualizacji_tez_ma_listy(klient):
-    """Ten sam opis, ten sam kształt — brat czyta go raz po aktualizacji, na stronie
-    głównej, i drugi raz w historii wersji. Rozbiera to jedno miejsce w kodzie."""
+def _znacznik_nowosci(tresc: str) -> None:
     from app import aktualizacja
 
     aktualizacja.ZNACZNIK_NOWOSCI.parent.mkdir(parents=True, exist_ok=True)
-    aktualizacja.ZNACZNIK_NOWOSCI.write_text(
-        "2026.08.25-103\nWstęp wydania.\n\nNowości:\n- kontrola sumy PPU\n",
-        encoding="utf-8")
+    aktualizacja.ZNACZNIK_NOWOSCI.write_text(tresc, encoding="utf-8")
+
+
+def test_co_nowego_pokazuje_sie_w_oknie_na_srodku(klient):
+    """Po aktualizacji staje okno z przyciskiem „OK”, a reszta strony jest przyciemniona.
+
+    Pasek nad listą operatów dawało się przewinąć i nie przeczytać, a to jedyny moment,
+    w którym brat dowiaduje się, co się zmieniło. Treść ma ten sam kształt co w historii
+    wersji — punkty w listach — bo rozbiera ją to samo miejsce w kodzie.
+    """
+    _znacznik_nowosci("2026.08.25-103\nNowości:\n- kontrola sumy PPU\n")
 
     strona = klient.get("/").text
 
+    assert "<dialog" in strona, "komunikat nie jest oknem"
+    assert "showModal()" in strona, "okno bez `showModal` nie przyciemnia strony"
+    assert 'method="dialog"' in strona, "„OK” nie zamknie okna bez formularza dialogu"
     assert "zaktualizował się do wersji 2026.08.25-103" in strona
-    assert "Wstęp wydania." in strona
     assert "<li>kontrola sumy PPU</li>" in strona
+
+
+def test_okno_z_nowosciami_pokazuje_sie_tylko_raz(klient):
+    """Znacznik kasuje się przy odczycie — drugie wejście na stronę jest już czyste."""
+    _znacznik_nowosci("2026.08.25-103\nNowości:\n- kontrola sumy PPU\n")
+
+    assert "<dialog" in klient.get("/").text
+    assert "<dialog" not in klient.get("/").text
 
 
 def test_strona_historii_pokazuje_listy(klient, tmp_path, monkeypatch):
