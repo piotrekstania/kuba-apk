@@ -58,26 +58,11 @@ start.bat
 Wszystko od ostatniego wydania — numer i skrót commita znajdziesz w `ZMIANY.md`
 i `git log`. Dopisuj punkty przy każdej rundzie zmian, kasuj po wydaniu.
 
-Runda **ekranowa** i mała: okno nowości pokazuje teraz wszystkie wydania od ostatniego
-„OK”. Formatki, generator i ścieżka PDF nietknięte (`git diff --stat 826f452..HEAD`).
-Rzecz w tym, że **to się sprawdza tylko na prawdziwej aktualizacji** — u autora
-instancja podglądowa nie przechodzi przez `uruchom.py` i właśnie na tym poległo
-wydanie 103 (pułapka 30).
-
-1. **Okno po przeskoku kilku wersji.** Na instalacji testowej „jak u brata”:
-   po aktualizacji, **przed** kliknięciem „OK”, wpisz do `dane/wersja_przeczytana.txt`
-   numer starszego wydania (np. `2026.08.24-103`) i odśwież stronę główną. Okno ma
-   pokazać **wszystkie** wydania po tej wersji, każde ze swoim numerem nad listami,
-   od najnowszego.
-2. **„OK” zapamiętuje wersję**: po kliknięciu ma powstać `dane/wersja_przeczytana.txt`
-   z numerem zainstalowanej wersji, a okno ma zniknąć na dobre (odśwież parę razy).
-3. **Esc** zamyka okno tylko do końca tej wizyty — po wejściu na stronę główną
-   ponownie ma wrócić, dopóki nie padnie „OK”.
-4. **Świeża instalacja** (skasuj `dane/wersja_przeczytana.txt`, zostaw znacznik
-   `dane/co_nowego.txt`): okno ma pokazać **sam wpis zainstalowanej wersji**, a nie
-   całą historię.
-5. **Historia wersji** obok — wpisy mają wyglądać tak jak dotąd; okno i historia biorą
-   opis z tego samego pliku, więc rozjazd między nimi znaczy błąd.
+*(pusto — wydanie 2026.08.24-107 poszło 24.08. Pięć punktów rundy sprawdzone:
+przeskok wersji na żywo — przeczytana -104 + zainstalowana -106 dały okno z dwoma
+wydaniami i ich numerami, treść z ZMIANY.md; „OK" zapisało wersja_przeczytana.txt
+i zgasiło okno; świeża instalacja bez znacznika przeczytanej pokazywała sam wpis
+zainstalowanej wersji w testach -105/-106; historia bez zmian)*
 
 ---
 
