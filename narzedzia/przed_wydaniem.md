@@ -58,9 +58,33 @@ start.bat
 Wszystko od ostatniego wydania — numer i skrót commita znajdziesz w `ZMIANY.md`
 i `git log`. Dopisuj punkty przy każdej rundzie zmian, kasuj po wydaniu.
 
-*(pusto — wydanie 2026.08.24-102 poszło 24.08; czerwień całego użytku obejrzana
-w DOCX i na PDF z prawdziwego Worda, kontrola sumy przeklikana w siedmiu
-przypadkach łącznie z „0," w połowie pisania)*
+Runda **ekranowa**: żaden `.docx`, `app/generator.py` ani ścieżka PDF nie były ruszane
+(`git diff --stat 6683bfa..HEAD` — same szablony HTML, CSS, `zmiany.py`, `main.py`
+i testy; w `szablony/` zero zmian). Word przechodzi więc stały rytuał z części A,
+a reszta to siedem rzeczy do obejrzenia w przeglądarce:
+
+1. **Numer działki w karcie wykazu jest sprawdzany w ewidencji.** Wybierz obręb
+   w Położeniu, wpisz numer w karcie wykazu działki i wyjdź z pola: ma się pojawić
+   zielone „✓ Jest taka działka…” z powierzchnią albo pomarańczowe „ewidencja nie zna”.
+   **Potrzebny internet** (u brata bywa go w terenie brak — wtedy komunikat ma po
+   prostu nie wyskoczyć, bez błędu).
+2. **Druga działka też jest sprawdzana**: dołóż kartę przyciskiem, wpisz numer, sprawdź,
+   że komunikat pojawia się przy **niej**, a nie przy pierwszej.
+3. **Zmiana obrębu przy wpisanym numerze**: przestaw obręb i od razu popraw numer —
+   w polu ma zostać odpowiedź na to, co jest wpisane teraz, a nie na poprzednie pytanie.
+4. **Okno „co nowego” po aktualizacji.** To jest **jedyna rzecz w tej rundzie, której
+   nie da się sprawdzić inaczej niż prawdziwą aktualizacją**: zainstaluj wydanie
+   `narzedzia/instalacja_testowa.py --stara-wersja` i uruchom — po pobraniu nowej wersji
+   ma stanąć okno na środku (reszta strony przyciemniona i rozmyta), z listami „Zmiany”
+   i „Nowości” i jednym przyciskiem „OK”. Sprawdź też klawisz **Esc** i to, że po
+   zamknięciu **nie wraca** przy następnym wejściu na stronę główną.
+5. **Historia wersji** (Pomoc → Historia wersji): nowe wydanie ma się pokazać jako
+   listy punktów, a **starsze wpisy jednym akapitem, jak dotąd** — tego jest sto
+   i nie mają prawa się rozsypać.
+6. **Stopka**: po lewej „© 2026 ProCAD Geodezja”, po prawej liczniki, kreska nad nimi
+   równa z treścią. Kliknięcie firmy otwiera stronę brata **w nowej karcie** — program
+   ma zostać otwarty w swojej.
+7. Operat **sprzed** tej rundy — czy strona i formularz poprawiania nadal się otwierają.
 
 ---
 
@@ -76,20 +100,28 @@ przypadkach łącznie z „0," w połowie pisania)*
 > u niego sama przy starcie — więc szukam **błędów, które on zobaczy**, a nie
 > uwag o stylu.
 >
-> Na czym się skup — **te punkty dopisujesz pod bieżącą rundę** (skasuj po wydaniu
-> razem z częścią B). Poniżej zostaje to, o co warto pytać przy każdej rundzie:
-> 1. `app/main.py` — dane operatu bywają starsze niż dzisiejszy szablon: pole
->    skasowane, zmieniony typ, wpis niebędący słownikiem, podpole, którego wtedy
->    nie było. Czy któraś ścieżka wywala stronę zamiast pominąć dane?
-> 2. Szablony HTML — czy znaczniki domykają się przy **każdej** kombinacji danych
->    (grupa bez sekcji, sekcja bez wierszy, brak opisu)? Czy wzorzec do klonowania
->    kart ma dokładnie to samo co karta pierwsza?
-> 3. Kontekst stron budowany poza `_widok` — brak jednej zmiennej to w Jinja wyjątek,
->    nie pustka, i strona po cichu leci do zapasowego gołego HTML-a (pułapka 28).
-> 4. Cokolwiek, co zapamiętuje węzły XML — nie po `id()` obiektu lxml (pułapka 29):
->    ten sam `id()` bywa po zebraniu śmieci użyty dla innego węzła, a objaw wychodzi
->    dopiero w CI.
-> 5. Testy dołożone w tej rundzie — czy sprawdzają zachowanie, czy tylko to, że kod
+> Na czym się skup:
+> 1. `formularz.html` — `podepnijSprawdzanieDzialki`: podpinanie per pole, znacznik
+>    `data-sprawdzanie`, listener na obrębie zakładany raz na pole (przy dziesięciu
+>    kartach jest ich dziesięć — czy to gdzieś boli?), odrzucanie odpowiedzi na
+>    nieaktualne pytanie. Czy komunikat może trafić do cudzej karty? Czy klon karty
+>    dostaje wszystko, co ma pierwsza?
+> 2. `app/zmiany.py` — `rozbierz_opis`: nagłówek listy rozpoznawany po dwukropku
+>    i długości, punkt po myślniku, linijka bez myślnika doklejana do poprzedniego
+>    punktu. Co przy opisie z samymi myślnikami bez nagłówka, z dwukropkiem w środku
+>    zdania, z pustym punktem („- ”), z myślnikiem w treści punktu? Czy sto starych
+>    wpisów na pewno czyta się jak dotąd?
+> 3. `app/main.py` — `_co_nowego` i `index.html`: znacznik kasuje się przy odczycie,
+>    więc okno ma się pokazać **raz**. Czy da się doprowadzić do sytuacji, w której
+>    zniknie, zanim ktokolwiek je zobaczy (błąd renderu strony głównej, przekierowanie,
+>    drugie okno przeglądarki otwarte równolegle)?
+> 4. `<dialog>` + `showModal()` — czy strona działa, gdy skrypt się nie wykona
+>    (okno zostanie zamknięte, ale treść ukryta?), i czy „OK” w `<form method="dialog">`
+>    nie wysyła przypadkiem formularza operatu?
+> 5. `narzedzia/wydaj.py` i `zbuduj_zmiany.py` — opis wielolinijkowy z wejścia
+>    standardowego: puste wejście, sam numer bez opisu, BOM, znaki `\r\n` z Windowsa.
+>    Czy `ZMIANY.md` po przebudowie zgadza się z `WERSJA` co do znaku?
+> 6. Testy dołożone w tej rundzie — czy sprawdzają zachowanie, czy tylko to, że kod
 >    się wykonał; czy któryś zostawia pliki w prawdziwych `dane/`/`wyniki/`?
 
 > Czego **nie** zgłaszać: nazw po polsku (to konwencja projektu), braku typów
