@@ -338,7 +338,17 @@ def strona_glowna(request: Request, blad: str | None = None):
                   szablony=glowne,
                   operaty=_lista_operatow(),
                   blad=blad,
-                  co_nowego=_co_nowego())   # pokazuje się raz, po aktualizacji
+                  co_nowego=_co_nowego())   # wraca, dopóki brat nie kliknie „OK”
+
+
+@app.post("/nowosci/przeczytane")
+def nowosci_przeczytane():
+    # „OK” pod oknem nowości. Dopiero kliknięcie gasi komunikat: kasowanie przy samym
+    # odczycie zjadała kontrola startu (`uruchom.serwer_odpowiada` pobiera stronę
+    # główną — pułapka 21), a zamknięcie przeglądarki bez „OK” ma zostawić okno
+    # na następne wejście.
+    aktualizacja.nowosci_przeczytane()
+    return RedirectResponse("/", status_code=303)
 
 
 LIMIT_LISTY = 500          # zapas na lata pracy; przy 50 operatach rocznie to długo

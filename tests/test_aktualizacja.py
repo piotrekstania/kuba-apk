@@ -131,7 +131,11 @@ def test_aktualizacja_podmienia_kod_i_szanuje_dane(srodowisko, monkeypatch, tmp_
     assert (kopie[0] / "operaty.sqlite3").exists()
     # ...i jest jednorazowy komunikat „co nowego”
     assert "2026.09.09.9" in aktualizacja.co_nowego()
-    assert aktualizacja.co_nowego() is None            # drugi raz się nie pokazuje
+    # odczyt nie kasuje — stronę główną czyta też kontrola startu z uruchom.py;
+    # komunikat gaśnie dopiero po „OK” brata
+    assert "2026.09.09.9" in aktualizacja.co_nowego()
+    aktualizacja.nowosci_przeczytane()
+    assert aktualizacja.co_nowego() is None
 
 
 def test_zmiana_formatu_numeru_wyzwala_aktualizacje(srodowisko, monkeypatch, tmp_path):

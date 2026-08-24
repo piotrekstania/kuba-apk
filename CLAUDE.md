@@ -464,6 +464,16 @@ też brat. Interfejs w całości po polsku.
    śmieci, więc kolizja `id()` trafia gdzie indziej. Trzymaj referencje (lista par
    `(element, dane)`) i porównuj tożsamość, albo klucz po czymś trwałym z samego XML-a.
 
+30. **Stronę główną czyta nie tylko człowiek.** Kontrola startu w `uruchom.py`
+   (`serwer_odpowiada`, pułapka 21) pobiera `/` przy każdym uruchomieniu — więc
+   jednorazowy znacznik „co nowego”, kasowany **przy odczycie**, znikał, zanim
+   przeglądarka w ogóle się otworzyła. Okno nowości nie pokazało się nigdy nikomu,
+   kto startuje przez `start.bat`; wyszło dopiero na instalacji testowej „jak
+   u brata” — kopia robocza startuje uvicornem wprost, bez tej kontroli, i u autora
+   wszystko wyglądało dobrze. Wniosek: **komunikat jednorazowy gaś przy potwierdzeniu
+   przez użytkownika (POST z przycisku), nigdy przy samym renderze** — render strony
+   nie jest dowodem, że ktoś ją widział.
+
 ## Stan na teraz — przetestowane end-to-end
 
 Formularz → `.docx` → PDF → sklejenie kilku PDF-ów w jeden. Działa: powtarzalne wiersze tabeli

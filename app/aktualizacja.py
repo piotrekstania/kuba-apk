@@ -224,13 +224,24 @@ def zastosuj(nowy_kod: Path) -> None:
 
 
 def co_nowego() -> str | None:
-    """Jednorazowy komunikat po aktualizacji — po odczytaniu znika."""
+    """Komunikat po aktualizacji. **Sam odczyt niczego nie kasuje.**
+
+    Pierwsza wersja kasowała znacznik przy odczycie — i okno nowości nie pokazało się
+    nigdy nikomu, kto startuje przez `start.bat`: kontrola startu w `uruchom.py`
+    pobiera stronę główną (pułapka 21), więc zjadała komunikat, zanim przeglądarka
+    w ogóle się otworzyła. Do tego zamknięcie przeglądarki bez klikania gubiło
+    komunikat bezpowrotnie. Znacznik gaśnie dopiero po „OK” (`nowosci_przeczytane`).
+    """
     try:
         tresc = ZNACZNIK_NOWOSCI.read_text(encoding="utf-8").strip()
     except OSError:
         return None
-    ZNACZNIK_NOWOSCI.unlink(missing_ok=True)
     return tresc or None
+
+
+def nowosci_przeczytane() -> None:
+    """Użytkownik kliknął „OK” pod oknem nowości — dopiero to gasi komunikat."""
+    ZNACZNIK_NOWOSCI.unlink(missing_ok=True)
 
 
 def kopia_robocza_gita() -> bool:

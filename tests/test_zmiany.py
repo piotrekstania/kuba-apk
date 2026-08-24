@@ -101,17 +101,29 @@ def test_co_nowego_pokazuje_sie_w_oknie_na_srodku(klient):
 
     assert "<dialog" in strona, "komunikat nie jest oknem"
     assert "showModal()" in strona, "okno bez `showModal` nie przyciemnia strony"
-    assert 'method="dialog"' in strona, "„OK” nie zamknie okna bez formularza dialogu"
+    assert 'action="/nowosci/przeczytane"' in strona, \
+        "„OK” ma potwierdzać przeczytanie na serwerze — inaczej okno zgaśnie bez kliknięcia"
     assert "zaktualizował się do wersji 2026.08.25-103" in strona
     assert "<li>kontrola sumy PPU</li>" in strona
 
 
-def test_okno_z_nowosciami_pokazuje_sie_tylko_raz(klient):
-    """Znacznik kasuje się przy odczycie — drugie wejście na stronę jest już czyste."""
+def test_okno_z_nowosciami_wraca_dopoki_nie_klikniesz_ok(klient):
+    """Znacznik gaśnie dopiero po „OK”, nie przy samym pokazaniu strony.
+
+    Kasowanie przy odczycie miało dwa skutki, oba złe: kontrola startu z `uruchom.py`
+    pobiera stronę główną (pułapka 21) i zjadała okno, zanim przeglądarka w ogóle się
+    otworzyła — u brata okno nie pokazało się nigdy; a kto zamknął przeglądarkę bez
+    klikania, tracił komunikat bezpowrotnie."""
     _znacznik_nowosci("2026.08.25-103\nNowości:\n- kontrola sumy PPU\n")
 
-    assert "<dialog" in klient.get("/").text
-    assert "<dialog" not in klient.get("/").text
+    assert "<dialog" in klient.get("/").text, "pierwsze wejście bez okna"
+    assert "<dialog" in klient.get("/").text, \
+        "okno zgasło od samego odczytu — kontrola startu zjadałaby je przed przeglądarką"
+
+    odpowiedz = klient.post("/nowosci/przeczytane", follow_redirects=False)
+
+    assert odpowiedz.status_code == 303
+    assert "<dialog" not in klient.get("/").text, "po „OK” okno ma zniknąć na dobre"
 
 
 def test_strona_historii_pokazuje_listy(klient, tmp_path, monkeypatch):
