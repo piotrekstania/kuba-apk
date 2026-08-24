@@ -3,6 +3,11 @@
 Co doszło w kolejnych wersjach programu. Ten sam opis pokazuje się raz, na stronie
 głównej, zaraz po tym jak program sam się zaktualizuje.
 
+## 2026.08.24-105 — 2026-08-24
+
+Zmiany:
+- opis w oknie nowości ma znowu porządne listy punktów, tak jak w Historii wersji — wcześniej zlewał się w jeden akapit z myślnikami w środku
+
 ## 2026.08.24-104 — 2026-08-24
 
 Zmiany:

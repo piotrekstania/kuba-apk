@@ -1,4 +1,3 @@
-2026.08.24-104
+2026.08.24-105
 Zmiany:
-- okno z nowościami po aktualizacji naprawdę się pokazuje — wcześniej gasło przy starcie programu, zanim przeglądarka zdążyła się otworzyć
-- okno wraca przy każdym wejściu na stronę główną, dopóki nie klikniesz OK — zamknięcie przeglądarki bez klikania niczego nie gubi
+- opis w oknie nowości ma znowu porządne listy punktów, tak jak w Historii wersji — wcześniej zlewał się w jeden akapit z myślnikami w środku
