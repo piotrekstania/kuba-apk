@@ -1,8 +1,4 @@
-2026.08.24-103
+2026.08.24-104
 Zmiany:
-- opis nowego wydania pokazuje się w oknie na środku ekranu, w punktach — zamykasz przyciskiem OK i już nie wraca
-- w stopce po lewej stoi firma z odnośnikiem do jej strony, po prawej liczniki
-
-Nowości:
-- numer działki wpisany w karcie wykazu działki jest sprawdzany w ewidencji, tak jak numer w Położeniu — przy trafieniu z powierzchnią z obrysu; podpowiada, nigdy nie blokuje
-- każda karta działki sprawdza swój numer, a odpowiedź zawsze dotyczy tego, co wpisane teraz, także tuż po zmianie obrębu
+- okno z nowościami po aktualizacji naprawdę się pokazuje — wcześniej gasło przy starcie programu, zanim przeglądarka zdążyła się otworzyć
+- okno wraca przy każdym wejściu na stronę główną, dopóki nie klikniesz OK — zamknięcie przeglądarki bez klikania niczego nie gubi

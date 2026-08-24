@@ -3,6 +3,12 @@
 Co doszło w kolejnych wersjach programu. Ten sam opis pokazuje się raz, na stronie
 głównej, zaraz po tym jak program sam się zaktualizuje.
 
+## 2026.08.24-104 — 2026-08-24
+
+Zmiany:
+- okno z nowościami po aktualizacji naprawdę się pokazuje — wcześniej gasło przy starcie programu, zanim przeglądarka zdążyła się otworzyć
+- okno wraca przy każdym wejściu na stronę główną, dopóki nie klikniesz OK — zamknięcie przeglądarki bez klikania niczego nie gubi
+
 ## 2026.08.24-103 — 2026-08-24
 
 Zmiany:
