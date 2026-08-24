@@ -3,6 +3,11 @@
 Co doszło w kolejnych wersjach programu. Ten sam opis pokazuje się raz, na stronie
 głównej, zaraz po tym jak program sam się zaktualizuje.
 
+## 2026.08.24-108 — 2026-08-24
+
+Zmiany:
+- wydanie porządkowe, bez zmian w programie — sprawdza, czy okno nowości poprawnie skleja kilka wydań przy przeskoku o więcej niż jedną wersję
+
 ## 2026.08.24-107 — 2026-08-24
 
 Zmiany:
