@@ -18,7 +18,8 @@
    to `app/zmiany.py`, żeby jedno i drugie miejsce czytało opis tak samo. #}
 {% if co_nowego %}
 <dialog class="okno-nowosci" id="co-nowego">
-  <h2>Program zaktualizował się do wersji {{ co_nowego.wersja }}</h2>
+  <h2>Program zaktualizował się do wersji
+    <span class="wersja-nowosci">{{ co_nowego.wersja }}</span></h2>
   {% if co_nowego.wstep %}<p class="wstep-wydania">{{ co_nowego.wstep }}</p>{% endif %}
   {% for grupa in co_nowego.grupy %}
   {% if grupa.tytul %}<p class="tytul-listy">{{ grupa.tytul }}:</p>{% endif %}

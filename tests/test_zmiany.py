@@ -103,7 +103,9 @@ def test_co_nowego_pokazuje_sie_w_oknie_na_srodku(klient):
     assert "showModal()" in strona, "okno bez `showModal` nie przyciemnia strony"
     assert 'action="/nowosci/przeczytane"' in strona, \
         "„OK” ma potwierdzać przeczytanie na serwerze — inaczej okno zgaśnie bez kliknięcia"
-    assert "zaktualizował się do wersji 2026.08.25-103" in strona
+    assert "zaktualizował się do wersji" in strona
+    # numer w tym samym niebieskim co w nagłówku strony — ta sama rzecz, ten sam kolor
+    assert '<span class="wersja-nowosci">2026.08.25-103</span>' in strona
     assert "<li>kontrola sumy PPU</li>" in strona
 
 
@@ -142,7 +144,7 @@ def test_okno_pokazuje_znacznik_gdy_wersji_nie_ma_w_historii(klient, tmp_path, m
 
     strona = klient.get("/").text
 
-    assert "zaktualizował się do wersji 2026.08.25-106" in strona
+    assert '<span class="wersja-nowosci">2026.08.25-106</span>' in strona
     assert "<li>rzecz spoza historii</li>" in strona
 
 

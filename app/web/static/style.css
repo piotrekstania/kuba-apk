@@ -204,6 +204,9 @@ ol.pozycje { margin: 0; padding-left: 22px; }
                 box-shadow: 0 18px 48px rgba(15, 23, 42, .28); }
 .okno-nowosci::backdrop { background: rgba(15, 23, 42, .45); backdrop-filter: blur(3px); }
 .okno-nowosci h2 { margin: 0 0 10px; font-size: 18px; }
+/* Numer wersji w tym samym niebieskim co w nagłówku strony (`.logo-wersja`) —
+   to ten sam numer, ma się czytać jako ta sama rzecz. */
+.okno-nowosci .wersja-nowosci { color: var(--akcent); }
 .okno-nowosci .pasek { margin: 18px 0 0; }
 ol.pozycje li { margin: 2px 0; }
 /* Separator grup na liście wpisanych danych — ma rozdzielać, a nie krzyczeć,
