@@ -228,6 +228,76 @@ def test_ok_zapamietuje_potwierdzona_wersje(klient):
     assert aktualizacja.wersja_przeczytana() == aktualizacja.wersja_lokalna()[0]
 
 
+def test_rozruch_bez_zapisanego_ok_bierze_wersje_z_nazwy_kopii(klient, tmp_path, monkeypatch):
+    """Plik `wersja_przeczytana.txt` pisze dopiero nowy kod — OK klikniete w starszej
+    wersji przepadło. Ale nazwa kopii sprzed aktualizacji (`...-przed-X`) pamięta,
+    co użytkownik miał przed chwilą — pierwsze okno po tej zmianie ma pokazać komplet
+    wydań od tamtej wersji, a nie samo ostatnie (zgłoszone przy przeskoku -106 -> -108,
+    gdzie zginęło -107)."""
+    from app import aktualizacja
+
+    _znacznik_nowosci("2026.08.25-108\nZmiany:\n- ze znacznika\n")
+    kopia = aktualizacja.KOPIE / "20260824-185742-przed-2026.08.25-106"
+    kopia.mkdir(parents=True, exist_ok=True)
+    plik = tmp_path / "ZMIANY.md"
+    plik.write_text("""# Historia zmian
+
+## 2026.08.25-108 — 2026-08-25
+
+Zmiany:
+- rzecz z sto osiem
+
+## 2026.08.25-107 — 2026-08-25
+
+Zmiany:
+- rzecz ze sto siedem
+
+## 2026.08.25-106 — 2026-08-25
+
+Zmiany:
+- rzecz przeczytana dawno temu
+""", encoding="utf-8")
+    monkeypatch.setattr(zmiany, "PLIK", plik)
+
+    strona = klient.get("/").text
+
+    assert "<li>rzecz z sto osiem</li>" in strona
+    assert "<li>rzecz ze sto siedem</li>" in strona, \
+        "wydanie przeskoczone po drodze zginęło — rozruch nie czyta nazwy kopii"
+    assert "rzecz przeczytana dawno temu" not in strona, \
+        "okno pokazuje też wersję, z której użytkownik przyszedł"
+
+
+def test_zapisane_ok_wygrywa_z_nazwa_kopii(klient, tmp_path, monkeypatch):
+    """Po pierwszym „OK” liczy się wyłącznie plik — kopia to tylko rozruch."""
+    from app import aktualizacja
+
+    _znacznik_nowosci("2026.08.25-108\nZmiany:\n- ze znacznika\n")
+    aktualizacja.ZNACZNIK_PRZECZYTANE.parent.mkdir(parents=True, exist_ok=True)
+    aktualizacja.ZNACZNIK_PRZECZYTANE.write_text("2026.08.25-107\n", encoding="utf-8")
+    kopia = aktualizacja.KOPIE / "20260824-185742-przed-2026.08.25-106"
+    kopia.mkdir(parents=True, exist_ok=True)
+    plik = tmp_path / "ZMIANY.md"
+    plik.write_text("""# Historia zmian
+
+## 2026.08.25-108 — 2026-08-25
+
+Zmiany:
+- rzecz z sto osiem
+
+## 2026.08.25-107 — 2026-08-25
+
+Zmiany:
+- rzecz ze sto siedem
+""", encoding="utf-8")
+    monkeypatch.setattr(zmiany, "PLIK", plik)
+
+    strona = klient.get("/").text
+
+    assert "<li>rzecz z sto osiem</li>" in strona
+    assert "rzecz ze sto siedem" not in strona, "plik z OK ma pierwszeństwo przed kopią"
+
+
 def test_okno_z_nowosciami_wraca_dopoki_nie_klikniesz_ok(klient):
     """Znacznik gaśnie dopiero po „OK”, nie przy samym pokazaniu strony.
 

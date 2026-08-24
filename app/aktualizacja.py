@@ -245,11 +245,30 @@ def co_nowego() -> str | None:
 
 
 def wersja_przeczytana() -> str:
-    """Ostatnia wersja potwierdzona przyciskiem „OK”. Brak pliku to pusty napis."""
+    """Ostatnia wersja potwierdzona przyciskiem „OK”.
+
+    Gdy pliku nie ma, to nie znaczy „nic nie przeczytano” — plik pisze dopiero nowy
+    kod, więc OK kliknięte w starszej wersji przepadało (pułapka 7b: przy przeskoku
+    -106 → -108 okno pokazało samo -108 i zgubiło -107). Na rozruch bierzemy wersję
+    z nazwy najnowszej kopii sprzed aktualizacji: `...-przed-X` mówi, co użytkownik
+    miał przed chwilą — pierwsze okno pokazuje wtedy komplet wydań od wersji,
+    z której przyszedł. Po pierwszym „OK” liczy się już wyłącznie plik.
+
+    Brak i pliku, i kopii (świeża instalacja) to pusty napis — okno pokaże wtedy
+    sam wpis zainstalowanej wersji, a nie całą historię.
+    """
     try:
         return ZNACZNIK_PRZECZYTANE.read_text(encoding="utf-8").strip()
     except OSError:
+        pass
+    try:
+        kopie = sorted(k.name for k in KOPIE.iterdir()
+                       if k.is_dir() and "-przed-" in k.name)
+    except OSError:
         return ""
+    if not kopie:
+        return ""
+    return kopie[-1].split("-przed-", 1)[1]
 
 
 def nowosci_przeczytane(wersja: str = "") -> None:
