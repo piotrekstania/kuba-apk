@@ -58,11 +58,8 @@ start.bat
 Wszystko od ostatniego wydania — numer i skrót commita znajdziesz w `ZMIANY.md`
 i `git log`. Dopisuj punkty przy każdej rundzie zmian, kasuj po wydaniu.
 
-*(pusto — wydanie 2026.08.24-107 poszło 24.08. Pięć punktów rundy sprawdzone:
-przeskok wersji na żywo — przeczytana -104 + zainstalowana -106 dały okno z dwoma
-wydaniami i ich numerami, treść z ZMIANY.md; „OK" zapisało wersja_przeczytana.txt
-i zgasiło okno; świeża instalacja bez znacznika przeczytanej pokazywała sam wpis
-zainstalowanej wersji w testach -105/-106; historia bez zmian)*
+*(pusto — wydanie 2026.08.24-108 poszło 24.08 jako porządkowe: użytkownik testuje
+przeskok -106 -> -108 na swojej kopii — okno ma pokazać listy -108 i -107 naraz)*
 
 ---
 
