@@ -339,12 +339,18 @@ def _konwertuj(zrodlo: Path, cel: Path, konwerter: str) -> None:
 
 def polacz_pdf(pliki: list[Path], cel: Path,
                etykiety: dict[Path, str] | None = None,
-               obroty: dict[Path, int] | None = None) -> Path:
+               obroty: dict[Path, int] | None = None,
+               tytul: str = "") -> Path:
     """Skleja PDF-y w podanej kolejności.
 
     `etykiety` to nazwy do pokazania użytkownikowi — pliki robocze mają na dysku
     nazwy ze znacznikiem czasu, a on musi rozpoznać swój załącznik po tym, jak
     go sam nazwał.
+
+    `tytul` wpisujemy w metadane gotowego pliku. Bez niego czytnik PDF-a nazywa
+    kartę i panel stron ostatnim członem adresu — u brata wychodziło z tego „wynik”.
+    Tytuł jedzie razem z plikiem, więc numer roboty widać też we właściwościach
+    dokumentu po wysłaniu go do ośrodka.
     """
     if not pliki:
         raise ValueError("Nie wskazano żadnych plików do połączenia.")
@@ -364,6 +370,8 @@ def polacz_pdf(pliki: list[Path], cel: Path,
                 "jako PDF. Bywa tak, gdy plik jest uszkodzony, niedokończony albo "
                 "zabezpieczony hasłem — otwórz go i zapisz jeszcze raz jako PDF."
             ) from blad
+    if tytul:
+        zapis.add_metadata({"/Title": tytul})
     cel.parent.mkdir(parents=True, exist_ok=True)
     with open(cel, "wb") as wyjscie:
         zapis.write(wyjscie)

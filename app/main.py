@@ -1155,7 +1155,8 @@ async def scal_wykonaj(request: Request, nazwa: str):
 
     wynik = katalog / operaty.nazwa_wyniku(katalog)
     try:
-        pdf.polacz_pdf(wybrane, wynik, etykiety, obroty)
+        # tytuł = numer roboty: po nim czytnik nazywa kartę przeglądarki
+        pdf.polacz_pdf(wybrane, wynik, etykiety, obroty, tytul=wynik.stem)
     except pdf.BladPliku as blad:
         return niepowodzenie(str(blad))
     statystyki.zlicz(statystyki.PDF)      # dopiero tutaj: PDF naprawdę leży na dysku

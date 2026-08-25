@@ -93,3 +93,25 @@ def test_konwersja_docx_na_pdf(katalog_konwersji):
     assert wynik.exists()
     tekst = "".join(strona.extract_text() for strona in PdfReader(str(wynik)).pages)
     assert "001/2026" in tekst
+
+
+def test_zlozony_pdf_ma_numer_roboty_w_tytule(tmp_path):
+    """Czytnik PDF-a nazywa kartę tytułem z metadanych, a bez niego — ostatnim członem
+    adresu. U brata wychodziło z tego „wynik”, choć plik nazywa się numerem roboty.
+
+    Tytuł jedzie razem z plikiem, więc numer widać też we właściwościach dokumentu
+    po wysłaniu go do ośrodka.
+    """
+    a = _pdf(tmp_path / "a.pdf")
+    wynik = pdf.polacz_pdf([a], tmp_path / "G.05.06.06.2026.pdf",
+                           tytul="G.05.06.06.2026")
+
+    assert PdfReader(str(wynik)).metadata.title == "G.05.06.06.2026"
+
+
+def test_sklejanie_bez_tytulu_nie_dopisuje_metadanych(tmp_path):
+    """Sklejanie służy też do innych rzeczy — pusty tytuł ma zostawić plik w spokoju."""
+    a = _pdf(tmp_path / "a.pdf")
+    wynik = pdf.polacz_pdf([a], tmp_path / "wynik.pdf")
+
+    assert not (PdfReader(str(wynik)).metadata or {}).get("/Title")

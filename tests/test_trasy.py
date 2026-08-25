@@ -647,6 +647,11 @@ def test_wynik_skladania_nazywa_sie_numerem_roboty(klient):
     katalog = klient.srodowisko.wyniki / katalog_nazwa
     assert (katalog / "GK.6640.1.2026.pdf").exists(), sorted(p.name for p in katalog.iterdir())
 
+    # …i tak samo nazywa się w czytniku: bez tytułu w metadanych karta przeglądarki
+    # brałaby nazwę z adresu, czyli „wynik”
+    from pypdf import PdfReader
+    assert PdfReader(str(katalog / "GK.6640.1.2026.pdf")).metadata.title == "GK.6640.1.2026"
+
 
 def test_sciezka_z_adresu_nie_wyprowadza_poza_wyniki(klient):
     """Nazwa katalogu z URL-a nie może sięgnąć wyżej niż `wyniki/`."""
