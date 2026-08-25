@@ -58,26 +58,15 @@ start.bat
 Wszystko od ostatniego wydania — numer i skrót commita znajdziesz w `ZMIANY.md`
 i `git log`. Dopisuj punkty przy każdej rundzie zmian, kasuj po wydaniu.
 
-Runda prawie ekranowa: formatki, generator i ścieżka DOCX→PDF nietknięte, ale **zmienia
-się zawartość złożonego PDF-a** (dochodzi tytuł w metadanych), więc gotowy plik trzeba
-otworzyć, a nie tylko obejrzeć stronę.
+*(pusto — wydanie 2026.08.25-112 poszło 25.08. Sprawdzone w przeglądarce: kółko „do
+góry” nie koliduje z dolnym paskiem akcji przy 1280, 768 ani przy szerokości telefonu,
+na krótkiej stronie głównej go nie ma, a na formularzu (3647 px) jest i wraca na szczyt)*
 
-1. **Złożony PDF nazywa się numerem roboty.** Złóż operat i otwórz wynik: karta
-   przeglądarki i panel stron po lewej mają pokazywać `G.05.06.06.2026`, a nie „wynik”.
-   Sprawdź też **właściwości dokumentu** (w czytniku Ctrl+D albo menu → Właściwości):
-   w polu „Tytuł” ma stać ten sam numer. I najważniejsze: plik ma się normalnie
-   otwierać — metadane dopisujemy przy sklejaniu, więc gdyby coś poszło nie tak,
-   ucierpiałby cały operat.
-2. **Akcje operatu na dole strony**: komplet ten sam co na górze, przy prawej krawędzi.
-   „Usuń” z dolnego paska ma pytać o potwierdzenie tak samo jak z górnego.
-3. **Przycisk „do góry”** (kółko ze strzałką w prawym dolnym rogu): jest na stronie
-   operatu, w formularzu i w Pomocy, a **nie ma go** na krótkiej stronie głównej.
-   Klik wraca na szczyt. Sprawdź przy **zwężonym oknie**, czy nie zasłania dolnego
-   paska akcji ani przycisku „Zapisz”.
-4. **Historia wersji**: zainstalowana wersja w kolorze akcentu, plakietki „masz tę
-   wersję” już nie ma.
-5. Operat **sprzed** tej rundy — czy strona, formularz poprawiania i składanie PDF-a
-   nadal działają.
+**Zostało do obejrzenia okiem** — tego testy ani przeglądarka nie sprawdzą:
+otworzyć **złożony PDF w prawdziwym czytniku** i potwierdzić, że karta, panel stron
+i pole „Tytuł” we właściwościach pokazują numer roboty, a plik otwiera się normalnie.
+Metadane dopisujemy przy sklejaniu, więc gdyby coś poszło nie tak, ucierpiałby cały
+operat, a `pypdf` w testach czyta tylko sam siebie.
 
 ---
 
