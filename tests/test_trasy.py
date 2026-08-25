@@ -403,6 +403,18 @@ def test_akcje_operatu_sa_na_gorze_i_na_dole(klient):
     assert strona.rindex('class="pasek') > strona.rindex("</fieldset>")
 
 
+def test_przycisk_do_gory_przelicza_sie_po_zaladowaniu(klient):
+    """O tym, czy przycisk jest, decyduje długość strony — ale pomiar przy wykonaniu
+    skryptu bywa robiony, zanim okno ma docelowy rozmiar. `innerHeight` jest wtedy
+    mniejszy, próg wychodzi za niski i przycisk zostaje na widoku na krótkiej stronie.
+    Złapane na stronie głównej: 720 px treści przy progu 1152 px, a guzik widoczny;
+    po przeładowaniu było już dobrze, więc winny jest moment pomiaru, nie warunek.
+    """
+    strona = klient.get("/").text
+
+    assert "window.addEventListener('load', pokaz)" in strona,         "bez przeliczenia po load przycisk zostaje z pomiaru sprzed ustalenia rozmiaru okna"
+
+
 def test_przycisk_do_gory_jest_na_kazdej_stronie(klient):
     """Powrót na górę bez przewijania myszą — formularz i Pomoc mają po kilka ekranów.
 

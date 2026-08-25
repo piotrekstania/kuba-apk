@@ -99,6 +99,13 @@
   // Przycisk bez animacji jest lepszy niż przycisk, który nic nie robi.
   guzik.addEventListener('click', () => window.scrollTo(0, 0));
   window.addEventListener('resize', pokaz, {passive: true});
+  // Jeszcze raz po `load`: pomiar przy wykonaniu skryptu bywa robiony, zanim okno
+  // ma docelowy rozmiar — `innerHeight` jest wtedy mniejszy, próg wychodzi za niski
+  // i przycisk zostaje na widoku na krótkiej stronie, dokładnie tam, gdzie nie ma po
+  // co niczego przykrywać. Złapane na stronie głównej: 720 px treści przy progu
+  // 1152 px, a guzik widoczny. Po przeładowaniu było już dobrze, więc winą jest
+  // moment pomiaru, nie warunek.
+  window.addEventListener('load', pokaz);
   pokaz();
 })();
 </script>
