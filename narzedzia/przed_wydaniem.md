@@ -58,13 +58,26 @@ start.bat
 Wszystko od ostatniego wydania — numer i skrót commita znajdziesz w `ZMIANY.md`
 i `git log`. Dopisuj punkty przy każdej rundzie zmian, kasuj po wydaniu.
 
-*(pusto — ostatnie wydanie to 2026.08.24-111: numery operatów w kolorze akcentu,
-także po odwiedzeniu. Wcześniejsze z tej serii — 107–110 — dotyczyły okna nowości:
-komplet przeskoczonych wydań, rozruch z nazwy kopii i przewijanie samej listy)*
+Runda prawie ekranowa: formatki, generator i ścieżka DOCX→PDF nietknięte, ale **zmienia
+się zawartość złożonego PDF-a** (dochodzi tytuł w metadanych), więc gotowy plik trzeba
+otworzyć, a nie tylko obejrzeć stronę.
 
-**Zostało do obejrzenia okiem** (przy najbliższej aktualizacji u siebie, bez osobnego
-wydania): kreska nad „OK” przy **jednym, krótkim** wydaniu — czyli w sytuacji, którą
-brat widzi najczęściej. Sprawdzane było dziewięcioma wydaniami naraz.
+1. **Złożony PDF nazywa się numerem roboty.** Złóż operat i otwórz wynik: karta
+   przeglądarki i panel stron po lewej mają pokazywać `G.05.06.06.2026`, a nie „wynik”.
+   Sprawdź też **właściwości dokumentu** (w czytniku Ctrl+D albo menu → Właściwości):
+   w polu „Tytuł” ma stać ten sam numer. I najważniejsze: plik ma się normalnie
+   otwierać — metadane dopisujemy przy sklejaniu, więc gdyby coś poszło nie tak,
+   ucierpiałby cały operat.
+2. **Akcje operatu na dole strony**: komplet ten sam co na górze, przy prawej krawędzi.
+   „Usuń” z dolnego paska ma pytać o potwierdzenie tak samo jak z górnego.
+3. **Przycisk „do góry”** (kółko ze strzałką w prawym dolnym rogu): jest na stronie
+   operatu, w formularzu i w Pomocy, a **nie ma go** na krótkiej stronie głównej.
+   Klik wraca na szczyt. Sprawdź przy **zwężonym oknie**, czy nie zasłania dolnego
+   paska akcji ani przycisku „Zapisz”.
+4. **Historia wersji**: zainstalowana wersja w kolorze akcentu, plakietki „masz tę
+   wersję” już nie ma.
+5. Operat **sprzed** tej rundy — czy strona, formularz poprawiania i składanie PDF-a
+   nadal działają.
 
 ---
 
@@ -80,21 +93,23 @@ brat widzi najczęściej. Sprawdzane było dziewięcioma wydaniami naraz.
 > u niego sama przy starcie — więc szukam **błędów, które on zobaczy**, a nie
 > uwag o stylu.
 >
-> Na czym się skup — **te punkty dopisujesz pod bieżącą rundę** (skasuj po wydaniu
-> razem z częścią B). Poniżej zostaje to, o co warto pytać przy każdej rundzie:
-> 1. `app/main.py` — dane operatu bywają starsze niż dzisiejszy szablon: pole
->    skasowane, zmieniony typ, wpis niebędący słownikiem. Czy któraś ścieżka wywala
->    stronę zamiast pominąć dane?
-> 2. Szablony HTML — czy znaczniki domykają się przy **każdej** kombinacji danych,
->    a wzorzec do klonowania kart ma dokładnie to samo co karta pierwsza?
-> 3. Kontekst stron budowany poza `_widok` — brak jednej zmiennej to w Jinja wyjątek,
->    nie pustka, i strona po cichu leci do zapasowego gołego HTML-a (pułapka 28).
-> 4. Cokolwiek jednorazowego — czy gaśnie dopiero po **potwierdzeniu przez
->    użytkownika**, i czy działa **przy pierwszej** aktualizacji, która to wprowadza?
->    Nowy plik stanu pisze dopiero nowy kod, więc funkcja „od ostatniego razu” nie ma
->    od czego zacząć (pułapki 7b, 21 i 30 — ta seria kosztowała trzy wydania).
-> 5. Cokolwiek, co zapamiętuje węzły XML — nie po `id()` obiektu lxml (pułapka 29).
-> 6. Testy dołożone w tej rundzie — czy sprawdzają zachowanie, czy tylko to, że kod
+> Na czym się skup:
+> 1. `app/pdf.py` — `polacz_pdf` dopisuje `/Title` do gotowego PDF-a. Czy `add_metadata`
+>    nie gubi tego, co pypdf zapisuje samo, i czy nie psuje pliku przy dziwnych znakach
+>    w numerze roboty (ukośnik, apostrof, spacje, znaki spoza ASCII)? Co przy pustym
+>    tytule i przy operacie bez numeru roboty?
+> 2. `app/web/templates/dokument.html` — makro `akcje_operatu()` woła się dwa razy, więc
+>    na stronie są **dwa** formularze kasowania i dwa „Otwórz katalog”. Czy nie powstają
+>    zdublowane identyfikatory, czy potwierdzenie działa w obu i czy nic w JS-ie nie
+>    zakłada, że taki formularz jest jeden?
+> 3. `base.html` — przycisk „do góry”: widoczność liczona z długości strony (bez
+>    zdarzenia `scroll`, bo bywa nieodpalane). Czy da się doprowadzić do sytuacji,
+>    w której przycisk zasłania coś klikalnego — wąskie okno, strona krótsza po
+>    zwinięciu sekcji, telefon? Czy `hidden` na `<button>` na pewno go chowa
+>    (pułapka 17: reguła `display` przebijała `[hidden]`)?
+> 4. `historia.html` — kolor przy zainstalowanej wersji zamiast plakietki: co, gdy
+>    `ZMIANY.md` nie ma wpisu dla uruchomionej wersji (dziura w historii)?
+> 5. Testy dołożone w tej rundzie — czy sprawdzają zachowanie, czy tylko to, że kod
 >    się wykonał; czy któryś zostawia pliki w prawdziwych `dane/`/`wyniki/`
 >    (pułapka 25)?
 
