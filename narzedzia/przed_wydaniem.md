@@ -72,9 +72,9 @@ operat, a `pypdf` w testach czyta tylko sam siebie.
 
 ## C. Zlecenie review (do wklejenia Fable)
 
-> Zrób przegląd kodu zmian z zakresu `cdd17c4..HEAD` w tym repozytorium
-> (`git log --oneline cdd17c4..HEAD`, `git diff cdd17c4..HEAD`) — to wszystko, co
-> przyszło po ostatnim wydaniu (`2026.08.24-111`). Kontekst projektu jest w `CLAUDE.md` —
+> Zrób przegląd kodu zmian z zakresu `23336b2..HEAD` w tym repozytorium
+> (`git log --oneline 23336b2..HEAD`, `git diff 23336b2..HEAD`) — to wszystko, co
+> przyszło po ostatnim wydaniu (`2026.08.25-112`). Kontekst projektu jest w `CLAUDE.md` —
 > przeczytaj go najpierw, zwłaszcza listę pułapek i zasady pracy nad kodem.
 > Odpowiadaj po polsku.
 >
@@ -82,23 +82,23 @@ operat, a `pypdf` w testach czyta tylko sam siebie.
 > u niego sama przy starcie — więc szukam **błędów, które on zobaczy**, a nie
 > uwag o stylu.
 >
-> Na czym się skup:
-> 1. `app/pdf.py` — `polacz_pdf` dopisuje `/Title` do gotowego PDF-a. Czy `add_metadata`
->    nie gubi tego, co pypdf zapisuje samo, i czy nie psuje pliku przy dziwnych znakach
->    w numerze roboty (ukośnik, apostrof, spacje, znaki spoza ASCII)? Co przy pustym
->    tytule i przy operacie bez numeru roboty?
-> 2. `app/web/templates/dokument.html` — makro `akcje_operatu()` woła się dwa razy, więc
->    na stronie są **dwa** formularze kasowania i dwa „Otwórz katalog”. Czy nie powstają
->    zdublowane identyfikatory, czy potwierdzenie działa w obu i czy nic w JS-ie nie
->    zakłada, że taki formularz jest jeden?
-> 3. `base.html` — przycisk „do góry”: widoczność liczona z długości strony (bez
->    zdarzenia `scroll`, bo bywa nieodpalane). Czy da się doprowadzić do sytuacji,
->    w której przycisk zasłania coś klikalnego — wąskie okno, strona krótsza po
->    zwinięciu sekcji, telefon? Czy `hidden` na `<button>` na pewno go chowa
->    (pułapka 17: reguła `display` przebijała `[hidden]`)?
-> 4. `historia.html` — kolor przy zainstalowanej wersji zamiast plakietki: co, gdy
->    `ZMIANY.md` nie ma wpisu dla uruchomionej wersji (dziura w historii)?
-> 5. Testy dołożone w tej rundzie — czy sprawdzają zachowanie, czy tylko to, że kod
+> Na czym się skup — **te punkty dopisujesz pod bieżącą rundę** (skasuj po wydaniu
+> razem z częścią B). Poniżej zostaje to, o co warto pytać przy każdej rundzie:
+> 1. `app/main.py` — dane operatu bywają starsze niż dzisiejszy szablon: pole
+>    skasowane, zmieniony typ, wpis niebędący słownikiem. Czy któraś ścieżka wywala
+>    stronę zamiast pominąć dane?
+> 2. Szablony HTML — czy znaczniki domykają się przy **każdej** kombinacji danych,
+>    a wzorzec do klonowania kart ma dokładnie to samo co karta pierwsza?
+> 3. Kontekst stron budowany poza `_widok` — brak jednej zmiennej to w Jinja wyjątek,
+>    nie pustka, i strona po cichu leci do zapasowego gołego HTML-a (pułapka 28).
+> 4. Cokolwiek jednorazowego — czy gaśnie dopiero po **potwierdzeniu przez
+>    użytkownika**, i czy działa **przy pierwszej** aktualizacji, która to wprowadza?
+>    (pułapki 7b, 21 i 30 — ta seria kosztowała trzy wydania).
+> 5. Cokolwiek, co mierzy okno albo stronę w JS — czy pomiar nie leci, zanim okno ma
+>    docelowy rozmiar? Wyszło na przycisku „do góry”: `innerHeight` przy wykonaniu
+>    skryptu bywa mniejszy niż po `load`.
+> 6. Cokolwiek, co zapamiętuje węzły XML — nie po `id()` obiektu lxml (pułapka 29).
+> 7. Testy dołożone w tej rundzie — czy sprawdzają zachowanie, czy tylko to, że kod
 >    się wykonał; czy któryś zostawia pliki w prawdziwych `dane/`/`wyniki/`
 >    (pułapka 25)?
 
