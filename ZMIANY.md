@@ -3,6 +3,16 @@
 Co doszło w kolejnych wersjach programu. Ten sam opis pokazuje się raz, na stronie
 głównej, zaraz po tym jak program sam się zaktualizuje.
 
+## 2026.08.25-112 — 2026-08-25
+
+Zmiany:
+- złożony operat nazywa się w czytniku PDF numerem roboty, a nie „wynik” — ten sam numer stoi we właściwościach dokumentu, więc jedzie razem z plikiem do ośrodka
+- komplet przycisków operatu („Złóż PDF”, „Otwórz katalog”, „Popraw”, „Powiel”, „Usuń”) jest też na dole strony, więc po przewinięciu kart z danymi nie trzeba wracać na górę
+- w historii wersji ta zainstalowana jest wyróżniona kolorem zamiast plakietki „masz tę wersję”
+
+Nowości:
+- na dłuższych stronach — formularzu operatu, stronie operatu i w Pomocy — w prawym dolnym rogu jest kółko ze strzałką, które wraca na górę strony
+
 ## 2026.08.24-111 — 2026-08-24
 
 Zmiany:
