@@ -16,8 +16,9 @@
        go jeszcze w swoim numerze, więc tutaj widać, które to było z rzędu #}
     <td class="numer szary">{{ wpis.numer }}.</td>
     <td>
-      <strong>{{ wpis.wersja }}</strong>
-      {% if wpis.wersja == wersja %}<br><span class="teraz">masz tę wersję</span>{% endif %}
+      {# Wersja zainstalowana w kolorze akcentu — plakietka „masz tę wersję” mówiła to
+         samo dłużej, a i tak zwykle jest to po prostu najnowszy wpis. #}
+      <strong{% if wpis.wersja == wersja %} class="wersja-nowosci"{% endif %}>{{ wpis.wersja }}</strong>
     </td>
     <td class="szary">{{ wpis.data }}</td>
     {# Wstęp jednym akapitem, a pod nim listy („Zmiany:”, „Nowości:”). Wydanie to

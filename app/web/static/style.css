@@ -227,8 +227,10 @@ ol.pozycje { margin: 0; padding-left: 22px; }
 .okno-nowosci::backdrop { background: rgba(15, 23, 42, .45); backdrop-filter: blur(3px); }
 .okno-nowosci h2 { margin: 0 0 10px; font-size: 18px; flex: none; }
 /* Numer wersji w tym samym niebieskim co w nagłówku strony (`.logo-wersja`) —
-   to ten sam numer, ma się czytać jako ta sama rzecz. */
-.okno-nowosci .wersja-nowosci { color: var(--akcent); }
+   to ten sam numer, ma się czytać jako ta sama rzecz. Ta sama klasa nadaje kolor
+   zainstalowanej wersji na liście w Historii wersji, więc reguła nie jest przypięta
+   do samego okna. */
+.wersja-nowosci { color: var(--akcent); }
 /* Kreska nad przyciskiem mówi, że treść pod nią się kończy — przy przewijanej liście
    bez niej wygląda to na tekst ucięty w połowie. `flex: none`, żeby pasek nie oddał
    miejsca treści i nie zniknął przy długiej liście. */
@@ -318,8 +320,6 @@ td.opis-tresc { white-space: pre-wrap; tab-size: var(--tabulator); }
 /* Kolumna z numerem wydania w historii — wąska i wyrównana do prawej, żeby
    „7." i „81." kończyły się w tym samym miejscu. */
 th.numer, td.numer { width: 44px; text-align: right; white-space: nowrap; }
-.teraz { font-size: 11px; color: var(--akcent); border: 1px solid var(--akcent);
-         border-radius: 999px; padding: 1px 8px; white-space: nowrap; }
 .spoza { font-size: 11px; color: var(--szary); border: 1px solid var(--linia);
          border-radius: 999px; padding: 1px 8px; white-space: nowrap; cursor: help; }
 

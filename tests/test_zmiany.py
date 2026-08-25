@@ -367,6 +367,38 @@ def test_strona_historii_pokazuje_numery(klient):
     assert 'class="numer' in tresc
 
 
+def test_zainstalowana_wersja_wyrozniona_kolorem(klient, tmp_path, monkeypatch):
+    """Zamiast plakietki „masz tę wersję” — numer w kolorze akcentu.
+
+    Plakietka mówiła to samo dłużej, a i tak zwykle chodzi po prostu o najnowszy wpis.
+    Wyróżniamy **zainstalowaną** wersję, nie pierwszy wiersz: gdyby historia kiedyś
+    wyprzedziła program, kolor ma stać przy tym, co naprawdę jest uruchomione.
+    """
+    from app import aktualizacja
+
+    biezaca = aktualizacja.wersja_lokalna()[0]
+    plik = tmp_path / "ZMIANY.md"
+    plik.write_text(f"""# Historia zmian
+
+## 2099.01.01-999 — 2099-01-01
+
+Zmiany:
+- wpis nowszy niż program
+
+## {biezaca} — 2026-08-24
+
+Zmiany:
+- ta wersja jest uruchomiona
+""", encoding="utf-8")
+    monkeypatch.setattr(zmiany, "PLIK", plik)
+
+    strona = klient.get("/pomoc/historia").text
+
+    assert "masz tę wersję" not in strona
+    assert f'class="wersja-nowosci">{biezaca}<' in strona
+    assert 'class="wersja-nowosci">2099.01.01-999<' not in strona
+
+
 def test_brak_pliku_nie_wywraca_strony(tmp_path, monkeypatch):
     monkeypatch.setattr(zmiany, "PLIK", tmp_path / "nie-ma-mnie.md")
     assert zmiany.wpisy() == []
