@@ -164,7 +164,7 @@ def test_opis_stoi_nad_wpisanymi_danymi(klient):
     assert strona.index("opis-operatu") < strona.index("<legend>Dane</legend>")
     # …a nie gdziekolwiek wyżej: nad paskiem przycisków opis też jest „nad wpisanymi
     # danymi”, a to jest właśnie miejsce, z którego go zabraliśmy
-    assert strona.index('class="pasek"') < strona.index("<legend>Opis</legend>"), \
+    assert strona.index('class="pasek') < strona.index("<legend>Opis</legend>"), \
         "opis wrócił nad przyciski — sekcje mają iść po akcjach, nie przed nimi"
 
 

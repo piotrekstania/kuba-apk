@@ -4,6 +4,38 @@
 {% block tytul %}Operat: {{ dokument.nr_operatu or dokument.katalog or dokument.tytul }}{% endblock %}
 {% block tresc %}
 
+{# Komplet akcji stoi na górze **i na dole** strony — tak samo jak „Zapisz” i „Anuluj”
+   w formularzu. Przy kilkunastu kartach z danymi powrót na górę po złożenie PDF-a
+   był całym przewinięciem ekranu. Jedno makro na oba paski, żeby nie rozjechały się
+   przy najbliższej zmianie nazwy przycisku. #}
+{% macro akcje_operatu() %}
+<div class="pasek do-prawej">
+  {# „Złóż PDF” pierwszy: po to najczęściej wchodzi się na stronę gotowego operatu. #}
+  {# tak samo jak na liście: operatu w archiwum nie ma czego składać #}
+  {% if dokument.katalog and na_dysku %}<a class="glowny" href="/scal/{{ dokument.katalog | urlencode }}">Złóż PDF</a>{% endif %}
+  <form method="post" action="/dokument/{{ dokument.id }}/otworz-katalog">
+    <button class="wtorny" type="submit">Otwórz katalog</button>
+  </form>
+  <a class="wtorny" href="/nowy/{{ dokument.szablon }}?edytuj={{ dokument.id }}">Popraw</a>
+  <a class="wtorny" href="/nowy/{{ dokument.szablon }}?kopiuj={{ dokument.id }}">Powiel</a>
+  {# Kasowanie w tym samym pasku co reszta akcji — na dole strony trzeba było
+     przewinąć kilkanaście kart z danymi, żeby je znaleźć. Stoi ostatnie, ma własny
+     (czerwony) strój i pyta o potwierdzenie, więc bliskość „Powiel”
+     nie jest groźna. #}
+  {# Treść pytania w atrybucie danych, nie w literale JS: Jinja zamienia apostrof
+     na `&#39;`, a parser HTML odkodowuje go z powrotem **przed** uruchomieniem JS —
+     apostrof w numerze roboty rozrywał literał i „Usuń” kasowało bez pytania.
+     Pytanie mówi, co naprawdę zniknie: katalog z plikami brata, sam wpis (gdy folder
+     jest już w archiwum) albo wpis z dokumentami sprzed podziału na katalogi. #}
+  {% set nazwa_operatu = dokument.nr_operatu or dokument.katalog or dokument.tytul %}
+  <form method="post" action="/dokument/{{ dokument.id }}/usun"
+        data-pytanie="{% if dokument.katalog and na_dysku %}Usunąć operat {{ nazwa_operatu }} wraz z całym katalogiem {{ dokument.katalog }} — także z plikami, które sam tam włożyłeś?{% elif dokument.katalog %}Usunąć operat {{ nazwa_operatu }} z historii? Jego katalogu nie ma już w wyniki (archiwum), więc z dysku nic nie zniknie.{% else %}Usunąć operat {{ nazwa_operatu }} z historii razem z jego dokumentami w wyniki?{% endif %}"
+        onsubmit="return confirm(this.dataset.pytanie)">
+    <button class="niebezpieczny" type="submit">Usuń</button>
+  </form>
+</div>
+{% endmacro %}
+
 {# Szczyt strony to jeden wiersz: po lewej numer operatu z datą utworzenia pod nim,
    po prawej przyciski. Wcześniej te trzy rzeczy szły jedna pod drugą i zjadały ekran,
    zanim zaczęła się treść. W nagłówku jest sam numer operatu — to po nim rozpoznaje się
@@ -21,31 +53,7 @@
              przeniesiony do archiwum. Wpis w historii zostaje, ale żeby złożyć PDF,
              trzeba skopiować folder z powrotem.">w archiwum</span>{% endif %}</p>
   </div>
-  <div class="pasek">
-    {# „Złóż PDF” pierwszy: po to najczęściej wchodzi się na stronę gotowego operatu. #}
-    {# tak samo jak na liście: operatu w archiwum nie ma czego składać #}
-    {% if dokument.katalog and na_dysku %}<a class="glowny" href="/scal/{{ dokument.katalog | urlencode }}">Złóż PDF</a>{% endif %}
-    <form method="post" action="/dokument/{{ dokument.id }}/otworz-katalog">
-      <button class="wtorny" type="submit">Otwórz katalog</button>
-    </form>
-    <a class="wtorny" href="/nowy/{{ dokument.szablon }}?edytuj={{ dokument.id }}">Popraw</a>
-    <a class="wtorny" href="/nowy/{{ dokument.szablon }}?kopiuj={{ dokument.id }}">Powiel</a>
-    {# Kasowanie w tym samym pasku co reszta akcji — na dole strony trzeba było
-       przewinąć kilkanaście kart z danymi, żeby je znaleźć. Stoi ostatnie, ma własny
-       (czerwony) strój i pyta o potwierdzenie, więc bliskość „Powiel”
-       nie jest groźna. #}
-    {# Treść pytania w atrybucie danych, nie w literale JS: Jinja zamienia apostrof
-       na `&#39;`, a parser HTML odkodowuje go z powrotem **przed** uruchomieniem JS —
-       apostrof w numerze roboty rozrywał literał i „Usuń” kasowało bez pytania.
-       Pytanie mówi, co naprawdę zniknie: katalog z plikami brata, sam wpis (gdy folder
-       jest już w archiwum) albo wpis z dokumentami sprzed podziału na katalogi. #}
-    {% set nazwa_operatu = dokument.nr_operatu or dokument.katalog or dokument.tytul %}
-    <form method="post" action="/dokument/{{ dokument.id }}/usun"
-          data-pytanie="{% if dokument.katalog and na_dysku %}Usunąć operat {{ nazwa_operatu }} wraz z całym katalogiem {{ dokument.katalog }} — także z plikami, które sam tam włożyłeś?{% elif dokument.katalog %}Usunąć operat {{ nazwa_operatu }} z historii? Jego katalogu nie ma już w wyniki (archiwum), więc z dysku nic nie zniknie.{% else %}Usunąć operat {{ nazwa_operatu }} z historii razem z jego dokumentami w wyniki?{% endif %}"
-          onsubmit="return confirm(this.dataset.pytanie)">
-      <button class="niebezpieczny" type="submit">Usuń</button>
-    </form>
-  </div>
+  {{ akcje_operatu() }}
 </div>
 
 {# Opis nad „Wpisanymi danymi” i w tym samym stroju: nagłówek sekcji plus biały panel.
@@ -182,5 +190,9 @@
   </table>
 </fieldset>
 {% endfor %}
+
+{# Ten sam komplet co na górze: po przewinięciu kilkunastu kart nie trzeba wracać
+   na szczyt, żeby złożyć PDF albo poprawić operat. #}
+{{ akcje_operatu() }}
 
 {% endblock %}

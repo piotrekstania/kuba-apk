@@ -383,6 +383,26 @@ def test_przyciski_bedace_linkami_tez_reaguja_na_najechanie():
     assert ".wtorny:hover" in style
 
 
+def test_akcje_operatu_sa_na_gorze_i_na_dole(klient):
+    """Tak samo jak „Zapisz” i „Anuluj” w formularzu: po przewinięciu kilkunastu kart
+    z danymi nie trzeba wracać na szczyt, żeby złożyć PDF albo poprawić operat.
+
+    Oba paski powstają z jednego makra, więc pilnujemy liczby, a nie treści — inaczej
+    test przechodziłby, gdyby dolny pasek zgubił połowę przycisków.
+    """
+    _dodaj_operat(klient)
+    klient.post("/generuj/spis_tresci_wzor", data=FORMULARZ, follow_redirects=False)
+    wpis = db.dokumenty()[0]
+
+    strona = klient.get(f"/dokument/{wpis['id']}").text
+
+    assert strona.count(">Złóż PDF</a>") == 2
+    assert strona.count(">Popraw</a>") == 2 and strona.count(">Powiel</a>") == 2
+    assert strona.count(">Usuń</button>") == 2
+    # dolny pasek stoi **po** kartach z danymi, a nie zaraz pod górnym
+    assert strona.rindex('class="pasek') > strona.rindex("</fieldset>")
+
+
 def test_karta_przegladarki_nazywa_sie_numerem_operatu(klient):
     """Przy kilku otwartych operatach karty rozróżnia się po tytule."""
     _dodaj_operat(klient)
