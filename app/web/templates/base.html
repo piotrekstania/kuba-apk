@@ -73,5 +73,34 @@
     </p>
   </div>
 </footer>
+
+{# Powrót na górę — jedno kółko w rogu, na każdej stronie. Formularz operatu i Pomoc
+   mają po kilka ekranów treści, a przewijanie w górę myszą to najdłuższa czynność
+   w całym programie. Pokazuje się dopiero po przewinięciu: na krótkiej stronie nie ma
+   po co niczego przykrywać. Nie zastępuje przycisków akcji na dole — te robią coś
+   od razu, a to jest tylko droga powrotna. #}
+<button type="button" class="do-gory" id="do-gory" hidden
+        title="Do góry" aria-label="Przewiń na górę strony">↑</button>
+<script>
+(() => {
+  const guzik = document.getElementById('do-gory');
+
+  // O tym, czy przycisk jest, decyduje **długość strony**, a nie przewinięcie.
+  // Zdarzenie `scroll` bywa nieodpalane (w przeglądarce podglądu Claude Code nie
+  // przyszło ani razu, choć strona się przewijała), a przycisk, który nigdy się nie
+  // pokazuje, jest gorszy niż widoczny o jeden ekran za wcześnie. Próg 1,6 ekranu:
+  // strona mieszcząca się prawie w oknie nie potrzebuje drogi powrotnej.
+  const dluga = () => document.documentElement.scrollHeight > window.innerHeight * 1.6;
+  const pokaz = () => { guzik.hidden = !dluga(); };
+
+  // Skok, nie płynięcie — i to celowo. Płynne przewijanie (`behavior: 'smooth'` w JS
+  // albo `scroll-behavior` w CSS) bywa **cicho ignorowane**: w przeglądarce podglądu
+  // nie przewijało wcale, a reguła w CSS unieruchamiała przy okazji każde `scrollTo`.
+  // Przycisk bez animacji jest lepszy niż przycisk, który nic nie robi.
+  guzik.addEventListener('click', () => window.scrollTo(0, 0));
+  window.addEventListener('resize', pokaz, {passive: true});
+  pokaz();
+})();
+</script>
 </body>
 </html>

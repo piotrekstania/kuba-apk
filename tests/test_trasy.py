@@ -403,6 +403,27 @@ def test_akcje_operatu_sa_na_gorze_i_na_dole(klient):
     assert strona.rindex('class="pasek') > strona.rindex("</fieldset>")
 
 
+def test_przycisk_do_gory_jest_na_kazdej_stronie(klient):
+    """Powrót na górę bez przewijania myszą — formularz i Pomoc mają po kilka ekranów.
+
+    W HTML przycisk przychodzi **ukryty**: pokazuje go skrypt i tylko na stronie
+    dłuższej niż półtora ekranu. Bez skryptu (albo na krótkiej stronie) nie ma go
+    wcale, zamiast wisieć w rogu bez powodu.
+    """
+    from app.config import WEB
+
+    for adres in ("/", "/ustawienia", "/pomoc"):
+        strona = klient.get(adres).text
+        assert 'id="do-gory"' in strona, f"brak przycisku na {adres}"
+        znacznik = strona.split('id="do-gory"')[0].rsplit("<button", 1)[1] \
+            + strona.split('id="do-gory"')[1].split(">")[0]
+        assert "hidden" in znacznik, f"przycisk na {adres} nie przychodzi ukryty"
+
+    style = (WEB / "static" / "style.css").read_text(encoding="utf-8")
+    reguly = style.split(".do-gory {")[1].split("}")[0]
+    assert "position: fixed" in reguly, "przycisk odjedzie z treścią zamiast zostać w rogu"
+
+
 def test_karta_przegladarki_nazywa_sie_numerem_operatu(klient):
     """Przy kilku otwartych operatach karty rozróżnia się po tytule."""
     _dodaj_operat(klient)

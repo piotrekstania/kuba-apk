@@ -97,6 +97,15 @@ footer .liczniki { margin: 0; }
 .prawa-autorskie { margin: 0; color: var(--szary); }
 .prawa-autorskie a { color: inherit; text-decoration: none; }
 .prawa-autorskie a:hover { color: var(--akcent); text-decoration: underline; }
+
+/* Powrót na górę: kółko w rogu okna, nad treścią, ale pod przyklejonym nagłówkiem.
+   Pokazuje się dopiero po przewinięciu (patrz `base.html`), więc na krótkiej stronie
+   niczego nie przykrywa. */
+.do-gory { position: fixed; right: 26px; bottom: 26px; z-index: 4;
+           width: 42px; height: 42px; padding: 0; border-radius: 50%;
+           font-size: 18px; line-height: 1; color: var(--szary);
+           box-shadow: 0 6px 18px rgba(15, 23, 42, .18); }
+.do-gory:hover { border-color: var(--akcent); color: var(--akcent); }
 footer p { margin: 4px 0; }
 /* Liczniki przy prawej krawędzi — stopka jest wtedy przeciwwagą dla treści, która
    zaczyna się po lewej. Flex zamiast `text-align`, bo odstęp między pozycjami ma zostać
