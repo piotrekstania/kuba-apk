@@ -212,8 +212,80 @@ def _lista_z_paczki(nowy_kod: Path) -> list[str]:
     return AKTUALIZOWANE          # starsza paczka albo nieczytelny plik: robimy jak dotąd
 
 
-def zastosuj(nowy_kod: Path) -> None:
+def _kolejnosc(lista: list[str]) -> list[str]:
+    """`WERSJA` na sam koniec: to ona mówi, że aktualizacja się odbyła. Przerwana
+    wcześniej zostawia stary numer, więc następne uruchomienie spróbuje jeszcze raz,
+    zamiast uznać połowę plików za nową wersję."""
+    return [n for n in lista if n != "WERSJA"] + (["WERSJA"] if "WERSJA" in lista else [])
+
+
+def _pliki_do_podmiany(nowy_kod: Path) -> list[Path]:
+    """Pliki u użytkownika, które aktualizacja nadpisze albo (katalogi lustrzane) skasuje."""
+    wynik: list[Path] = []
     for nazwa in _lista_z_paczki(nowy_kod):
+        zrodlo, cel = nowy_kod / nazwa, BAZA / nazwa
+        if zrodlo.is_dir() and cel.is_dir():
+            przyszle = {p.relative_to(zrodlo) for p in zrodlo.rglob("*")
+                        if p.is_file() and "__pycache__" not in p.parts}
+            wynik += [cel / w for w in przyszle if (cel / w).is_file()]
+            if nazwa in LUSTRZANE:
+                wynik += [p for p in cel.iterdir()
+                          if p.is_file() and p.relative_to(cel) not in przyszle]
+        elif zrodlo.is_file() and cel.is_file():
+            wynik.append(cel)
+    return wynik
+
+
+def _zablokowane(nowy_kod: Path) -> list[str]:
+    """Pliki, których nie da się teraz podmienić — zwykle formatka otwarta w Wordzie.
+
+    Sprawdzamy **przed** kopiowaniem: dotąd kopiowanie szło po kolei i wywracało się
+    na pierwszym takim pliku, zostawiając `app/` już nowe, a `WERSJA`
+    i `requirements.txt` stare — program startował z nowym kodem bez nowych bibliotek.
+    Otwarcie do zapisu bez zmiany zawartości to jedyna pewna próba: Windows odmawia
+    go dokładnie wtedy, kiedy odmówiłby nadpisania.
+    """
+    zablokowane = []
+    for plik in _pliki_do_podmiany(nowy_kod):
+        try:
+            with open(plik, "r+b"):
+                pass
+        except OSError:
+            zablokowane.append(str(plik.relative_to(BAZA)))
+    return zablokowane
+
+
+def _przywroc(kopia: Path) -> list[str]:
+    """Przywraca pliki programu z kopii zrobionej przed aktualizacją. Zwraca to,
+    czego przywrócić się nie dało.
+
+    Wołane, gdy kopiowanie padło w połowie (pełny dysk, antywirus): lepiej wrócić do
+    całej starej wersji niż zostawić mieszankę. Bazy nie ruszamy — aktualizacja jej
+    nie zmienia, a kopia jest tylko na wszelki wypadek. W katalogach lustrzanych
+    zdejmujemy też pliki dołożone przez nową wersję.
+    """
+    nieprzywrocone = []
+    for nazwa in AKTUALIZOWANE:
+        zrodlo, cel = kopia / nazwa, BAZA / nazwa
+        if not zrodlo.exists():
+            continue
+        try:
+            if zrodlo.is_dir():
+                shutil.copytree(zrodlo, cel, dirs_exist_ok=True)
+                if nazwa in LUSTRZANE:
+                    stare = {p.name for p in zrodlo.iterdir() if p.is_file()}
+                    for plik in cel.iterdir():
+                        if plik.is_file() and plik.name not in stare:
+                            plik.unlink(missing_ok=True)
+            else:
+                shutil.copy2(zrodlo, cel)
+        except OSError:
+            nieprzywrocone.append(nazwa)
+    return nieprzywrocone
+
+
+def zastosuj(nowy_kod: Path) -> None:
+    for nazwa in _kolejnosc(_lista_z_paczki(nowy_kod)):
         zrodlo = nowy_kod / nazwa
         if not zrodlo.exists():
             continue
@@ -322,14 +394,38 @@ def sprawdz_i_zaktualizuj() -> bool:
 
     print(f"Jest nowsza wersja programu: {numer} (masz {lokalna}). Pobieram...")
     KOPIE.mkdir(parents=True, exist_ok=True)
-    kopia = _kopia_zapasowa(lokalna)
+    zaczete = False
     try:
         with tempfile.TemporaryDirectory(dir=DANE) as tymczasowy:
             nowy_kod = _pobierz_paczke(Path(tymczasowy))
+            # blokady przed kopią zapasową: przy odmowie kopia byłaby zbędna, a brat
+            # przy otwartym Wordzie uruchamia program kilka razy pod rząd
+            zablokowane = _zablokowane(nowy_kod)
+            if zablokowane:
+                print(f"Nie mogę teraz zaktualizować programu: plik {zablokowane[0]} jest "
+                      "otwarty w innym programie (pewnie w Wordzie).")
+                print(f"Zamknij go i uruchom program jeszcze raz — aktualizacja do {numer} "
+                      "dojdzie wtedy sama. Na razie nic nie zostało zmienione, program działa "
+                      f"w wersji {lokalna}.")
+                return False
+            kopia = _kopia_zapasowa(lokalna)
+            zaczete = True
             zastosuj(nowy_kod)
     except Exception as blad:
         print("Aktualizacja się nie udała:", blad)
-        print("Program działa dalej w starej wersji, nic nie zostało zepsute.")
+        if not zaczete:
+            print("Program działa dalej w starej wersji, nic nie zostało zmienione.")
+            return False
+        # Przerwana w połowie: część plików jest już nowa. Wracamy do kopii zrobionej
+        # przed chwilą — mieszanka starego i nowego kodu to najgorsze, co może zostać.
+        nieprzywrocone = _przywroc(kopia)
+        if nieprzywrocone:
+            print("Przywróciłem poprzednią wersję poza: " + ", ".join(nieprzywrocone)
+                  + f". Uruchom program jeszcze raz — aktualizacja spróbuje dokończyć "
+                  f"(kopia poprzedniej wersji: {kopia}).")
+        else:
+            print("Przywróciłem poprzednią wersję — program działa dalej po staremu, "
+                  "a aktualizacja spróbuje jeszcze raz przy następnym uruchomieniu.")
         return False
 
     # Numer bierzemy z tego, co naprawdę przyszło w paczce, a nie z zapowiedzi:

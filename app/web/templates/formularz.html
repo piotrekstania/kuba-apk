@@ -409,6 +409,11 @@
             {% for opcja in pole.opcje %}
             <option value="{{ opcja }}" {{ 'selected' if opcja == wartosc }}>{{ opcja }}</option>
             {% endfor %}
+            {# tak samo jak w karcie sekcji: wartości spoza dzisiejszej listy nie wolno
+               zgubić przy samym otwarciu „Popraw” #}
+            {% if wartosc and wartosc not in pole.opcje %}
+            <option value="{{ wartosc }}" selected>{{ wartosc }}</option>
+            {% endif %}
           </select>
         </div>
 

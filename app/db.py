@@ -1,5 +1,6 @@
 """Warstwa danych: SQLite bez ORM-a, bo tabele są trzy i takie zostaną."""
 import json
+import re
 import shutil
 import sqlite3
 from contextlib import contextmanager
@@ -135,15 +136,22 @@ def sprzataj_kopie_bazy() -> None:
     Wołane przy każdym starcie programu, nie tylko przy migracji — inaczej u kogoś,
     kto migracji już nie ma przed sobą, stare pliki leżałyby w nieskończoność.
     Ratunkowa jest ta ostatnia: gdyby migracja coś zepsuła, widać to przy pierwszym
-    uruchomieniu, a nie po pięciu kolejnych. Nazwa ma na końcu znacznik czasu,
-    a numer schematu tylko rośnie, więc sortowanie po nazwie jest chronologiczne.
+    uruchomieniu, a nie po pięciu kolejnych.
+
+    Kolejność bierzemy ze znacznika czasu w nazwie, a nie z samej nazwy: sortowane jak
+    napisy „schemat10” wypada przed „schemat2”, więc od dziesiątego schematu sprzątanie
+    kasowałoby najnowsze kopie. Plików o innej nazwie nie ruszamy — nie nasze.
     """
     katalog = DANE / "kopie"
+    kopie = []
     try:
-        stare = sorted(katalog.glob("operaty-schemat*.sqlite3"))[:-ILE_KOPII_BAZY]
+        for kopia in katalog.glob("operaty-schemat*.sqlite3"):
+            nazwa = re.fullmatch(r"operaty-schemat(\d+)-(\d{8}-\d{6})\.sqlite3", kopia.name)
+            if nazwa:
+                kopie.append(((nazwa.group(2), int(nazwa.group(1))), kopia))
     except OSError:
         return
-    for kopia in stare:
+    for _, kopia in sorted(kopie)[:-ILE_KOPII_BAZY]:
         kopia.unlink(missing_ok=True)
 
 

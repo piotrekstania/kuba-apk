@@ -100,6 +100,46 @@ zachowanie Windowsa trzeba zobaczyć raz na żywo:
    z pytaniem w przeglądarce brata (Edge/Chrome); „Anuluj” zostawia formularz, a drugie
    „Zapisz” po poprawieniu numeru normalnie działa.
 
+**Aktualizacja, `start.bat`, dane wyłączonych sekcji, zawieszony Word** (druga runda po
+wydaniu 113). Na Linuksie sprawdzone testami i w Chrome (odznaczony wykaz budynku wraca
+z danymi, wartość listy spoza opcji zostaje, składanie działa); ten sam operat co przy
+wydaniu 113: pliki Worda identyczne bajt w bajt, PDF-y w tekście i obrazie. Zostaje
+Windows — cmd i Worda tu nie ma:
+
+1. **`start.bat` podmieniany w trakcie** — przejście ze starego `start.bat` na nowy,
+   czyli dokładnie to, co zobaczy brat. Instalacja ze starego kodu (commit wydania 113),
+   z cofniętym numerem:
+
+   ```bat
+   .venv\Scripts\python narzedzia\instalacja_testowa.py E:\test-brata --z-commita c3b1c98
+   E:\test-brata\start.bat
+   ```
+
+   Stary `start.bat` i stary aktualizator ściągają nowy kod z `main`. Aktualizacja
+   przechodzi, program startuje normalnie, w oknie **żadnego** „nie jest rozpoznawane
+   jako polecenie wewnętrzne” ani drugiego startu. Po zamknięciu programu uruchom
+   `start.bat` jeszcze raz — teraz już cały nowy — i też ma wystartować normalnie.
+2. **Świeży `start.bat` od zera** (skasowany `.venv`): zakłada środowisko, instaluje
+   biblioteki, zakłada skrót i startuje — blok w nawiasach nie może się rozsypać.
+3. **Drugie uruchomienie w czasie pracy programu**, a potem zamknięcie pierwszego okna:
+   pierwsze okno kończy się po „Naciśnij dowolny klawisz”, bez wykonywania czegokolwiek
+   więcej.
+4. **Aktualizacja przy szablonie otwartym w Wordzie** — działa dopiero od aktualizacji
+   **po** tej, która przywiozła nowy aktualizator (pułapka 7b), więc na instalacji
+   z punktu 1, już po przejściu: cofnij numer w pierwszej linii jej `WERSJA`, otwórz
+   w Wordzie jej `szablony\spis_tresci_wzor.docx` i uruchom `start.bat`. Okno mówi, który
+   plik zamknąć, program startuje w starej wersji, w `dane\kopie\` nie przybywa kopii.
+   Po zamknięciu Worda i ponownym starcie — aktualizacja przechodzi.
+5. **`pip` bez internetu**: dopisz coś do `requirements.txt` instalacji testowej, odłącz
+   sieć, uruchom — komunikat „Nie udalo sie doinstalowac bibliotek” i program **startuje**.
+   Z nieistniejącą biblioteką zaimportowaną w `app` — polski komunikat o brakującej
+   bibliotece zamiast śladu stosu.
+6. **Strażnik Worda**: `.venv\Scripts\pytest -m word -v` (w tym
+   `test_limit_czasu_zamyka_tylko_naszego_worda`), a potem Menedżer zadań — żadnego
+   zostawionego `WINWORD.EXE`. Z otwartym obok własnym dokumentem Worda: zostaje otwarty.
+7. **Czas konwersji** po dołożeniu `tasklist`: podglądy po „Zapisz” mają się pojawiać
+   tak samo szybko jak dotąd (dwa wywołania `tasklist` na start Worda to ułamek sekundy).
+
 **Zostało do obejrzenia okiem** (z wydania 112) — tego testy ani przeglądarka nie sprawdzą:
 otworzyć **złożony PDF w prawdziwym czytniku** i potwierdzić, że karta, panel stron
 i pole „Tytuł” we właściwościach pokazują numer roboty, a plik otwiera się normalnie.

@@ -3,13 +3,17 @@
 Dla użytkownika końcowego to „program” — klika ikonę, otwiera się strona.
 Nic nie wychodzi poza ten komputer: nasłuch tylko na 127.0.0.1.
 """
+import importlib
 import sys
 import threading
 import time
 import urllib.request
 import webbrowser
 
-import uvicorn
+try:
+    import uvicorn
+except ModuleNotFoundError:     # powie o tym po polsku `_brakuje_bibliotek`
+    uvicorn = None
 
 from app.config import HOST, PORT
 
@@ -77,6 +81,23 @@ def po_starcie() -> None:
     zminimalizuj_konsole()
 
 
+def _brakuje_bibliotek() -> str | None:
+    """Nazwa biblioteki, której brakuje do startu — albo None, gdy są wszystkie.
+
+    `start.bat` nie zatrzymuje się już na nieudanej instalacji bibliotek (w terenie
+    nie ma internetu, a stare zwykle wystarczają). Gdy jednak nowa wersja programu
+    potrzebuje czegoś, czego jeszcze nie ma, import kończył się angielskim śladem
+    stosu. Import `app.main` przed startem serwera sprawdza cały program naraz.
+    """
+    if uvicorn is None:
+        return "uvicorn"
+    try:
+        importlib.import_module("app.main")
+    except ModuleNotFoundError as blad:
+        return blad.name or str(blad)
+    return None
+
+
 def glowna() -> None:
     """Start programu — albo przejście do tego, który już działa.
 
@@ -92,6 +113,13 @@ def glowna() -> None:
         print("w przeglądarce. Jeśli przed chwilą przyszła aktualizacja, zamknij tamto okno")
         print("i uruchom program jeszcze raz, żeby wczytać nową wersję.")
         webbrowser.open(f"http://{HOST}:{PORT}/")
+        return
+    brakuje = _brakuje_bibliotek()
+    if brakuje:
+        print(f"Brakuje biblioteki {brakuje}, której potrzebuje nowa wersja programu —")
+        print("nie udało się jej doinstalować, pewnie nie było internetu.")
+        print("Podłącz komputer do internetu i uruchom program jeszcze raz: biblioteka")
+        print("doinstaluje się sama. Twoje operaty i dane są całe.")
         return
     threading.Thread(target=po_starcie, daemon=True).start()
     print(f"Generator operatów działa: http://{HOST}:{PORT}/   (zamknij okno, aby zakończyć)")

@@ -11,9 +11,11 @@ Word sterujemy sami (pywin32), a nie biblioteką docx2pdf, z dwóch powodów:
 """
 from __future__ import annotations
 
+import csv
 import gc
 import os
 import shutil
+import signal
 import subprocess
 import sys
 import tempfile
@@ -59,9 +61,18 @@ _WD_TRESC_DOKUMENTU = 0           # wdExportDocumentContent
 _WD_ZAKLADKI_NAGLOWKI = 1         # wdExportCreateHeadingBookmarks
 _WD_NIE_ZAPISUJ = 0               # wdDoNotSaveChanges
 
+# Tyle może trwać jeden krok konwersji Wordem (start Worda razem z pierwszym dokumentem,
+# potem każdy kolejny dokument). Zwykle to półtorej sekundy, więc limit jest z ogromnym
+# zapasem — ma łapać wyłącznie Worda, który stanął na oknie, którego nikt nie widzi.
+LIMIT_WORDA = 180
+
 
 class BrakKonwertera(RuntimeError):
     pass
+
+
+class WordZawieszony(BrakKonwertera):
+    """Word nie skończył w `LIMIT_WORDA` i strażnik zamknął naszą instancję."""
 
 
 class BladPliku(RuntimeError):
@@ -120,6 +131,82 @@ def _com():
         pythoncom.CoUninitialize()
 
 
+def _procesy_worda() -> set[int]:
+    """Numery procesów `WINWORD.EXE` działających w tej chwili (poza Windowsem pusto)."""
+    if sys.platform != "win32":
+        return set()
+    try:
+        wynik = subprocess.run(
+            ["tasklist", "/FI", "IMAGENAME eq WINWORD.EXE", "/FO", "CSV", "/NH"],
+            capture_output=True, timeout=15,
+            creationflags=getattr(subprocess, "CREATE_NO_WINDOW", 0))
+    except (OSError, subprocess.SubprocessError):
+        return set()
+    # "WINWORD.EXE","1234","Console","1","123 456 K" — a gdy nie ma żadnego, jedna linijka
+    # z informacją w języku systemu, bez cudzysłowów
+    return {int(wiersz[1]) for wiersz in csv.reader(
+                wynik.stdout.decode("ascii", "replace").splitlines())
+            if len(wiersz) > 1 and wiersz[0].lower() == "winword.exe" and wiersz[1].isdigit()}
+
+
+def _nasz_proces(przed: set[int], po: set[int]) -> int | None:
+    """Proces Worda uruchomiony przez nas — tylko gdy jest jedynym nowym.
+
+    Dwa nowe naraz to znak, że brat właśnie otworzył swojego Worda: wtedy lepiej nie
+    zamknąć niczego, niż zamknąć mu okno z niezapisanym dokumentem.
+    """
+    nowe = po - przed
+    return next(iter(nowe)) if len(nowe) == 1 else None
+
+
+def _zamknij_proces(pid: int) -> None:
+    try:
+        os.kill(pid, signal.SIGTERM)      # na Windowsie to `TerminateProcess`
+    except OSError:
+        pass                              # zdążył się zamknąć sam
+
+
+class _Straznik:
+    """Zamyka naszą instancję Worda, gdy któryś krok konwersji trwa dłużej niż limit.
+
+    Word bez okna potrafi stanąć na pytaniu, którego nikt nie widzi (aktywacja Office,
+    naprawa pliku). Konwersja czekała wtedy w nieskończoność, trzymając blokadę
+    konwersji — każde następne składanie i każdy podgląd stawały za nią, aż do
+    zamknięcia programu, a w tle zostawał `WINWORD.EXE`. Po zamknięciu procesu
+    wywołanie COM wraca z błędem i konwersja kończy się komunikatem.
+    """
+
+    def __init__(self) -> None:
+        self.przed = _procesy_worda()
+        self.pid: int | None = None
+        self.zadzialal = False
+        self._zegar: threading.Timer | None = None
+
+    def zapamietaj_proces(self) -> None:
+        self.pid = _nasz_proces(self.przed, _procesy_worda())
+
+    def odlicz(self) -> None:
+        """Zaczyna odliczać limit od nowa — przed każdym krokiem konwersji."""
+        self.stop()
+        self._zegar = threading.Timer(LIMIT_WORDA, self._zamknij)
+        self._zegar.daemon = True
+        self._zegar.start()
+
+    def stop(self) -> None:
+        if self._zegar is not None:
+            self._zegar.cancel()
+
+    def _zamknij(self) -> None:
+        # start Worda też potrafi stanąć — wtedy numeru procesu jeszcze nie znamy
+        pid = self.pid or _nasz_proces(self.przed, _procesy_worda())
+        if pid is None:
+            slad("Word nie odpowiada, ale nie wiem, który proces jest nasz — nie zamykam")
+            return
+        slad(f"Word nie odpowiada od {LIMIT_WORDA} s — zamykam proces {pid}")
+        self.zadzialal = True
+        _zamknij_proces(pid)
+
+
 def _wordem_wsad(pary: list[tuple[Path, Path]]) -> None:
     """Eksportuje kilka dokumentów w **jednej** sesji Worda.
 
@@ -130,15 +217,20 @@ def _wordem_wsad(pary: list[tuple[Path, Path]]) -> None:
 
     with _com():                      # szeregowanie robi już `docx_na_pdf`
         word = None
+        straznik = _Straznik()
         try:
             # DispatchEx = własna instancja Worda; nie przejmujemy tej,
             # w której użytkownik ma właśnie otwarte swoje pliki.
             slad(f"otwieram Worda ({len(pary)} dok.)")
+            straznik.odlicz()
             word = win32com.client.DispatchEx("Word.Application")
+            straznik.zapamietaj_proces()
             word.Visible = False
             word.DisplayAlerts = 0                       # wdAlertsNone
 
-            for zrodlo, cel in pary:
+            for numer, (zrodlo, cel) in enumerate(pary):
+                if numer:                  # pierwszy dokument liczy się razem ze startem
+                    straznik.odlicz()
                 dokument = None
                 # Word pisze PDF prosto do wskazanego pliku, kawałek po kawałku.
                 # Gdyby to był plik docelowy, ktoś czytający go w tym momencie
@@ -173,7 +265,16 @@ def _wordem_wsad(pary: list[tuple[Path, Path]]) -> None:
                             pass
                     dokument = None
                     roboczy.unlink(missing_ok=True)   # po nieudanym eksporcie
+        except Exception as blad:
+            if straznik.zadzialal:
+                raise WordZawieszony(
+                    f"Microsoft Word nie skończył w ciągu {max(1, round(LIMIT_WORDA / 60))} "
+                    "min — pewnie czeka z oknem, którego nie widać (aktywacja Office, "
+                    "pytanie o naprawę pliku). Zamknąłem go. Otwórz Worda ręcznie, zamknij "
+                    "to okno i spróbuj jeszcze raz.") from blad
+            raise
         finally:
+            straznik.stop()
             if word is not None:
                 try:
                     word.Quit(_WD_NIE_ZAPISUJ)
@@ -307,6 +408,13 @@ def docx_na_pdf_wsad(pary: list[tuple[Path, Path]]) -> list[Path]:
             else:
                 _libreoffice_wsad(pary)
         except Exception as blad:
+            if isinstance(blad, WordZawieszony):
+                # Word uruchomiony drugi raz stanąłby na tym samym oknie — pojedynczo
+                # próbujemy już tylko LibreOffice'em, a bez niego poddajemy się od razu,
+                # zamiast czekać limit czasu przy każdym dokumencie z osobna
+                if not sciezka_libreoffice():
+                    return [c for _, c in pary if c.exists()]
+                konwerter = "libreoffice"
             slad(f"wsad nie wyszedł ({blad}) — próbuję pojedynczo")
             for zrodlo, cel in pary:
                 try:
@@ -327,6 +435,8 @@ def _konwertuj(zrodlo: Path, cel: Path, konwerter: str) -> None:
             slad(f"Word nie dał rady ({blad}) — próbuję LibreOffice")
             if sciezka_libreoffice():
                 _konwersja_libreoffice(zrodlo, cel)
+            elif isinstance(blad, WordZawieszony):
+                raise                   # ma już własny, pełny komunikat
             else:
                 raise BrakKonwertera(
                     f"Microsoft Word nie zrobił PDF-a: {blad}\n"

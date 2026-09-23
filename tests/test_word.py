@@ -11,6 +11,7 @@ i równoległość testowałaby wtedy samą siebie, a nie kod.
 """
 from __future__ import annotations
 
+import gc
 import subprocess
 import sys
 import time
@@ -198,6 +199,46 @@ def test_awaria_worda_bez_libreoffice_mowi_po_polsku(tmp_path, monkeypatch):
     komunikat = str(awaria.value)
     assert "Word" in komunikat and "oknem" in komunikat
     assert "Traceback" not in komunikat
+
+
+def test_limit_czasu_zamyka_tylko_naszego_worda(tmp_path, monkeypatch):
+    """Strażnik czasu (`pdf._Straznik`) na prawdziwym Wordzie: zamyka **naszą** instancję,
+    a Word otwarty obok zostaje i dalej odpowiada. Zawieszenia nie da się wywołać na
+    zawołanie, więc strażnik „odpala” zaraz po starcie naszego Worda — jakby minął limit.
+    Sprawdza to, czego atrapy w `test_pdf.py` nie sprawdzą: że numer procesu z `tasklist`
+    jest prawdziwy, że zamknięcie procesu przerywa wywołanie COM zamiast je zawiesić
+    i że po wszystkim nie zostaje żaden `WINWORD.EXE`."""
+    import pythoncom
+    import win32com.client
+
+    pythoncom.CoInitialize()
+    obcy = win32com.client.DispatchEx("Word.Application")      # „Word brata”
+    try:
+        przed = liczba_wordow()
+        zapamietaj = pdf._Straznik.zapamietaj_proces
+
+        def i_od_razu_zamknij(straznik):
+            zapamietaj(straznik)
+            straznik._zamknij()
+
+        monkeypatch.setattr(pdf._Straznik, "zapamietaj_proces", i_od_razu_zamknij)
+        monkeypatch.setattr(pdf, "sciezka_libreoffice", lambda: None)
+        zrodlo = dokument(tmp_path / "zawieszony.docx")
+
+        with pytest.raises(pdf.BrakKonwertera, match="nie skończył"):
+            pdf.docx_na_pdf(zrodlo, tmp_path / "zawieszony.pdf")
+
+        koniec = time.monotonic() + 20
+        while liczba_wordow() > przed and time.monotonic() < koniec:
+            time.sleep(0.5)
+        assert liczba_wordow() == przed, "został nasz Word albo zamknięty został cudzy"
+        assert obcy.Documents.Count == 0, "Word obok przestał odpowiadać"
+    finally:
+        obcy.Quit()
+        # wskaźnik COM ma zniknąć przed `CoUninitialize` — patrz `pdf._wordem_wsad`
+        obcy = None
+        gc.collect()
+        pythoncom.CoUninitialize()
 
 
 # --- cała ścieżka przez HTTP -------------------------------------------------

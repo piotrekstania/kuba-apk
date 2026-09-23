@@ -159,3 +159,18 @@ def test_stare_kopie_bazy_znikaja(srodowisko, monkeypatch):
     zostaly = sorted(p.name for p in katalog.glob("operaty-schemat*.sqlite3"))
     assert len(zostaly) == 2
     assert zostaly[-1].startswith("operaty-schemat9-"), "świeża kopia została skasowana"
+
+
+def test_sprzatanie_kopii_bazy_liczy_czas_a_nie_kolejnosc_liter(srodowisko):
+    """Kopie sprzed migracji nazywają się `operaty-schemat<N>-<data>.sqlite3`, a sortowane
+    jak napisy dawały „schemat10” przed „schemat2” — od dziesiątego schematu sprzątanie
+    kasowałoby najnowsze kopie, czyli akurat te ratunkowe. Liczy się czas w nazwie."""
+    katalog = srodowisko.dane / "kopie"
+    katalog.mkdir(parents=True, exist_ok=True)
+    for schemat in range(2, 12):                     # dziesięć migracji po kolei
+        (katalog / f"operaty-schemat{schemat}-202609{schemat:02d}-100000.sqlite3").write_bytes(b"x")
+
+    db.sprzataj_kopie_bazy()
+
+    zostaly = sorted(int(k.name.split("-")[1][len("schemat"):]) for k in katalog.iterdir())
+    assert zostaly == [7, 8, 9, 10, 11]

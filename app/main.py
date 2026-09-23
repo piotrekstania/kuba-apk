@@ -22,6 +22,7 @@ from fastapi.responses import (FileResponse, HTMLResponse, JSONResponse,
                                RedirectResponse, Response)
 from fastapi.staticfiles import StaticFiles
 from fastapi.templating import Jinja2Templates
+from starlette.concurrency import run_in_threadpool
 from starlette.datastructures import UploadFile
 from starlette.exceptions import HTTPException as BladHTTP
 
@@ -362,6 +363,71 @@ def odczytaj_dane(formularz, szablon: szablony.Szablon) -> dict[str, Any]:
     if wybor:
         proste["warianty"] = wybor
     return proste
+
+
+# Typy pól, które formularz rysuje jako pola wyboru `pole__<klucz>` — tylko takie mogą
+# włączać inne pola (skrypt formularza szuka przełącznika wśród pól wyboru).
+PRZELACZNIKI = ("checkbox", "wybor_wielokrotny", "dokumenty")
+
+
+def _pole_aktywne(szablon: szablony.Szablon, pole: szablony.Pole, dane: dict[str, Any],
+                  _odwiedzone: frozenset[str] = frozenset()) -> bool:
+    """Czy pole jest w formularzu włączone — rozstrzygane dokładnie tak jak w skrypcie
+    formularza (`odswiezZaleznosci` w `formularz.html`), bo tylko wtedy wiadomo, czego
+    przeglądarka nie wysłała.
+
+    Przełącznik musi być zaznaczony **i sam włączony** (łańcuch zależności), pozycja
+    „zawsze” jest zaznaczona na stałe, ale wyłączona, więc skrypt liczy ją jak odznaczoną,
+    a przełącznik, którego w formularzu nie ma, niczego nie wyłącza.
+    """
+    if not pole.aktywne_gdy or pole.klucz in _odwiedzone:
+        return True
+    klucz, *reszta = pole.aktywne_gdy.split(":")
+    wartosc = reszta[0] if reszta else ""       # jak `const [klucz, wartosc] = ...split(':')`
+    przelacznik = next((p for p in szablon.pola if p.klucz == klucz), None)
+    if przelacznik is None or przelacznik.typ not in PRZELACZNIKI:
+        return True
+    if przelacznik.typ == "checkbox":
+        if wartosc and wartosc != "on":         # takiego pola wyboru w formularzu nie ma
+            return True
+        zaznaczone = bool(dane.get(klucz))
+    else:
+        if przelacznik.typ == "wybor_wielokrotny":
+            if wartosc and wartosc not in przelacznik.opcje:
+                return True
+            # bez wartości skrypt bierze pierwsze pole wyboru z listy
+            wartosc = wartosc or (przelacznik.opcje[0] if przelacznik.opcje else "")
+            if wartosc in przelacznik.zawsze:
+                return False
+        wybrane = dane.get(klucz)
+        zaznaczone = (wartosc in wybrane if wartosc else bool(wybrane)) \
+            if isinstance(wybrane, list) else False
+    return zaznaczone and _pole_aktywne(szablon, przelacznik, dane,
+                                        _odwiedzone | {pole.klucz})
+
+
+def _wyslane(formularz: Any, klucz: str) -> bool:
+    """Czy przeglądarka przysłała cokolwiek z pola `klucz` (wyłączonych nie wysyła wcale)."""
+    przedrostki = (f"pole__{klucz}__", f"sek__{klucz}__", f"tab__{klucz}__")
+    return any(nazwa == f"pole__{klucz}" or nazwa.startswith(przedrostki)
+               for nazwa in formularz.keys())
+
+
+def _dane_wylaczonych(szablon: szablony.Szablon, dane: dict[str, Any], formularz: Any,
+                      poprzednie: Any) -> dict[str, Any]:
+    """Wcześniej wpisane dane pól, które są teraz wyłączone — do zachowania przy poprawce.
+
+    Brat odznacza w spisie treści np. wykaz budynku, zapisuje, a przy następnym
+    „Popraw” wszystkie jego wykazy były puste: wyłączonych pól przeglądarka nie wysyła,
+    a zapis nadpisywał dane tym, co przyszło. Teraz zostają w historii i w `operat.json`,
+    a gdy zaznaczy pozycję z powrotem, formularz ma je na miejscu. **Do dokumentu nie
+    wchodzą** — tam dalej trafia tylko to, co przyszło z formularza.
+    """
+    if not isinstance(poprzednie, dict):         # pułapka 36
+        return {}
+    return {pole.klucz: poprzednie[pole.klucz] for pole in szablon.pola
+            if pole.klucz in poprzednie and not _pole_aktywne(szablon, pole, dane)
+            and not _wyslane(formularz, pole.klucz)}
 
 
 # --- strony ------------------------------------------------------------------
@@ -705,6 +771,9 @@ async def generuj(request: Request, identyfikator: str, edytuj: int | None = Non
     notatka = str(formularz_danych.get("notatka") or "").strip()
 
     poprawiany = db.dokument(edytuj) if edytuj else None
+    zachowane = (_dane_wylaczonych(szablon, dane, formularz_danych,
+                                   json.loads(poprawiany["dane_json"] or "{}"))
+                 if poprawiany else {})
     komunikat = None
     if edytuj and poprawiany is None:
         # „Zapisz” w starej zakładce, gdy operat już skasowano. Dotąd szło to dalej jako
@@ -719,7 +788,7 @@ async def generuj(request: Request, identyfikator: str, edytuj: int | None = Non
     # wspólne dla obu powrotów na formularz — po błędzie ma wrócić komplet, razem
     # z numerem operatu, wybranymi formatkami i notatką, żeby nic nie trzeba było
     # ustawiać drugi raz ani zgadywać, czy to nadal ta sama robota
-    powrot = dict(szablon=szablon, wartosci=dane, edytuj=edytuj,
+    powrot = dict(szablon=szablon, wartosci={**dane, **zachowane}, edytuj=edytuj,
                   **_szczyt_formularza(szablon, poprawiany),
                   dzisiaj=date.today().isoformat(),
                   listy_dokumentow=_listy_dokumentow(szablon),
@@ -872,7 +941,7 @@ async def generuj(request: Request, identyfikator: str, edytuj: int | None = Non
     try:
         plik, kontekst, ostrzezenia = generator.generuj(
             warianty.z_wariantem(szablon, wybor_wariantow.get(szablon.id, "")),
-            dane, db.wczytaj_ustawienia(), poprzedni_opis)
+            dane, db.wczytaj_ustawienia(), poprzedni_opis, zachowane=zachowane)
     except operaty.KatalogZajety as blad:
         # Ostatnia zapora (`operaty.zaloz`): nic nie zostało nadpisane, a numer z licznika
         # wrócił do puli. Wyjściem jest numer wpisany z ręki — ten sprawdza strażnik wyżej.
@@ -1021,7 +1090,7 @@ async def generuj(request: Request, identyfikator: str, edytuj: int | None = Non
 
     tytul = kontekst.get("nr_roboty") or katalog.name
     if poprawiany:
-        db.zaktualizuj_dokument(poprawiany["id"], str(tytul), dane,
+        db.zaktualizuj_dokument(poprawiany["id"], str(tytul), {**dane, **zachowane},
                                 f"{katalog.name}/{plik.name}", katalog.name, notatka,
                                 nr_operatu=str(kontekst.get("nr_operatu") or katalog.name))
         dokument_id = poprawiany["id"]
@@ -1069,6 +1138,11 @@ def dokument(request: Request, dokument_id: int, blad: str | None = None):
     nazwy_dokumentow = {d["id"]: d["nazwa_dokumentu"] for d in szablony.lista_skrocona()}
 
     for pole in pola:
+        # Dane wyłączonej sekcji (np. wykaz odznaczony w spisie treści) zostają w historii
+        # na wypadek ponownego zaznaczenia, ale w dokumentach ich nie ma — tu też nie.
+        if not _pole_aktywne(szablon, pole, dane):
+            czytelne.pop(pole.klucz, None)
+            continue
         # Numer operatu nadaje program przy generowaniu, więc w danych z formularza jest
         # **pusty** — i musi taki zostać, bo te dane wracają do formularza przy „Powiel
         # jako nowy”; wpisany tam numer zostałby użyty drugi raz zamiast wziąć kolejny
@@ -1406,6 +1480,14 @@ async def scal_wykonaj(request: Request, nazwa: str):
         return RedirectResponse("/scal", status_code=303)
 
     formularz_danych = await request.form()
+    # Konwersja i sklejanie idą w puli wątków. Wołane wprost w trasie `async` zatrzymywały
+    # pętlę zdarzeń serwera: dopóki Word pracował (sekundy, a gdy stanął na oknie
+    # dialogowym — aż do limitu czasu), program nie odpowiadał na nic, nawet na otwarcie
+    # Pomocy w drugiej karcie, i wyglądał na zawieszony.
+    return await run_in_threadpool(_scal, request, nazwa, katalog, formularz_danych)
+
+
+def _scal(request: Request, nazwa: str, katalog: Path, formularz_danych: Any) -> RedirectResponse:
     kolejnosc = formularz_danych.getlist("plik")          # nazwy w kolejności ustawionej myszą
     dostepne = {p.name: p for p in operaty.pliki(katalog)}
 

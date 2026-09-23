@@ -95,7 +95,14 @@
   samodzielnie, następna aktualizacja go nadpisze; poprzednia wersja zostaje wtedy
   w <code>dane/kopie/</code> razem z kopią bazy.</p>
 <p class="szary">Gdy nie ma internetu (np. w terenie), program po prostu startuje w tej
-  wersji, którą ma — sprawdzanie aktualizacji nigdy nie blokuje pracy.</p>
+  wersji, którą ma — sprawdzanie aktualizacji nigdy nie blokuje pracy. To samo, gdy
+  nowa wersja potrzebuje dodatkowej biblioteki, a internetu nie ma: program startuje
+  z tym, co już ma, a biblioteka doinstaluje się przy następnym uruchomieniu z internetem.
+  Gdyby bez niej program nie mógł ruszyć, czarne okno powie po polsku, czego brakuje.</p>
+<p class="szary">Aktualizacja jest <strong>cała albo wcale</strong>. Gdy któryś plik
+  programu jest akurat otwarty (np. szablon w Wordzie), czarne okno mówi, który, a program
+  startuje po staremu — po zamknięciu tego pliku i ponownym uruchomieniu aktualizacja
+  dojdzie sama. Gdyby coś przerwało ją w połowie, program wraca do poprzedniej wersji.</p>
 
 <h2 id="statystyki">Co program o sobie wysyła</h2>
 <p>Przy uruchamianiu program wysyła bratu <strong>trzy liczby ze stopki</strong> — ile
@@ -139,7 +146,10 @@
 </table>
 <p class="szary">Gdy PDF się nie zrobi, a Word jest zainstalowany, najczęstsza przyczyna to
   Word czekający z otwartym oknem (aktywacja pakietu Office, pytanie o zapis, tryb chroniony).
-  Wystarczy otworzyć Worda ręcznie, zamknąć to okno i kliknąć „Złóż PDF” jeszcze raz.</p>
+  Wystarczy otworzyć Worda ręcznie, zamknąć to okno i kliknąć „Złóż PDF” jeszcze raz.
+  Takiego Worda program nie zostawia w nieskończoność: po <strong>3 minutach</strong> bez
+  odpowiedzi zamyka swój niewidoczny egzemplarz (Twoich otwartych dokumentów nie rusza)
+  i mówi, co zrobić. Przez ten czas reszta programu działa normalnie.</p>
 <p class="szary">Bez żadnego z nich generowanie plików .docx działa normalnie; nie działa tylko
   „Złóż PDF” — podglądy stron i sklejenie dokumentów w jeden plik.</p>
 
@@ -277,6 +287,10 @@ Wykonano: brak
   w spisie treści, a pliku w katalogu brak. Teraz pytanie jest jedno.</p>
 <p class="szary">Na stałe zaznaczony zostaje wyłącznie sam „Spis treści”. Sprawozdanie
   odznaczasz normalnie, gdy w danej robocie go nie ma.</p>
+<p class="szary">Odznaczenie pozycji <strong>niczego nie kasuje</strong>. Dane wpisane
+  w jej polach (np. wykazy budynku) do dokumentów nie wchodzą i na stronie operatu ich nie
+  widać, ale zostają zapisane przy operacie — gdy przy poprawianiu zaznaczysz pozycję
+  z powrotem, formularz ma je na miejscu.</p>
 
 <h2 id="wykazy">Wykazy zmian danych ewidencyjnych</h2>
 <p>W jednym operacie może być kilka budynków, a każdy potrzebuje własnego wykazu.

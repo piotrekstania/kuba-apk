@@ -486,7 +486,8 @@ def _numer_operatu(szablon: Szablon, kontekst: dict[str, Any]) -> str:
 
 
 def generuj(szablon: Szablon, dane: dict[str, Any], ustawienia: dict[str, str],
-            poprzedni: dict[str, Any] | None = None) -> tuple[Path, dict, list[str]]:
+            poprzedni: dict[str, Any] | None = None,
+            zachowane: dict[str, Any] | None = None) -> tuple[Path, dict, list[str]]:
     """Zakłada katalog operatu i wkłada do niego dokument główny.
 
     `poprzedni` = opis operatu, który poprawiamy — zwykle z `operat.json`, a gdy folder
@@ -494,6 +495,9 @@ def generuj(szablon: Szablon, dane: dict[str, Any], ustawienia: dict[str, str],
     operatu bierze się stamtąd, a nie z licznika, i wszystko ląduje w tym samym katalogu —
     poprawianie dokumentu nie może zjadać kolejnych numerów. Wystarczą dwa klucze:
     `nr_operatu` i `nr_roboty`.
+
+    `zachowane` = dane sekcji wyłączonych w formularzu (`main._dane_wylaczonych`): idą
+    tylko do `operat.json`, do dokumentu nie.
 
     Zwraca (plik .docx, kontekst, ostrzeżenia do pokazania użytkownikowi).
     """
@@ -532,7 +536,7 @@ def generuj(szablon: Szablon, dane: dict[str, Any], ustawienia: dict[str, str],
         # `nowy`: nowy operat nie wejdzie do katalogu innego (patrz `operaty.zaloz`) —
         # poprawiany wraca do swojego
         katalog, ostrzezenia = operaty.zaloz(
-            nazwa, str(kontekst.get("nr_roboty", "")), szablon.id, dane,
+            nazwa, str(kontekst.get("nr_roboty", "")), szablon.id, {**dane, **(zachowane or {})},
             poprzedni_numer_roboty=str((poprzedni or {}).get("nr_roboty", "")),
             nowy=poprzedni is None, wpis=(poprzedni or {}).get("wpis"))
 

@@ -6,9 +6,12 @@ się nie podniósł, okno z komunikatem jest jedyną rzeczą, jaką brat ma prze
 """
 from __future__ import annotations
 
+import hashlib
 import http.server
 import threading
 from pathlib import Path
+
+import pytest
 
 import uruchom
 
@@ -172,3 +175,95 @@ def test_pierwsze_uruchomienie_stawia_serwer(monkeypatch):
 
     assert zrobione == ["serwer"]
 
+
+# --- start.bat podmieniany w trakcie działania ----------------------------------
+#
+# cmd czyta plik .bat linijka po linijce z dysku i pamięta tylko, na którym bajcie
+# skończył. Aktualizator jest wołany **z** `start.bat` i potrafi ten plik podmienić —
+# cmd czyta wtedy dalej od starego miejsca, ale już w nowym pliku. Dlatego:
+# 1) wszystko do wiersza z aktualizacją włącznie jest zamrożone — bajt w bajt taki jak
+#    u brata, więc po podmianie cmd trafia dokładnie na początek nowej reszty;
+# 2) reszta to jeden blok `( … )`, który cmd wczytuje w całości przed wykonaniem —
+#    potem nie sięga już do pliku, więc nie przeszkodzi mu ani ta aktualizacja, ani
+#    podmiana zrobiona przez drugie uruchomienie w trakcie pracy programu.
+
+WIERSZ_AKTUALIZACJI = ".venv\\Scripts\\python -m app.aktualizacja\r\n"
+# skrót pierwszych 859 bajtów `start.bat` (CRLF), jakie brat ma dziś u siebie
+POCZATEK_START_BAT = "730a1d152ba0e56a96314f743919200c3dab4a23b5a8f2e0583b7df375a50928"
+
+
+def _start_bat() -> tuple[str, str]:
+    """(początek do wiersza aktualizacji włącznie, reszta) — w CRLF, jak u brata."""
+    tekst = (KORZEN / "start.bat").read_bytes().decode("utf-8")
+    tekst = tekst.replace("\r\n", "\n").replace("\n", "\r\n")
+    koniec = tekst.index(WIERSZ_AKTUALIZACJI) + len(WIERSZ_AKTUALIZACJI)
+    return tekst[:koniec], tekst[koniec:]
+
+
+def test_poczatek_start_bat_do_aktualizacji_jest_zamrozony():
+    """Zmiana czegokolwiek przed wierszem z aktualizacją (nawet komentarza) przesuwa
+    bajty: cmd, który właśnie wykonał aktualizację, czytałby dalej od środka jakiejś
+    linijki nowego pliku. Jeśli naprawdę trzeba to zmienić — w dwóch wydaniach:
+    najpierw nowy kod za tym wierszem, dopiero potem porządki przed nim."""
+    poczatek, _ = _start_bat()
+
+    assert hashlib.sha256(poczatek.encode("utf-8")).hexdigest() == POCZATEK_START_BAT
+
+
+def _polecenia(reszta: str) -> list[str]:
+    wiersze = [w.strip() for w in reszta.split("\r\n")]
+    return [w for w in wiersze if w and not w.lower().startswith("rem")]
+
+
+def test_reszta_start_bat_to_jeden_blok_wczytywany_na_raz():
+    _, reszta = _start_bat()
+    wiersze = [w.strip() for w in reszta.split("\r\n")]
+    polecenia = _polecenia(reszta)
+
+    assert polecenia[0] == "(" and polecenia[-1] == ")", polecenia[:2] + polecenia[-2:]
+    blok = wiersze[wiersze.index("("):]
+    # komentarz w bloku potrafi rozbić nawias; stąd wszystkie stoją nad nim
+    assert not any(w.lower().startswith("rem") for w in blok), "komentarz w bloku"
+    # po zamknięciu bloku cmd czytałby dalej z pliku, który mógł się w tym czasie zmienić
+    assert polecenia[-3:] == ["pause", "exit /b", ")"], polecenia[-3:]
+    assert any(p.endswith("python uruchom.py") for p in polecenia)
+
+
+def test_nieudana_instalacja_bibliotek_nie_zatrzymuje_programu():
+    """Bez internetu `pip` pada — a `start.bat` kończył się wtedy, zanim program w ogóle
+    wystartował. W terenie oznaczało to program nie do uruchomienia, choć stare
+    biblioteki zwykle wystarczają. Teraz startuje z tym, co jest, a instalacja zostaje
+    niedokończona (bez znacznika), więc następne uruchomienie z internetem ją dokończy."""
+    _, reszta = _start_bat()
+    polecenia = _polecenia(reszta)
+    start = next(i for i, p in enumerate(polecenia) if p.endswith("python uruchom.py"))
+
+    assert not any("exit" in p.lower() for p in polecenia[:start]), \
+        "nieudany pip znowu kończy start programu"
+    znacznik = reszta.index("copy /y requirements.txt")
+    assert ") else (" in reszta[:znacznik], "znacznik instalacji powstaje także po porażce"
+
+
+def test_brak_biblioteki_konczy_sie_polskim_komunikatem(monkeypatch, capsys):
+    """Gdy biblioteka się nie doinstalowała (brak internetu po aktualizacji), import
+    kończył się angielskim śladem stosu. Brat ma wiedzieć, czego brakuje i co zrobić."""
+    def brak(nazwa, *args, **kwargs):
+        raise ModuleNotFoundError(f"No module named '{nazwa}'", name="docxtpl")
+
+    monkeypatch.setattr(uruchom, "serwer_odpowiada", lambda *_, **__: False)
+    monkeypatch.setattr(uruchom.importlib, "import_module", brak)
+    monkeypatch.setattr(uruchom.uvicorn, "run", lambda *_, **__: pytest.fail("serwer bez bibliotek"))
+
+    uruchom.glowna()
+
+    komunikat = capsys.readouterr().out
+    assert "docxtpl" in komunikat and "internet" in komunikat
+
+
+def test_brak_uvicorna_tez_konczy_sie_polskim_komunikatem(monkeypatch, capsys):
+    monkeypatch.setattr(uruchom, "uvicorn", None)
+    monkeypatch.setattr(uruchom, "serwer_odpowiada", lambda *_, **__: False)
+
+    uruchom.glowna()
+
+    assert "uvicorn" in capsys.readouterr().out

@@ -6,7 +6,9 @@ Sprawdzamy to, co przy aktualizacji jest nieodwracalne: że dane użytkownika pr
 """
 from __future__ import annotations
 
+import os
 import shutil
+import stat
 import urllib.error
 import zipfile
 from pathlib import Path
@@ -157,6 +159,94 @@ def test_bez_pliku_wersji_kopia_ma_nazwe_do_przyjecia_na_windowsie(srodowisko, m
     assert not set('<>:"/\\|?*') & set(kopie[0].name), kopie[0].name
     assert kopie[0].name.endswith("-przed-nieznana")
     assert (srodowisko.katalog / "app" / "main.py").read_text() == "# nowy kod"
+
+
+@pytest.mark.skipif(hasattr(os, "geteuid") and os.geteuid() == 0,
+                    reason="root pisze także do plików tylko do odczytu")
+def test_plik_otwarty_w_innym_programie_nie_zostawia_polowicznej_aktualizacji(
+        srodowisko, monkeypatch, tmp_path, capsys):
+    """Formatka otwarta w Wordzie blokuje jej podmianę. Aktualizacja kopiowała dotąd
+    po kolei: `app/` już nowe, na formatce wywrotka, `WERSJA` i `requirements.txt` stare
+    — program startował z nowym kodem bez nowych bibliotek, a komunikat twierdził „nic
+    nie zostało zepsute”. Teraz zablokowany plik wykrywamy **przed** kopiowaniem: nic
+    się nie zmienia, komunikat mówi, co zamknąć, a następne uruchomienie dokańcza.
+    (Plik otwarty w Wordzie udaje tu atrybut „tylko do odczytu” — zapis kończy się tym
+    samym `PermissionError`.)"""
+    _instalacja(srodowisko, "2026.01.01.1")
+    paczka = _paczka(tmp_path, "2026.09.09.9\nNowości.", {
+        "app/main.py": "# nowy kod",
+        "szablony/stary_wzor.docx": "nowa formatka",
+    })
+    _podstaw_github(monkeypatch, tmp_path, "2026.09.09.9\nNowości.", paczka)
+    formatka = srodowisko.szablony / "stary_wzor.docx"
+    formatka.chmod(stat.S_IREAD)
+
+    assert aktualizacja.sprawdz_i_zaktualizuj() is False
+
+    assert (srodowisko.katalog / "app" / "main.py").read_text() == "# stary kod"
+    assert aktualizacja.wersja_lokalna()[0] == "2026.01.01.1"
+    wyjscie = capsys.readouterr().out
+    assert "stary_wzor.docx" in wyjscie and "otwarty" in wyjscie
+
+    formatka.chmod(stat.S_IREAD | stat.S_IWRITE)            # Word zamknięty
+    assert aktualizacja.sprawdz_i_zaktualizuj() is True
+    assert (srodowisko.katalog / "app" / "main.py").read_text() == "# nowy kod"
+
+
+def test_awaria_w_polowie_aktualizacji_przywraca_poprzednia_wersje(
+        srodowisko, monkeypatch, tmp_path, capsys):
+    """Gdy kopiowanie padnie w połowie z innego powodu (pełny dysk, antywirus),
+    wracamy do kopii zrobionej przed aktualizacją — także z formatkami, które lustro
+    zdążyło skasować. `WERSJA` idzie na samym końcu, więc następne uruchomienie
+    i tak spróbuje jeszcze raz."""
+    _instalacja(srodowisko, "2026.01.01.1")
+    paczka = _paczka(tmp_path, "2026.09.09.9\nNowości.", {
+        "app/main.py": "# nowy kod",
+        "szablony/nowy_wzor.docx": "nowa formatka",
+    })
+    _podstaw_github(monkeypatch, tmp_path, "2026.09.09.9\nNowości.", paczka)
+    prawdziwe_kopiowanie = shutil.copy2
+    cel_awarii = srodowisko.katalog / "uruchom.py"
+
+    def awaria(zrodlo, cel, *args, **kwargs):
+        if Path(cel) == cel_awarii:
+            raise OSError(28, "Brak miejsca na dysku")
+        return prawdziwe_kopiowanie(zrodlo, cel, *args, **kwargs)
+
+    monkeypatch.setattr(aktualizacja.shutil, "copy2", awaria)
+
+    assert aktualizacja.sprawdz_i_zaktualizuj() is False
+
+    assert (srodowisko.katalog / "app" / "main.py").read_text() == "# stary kod"
+    assert (srodowisko.szablony / "stary_wzor.docx").read_bytes() == b"stara formatka"
+    assert not (srodowisko.szablony / "nowy_wzor.docx").exists()
+    assert aktualizacja.wersja_lokalna()[0] == "2026.01.01.1"
+    assert "poprzednią wersję" in capsys.readouterr().out
+
+
+def test_przerwana_aktualizacja_zostawia_stary_numer_wersji(srodowisko, monkeypatch, tmp_path):
+    """Aktualizacja przerwana tak, że nie zdąży po sobie posprzątać (zamknięte okno,
+    zanik prądu), zostawia część plików nowych. `WERSJA` idzie więc na sam koniec:
+    dopóki mówi stary numer, następne uruchomienie kopiuje wszystko jeszcze raz,
+    zamiast uznać połowę plików za nową wersję."""
+    _instalacja(srodowisko, "2026.01.01.1")
+    paczka = _paczka(tmp_path, "2026.09.09.9\nNowości.", {
+        "app/main.py": "# nowy kod", "ZMIANY.md": "# Historia"})
+    _podstaw_github(monkeypatch, tmp_path, "2026.09.09.9\nNowości.", paczka)
+    prawdziwe_kopiowanie = shutil.copy2
+
+    def zamkniete_okno(zrodlo, cel, *args, **kwargs):
+        if Path(cel) == srodowisko.katalog / "ZMIANY.md":
+            raise KeyboardInterrupt
+        return prawdziwe_kopiowanie(zrodlo, cel, *args, **kwargs)
+
+    monkeypatch.setattr(aktualizacja.shutil, "copy2", zamkniete_okno)
+
+    with pytest.raises(KeyboardInterrupt):
+        aktualizacja.sprawdz_i_zaktualizuj()
+
+    assert (srodowisko.katalog / "app" / "main.py").read_text() == "# nowy kod"
+    assert aktualizacja.wersja_lokalna()[0] == "2026.01.01.1"
 
 
 def test_zmiana_formatu_numeru_wyzwala_aktualizacje(srodowisko, monkeypatch, tmp_path):
