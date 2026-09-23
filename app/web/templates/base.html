@@ -1,3 +1,4 @@
+{% from "_ikony.html" import ikona %}
 <!doctype html>
 <html lang="pl">
 <head>
@@ -13,7 +14,14 @@
      nie da się ich rozjechać. SVG, bo skaluje się do każdego rozmiaru ikony. #}
   <link rel="icon" type="image/svg+xml" href="/static/logo.svg?v={{ zasoby }}">
 </head>
-<body>
+{# Kolor programu z Ustawień: klasa podmienia w arkuszu tylko zmienne z paletą. #}
+<body class="motyw-{{ motyw or 'niebieski' }}">
+{# Zakładka strony, na której jesteś, świeci kolorem — jak w Androidzie. Strony operatu,
+   formularz i składanie PDF-a należą do „Dokumentów”; strona błędu nie należy nigdzie. #}
+{% set sciezka = request.url.path %}
+{% set w_ustawieniach = sciezka.startswith('/ustawienia') %}
+{% set w_pomocy = sciezka.startswith('/pomoc') %}
+{% set w_dokumentach = sciezka == '/' or sciezka.startswith(('/dokument', '/nowy', '/generuj', '/scal')) %}
 <header>
   {# Numer wersji pod nazwą programu: w stopce mówił to samo na każdej stronie i ginął
      pod treścią, a tutaj jest tam, gdzie i tak pada wzrok przy szukaniu „co to za
@@ -25,12 +33,12 @@
   <nav>
     {# „Złóż PDF” nie ma tu własnej pozycji: to była druga lista tych samych operatów.
        Składanie zaczyna się przy konkretnym operacie — na liście albo na jego stronie. #}
-    <a href="/">Dokumenty</a>
-    <a href="/ustawienia">Ustawienia</a>
+    <a href="/"{% if w_dokumentach %} class="aktywny" aria-current="page"{% endif %}>Dokumenty</a>
+    <a href="/ustawienia"{% if w_ustawieniach %} class="aktywny" aria-current="page"{% endif %}>Ustawienia</a>
     {# <details> robi wysuwane menu bez jednej linii JS-a: obsługuje klawiaturę,
        działa po wyłączeniu skryptów i zamyka się samo przy przejściu na inną stronę #}
     <details class="rozwijane">
-      <summary>Pomoc</summary>
+      <summary{% if w_pomocy %} class="aktywny"{% endif %}>Pomoc</summary>
       <div class="rozwijane-lista">
         <a href="/pomoc">Jak edytować szablon</a>
         <a href="/pomoc/historia">Historia wersji</a>
@@ -39,7 +47,7 @@
   </nav>
   <a class="konwerter {{ 'ok' if konwerter != 'brak' else 'zle' }}" href="/pomoc#pdf"
      title="Program używany do robienia PDF-ów">
-    PDF: {{ {'word': 'Microsoft Word', 'libreoffice': 'LibreOffice',
+    {{ ikona('ok' if konwerter != 'brak' else 'uwaga') }}PDF: {{ {'word': 'Microsoft Word', 'libreoffice': 'LibreOffice',
              'brak': 'brak konwertera — kliknij'}[konwerter] }}
   </a>
 </header>
@@ -80,7 +88,7 @@
    po co niczego przykrywać. Nie zastępuje przycisków akcji na dole — te robią coś
    od razu, a to jest tylko droga powrotna. #}
 <button type="button" class="do-gory" id="do-gory" hidden
-        title="Do góry" aria-label="Przewiń na górę strony">↑</button>
+        title="Do góry" aria-label="Przewiń na górę strony">{{ ikona('gora') }}</button>
 <script>
 (() => {
   const guzik = document.getElementById('do-gory');

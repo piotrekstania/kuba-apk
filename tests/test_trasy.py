@@ -115,7 +115,9 @@ def test_nowa_robota_to_przycisk_przy_naglowku_listy(klient):
 
     tresc = klient.get("/").text
 
-    assert '<a class="glowny" href="/nowy/spis_tresci_wzor">Nowy operat</a>' in tresc
+    # przed napisem stoi ikona „+” (wygląd B), stąd wyrażenie zamiast dosłownego znacznika
+    assert re.search(r'<a class="glowny" href="/nowy/spis_tresci_wzor">(<svg class="ik".*?</svg>)?'
+                     r"Nowy operat</a>", tresc, re.DOTALL)
     assert 'class="karta"' not in tresc, "karta szablonu została na stronie głównej"
     naglowek = re.search(r'<div class="naglowek-listy">(.*?)</div>\s*</div>',
                          tresc, re.DOTALL)

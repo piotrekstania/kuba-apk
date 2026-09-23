@@ -1,4 +1,5 @@
 {% extends "base.html" %}
+{% from "_ikony.html" import ikona %}
 {% block tytul %}Operat {{ opis.nr_operatu or katalog }}{% endblock %}
 {% block tresc %}
 
@@ -8,18 +9,18 @@
 
 <div class="pasek">
   <form method="post" action="/scal/{{ katalog | urlencode }}/otworz-katalog">
-    <button class="wtorny" type="submit">Otwórz katalog</button>
+    <button class="wtorny" type="submit">{{ ikona('folder') }}Otwórz katalog</button>
   </form>
   {% if wynik_gotowy %}
   <a class="wtorny" href="/scal/{{ katalog | urlencode }}/wynik" target="_blank">
-    Otwórz złożony PDF</a>
+    {{- ikona('otworz') }}Otwórz złożony PDF</a>
   {% endif %}
 </div>
 
 {% if zlozono %}
 <div class="komunikat gotowe">
-  <strong>Złożone.</strong> Plik <code>{{ wynik }}</code> leży w katalogu operatu.
-  <a class="glowny" href="/scal/{{ katalog | urlencode }}/wynik" target="_blank">Otwórz PDF</a>
+  {{ ikona('ok') }}<strong>Złożone.</strong> Plik <code>{{ wynik }}</code> leży w katalogu operatu.
+  <a class="glowny" href="/scal/{{ katalog | urlencode }}/wynik" target="_blank">{{ ikona('otworz') }}Otwórz PDF</a>
 </div>
 {% endif %}
 
@@ -42,11 +43,17 @@
              {% if pozycja.obrot %}style="transform: rotate({{ pozycja.obrot }}deg)"{% endif %}
              src="/miniatura/{{ katalog | urlencode }}/{{ pozycja.nazwa | urlencode }}">
       </div>
+      {# Nazwa zajmuje zawsze dwie linijki (dłuższa kończy się wielokropkiem), więc
+         wszystkie kafelki mają tę samą wysokość; pełna nazwa jest w dymku (`title`). #}
       <p class="kafelek-nazwa" title="{{ pozycja.nazwa }}">{{ pozycja.nazwa }}</p>
       <div class="kafelek-akcje">
-        <button type="button" class="obroc" data-kierunek="-90" title="Obróć w lewo">⟲</button>
-        <button type="button" class="obroc" data-kierunek="90" title="Obróć w prawo">⟳</button>
-        <button type="button" class="pomin" title="Nie dołączaj tego pliku">×</button>
+        <button type="button" class="obroc" data-kierunek="-90" title="Obróć w lewo"
+                aria-label="Obróć w lewo">{{ ikona('obrot_lewo') }}</button>
+        <button type="button" class="obroc" data-kierunek="90" title="Obróć w prawo"
+                aria-label="Obróć w prawo">{{ ikona('obrot_prawo') }}</button>
+        {# Dwie ikony, widać jedną: którą — decyduje klasa `pominiety` na kafelku. #}
+        <button type="button" class="pomin" title="Nie dołączaj tego pliku"
+                aria-label="Nie dołączaj tego pliku"><span class="gdy-dolaczony">{{ ikona('pomin') }}</span><span class="gdy-pominiety">{{ ikona('przywroc') }}</span></button>
       </div>
       <input type="hidden" name="plik" value="{{ pozycja.nazwa }}">
       <input type="hidden" name="obrot__{{ pozycja.nazwa }}" value="{{ pozycja.obrot }}">
@@ -55,8 +62,8 @@
   </div>
 
   <div class="pasek">
-    <button class="glowny" type="submit">Złóż PDF: {{ wynik }}</button>
-    <a class="wtorny" href="/">Wróć do dokumentów</a>
+    <button class="glowny" type="submit">{{ ikona('zloz') }}Złóż PDF: {{ wynik }}</button>
+    <a class="wtorny" href="/">{{ ikona('wstecz') }}Wróć do dokumentów</a>
   </div>
   <p class="podpowiedz">Gotowy plik zapisuje się w katalogu operatu pod nazwą
     <code>{{ wynik }}</code> — dokładnie taką, jakiej wymagają przepisy. Ta strona zostaje,
@@ -66,7 +73,7 @@
 <p>W tym katalogu nie ma jeszcze nic do sklejenia. Włóż do
   <code>wyniki\{{ katalog }}</code> swoje pliki (PDF-y albo dokumenty Worda)
   i odśwież tę stronę.</p>
-<div class="pasek"><a class="wtorny" href="/">Wróć do dokumentów</a></div>
+<div class="pasek"><a class="wtorny" href="/">{{ ikona('wstecz') }}Wróć do dokumentów</a></div>
 {% endif %}
 
 <script>
@@ -107,24 +114,35 @@ siatka?.addEventListener('dragover', z => {
   siatka.insertBefore(ciagniety, zaSrodkiem ? nad.nextSibling : nad);
 });
 
+// Pytamy o przycisk, a nie o `z.target`: w przycisku siedzi ikona i kliknięcie w jej
+// kreskę trafiłoby w rysunek — obrót po cichu by nie zadziałał.
 siatka?.addEventListener('click', z => {
   const kafelek = z.target.closest('.kafelek');
-  if (!kafelek) return;
+  const przycisk = z.target.closest('button');
+  if (!kafelek || !przycisk) return;
 
-  if (z.target.classList.contains('obroc')) {
+  if (przycisk.classList.contains('obroc')) {
     const pole = kafelek.querySelector('input[name^="obrot__"]');
-    const kat = (parseInt(pole.value || 0) + parseInt(z.target.dataset.kierunek) + 360) % 360;
+    const krok = parseInt(przycisk.dataset.kierunek);
+    const przed = parseInt(pole.value || 0);
+    const kat = (przed + krok + 360) % 360;
     pole.value = kat;
-    // obracamy sam podgląd w przeglądarce — nie ma po co pytać serwera o nowy obrazek
-    kafelek.querySelector('img').style.transform = `rotate(${kat}deg)`;
+    // Obracamy sam podgląd w przeglądarce — nie ma po co pytać serwera o nowy obrazek.
+    // Podgląd liczy kąt bez sprowadzania do 0–359 (`data-widok`): przy kącie z pola
+    // przejście przez zero (0° → 270° po „w lewo”) animowało się dłuższą drogą
+    // i obrazek kręcił się o trzy ćwierci w złą stronę. Do serwera idzie pole, nie to.
+    const widok = parseInt(kafelek.dataset.widok ?? przed) + krok;
+    kafelek.dataset.widok = widok;
+    kafelek.querySelector('img').style.transform = `rotate(${widok}deg)`;
     kafelek.querySelector('.kafelek-podglad').classList.toggle('bokiem', kat % 180 !== 0);
   }
 
-  if (z.target.classList.contains('pomin')) {
+  if (przycisk.classList.contains('pomin')) {
     const wylaczony = kafelek.classList.toggle('pominiety');
     kafelek.querySelectorAll('input').forEach(pole => pole.disabled = wylaczony);
-    z.target.textContent = wylaczony ? '↺' : '×';
-    z.target.title = wylaczony ? 'Dołącz z powrotem' : 'Nie dołączaj tego pliku';
+    // ikonę przełącza sama klasa kafelka (style.css), tu zostaje podpis przycisku
+    przycisk.title = wylaczony ? 'Dołącz z powrotem' : 'Nie dołączaj tego pliku';
+    przycisk.setAttribute('aria-label', przycisk.title);
   }
 });
 </script>

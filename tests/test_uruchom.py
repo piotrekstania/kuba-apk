@@ -142,3 +142,33 @@ def test_start_bat_zaklada_skrot_z_ikona():
     assert 'if not exist "Generator operatow.lnk"' in tresc, \
         "skrót ma powstać raz — inaczej każdy start kasowałby zmiany użytkownika"
     assert ">nul 2>&1" in tresc, "nieudane tworzenie skrótu nie może zatrzymać startu"
+
+
+def test_drugie_uruchomienie_otwiera_dzialajacy_program_zamiast_drugiego_serwera(
+        monkeypatch, capsys):
+    """Program działa w schowanym oknie, a brat klika skrót jeszcze raz. Drugi serwer
+    i tak by nie wstał (port zajęty) — do tej pory kończyło się to angielskim błędem
+    w konsoli. Teraz: przeglądarka na działającym programie i zdanie po polsku."""
+    zrobione = []
+    monkeypatch.setattr(uruchom, "serwer_odpowiada", lambda *_, **__: True)
+    monkeypatch.setattr(uruchom.webbrowser, "open", lambda _: zrobione.append("przeglądarka"))
+    monkeypatch.setattr(uruchom.uvicorn, "run", lambda *_, **__: zrobione.append("serwer"))
+
+    uruchom.glowna()
+
+    assert zrobione == ["przeglądarka"]
+    komunikat = capsys.readouterr().out
+    assert "już działa" in komunikat and "zamknij tamto okno" in komunikat
+
+
+def test_pierwsze_uruchomienie_stawia_serwer(monkeypatch):
+    zrobione = []
+    monkeypatch.setattr(uruchom, "serwer_odpowiada", lambda *_, **__: False)
+    monkeypatch.setattr(uruchom.threading, "Thread",
+                        lambda **_: type("Watek", (), {"start": lambda self: None})())
+    monkeypatch.setattr(uruchom.uvicorn, "run", lambda *_, **__: zrobione.append("serwer"))
+
+    uruchom.glowna()
+
+    assert zrobione == ["serwer"]
+

@@ -159,6 +159,8 @@ sama się doprowadzi do porządku (po uprzednim zrobieniu kopii).
 | `WERSJA` | numer wersji + opis zmian; podbijasz go, wydając nową wersję |
 | `ZMIANY.md` | historia wydań dla użytkownika — **generowana**, nie pisana ręcznie |
 | `app/main.py` | strony i obsługa formularzy |
+| `app/wyglad.py` | kolor programu wybierany w Ustawieniach (zapis w `dane/motyw.txt`) |
+| `app/web/templates/_ikony.html` | ikony w przyciskach (SVG wstawiane w strony przez makro) |
 | `narzedzia/utworz_wzor_szablonu.py` | generuje przykładowy szablon do testów |
 | `narzedzia/zbuduj_zmiany.py` | składa `ZMIANY.md` z opisów w historii pliku `WERSJA` |
 | `narzedzia/ujednolic_wyglad.py` | nakłada wspólny wygląd na wszystkie formatki — krój, logo, stopka, hierarchia nagłówków, wyrównanie kolumn; **nie rusza treści, pogrubień ani czerwieni**. Puszczaj po każdej podmianie `.docx` |

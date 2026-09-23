@@ -7,6 +7,39 @@
 {# Karty jak w formularzu operatu: jeden `fieldset` na jeden temat. Kotwice
    `#formatki` i `#teryt` zostają na kartach, bo prowadzą do nich linki z Pomocy
    i z formularza. #}
+{# Kolor programu na samej górze: to jedyna karta, do której zagląda się dla
+   przyjemności, a nie z obowiązku — i najłatwiej ją wtedy znaleźć. Próbka nosi klasę
+   swojego motywu, więc pokazuje jego prawdziwe kolory. Wybór dotyczy tylko okna
+   programu; dokumenty wychodzą takie same (`app/wyglad.py`). #}
+{# `is defined`: aktualizacja podmienia szablony także pod działającym jeszcze starym
+   procesem, a ten listy motywów nie podaje — bez tego padałaby cała strona Ustawień. #}
+{% if motywy is defined %}
+<fieldset id="wyglad">
+  <legend>Kolor programu</legend>
+  <p class="szary">Jak kolory z tapety w telefonie: wybierz kolor przewodni programu.
+    Zmienia się tylko wygląd okna — dokumenty Worda i PDF-y zostają takie same.</p>
+  <form method="post" action="/ustawienia/wyglad">
+    <div class="motywy">
+      {% for klucz, nazwa in motywy.items() %}
+      <label class="motyw-probka motyw-{{ klucz }}">
+        <span class="probka" aria-hidden="true">
+          <span class="probka-pasek"></span>
+          <span class="probka-przycisk"></span>
+          <span class="probka-kontener"></span>
+        </span>
+        <span class="motyw-nazwa">
+          <input type="radio" name="motyw" value="{{ klucz }}"{{ ' checked' if klucz == motyw }}>
+          {{ nazwa }}</span>
+      </label>
+      {% endfor %}
+    </div>
+    <div class="pasek">
+      <button class="glowny" type="submit">Zapisz kolor</button>
+    </div>
+  </form>
+</fieldset>
+{% endif %}
+
 <fieldset id="opisy">
   <legend>Opis sprawozdania</legend>
 

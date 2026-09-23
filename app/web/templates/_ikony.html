@@ -1,0 +1,35 @@
+{#- Ikony w przyciskach — rysowane kreską SVG i wstawiane prosto w HTML.
+
+   W szablonach: `{% from "_ikony.html" import ikona %}` na górze pliku, potem
+   `{{ ikona('zapisz') }}`. Wstawione w stronę, a nie jako pliki `<img>`: biorą kolor
+   napisu przycisku (`currentColor`), więc same pasują do motywu, i działają bez
+   internetu. Grubość i zaokrąglenia kreski ustawia `.ik` w `style.css`.
+
+   **Makro w szablonie, a nie funkcja z Pythona** (`env.globals`) — i to celowo.
+   Aktualizacja podmienia pliki także wtedy, gdy program jeszcze działa w schowanym
+   oknie, a Jinja w działającym procesie sama wczytuje zmienione szablony. Szablon
+   wołający funkcję, której stary proces nie zna, wywracał wtedy **każdą** stronę —
+   razem ze stroną błędu. Makro przyjeżdża tym samym plikiem co szablony, więc stary
+   proces też je ma. Pilnuje tego test w `tests/test_wyglad.py`.
+
+   Nazwy muszą się zgadzać z tym słownikiem — nieznana nazwa dałaby pusty przycisk,
+   dlatego test sprawdza każde wywołanie `ikona('…')` we wszystkich szablonach. -#}
+{%- set KSZTALTY = {
+  "plus": '<path d="M12 5v14M5 12h14"/>',
+  "zloz": '<path d="M12 3 3 8l9 5 9-5-9-5z"/><path d="m3 13 9 5 9-5"/>',
+  "folder": '<path d="M3 7.5A2.5 2.5 0 0 1 5.5 5H9l2 2.5h7.5A2.5 2.5 0 0 1 21 10v7.5a2.5 2.5 0 0 1-2.5 2.5h-13A2.5 2.5 0 0 1 3 17.5z"/>',
+  "otworz": '<path d="M14 4h6v6"/><path d="M20 4 10 14"/><path d="M19 14v4a2 2 0 0 1-2 2H6a2 2 0 0 1-2-2V7a2 2 0 0 1 2-2h4"/>',
+  "zapisz": '<path d="m5 12.5 4.5 4.5L19 7.5"/>',
+  "wstecz": '<path d="M19 12H5"/><path d="m11 18-6-6 6-6"/>',
+  "gora": '<path d="M12 19V5"/><path d="m6 11 6-6 6 6"/>',
+  "ok": '<circle cx="12" cy="12" r="9"/><path d="m8 12.5 2.8 2.8 5.7-5.8"/>',
+  "uwaga": '<circle cx="12" cy="12" r="9"/><path d="M12 7.5v5.5"/><path d="M12 16.5h.01"/>',
+  "obrot_lewo": '<path d="M1 4v6h6"/><path d="M3.51 15a9 9 0 1 0 2.13-9.36L1 10"/>',
+  "obrot_prawo": '<path d="M23 4v6h-6"/><path d="M20.49 15a9 9 0 1 1-2.12-9.36L23 10"/>',
+  "pomin": '<path d="M6 6l12 12M18 6 6 18"/>',
+  "przywroc": '<path d="M9 14 4 9l5-5"/><path d="M4 9h10.5a5.5 5.5 0 0 1 0 11H11"/>',
+} -%}
+{#- ozdoba, więc schowana przed czytnikiem ekranu: opis niesie napis albo aria-label -#}
+{%- macro ikona(nazwa) -%}
+<svg class="ik" viewBox="0 0 24 24" aria-hidden="true" focusable="false">{{ KSZTALTY[nazwa] | safe }}</svg>
+{%- endmacro -%}

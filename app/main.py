@@ -26,7 +26,7 @@ from starlette.datastructures import UploadFile
 from starlette.exceptions import HTTPException as BladHTTP
 
 from . import (aktualizacja, db, generator, miniatury, operaty, opisy, pdf, raport,
-               statystyki, szablony, tekst, teryt, warianty, zmiany)
+               statystyki, szablony, tekst, teryt, warianty, wyglad, zmiany)
 from .config import DANE, WEB, WYNIKI
 
 
@@ -99,6 +99,11 @@ widoki = Jinja2Templates(directory=str(WEB / "templates"))
 # Formularz sam oznacza pola z numerem działki — skrypt po stronie przeglądarki
 # podpowiada przy nich, czy ULDK zna taką działkę.
 widoki.env.globals["POLA_DZIALKI"] = szablony.POLA_DZIALKI
+# Nowych funkcji globalnych tu nie dokładaj: aktualizacja podmienia szablony także pod
+# działającym jeszcze programem, a stary proces ich nie zna — szablon, który je woła,
+# wywraca mu każdą stronę. Pomocnicze rzeczy dla szablonów są makrami w szablonach
+# (np. ikony w `_ikony.html`). Pilnuje tego test w `tests/test_wyglad.py`.
+
 
 DZIENNIK_BLEDOW = DANE / "bledy.log"
 
@@ -190,6 +195,9 @@ def _widok(request: Request, nazwa: str, status: int = 200,
     kontekst.setdefault("wersja", aktualizacja.wersja_lokalna()[0])
     kontekst.setdefault("zasoby", f"{aktualizacja.wersja_lokalna()[0]}-{wersja_zasobow()}")
     kontekst.setdefault("statystyki", statystyki.podsumowanie())
+    # kolor programu z Ustawień — `biezacy()` nie rzuca, więc nie zagrozi stronie błędu.
+    # Szablony nie mogą na nim polegać: stary proces (patrz wyżej) go nie podaje.
+    kontekst.setdefault("motyw", wyglad.biezacy())
     # rok w stopce — liczony przy renderze, nie wpisany: 1 stycznia sam się zmienia
     kontekst.setdefault("rok", date.today().year)
     return widoki.TemplateResponse(request, nazwa, kontekst, status_code=status)
@@ -1181,9 +1189,38 @@ async def scal_wykonaj(request: Request, nazwa: str):
 def ustawienia_formularz(request: Request, komunikat: str | None = None,
                          blad: str | None = None):
     return _widok(request, "ustawienia.html", komunikat=komunikat, blad=blad,
+                  motywy=wyglad.MOTYWY,
                   teryt_stan=teryt.stan(), rodzaje=szablony.lista_skrocona(),
                   wlasne_formatki=warianty.wszystkie(),
                   opisy_sprawozdania=db.opisy_sprawozdania())
+
+
+# --- kolor programu ----------------------------------------------------------
+
+@app.post("/ustawienia/wyglad")
+async def zapisz_wyglad(request: Request):
+    """Zapamiętuje kolor programu. Dotyczy tylko okna programu — dokumenty zostają
+    takie same (dlaczego osobny plik, a nie tabela ustawień: `app/wyglad.py`)."""
+    formularz_danych = await request.form()
+    klucz = str(formularz_danych.get("motyw") or "")
+    try:
+        wyglad.zapisz(klucz)
+    except ValueError:
+        return RedirectResponse(
+            "/ustawienia?blad=" + quote("Nie ma takiego koloru — wybierz jedną z próbek."),
+            status_code=303)
+    except OSError:
+        return RedirectResponse(
+            "/ustawienia?blad=" + quote("Nie udało się zapisać koloru w pliku dane\\motyw.txt. "
+                                        "Sprawdź, czy na dysku jest miejsce i czy ten plik "
+                                        "nie jest oznaczony jako „tylko do odczytu” (prawy "
+                                        "przycisk myszy → Właściwości), i spróbuj jeszcze raz."),
+            status_code=303)
+    # Bez kotwicy `#wyglad`: karta koloru stoi na samej górze Ustawień, a przewinięcie
+    # do niej chowało komunikat „Kolor programu: …” nad krawędzią okna.
+    return RedirectResponse(
+        "/ustawienia?komunikat=" + quote(f"Kolor programu: {wyglad.MOTYWY[klucz].lower()}."),
+        status_code=303)
 
 
 # --- opisy sprawozdania ------------------------------------------------------

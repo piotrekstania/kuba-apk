@@ -58,9 +58,28 @@ start.bat
 Wszystko od ostatniego wydania — numer i skrót commita znajdziesz w `ZMIANY.md`
 i `git log`. Dopisuj punkty przy każdej rundzie zmian, kasuj po wydaniu.
 
-*(pusto — wydanie 2026.08.25-112 poszło 25.08. Sprawdzone w przeglądarce: kółko „do
-góry” nie koliduje z dolnym paskiem akcji przy 1280, 768 ani przy szerokości telefonu,
-na krótkiej stronie głównej go nie ma, a na formularzu (3647 px) jest i wraca na szczyt)*
+**Nowy wygląd (wersja „B · Ekspresyjny”) i kolor programu** — sam wygląd okna, dokumenty
+nietknięte: `generator.py`, `pdf.py`, `operaty.py` i `szablony/` bez jednej zmiany, a ten sam
+operat wygenerowany starym i nowym kodem (Linux, LibreOffice) dał pliki Worda identyczne
+bajt w bajt i złożony PDF identyczny w tekście i obrazie każdej strony. Na Windowsie,
+w przeglądarce brata (Edge albo Chrome):
+
+1. **Krój z pliku, nie z internetu.** Odłącz sieć i otwórz program: nagłówki mają mieć
+   zaokrąglone końcówki liter (Google Sans Flex). Kanciasty Segoe UI znaczy, że krój się
+   nie wczytał.
+2. **Pierwsza aktualizacja przywozi nowy katalog** `app/web/static/czcionki/` — sprawdź na
+   instalacji testowej (`narzedzia/instalacja_testowa.py --stara-wersja`), że dojechał.
+   Bez niego program działa, tylko krojem zapasowym.
+3. **Kolor programu:** Ustawienia → Kolor programu → inna próbka → Zapisz kolor. Zamknij
+   program i uruchom przez `start.bat` — kolor ma zostać.
+4. **Składanie PDF-a:** dołóż do katalogu operatu plik o bardzo długiej nazwie — kafelki
+   mają mieć równą wysokość, a pełna nazwa pokazać się w dymku. Obrót kliknięciem w samą
+   strzałkę, pominięcie i przywrócenie kafelka, przeciąganie.
+5. Rytuał A (Word) jak zwykle — ścieżka wordowa się nie zmieniła, ale to ona idzie do ośrodka.
+6. **Lista operatów w oknie na pół ekranu** (przyciąganie okna do krawędzi, Win+←): bez
+   poziomego paska przewijania, godzina pod datą, a „Otwórz katalog | Popraw | Powiel”
+   schodzi do drugiej linijki w całości. Testy mierzą to w Chrome bez paska przewijania —
+   na Windowsie pasek zabiera jeszcze ok. 17 px i tego testy nie widzą.
 
 **Zostało do obejrzenia okiem** — tego testy ani przeglądarka nie sprawdzą:
 otworzyć **złożony PDF w prawdziwym czytniku** i potwierdzić, że karta, panel stron

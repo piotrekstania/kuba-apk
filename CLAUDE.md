@@ -80,6 +80,13 @@ zainstalowania/uruchomienia, bez instalowania Pythona.
 | **Własne formatki użytkownika leżą w `dane/szablony/<kategoria>/`, nigdy w `szablony/`** (`app/warianty.py`) | `szablony/` jest lustrzane — plik, którego nie ma w repozytorium, znika u brata przy najbliższej aktualizacji. Jego własna formatka wyparowałaby bez śladu, a on dowiedziałby się o tym dopiero po operacie zrobionym ze standardowego wzoru. `dane/` jest nietykalne i wchodzi do kopii zapasowej. **Kategoria** (rodzaj dokumentu) decyduje, jakie pola ma formularz, **wariant** podmienia tylko wypełniany plik — dzięki temu wybór może stać na dole formularza i niczego nie przeładowuje. Wariant z nieznanym znacznikiem dostaje ostrzeżenie przy wgrywaniu, nie blokadę: formatka różniąca się jednym polem to najczęstszy przypadek, a nie błąd |
 | **Tabele wykazów zostają z prostymi rogami** (sprawdzone 20.08.2026) | zaokrąglonych krawędzi tabeli w OOXML **nie ma** — Word takiej właściwości nie zna. Jedyne obejście to zdjąć tabeli zewnętrzne krawędzie i narysować dookoła zaokrąglony prostokąt (`prstGeom prst="roundRect"`), zakotwiczony bezwzględnie względem strony. Makieta wyszła ładnie, ale kształt **nie trzyma się tabeli**: jej wysokość zależy od liczby linijek użytków (zmierzone: 100 pt przy trzech, 93,5 pt przy jednym), więc rozmiar ramki trzeba by wyliczać przed rozłożeniem tabeli przez Worda, a każde niedoszacowanie widać jako ramkę odsuniętą od treści. Do tego kształt jest ruchomy w formatce, którą brat sam edytuje. Odrzucone przez niego po obejrzeniu PDF-a |
 | **Dane stałe usunięte z programu** — nazwisko, uprawnienia, pieczątka firmy | brat woli mieć je wpisane na sztywno w swoim szablonie Worda; to i tak nie zmienia się między robotami, a jeden ekran mniej to jeden ekran mniej do tłumaczenia. `db.wczytaj_ustawienia` i `zrodlo: "ustawienia"` zostają w kodzie, ale bez interfejsu |
+| **Wygląd w stylu Androida (Material 3 Expressive), wersja „B · Ekspresyjny”** (decyzja brata z 23.09.2026) | autor pokazał bratu trzy propozycje w PDF-ach — obecny wygląd obok każdej z nich — i brat wybrał B. **Układ stron i wszystkie przyciski zostały na swoich miejscach**, zmienił się tylko strój: palety tonalne zamiast kresek, pływający pasek u góry, lista operatów z segmentów jak Ustawienia w telefonie, przyciski-pastylki zmieniające kształt pod kursorem, ikony w głównych przyciskach. Dokumentów to nie dotyka i zostało to sprawdzone na efekcie: ten sam operat (prawdziwe formatki, LibreOffice) wygenerowany starym i nowym kodem dał pliki Worda identyczne w każdej części archiwum bajt w bajt, a złożony PDF i podglądy identyczne w tekście i w obrazie każdej strony — także przy wybranym kolorze innym niż domyślny |
+| **Kolor programu: sześć motywów w Ustawieniach, zapisany w `dane/motyw.txt`, a nie w tabeli `ustawienia`** (`app/wyglad.py`) | cztery kolory brat widział w PDF-ie z propozycją i chciał je mieć do wyboru; morski i grafitowy doszły, bo prosił o sześć. **Tabela `ustawienia` odpada**, bo `generator.przygotuj_kontekst` zaczyna od `dict(ustawienia)` — każdy klucz stamtąd trafia do danych formatek Worda, a kolor okna nie ma prawa dotknąć dokumentu. Plik obok bazy daje to z samej budowy; przy okazji strona błędu pokazuje się w kolorze nawet przy uszkodzonej bazie, a zepsuty plik daje po prostu kolor domyślny. Motyw to klasa `motyw-*` na `<body>`, kolory siedzą w `style.css` jako zmienne — nowy motyw to jeden blok kolorów i wpis w `MOTYWY`, a to, że oba miejsca się zgadzają, pilnuje test. Napis w kolorze akcentu na jasnym kontenerze ma kontrast co najmniej 4,5:1 w każdym motywie — dlatego niebieski akcent (`#1759cc`) jest ciemniejszy niż niebieski logo |
+| **Krój Google Sans Flex jako plik w programie** (`app/web/static/czcionki/`, licencja SIL OFL w `OFL.txt`) | to krój Androida i spora część „androidowego” wyglądu (oś ROND zaokrągla nagłówki). Z pliku, a nie z Google Fonts, bo w terenie nie ma internetu. Dwa pliki woff2 — łacina podstawowa i rozszerzona (w niej są polskie litery), razem ok. 107 KB — pobrane raz z Google Fonts z osiami ROND i wght; przeglądarka ładuje drugi tylko wtedy, gdy na stronie są takie litery |
+| **Kafelki przy składaniu PDF-a mają równą wysokość — nazwa pliku zawsze w dwóch linijkach** (`line-clamp`, pełna nazwa w `title`) | kafelek z długą nazwą był wyższy od sąsiadów, a przyciski obrotu skakały z kafelka na kafelek — brat zgłosił to przy składaniu operatu. Dłuższa nazwa kończy się wielokropkiem, całą widać w dymku po najechaniu myszą. Pilnuje tego **pierwszy test w przeglądarce** (`tests/test_przegladarka.py`: stronę z serwera testowego rozkłada Chrome bez okna i mierzy kafelki) — sam HTML tego nie pokazuje |
+| **Ikony w przyciskach to SVG wstawiane w HTML przez makro w szablonie** (`app/web/templates/_ikony.html`, w szablonach `{% from "_ikony.html" import ikona %}` i `{{ ikona('nazwa') }}`) | biorą kolor napisu przycisku, więc same pasują do motywu, i działają bez internetu. Tylko przy głównych przyciskach (Nowy operat, Zapisz, Złóż PDF, przyciski strony składania) — przy operatach na liście ich nie ma, bo wiersz przestałby się mieścić. **Makro, a nie funkcja z Pythona** (pułapka 33): funkcja w `env.globals`, której stary proces nie zna, wywracała mu każdą stronę po aktualizacji. Kliknięcie w kreskę ikony trafia w rysunek, a nie w przycisk, dlatego skrypty pytają o przycisk przez `closest('button')`, a `.ik` ma `pointer-events: none` — bez tego obrót kafelka po cichu nie działał. Nieznana nazwa daje pusty rysunek, więc każde wywołanie `ikona('…')` sprawdza test |
+| **Lista operatów w wąskim oknie: przyciski schodzą niżej, strona nie przewija się w bok** (`@media (max-width: 1060px)` w `style.css`) | brat pracuje czasem z programem na pół ekranu, obok Worda albo mapy. Luźniejszy wygląd B z długim numerem roboty wypychał listę za prawą krawędź, a węższe okno dostawało poziomy pasek przewijania całej strony. W węższym oknie kolumna akcji bierze całe wolne miejsce, a trzy pierwsze kolumny tylko tyle, ile potrzebują — inaczej tabela rozdzielała luz po równo i przyciski rozsypywały się na trzy piętra obok pustego miejsca. Godzina schodzi pod datę (dwa kawałki bez łamania, nigdy na dywizie), a „Otwórz katalog \| Popraw \| Powiel” jest spięte w `.grupa` i schodzi do drugiej linijki w całości. Poniżej 860 px grupa też może się złamać — mieści się do ok. 830 px, a Windows zabiera jeszcze 17 px na pasek przewijania. Zaokrąglenia liczą się po dzieciach grupy, więc zgadzają się też w wierszach bez któregoś przycisku. Mierzy to `tests/test_przegladarka.py` |
+| **Logo zostaje w kolorze marki we wszystkich motywach** | znak w nagłówku i ikona karty przeglądarki to jeden plik `logo.svg` (pilnuje tego test) — przekolorowanie znaku pod motyw wymagałoby wstawienia SVG w HTML i rozdzielenia tych źródeł. Znak firmy nie musi zmieniać koloru razem z oknem |
 
 ## Zasada centralna
 
@@ -156,6 +163,13 @@ dwie konfiguracje — **na Windowsie użyj `generator-operatow-windows`** (ście
 Serwer **nie ma auto-reloadu**. Po zmianie kodu trzeba go zrestartować, inaczej testujesz
 starą wersję (autor się na to nadział).
 
+**Sprawdzanie w przeglądarce na osobnej kopii**, żeby nie ruszać własnych `dane/`
+i `wyniki/`: `git worktree add <katalog> -b <gałąź>` i serwer z tej kopii
+(`env GENERATOR_BEZ_STATYSTYK=1 .venv/bin/python -m uvicorn app.main:app --app-dir <katalog>
+--port 8010`) — ścieżki liczą się od katalogu kodu, więc kopia ma własne `dane/` i `wyniki/`,
+a uvicorn wprost nie uruchamia aktualizatora. Wyłącznik statystyk, bo inaczej każdy taki
+start dopisuje wiersz do arkusza autora.
+
 ## Mapa kodu
 
 | Plik | Rola |
@@ -180,6 +194,10 @@ starą wersję (autor się na to nadział).
 | `app/opisy.py` | opisy sprawozdania dostarczane z programem (`szablony/opisy_sprawozdania.json`); zasiewane **raz na pozycję** |
 | `app/miniatury.py` | podgląd pierwszej strony PDF-a (pypdfium2 + Pillow) |
 | `app/main.py` | trasy FastAPI, parsowanie formularza (w tym tabel) |
+| `app/wyglad.py` | kolor programu: lista sześciu motywów i wybór zapamiętany w `dane/motyw.txt` (celowo poza tabelą `ustawienia`) |
+| `app/web/templates/_ikony.html` | ikony przycisków — kształty SVG i makro `ikona()` (celowo w szablonie, nie w Pythonie — pułapka 33) |
+| `app/web/static/style.css` | cały wygląd; palety motywów to bloki `.motyw-*` na górze pliku |
+| `app/web/static/czcionki/` | krój Google Sans Flex (woff2) z licencją OFL — program nie sięga po kroje do internetu |
 | `app/web/templates/` | widoki; `blad.html` to strona każdego niezłapanego wyjątku, a `pomoc.html` instrukcja dla brata — aktualizuj ją razem z funkcjami |
 | `narzedzia/utworz_wzor_szablonu.py` | generuje przykładowy szablon spisu treści do testów; nie nadpisze istniejącego bez `--nadpisz` |
 | `narzedzia/utworz_wzor_sprawozdania.py` | szkielet sprawozdania technicznego; też nie nadpisuje istniejącego bez `--nadpisz` |
@@ -478,6 +496,41 @@ też brat. Interfejs w całości po polsku.
    przez użytkownika (POST z przycisku), nigdy przy samym renderze** — render strony
    nie jest dowodem, że ktoś ją widział.
 
+31. **Pseudoelement z ujemnym `z-index` maluje się nad tłem swojego rodzica, jeśli
+   rodzic tworzy kontekst** (`position: sticky` + `z-index`, jak pasek u góry). Pas tła
+   dorobiony jako `header::before { z-index: -1 }` miał leżeć pod pastylką, a przeciął
+   ją beżowym prostokątem — na szerokim oknie niewidoczny (ten sam kolor co tło strony),
+   na wąskim od razu. Pas stoi teraz osobno (`body::before`, `position: fixed`,
+   `z-index` między treścią a paskiem).
+
+32. **Zrzut z Chrome'a bez okna zaraz po skoku do kotwicy wychodzi pusty** (`/pomoc#pdf`)
+   — przy starym arkuszu stylów dokładnie tak samo, a strona po najmniejszym przewinięciu
+   rysuje się normalnie. Tak samo zrzut w podglądzie zaraz po `scrollTo` potrafi pokazać
+   pasek w połowie ekranu. To przypadłość zrzutu, nie błąd strony — zanim zaczniesz
+   szukać w CSS, porównaj ze starym arkuszem. Prawdziwy problem z kotwicami był inny:
+   przyklejony pasek zasłaniał cel przewinięcia, stąd `html { scroll-padding-top }`.
+
+33. **Aktualizacja podmienia szablony pod działającym jeszcze programem.** Brat zostawia
+   program w schowanym oknie i klika skrót drugi raz: `start.bat` aktualizuje pliki,
+   a stary proces zostaje w pamięci ze starym kodem Pythona — **ale Jinja sama wczytuje
+   zmienione szablony z dysku**, a style i skrypty i tak serwuje z plików. Szablon wołający
+   coś, czego stary proces nie zna (funkcja w `env.globals`, nowa zmienna kontekstu użyta
+   w pętli albo wywołana), wywracał wtedy **każdą** stronę, łącznie ze stroną błędu —
+   wyszło w przeglądzie przed wydaniem wyglądu B, kiedy ikony były jeszcze funkcją z
+   Pythona. Zasady: pomocnicze rzeczy dla szablonów robi się **makrami w szablonach**;
+   nowa zmienna kontekstu ma mieć w szablonie zapas (`or 'domyślna'`, `is defined`).
+   Pilnują tego `test_szablony_nie_polegaja_na_nowych_funkcjach_z_pythona` i
+   `test_stary_proces_z_nowymi_szablonami_nie_wywraca_stron`. Od tego wydania
+   `uruchom.py` rozpoznaje, że program już działa, i zamiast drugiego serwera otwiera
+   przeglądarkę z prośbą o zamknięcie starego okna.
+
+34. **`monkeypatch.undo()` w teście cofa także podmiany zrobione przez fixture.**
+   `srodowisko` i `bez_prawdziwego_motywu` podmieniają ścieżki tym samym, jednym na test
+   obiektem `monkeypatch` — więc `undo()` w środku testu przywraca **prawdziwe** `dane/`
+   i dalsza część testu czyta (albo pisze) pliki autora. Wyszło na teście koloru: po
+   `undo()` przeczytał kolor z `dane/motyw.txt` kopii roboczej zamiast swojego. Podmiana
+   tylko na kawałek testu to `with monkeypatch.context() as podmiana:`.
+
 ## Stan na teraz — przetestowane end-to-end
 
 Formularz → `.docx` → PDF → sklejenie kilku PDF-ów w jeden. Działa: powtarzalne wiersze tabeli
@@ -583,6 +636,8 @@ Co pilnują, w kolejności od najbardziej bolesnych doświadczeń:
 | `test_sekcje.py` | że kilka wykazów w jednym operacie daje kilka tabel, każdą z własnymi danymi i nagłówkiem, a łamanie strony stoi **między** nimi, nie po ostatnim |
 | `test_tekst.py` | że do dokumentu wchodzi **tylko** pogrubienie, kursywa i podkreślenie, a `{{r }}` w formatce jest konieczne — przy zwykłym `{{ }}` powstaje plik, którego Word nie otworzy; pilnuje też, żeby styl akapitu **nie rozlewał się** za złamanie wiersza (patrz pułapka 24) |
 | `test_miniatury.py` | że pdfium nie jest wołany dwoma wątkami naraz (objawem jest zgaszony program, nie wyjątek) i że plik niebędący PDF-em nie wywraca strony składania |
+| `test_wyglad.py` | że **kolor programu nie zmienia dokumentów** (ten sam operat poprawiony po zmianie koloru daje pliki Worda identyczne bajt w bajt, a tabela `ustawienia` — czyli dane formatek — nie zmienia się w ogóle), że wybór obowiązuje na każdej stronie — także na stronie błędu — a zepsuty plik koloru daje kolor domyślny, że każdy motyw z listy ma paletę w arkuszu; że **stary proces z nowymi szablonami nie wywraca stron** (pułapka 33); do tego ikony (każda wołana nazwa ma kształt) i podświetlona zakładka |
+| `test_przegladarka.py` | układ mierzony w prawdziwej przeglądarce (Chrome/Chromium bez okna, `--dump-dom`): **kafelki przy składaniu PDF-a mają równą wysokość** niezależnie od długości nazwy pliku (w co najmniej dwóch rzędach — w jednym siatka wyrównuje wysokości sama i test niczego by nie odróżnił), **lista operatów nie wystaje poza stronę** przy 1280, 900 i 700 px, próbki koloru mieszczą się w kartach. Pomija się sam, gdy nie ma przeglądarki (i przy Chromium ze Snapa, który nie widzi `/tmp`); na runnerze CI Chrome jest |
 
 Testy stabilności formatek **pomijają się bez czcionki Calibri/Carlito**
 (`sudo apt install fonts-crosextra-carlito`), bo bez niej `ujednolic_wyglad.py` w ogóle

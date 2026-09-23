@@ -77,7 +77,26 @@ def po_starcie() -> None:
     zminimalizuj_konsole()
 
 
-if __name__ == "__main__":
+def glowna() -> None:
+    """Start programu — albo przejście do tego, który już działa.
+
+    Brat zostawia program w schowanym oknie i następnego dnia klika skrót jeszcze raz.
+    Drugi serwer i tak by nie wstał (port zajęty), a do tej pory kończyło się to
+    angielskim błędem w konsoli. Gorzej: `start.bat` robi przed nami aktualizację, więc
+    działający stary proces dostaje nowe szablony i nowe style, a nowego kodu nie —
+    stąd prośba o zamknięcie tamtego okna. Sprawdzamy krótko: gdy nikt nie nasłuchuje,
+    odmowa połączenia przychodzi od razu.
+    """
+    if serwer_odpowiada(sekundy=0.5):
+        print("Generator operatów już działa w innym oknie (na pasku zadań) — otwieram go")
+        print("w przeglądarce. Jeśli przed chwilą przyszła aktualizacja, zamknij tamto okno")
+        print("i uruchom program jeszcze raz, żeby wczytać nową wersję.")
+        webbrowser.open(f"http://{HOST}:{PORT}/")
+        return
     threading.Thread(target=po_starcie, daemon=True).start()
     print(f"Generator operatów działa: http://{HOST}:{PORT}/   (zamknij okno, aby zakończyć)")
     uvicorn.run("app.main:app", host=HOST, port=PORT, log_level="warning")
+
+
+if __name__ == "__main__":
+    glowna()

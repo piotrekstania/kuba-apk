@@ -1,13 +1,78 @@
+/* Wygląd w stylu Androida (Material 3 Expressive) — wersja „B · Ekspresyjny”, wybrana
+   przez brata we wrześniu 2026 z trzech propozycji pokazanych mu w PDF-ach. Układ stron
+   i wszystkie przyciski zostały tam, gdzie były: zmienił się tylko strój — kolor
+   przewodni z odcieniami, zaokrąglone karty, przyciski w kształcie pastylki, listy
+   z segmentów jak w Ustawieniach telefonu.
+
+   Kolor przewodni wybiera się w Ustawieniach (`app/wyglad.py`). Motyw to klasa na
+   <body>, a jej reguły niżej podmieniają tylko zmienne z paletą — reszta arkusza
+   zna wyłącznie nazwy zmiennych, więc nowy motyw to jeden blok kolorów. */
+
+/* --- kolory ---------------------------------------------------------------- */
+/* Paleta tonalna jak w Androidzie: kolor przewodni (`--akcent`), jego jasny
+   „kontener” na tła etykiet i przycisków tonalnych, oraz tła w kilku poziomach
+   (`--panel-*`) — zamiast kresek oddzielają rzeczy odcienie. Napisy na kontenerze
+   w kolorze akcentu mają kontrast co najmniej 4,5:1 w każdym motywie (sprawdzone
+   przy wyborze kolorów) — dlatego niebieski jest ciemniejszy niż w logo. */
+:root, .motyw-niebieski {
+  --tlo: #edf0fa;
+  --panel-niski: #f5f7fd;
+  --panel-sredni: #e6eaf7;
+  --panel-wysoki: #dce2f3;
+  --tekst: #171b24;
+  --szary: #464c5a;
+  --linia: #cfd5e4;
+  --obrys: #737a8a;
+  --akcent: #1759cc;
+  --akcent-ciemny: #0f4aa8;
+  --akcent-kontener: #d5e1ff;
+  --na-akcent-kontenerze: #002e76;
+  --drugi-kontener: #dbe2f7;
+  --na-drugim: #142449;
+  --trzeci-kontener: #ffd9e3;
+  --na-trzecim: #5b1130;
+}
+.motyw-zielony {
+  --tlo: #ebf3ec; --panel-niski: #f4f9f4; --panel-sredni: #e0ece2; --panel-wysoki: #d5e5d8;
+  --tekst: #161d18; --szary: #434b45; --linia: #c7d8cb; --obrys: #717a73;
+  --akcent: #1d6b3b; --akcent-ciemny: #145a2f; --akcent-kontener: #b4f1c5; --na-akcent-kontenerze: #00391b;
+  --drugi-kontener: #d1e8d5; --na-drugim: #0e2b17; --trzeci-kontener: #c3e8f1; --na-trzecim: #003640;
+}
+.motyw-fioletowy {
+  --tlo: #f2eefa; --panel-niski: #f8f5fd; --panel-sredni: #eae4f6; --panel-wysoki: #e1d9f1;
+  --tekst: #1c1b20; --szary: #49454f; --linia: #d6cfe4; --obrys: #79747e;
+  --akcent: #6750a4; --akcent-ciemny: #54408f; --akcent-kontener: #e9ddff; --na-akcent-kontenerze: #22005d;
+  --drugi-kontener: #e8def8; --na-drugim: #1d192b; --trzeci-kontener: #ffd8e4; --na-trzecim: #4a1026;
+}
+.motyw-pomaranczowy {
+  --tlo: #faf0e9; --panel-niski: #fdf6f1; --panel-sredni: #f5e5d9; --panel-wysoki: #efdacb;
+  --tekst: #221a15; --szary: #52443c; --linia: #e3cfc2; --obrys: #85746a;
+  --akcent: #9c3f0b; --akcent-ciemny: #7f3006; --akcent-kontener: #ffdbca; --na-akcent-kontenerze: #351000;
+  --drugi-kontener: #f6ded1; --na-drugim: #2c160c; --trzeci-kontener: #e3e7b3; --na-trzecim: #1c1f00;
+}
+.motyw-morski {
+  --tlo: #e9f3f2; --panel-niski: #f3f9f8; --panel-sredni: #deecea; --panel-wysoki: #d2e5e2;
+  --tekst: #161d1c; --szary: #3f4948; --linia: #c2d6d3; --obrys: #6f7978;
+  --akcent: #006a66; --akcent-ciemny: #00524f; --akcent-kontener: #a8efe9; --na-akcent-kontenerze: #00201e;
+  --drugi-kontener: #cce8e5; --na-drugim: #051f1e; --trzeci-kontener: #d6e3ff; --na-trzecim: #0d1c33;
+}
+.motyw-grafitowy {
+  --tlo: #eef0f3; --panel-niski: #f6f7f9; --panel-sredni: #e5e8ec; --panel-wysoki: #dbdfe4;
+  --tekst: #1a1c1f; --szary: #45484e; --linia: #d0d4da; --obrys: #74777e;
+  --akcent: #3f4a5a; --akcent-ciemny: #2d3644; --akcent-kontener: #d6dde8; --na-akcent-kontenerze: #121c2b;
+  --drugi-kontener: #dde1e8; --na-drugim: #161c26; --trzeci-kontener: #e6e0f2; --na-trzecim: #221c33;
+}
 :root {
-  --tlo: #f5f6f8;
   --panel: #ffffff;
-  --tekst: #1c2430;
-  --szary: #6b7683;
-  --linia: #dde1e7;
-  --akcent: #1f6feb;
-  --akcent-ciemny: #1a5cc4;
-  --zle: #b42318;
-  --ok: #1a7f45;
+  --zle: #ba1a1a;
+  --zle-kontener: #ffdad6;
+  --na-zle: #7c0010;
+  --ok: #1b6c3a;
+  --ok-kontener: #c8efd3;
+  --na-ok: #0c3b1e;
+  --uwaga: #7a5a00;
+  /* Ruch „na sprężynie”: lekko przeskakuje i wraca, jak kształty w Androidzie. */
+  --sprezyna: cubic-bezier(.34, 1.56, .64, 1);
   /* Przystanek tabulatora — tyle wynosi `defaultTabStop` w formatkach operatu.
      Przeglądarka domyślnie liczy tabulator jako osiem znaków (tu ok. 0,8 cm), a Word
      przeskakuje do najbliższego przystanku co 2 cm; bez tego wyrównanie wyglądało
@@ -18,7 +83,39 @@
   --tabulator: 2cm;
 }
 
+/* --- krój pisma ----------------------------------------------------------- */
+/* Google Sans Flex — krój Androida, na licencji SIL OFL (`czcionki/OFL.txt`). Leży
+   w programie, a nie w Google Fonts: w terenie nie ma internetu. Dwa pliki, bo tak go
+   dzieli Google: podstawowa łacina i rozszerzona (w niej są ą, ę, ł, ś, ż…); przeglądarka
+   pobiera drugi tylko wtedy, gdy na stronie są takie litery. Oś ROND (zaokrąglenie)
+   daje nagłówkom miękkie końcówki liter — to ona robi „androidowy” charakter. */
+@font-face {
+  font-family: "Google Sans Flex";
+  font-style: normal;
+  font-weight: 300 800;
+  font-display: swap;
+  src: url("czcionki/GoogleSansFlex-latin-ext.woff2") format("woff2");
+  unicode-range: U+0100-02BA, U+02BD-02C5, U+02C7-02CC, U+02CE-02D7, U+02DD-02FF, U+0304, U+0308,
+                 U+0329, U+1D00-1DBF, U+1E00-1E9F, U+1EF2-1EFF, U+2020, U+20A0-20AB, U+20AD-20C0,
+                 U+2113, U+2C60-2C7F, U+A720-A7FF;
+}
+@font-face {
+  font-family: "Google Sans Flex";
+  font-style: normal;
+  font-weight: 300 800;
+  font-display: swap;
+  src: url("czcionki/GoogleSansFlex-latin.woff2") format("woff2");
+  unicode-range: U+0000-00FF, U+0131, U+0152-0153, U+02BB-02BC, U+02C6, U+02DA, U+02DC, U+0304,
+                 U+0308, U+0329, U+2000-206F, U+20AC, U+2122, U+2191, U+2193, U+2212, U+2215,
+                 U+FEFF, U+FFFD;
+}
+
 * { box-sizing: border-box; }
+
+/* Pasek u góry jest przyklejony, więc strona przewinięta do kotwicy (`/pomoc#pdf`,
+   `/ustawienia#opisy`) chowała nagłówek sekcji pod nim. Tyle, ile zajmuje pasek
+   z odstępem, przeglądarka zostawia teraz wolne nad celem przewinięcia. */
+html { scroll-padding-top: 96px; }
 
 /* Reguły niżej ustawiają `display` przyciskom, a to przebija domyślne [hidden]
    z przeglądarki — bez tego atrybut `hidden` w HTML-u nic by nie robił. */
@@ -26,170 +123,267 @@
 
 body {
   margin: 0;
-  font: 15px/1.55 "Segoe UI", system-ui, -apple-system, sans-serif;
+  font: 15px/1.55 "Google Sans Flex", "Segoe UI", system-ui, -apple-system, sans-serif;
   color: var(--tekst);
   background: var(--tlo);
+  -webkit-font-smoothing: antialiased;
 }
+/* Zaokrąglone końcówki liter tylko tam, gdzie tekst jest duży albo ma być etykietą —
+   w zwykłym tekście oś ROND nic nie wnosi, a drobne litery traciłyby ostrość. */
+h1, h2, legend, .logo, .liczniki strong, .naglowek-listy .glowny { font-variation-settings: "ROND" 100; }
 
+/* --- nagłówek: pływający pasek -------------------------------------------- */
+/* Pasek odsunięty od krawędzi okna, z zaokrąglonymi rogami — jak paski narzędzi
+   w Androidzie. Nadal przyklejony do góry, więc menu jest pod ręką przy przewijaniu. */
 header {
   display: flex;
   align-items: center;
-  gap: 24px;
-  padding: 12px 28px;
+  gap: 20px;
+  margin: 14px 20px 0;
+  padding: 10px 12px 10px 18px;
   background: var(--panel);
-  border-bottom: 1px solid var(--linia);
+  border-radius: 28px;
+  box-shadow: 0 2px 8px rgba(20, 30, 60, .07);
   position: sticky;
-  top: 0;
+  top: 14px;
   z-index: 5;
 }
+/* Pas tła pod paskiem, przyklejony do górnej krawędzi okna. Bez niego przewijana
+   treść wystawała w szczelinie nad pływającym paskiem i obok jego zaokrągleń (ucięte
+   linijki tekstu nad menu). Osobny element strony, a nie dziecko paska: pseudoelement
+   paska z ujemnym `z-index` maluje się w jego kontekście **nad** jego tłem i przecinał
+   białą pastylkę. Tu stoi między treścią (niżej) a paskiem (`z-index: 5`, wyżej);
+   dolny skraj rozmyty, żeby treść chowała się łagodnie. */
+body::before { content: ""; position: fixed; top: 0; left: 0; right: 0; height: 88px; z-index: 4;
+               background: linear-gradient(var(--tlo) 80%, transparent); pointer-events: none; }
 .logo { font-weight: 700; text-decoration: none; color: var(--tekst); font-size: 17px;
-        display: flex; align-items: center; gap: 9px; }
-/* Ikona wysoka na oba wiersze napisu: 28 px to wysokość bloku od góry „G” do dołu cyfr
+        display: flex; align-items: center; gap: 10px; }
+/* Ikona wysoka na oba wiersze napisu: 32 px to wysokość bloku od góry „G” do dołu cyfr
    wersji (17 px + 11 px przy interlinii 1,15). Rozmiar jest wpisany, a nie liczony
    `align-self: stretch` — przy `aspect-ratio` obrazek rozpychał się wtedy w kółko:
    szerszy obrazek zawijał napis, wyższy napis rozciągał obrazek, i tak do skutku.
    `display: block` zdejmuje odstęp, który linia bazowa tekstu dokłada pod obrazkiem. */
-.logo img { display: block; width: 28px; height: 28px; }
+.logo img { display: block; width: 32px; height: 32px; }
 /* Nazwa programu i numer wersji jedna pod drugą; ikona jest wysoka na oba wiersze,
    więc `line-height` obu linijek jest tu ustawiony na sztywno — inaczej wysokość
    bloku zależałaby od domyślnej interlinii i ikona przestawałaby się z nim równać. */
 .logo-napis { display: block; line-height: 1.15; }
-.logo-wersja { display: block; text-align: right; font-size: 11px; line-height: 1.15;
-               color: var(--akcent); }
-nav { display: flex; gap: 18px; align-items: center; }
-nav a { color: var(--szary); text-decoration: none; }
-nav a:hover { color: var(--akcent); }
+.logo-wersja { display: block; text-align: right; font-size: 11px; font-weight: 600;
+               line-height: 1.15; color: var(--akcent); }
+/* Menu jako połączona grupa przycisków; strona, na której jesteś, świeci kolorem. */
+nav { display: flex; gap: 2px; align-items: center; padding: 4px; border-radius: 999px;
+      background: var(--panel-sredni); }
+nav a, .rozwijane > summary {
+  display: block; color: var(--szary); text-decoration: none; font-weight: 600; font-size: 14px;
+  padding: 8px 18px; border-radius: 999px;
+  transition: background-color .25s, color .25s, border-radius .35s var(--sprezyna);
+}
+nav a:hover, .rozwijane > summary:hover, .rozwijane[open] > summary {
+  background: var(--panel); color: var(--tekst);
+}
+nav a.aktywny, .rozwijane > summary.aktywny { background: var(--akcent); color: #fff; }
+nav a:active { border-radius: 12px; }
 
 /* Wysuwane menu na <details> — bez JS-a. */
 .rozwijane { position: relative; }
-.rozwijane > summary { color: var(--szary); cursor: pointer; list-style: none;
-                       user-select: none; }
+.rozwijane > summary { cursor: pointer; list-style: none; user-select: none; }
 .rozwijane > summary::-webkit-details-marker { display: none; }   /* własna strzałka niżej */
-.rozwijane > summary::after { content: " ▾"; font-size: 11px; }
-.rozwijane[open] > summary, .rozwijane > summary:hover { color: var(--akcent); }
-.rozwijane-lista {
-  position: absolute; top: calc(100% + 10px); left: -12px; z-index: 10;
-  display: flex; flex-direction: column; min-width: 190px; padding: 6px 0;
-  background: var(--panel); border: 1px solid var(--linia); border-radius: 8px;
-  box-shadow: 0 8px 20px rgba(0, 0, 0, .10);
+/* Strzałka rysowana ramką, a nie znakiem „▾”: tego znaku nie ma w kroju programu,
+   a z kroju zapasowego wychodził w innej grubości niż napis obok. */
+.rozwijane > summary::after {
+  content: ""; display: inline-block; width: 6px; height: 6px; margin: 0 0 3px 9px;
+  border-right: 2px solid currentColor; border-bottom: 2px solid currentColor;
+  transform: rotate(45deg);
 }
-.rozwijane-lista a { padding: 7px 14px; white-space: nowrap; }
-.rozwijane-lista a:hover { background: var(--tlo); }
-.konwerter { margin-left: auto; font-size: 12px; color: var(--szary); text-decoration: none;
-             border: 1px solid var(--linia); border-radius: 999px; padding: 3px 10px; }
-.konwerter.zle { color: var(--zle); border-color: #f2c3bf; background: #fdeceb; }
-.konwerter:hover { border-color: var(--akcent); }
+.rozwijane-lista {
+  position: absolute; top: calc(100% + 10px); left: 0; z-index: 10;
+  display: flex; flex-direction: column; gap: 2px; min-width: 220px; padding: 8px;
+  background: var(--panel); border-radius: 24px; box-shadow: 0 10px 30px rgba(20, 30, 60, .16);
+}
+.rozwijane-lista a { padding: 11px 16px; border-radius: 16px; white-space: nowrap;
+                     color: var(--tekst); background: var(--panel-niski); }
+.rozwijane-lista a:hover { background: var(--akcent-kontener); color: var(--na-akcent-kontenerze); }
+/* Stan konwertera PDF: zielona „pastylka”, gdy jest czym robić PDF-y, czerwona, gdy nie. */
+.konwerter { margin-left: auto; display: inline-flex; align-items: center; gap: 8px;
+             height: 36px; padding: 0 16px 0 11px; font-size: 13px; font-weight: 600;
+             text-decoration: none; color: var(--na-ok); background: var(--ok-kontener);
+             border-radius: 999px; transition: border-radius .35s var(--sprezyna); }
+.konwerter .ik { width: 18px; height: 18px; }
+.konwerter.zle { color: var(--na-zle); background: var(--zle-kontener); }
+.konwerter:hover { border-radius: 12px; }
 
-main { max-width: 1040px; margin: 0 auto; padding: 28px; }
+main { max-width: 1040px; margin: 0 auto; padding: 28px 28px 32px; }
+
+/* --- ikony w przyciskach --------------------------------------------------- */
+/* Rysowane kreską SVG wstawianym prosto w HTML (`app/ikony.py`), więc biorą kolor
+   napisu przycisku. `pointer-events: none`: kliknięcie w ikonę ma trafić w przycisk,
+   a nie w rysunek w środku — skrypty pytają o przycisk (`closest('button')`), ale
+   to jest druga linia obrony. */
+.ik { width: 20px; height: 20px; flex: none; fill: none; stroke: currentColor; stroke-width: 2;
+      stroke-linecap: round; stroke-linejoin: round; pointer-events: none; }
 
 /* Kreska nad licznikami idzie po **treści**, nie po całej ramce stopki: postawiona na
    `footer` obejmowała też jego 28-pikselowe marginesy i wychodziła o 56 px szersza niż
    tabela nad nią — wystawała wąsami po obu stronach. Na akapicie z licznikami trzyma
    dokładnie tę samą szerokość co treść strony. */
-footer { max-width: 1040px; margin: 0 auto; padding: 0 28px 28px; font-size: 14px; }
+footer { max-width: 1040px; margin: 0 auto; padding: 0 28px 28px; font-size: 13.5px; }
 /* Kreska obejmuje całą treść stopki (firma + liczniki), a nie same liczniki. Siedzi
    na wewnętrznym bloku, a nie na `footer`, bo ten ma jeszcze 28 px marginesu z każdej
    strony i kreska wychodziła szersza niż tabela nad nią. */
-footer .stopka-tresc { display: flex; justify-content: space-between; align-items: baseline;
-                       gap: 22px; flex-wrap: wrap;
+footer .stopka-tresc { display: flex; justify-content: space-between; align-items: center;
+                       gap: 16px; flex-wrap: wrap;
                        border-top: 1px solid var(--linia); padding-top: 14px; }
 footer .liczniki { margin: 0; }
 .prawa-autorskie { margin: 0; color: var(--szary); }
-.prawa-autorskie a { color: inherit; text-decoration: none; }
+.prawa-autorskie a { color: inherit; text-decoration: none; font-weight: 600; }
 .prawa-autorskie a:hover { color: var(--akcent); text-decoration: underline; }
 
-/* Powrót na górę: kółko w rogu okna, nad treścią, ale pod przyklejonym nagłówkiem.
+/* Powrót na górę: przycisk w rogu okna, nad treścią, ale pod przyklejonym nagłówkiem.
    Pokazuje się dopiero po przewinięciu (patrz `base.html`), więc na krótkiej stronie
-   niczego nie przykrywa. */
+   niczego nie przykrywa. Kształt zaokrąglonego kwadratu — jak przycisk akcji
+   w Androidzie; pod kursorem się zaokrągla. */
 .do-gory { position: fixed; right: 26px; bottom: 26px; z-index: 4;
-           width: 42px; height: 42px; padding: 0; border-radius: 50%;
-           font-size: 18px; line-height: 1; color: var(--szary);
-           box-shadow: 0 6px 18px rgba(15, 23, 42, .18); }
-.do-gory:hover { border-color: var(--akcent); color: var(--akcent); }
+           display: inline-flex; align-items: center; justify-content: center;
+           width: 60px; height: 60px; padding: 0; border: none; border-radius: 20px;
+           color: var(--na-akcent-kontenerze); background: var(--akcent-kontener);
+           box-shadow: 0 4px 14px rgba(20, 30, 60, .2);
+           transition: border-radius .35s var(--sprezyna), transform .35s var(--sprezyna); }
+.do-gory .ik { width: 26px; height: 26px; }
+.do-gory:hover { border-radius: 30px; transform: translateY(-2px);
+                 background: var(--akcent-kontener); color: var(--na-akcent-kontenerze); }
 footer p { margin: 4px 0; }
 /* Liczniki przy prawej krawędzi — stopka jest wtedy przeciwwagą dla treści, która
    zaczyna się po lewej. Flex zamiast `text-align`, bo odstęp między pozycjami ma zostać
-   **między** nimi, a nie za ostatnią (`margin-right` zostawiał puste 22 px przy krawędzi). */
-.liczniki { display: flex; justify-content: flex-end; gap: 22px; flex-wrap: wrap; }
-.liczniki span { white-space: nowrap; }
-/* Same liczby na akcent: w stopce zostały bez zdania o wersji, więc to one są jej
-   treścią — a czarne na szarym opisie zlewały się z nim w jeden ciąg. */
-.liczniki strong { font-size: 16px; color: var(--akcent); }
+   **między** nimi, a nie za ostatnią. Trzy liczniki to jedna grupa kafelków: zewnętrzne
+   rogi zaokrąglone mocno, wewnętrzne lekko. */
+.liczniki { display: flex; justify-content: flex-end; gap: 4px; flex-wrap: wrap; }
+.liczniki span { white-space: nowrap; color: var(--szary); background: var(--panel);
+                 padding: 8px 16px; border-radius: 6px; }
+.liczniki span:first-child { border-radius: 18px 6px 6px 18px; }
+.liczniki span:last-child { border-radius: 6px 18px 18px 6px; }
+/* Same liczby na akcent: to one są treścią stopki. */
+.liczniki strong { font-size: 19px; font-weight: 700; color: var(--akcent); margin-right: 2px; }
 
-h1 { font-size: 24px; margin: 0 0 6px; }
+h1 { font-size: 38px; line-height: 44px; font-weight: 650; letter-spacing: -.015em; margin: 0 0 6px; }
 /* Szczyt strony operatu: po lewej numer z datą pod nim, po prawej przyciski — jeden
    wiersz zamiast trzech bloków jeden pod drugim. Odstęp do pierwszej karty taki sam
    jak między kartami (18 px). `wrap` na wąskim oknie zsuwa przyciski pod numer,
    zamiast je ucinać. */
 .szczyt { display: flex; justify-content: space-between; align-items: center;
           gap: 16px; flex-wrap: wrap; margin: 0 0 18px;
-          border-bottom: 1px solid var(--linia); padding-bottom: 16px; }
+          border-bottom: 1px solid var(--linia); padding-bottom: 18px; }
 .szczyt h1 { margin: 0; }
 .szczyt .pasek { margin: 0; }
 .pasek.do-prawej { justify-content: flex-end; }
 /* Data mniejsza i bez pogrubienia: jest do sprawdzenia „czy to ten operat”, a nie
    do czytania w pierwszej kolejności. */
-.szczyt .lekki { margin: 2px 0 0; font-size: 16px; color: var(--szary); }
-h2 { font-size: 17px; margin: 32px 0 10px; }
+.szczyt .lekki { margin: 2px 0 0; font-size: 15px; color: var(--szary); }
+h2 { font-size: 20px; font-weight: 650; margin: 32px 0 10px; }
 /* Podsekcja wewnątrz karty (`fieldset`) — np. dwie części karty TERYT. Mniejsza
    od nagłówka strony, bo kartę nazywa już jej `legend`. */
-h3 { font-size: 15px; margin: 26px 0 8px; }
+h3 { font-size: 15px; font-weight: 700; margin: 26px 0 8px; }
 fieldset > h3:first-of-type { margin-top: 4px; }
 p { margin: 6px 0; }
 .szary { color: var(--szary); }
-code { background: #eceff3; padding: 1px 5px; border-radius: 4px; font-size: 13px; }
-pre { background: var(--panel); border: 1px solid var(--linia); border-radius: 8px;
-      padding: 14px; overflow-x: auto; font-size: 13px; }
+code { background: var(--panel-sredni); padding: 2px 7px; border-radius: 8px; font-size: 13px; }
+pre { background: var(--panel); border-radius: 20px;
+      padding: 16px 18px; overflow-x: auto; font-size: 13px; }
 
-.komunikat { background: #e8f2ff; border: 1px solid #b9d5fb; color: #14396e;
-             padding: 10px 14px; border-radius: 8px; margin-bottom: 18px; }
-.komunikat.zle { background: #fdeceb; border-color: #f4c4bf; color: var(--zle); }
+/* Zwykły komunikat to zwykły akapit tekstu — **bez** `display: flex`. We flexie każdy
+   kawałek zdania (tekst, `<code>`, link) staje się osobnym klockiem z przerwą zamiast
+   spacji: „Brak pliku z historią zmian (” … „ZMIANY.md” … „).” rozsypywało się na trzy
+   kawałki. Flex ma tylko potwierdzenie złożenia (`.gotowe`), bo tam obok tekstu stoi
+   ikona i przycisk. */
+.komunikat { background: var(--akcent-kontener); color: var(--na-akcent-kontenerze);
+             padding: 14px 20px; border-radius: 24px; margin-bottom: 18px; }
+.komunikat.zle { background: var(--zle-kontener); color: var(--na-zle); }
+/* Ikona na początku komunikatu — tylko ta bezpośrednio w nim, nie ta w przycisku
+   „Otwórz PDF” obok (inaczej przycisk dostawał ikonę w rozmiarze komunikatu). */
+.komunikat > .ik { width: 26px; height: 26px; }
+.komunikat code { background: rgba(255, 255, 255, .65); }
 
 /* karty szablonów */
 .karty { display: grid; grid-template-columns: repeat(auto-fill, minmax(260px, 1fr)); gap: 14px; }
-.karta { display: flex; flex-direction: column; gap: 4px; padding: 16px;
-         background: var(--panel); border: 1px solid var(--linia); border-radius: 10px;
+.karta { display: flex; flex-direction: column; gap: 4px; padding: 18px;
+         background: var(--panel); border-radius: 24px;
          text-decoration: none; color: inherit; }
-.karta:hover { border-color: var(--akcent); box-shadow: 0 2px 8px rgba(31, 111, 235, .12); }
+.karta:hover { box-shadow: 0 4px 14px rgba(20, 30, 60, .12); }
 .karta span { color: var(--szary); font-size: 13px; }
 .karta small { color: var(--szary); font-size: 12px; margin-top: 6px; }
 
 /* formularz */
-fieldset { background: var(--panel); border: 1px solid var(--linia); border-radius: 10px;
-           padding: 8px 18px 18px; margin: 0 0 18px; }
-/* Nazwy kart na niebiesko: formularz operatu ma ich kilkanaście, a przy przewijaniu
-   szuka się właśnie ich — czarny tekst na tle czarnego tekstu zlewał się w jedno.
-   Podkarty (`.sekcja > legend`, np. „Wykaz 1”) zostają szare, żeby nie zgubić różnicy
-   między kartą a jej wnętrzem. */
-legend { font-weight: 600; padding: 0 6px; color: var(--akcent); }
-.siatka { display: grid; grid-template-columns: repeat(6, 1fr); gap: 14px; }
+/* Karta zamiast ramki z tytułem na krawędzi. `float` wyjmuje legendę z krawędzi karty
+   (przeglądarka rysuje na ramce tylko legendę niepływającą) i stawia ją w środku jako
+   kolorową etykietę; następny element ją opływa, więc `clear` zsuwa go pod spód. */
+fieldset { background: var(--panel); border: none; border-radius: 28px; min-width: 0;
+           padding: 22px 28px 28px; margin: 0 0 18px; }
+/* Nazwy kart w kolorze akcentu: formularz operatu ma ich kilkanaście, a przy
+   przewijaniu szuka się właśnie ich — czarny tekst na tle czarnego tekstu zlewał się
+   w jedno. Etykieta na jasnym tle koloru przewodniego (kontrast napisu ≥ 4,5:1).
+   Podkarty (`.sekcja > legend`, np. „Działka 1”) zostają szare, żeby nie zgubić
+   różnicy między kartą a jej wnętrzem. */
+legend { float: left; padding: 6px 16px; margin: 0 0 18px; font-size: 14px; font-weight: 700;
+         letter-spacing: .01em; color: var(--akcent); background: var(--akcent-kontener);
+         border-radius: 999px; }
+legend + * { clear: both; }
+.siatka { display: grid; grid-template-columns: repeat(6, 1fr); gap: 16px 18px; }
 .pole.pelna { grid-column: span 6; }
 .pole.polowa { grid-column: span 3; }
 .pole.trzecia { grid-column: span 2; }
-.pole label { display: block; font-size: 13px; font-weight: 600; margin-bottom: 4px; }
+.pole label { display: block; font-size: 13px; font-weight: 600; margin-bottom: 6px; }
 .pole.przelacznik label { font-weight: 400; }
 .gwiazdka { color: var(--zle); }
-.podpowiedz { font-size: 12px; color: var(--szary); margin: 4px 0 0; }
+.podpowiedz { font-size: 12.5px; color: var(--szary); margin: 6px 2px 0; }
 
+/* Pola „wypełnione” jak w Androidzie: tonalne tło bez ramki, przy pisaniu ramka
+   w kolorze przewodnim, a rogi lekko się prostują. */
 input, textarea, select {
-  width: 100%; padding: 8px 10px; font: inherit; color: inherit;
-  background: #fff; border: 1px solid var(--linia); border-radius: 6px;
+  width: 100%; padding: 12px 16px; font: inherit; color: inherit;
+  background: var(--panel-sredni); border: 2px solid transparent; border-radius: 16px;
+  transition: background-color .2s, border-color .2s, border-radius .35s var(--sprezyna);
 }
-input:focus, textarea:focus, select:focus { outline: 2px solid #bcd6fb; border-color: var(--akcent); }
-input[type="checkbox"] { width: auto; margin-right: 6px; }
+input:hover, textarea:hover, select:hover { background: var(--panel-wysoki); }
+input:focus, textarea:focus, select:focus { outline: none; background: var(--panel);
+                                            border-color: var(--akcent); border-radius: 12px; }
+/* Podpowiedź w pustym polu bywa informacją (w „Nr operatu” to numer, który program
+   nada), więc musi dać się przeczytać: pół na pół `--szary` i `--obrys` ma kontrast
+   co najmniej 4,6:1 na tle pola także po najechaniu, w każdym motywie — a nadal jest
+   wyraźnie jaśniejsza od wpisanej wartości, żeby pusty formularz nie udawał
+   wypełnionego. Pierwsza wartość to zapas dla przeglądarki bez `color-mix`. */
+input::placeholder, textarea::placeholder { color: #5c6372;
+                                            color: color-mix(in srgb, var(--szary) 50%, var(--obrys)); }
+input[type="checkbox"], input[type="radio"] { width: 20px; height: 20px; margin: 0 8px 0 0;
+                                              accent-color: var(--akcent); vertical-align: -4px; }
+/* Checkbox i radio malują się natywnie i nie pokazują `border-color` z reguły wyżej,
+   a `outline: none` zabiera im obwódkę przeglądarki — przy przechodzeniu formularza
+   Tabem nie było widać, na której pozycji spisu treści się stoi. Obwódka tylko przy
+   klawiaturze (`:focus-visible`), kliknięcie myszą jej nie zapala. */
+input[type="checkbox"]:focus-visible, input[type="radio"]:focus-visible {
+  outline: 2px solid var(--akcent); outline-offset: 2px; }
+/* Pole pliku: sam przycisk „Wybierz plik” w stroju przycisków programu. */
+input[type="file"] { padding: 8px 12px; }
+input[type="file"]::file-selector-button {
+  font: inherit; font-weight: 600; margin-right: 12px; padding: 8px 18px; border: none;
+  border-radius: 999px; background: var(--panel); color: var(--tekst); cursor: pointer;
+}
 input.maly { width: 72px; }
 textarea { resize: vertical; }
 
 /* tabele danych */
-table.lista, table.wiersze { width: 100%; border-collapse: collapse; background: var(--panel);
-                             border: 1px solid var(--linia); border-radius: 8px; overflow: hidden; }
+table.lista, table.wiersze { width: 100%; border-collapse: separate; border-spacing: 0;
+                             background: var(--panel); border: none; border-radius: 22px;
+                             overflow: hidden; }
 table.lista th, table.lista td, table.wiersze th, table.wiersze td {
-  text-align: left; padding: 8px 10px; border-bottom: 1px solid var(--linia); font-size: 14px;
+  text-align: left; padding: 10px 16px; border-bottom: 1px solid var(--panel-sredni); font-size: 14px;
 }
-table.lista th { background: #f0f2f5; font-size: 13px; }
-table.wiersze th { background: #f0f2f5; font-size: 12px; color: var(--szary); }
-table.wiersze td { padding: 4px 6px; }
-th.waski { width: 220px; }
+table.lista th { background: transparent; font-size: 12.5px; font-weight: 600; color: var(--szary); }
+table.wiersze th { background: var(--panel-sredni); font-size: 12.5px; font-weight: 700; color: var(--tekst); }
+table.wiersze td { padding: 6px 8px; }
+th.waski { width: 150px; }
+/* Daty i numery w kolumnach: cyfry równej szerokości i bez łamania — w kroju
+   proporcjonalnym „08:30:15” jest szersze niż „14:31:07” i łamało się w dwie linijki. */
+table.lista td { font-variant-numeric: tabular-nums; }
+.lista.operaty td.szary { white-space: nowrap; }
 
 /* Spis treści na stronie operatu: pozycja pod pozycją, z numerami jak w dokumencie.
    Numer wisi w marginesie (`list-style-position` domyślne), więc zawinięta pozycja
@@ -200,14 +394,14 @@ ol.pozycje { margin: 0; padding-left: 22px; }
    kilkanaście commitów, więc jeden akapit robił się ścianą tekstu, w której nie dało
    się znaleźć konkretnej zmiany. */
 .wstep-wydania { margin: 0 0 8px; }
-.tytul-listy { margin: 8px 0 2px; font-weight: 600; font-size: 13px; }
+.tytul-listy { margin: 8px 0 2px; font-weight: 700; font-size: 13px; }
 .punkty-wydania { margin: 0; padding-left: 20px; }
 .punkty-wydania li { margin: 2px 0; }
 
-/* Okno „co nowego” po aktualizacji. Tło przyciemnione i lekko rozmyte, żeby wzrok
-   trafił w treść — to jedyny moment, w którym brat dowiaduje się o zmianach, a pasek
-   nad listą dawało się przewinąć i nie przeczytać. Rozmycie robi `backdrop-filter`;
-   gdzie go nie ma, zostaje samo przyciemnienie i okno działa tak samo. */
+/* Okno „co nowego” po aktualizacji. Tło przyciemnione i rozmyte, żeby wzrok trafił
+   w treść — to jedyny moment, w którym brat dowiaduje się o zmianach, a pasek nad listą
+   dawało się przewinąć i nie przeczytać. Rozmycie robi `backdrop-filter`; gdzie go nie
+   ma, zostaje samo przyciemnienie i okno działa tak samo. */
 /* Okno ma stałą wysokość, a przewija się **sama treść** — „OK” stoi na dole i widać
    go zawsze. Wcześniej przewijało się całe okno razem z przyciskiem, a że przycisk ma
    `autofocus`, przeglądarka otwierała okno przewinięte na sam dół: przy kilku wydaniach
@@ -217,20 +411,20 @@ ol.pozycje { margin: 0; padding-left: 22px; }
    przebija `dialog:not([open]) { display: none }` z przeglądarki niezależnie od
    specyficzności, więc bez tego okno zamknięte Esc zostałoby na stronie. */
 .okno-nowosci { max-width: 620px; max-height: 85vh;
-                padding: 22px 26px 18px; border: 1px solid var(--linia);
-                border-radius: 12px; background: var(--panel); color: var(--tekst);
-                box-shadow: 0 18px 48px rgba(15, 23, 42, .28); }
+                padding: 26px 30px 22px; border: none;
+                border-radius: 32px; background: var(--panel); color: var(--tekst);
+                box-shadow: 0 20px 50px rgba(15, 23, 42, .3); }
 .okno-nowosci[open] { display: flex; flex-direction: column; }
 /* `min-height: 0` jest tu konieczne: bez niego element w kolumnie flex nie kurczy się
    poniżej swojej treści i przewijanie w ogóle nie rusza. */
 .okno-nowosci .tresc-nowosci { overflow-y: auto; min-height: 0; }
-.okno-nowosci::backdrop { background: rgba(15, 23, 42, .45); backdrop-filter: blur(3px); }
-.okno-nowosci h2 { margin: 0 0 10px; font-size: 18px; flex: none; }
-/* Numer wersji w tym samym niebieskim co w nagłówku strony (`.logo-wersja`) —
+.okno-nowosci::backdrop { background: rgba(15, 23, 42, .4); backdrop-filter: blur(8px); }
+.okno-nowosci h2 { margin: 0 0 10px; font-size: 24px; flex: none; }
+/* Numer wersji w tym samym kolorze co w nagłówku strony (`.logo-wersja`) —
    to ten sam numer, ma się czytać jako ta sama rzecz. Ta sama klasa nadaje kolor
    zainstalowanej wersji na liście w Historii wersji, więc reguła nie jest przypięta
    do samego okna. */
-.wersja-nowosci { color: var(--akcent); }
+.wersja-nowosci { color: var(--akcent); white-space: nowrap; }   /* numer nie łamie się na dywizie */
 /* Kreska nad przyciskiem mówi, że treść pod nią się kończy — przy przewijanej liście
    bez niej wygląda to na tekst ucięty w połowie. `flex: none`, żeby pasek nie oddał
    miejsca treści i nie zniknął przy długiej liście. */
@@ -239,17 +433,39 @@ ol.pozycje { margin: 0; padding-left: 22px; }
 ol.pozycje li { margin: 2px 0; }
 /* Separator grup na liście wpisanych danych — ma rozdzielać, a nie krzyczeć,
    więc drobnym pismem i bez tła; pierwsza grupa nie potrzebuje kreski nad sobą. */
-tr.grupa th { font-size: 12px; font-weight: 600; letter-spacing: .04em;
+tr.grupa th { font-size: 12px; font-weight: 700; letter-spacing: .04em;
               text-transform: uppercase; color: var(--szary);
-              background: transparent; padding: 20px 10px 4px;
-              border-top: 2px solid var(--linia); }
+              background: transparent; padding: 20px 16px 4px;
+              border-top: 2px solid var(--panel-sredni); }
 table.lista tr.grupa:first-child th { padding-top: 8px; border-top: none; }
-/* Notatka („Opis”) pod danymi operatu — zaczyna się pod numerem operatu i idzie na całą
-   szerokość. Że należy do operatu nad nią, a nie jest osobną pozycją listy, trzymają dwie
-   rzeczy: kreska rozdzielająca idzie **pod całą grupą** `<tbody>`, więc nic nie odcina
-   opisu od jego operatu, a pionowy znacznik przy tekście mówi, że to przypis.
-   `pre-wrap` zostawia łamanie wierszy tak, jak brat je wpisał — notatka bywa listą rzeczy
-   do zrobienia, a zlepiona w jeden akapit przestaje nią być.
+
+/* Lista operatów z segmentów, jak ustawienia w Androidzie: każdy operat to osobny
+   kawałek, między nimi szczelina, duże zaokrąglenie tylko na początku i końcu listy.
+   Jeden operat = jedna grupa `<tbody>`, także z opisem — opis siedzi w tym samym
+   segmencie co jego operat, więc nic go od operatu nie odcina. Szczelinę robi
+   pseudoelement grupy (w tabeli nie ma marginesów między wierszami), a zaokrąglenia
+   stawiamy na komórkach, bo tylko one przyjmują `border-radius` w tabeli. */
+table.lista.operaty { background: transparent; border-radius: 0; overflow: visible; }
+/* Wypełnienie komórek 14 px, nie więcej: cztery kolumny z pełnym kompletem przycisków
+   i długim numerem roboty (`GK.6640.1.1234.2026`) przy 18 px wychodziły szersze niż
+   strona i lista wystawała za przycisk „Nowy operat”. Pilnuje tego
+   `tests/test_przegladarka.py`. */
+table.lista.operaty thead th { border: none; padding: 0 14px 8px; }
+table.lista.operaty tbody.operat > tr > td { background: var(--panel); border: none;
+                                              padding: 12px 14px; transition: background-color .2s; }
+table.lista.operaty tbody.operat + tbody.operat::before { content: ""; display: block; height: 4px; }
+table.lista.operaty tbody.operat > tr:first-child > td:first-child { border-top-left-radius: 8px; }
+table.lista.operaty tbody.operat > tr:first-child > td:last-child { border-top-right-radius: 8px; }
+table.lista.operaty tbody.operat > tr:last-child > td:first-child { border-bottom-left-radius: 8px; }
+table.lista.operaty tbody.operat > tr:last-child > td:last-child { border-bottom-right-radius: 8px; }
+table.lista.operaty thead + tbody.operat > tr:first-child > td:first-child { border-top-left-radius: 26px; }
+table.lista.operaty thead + tbody.operat > tr:first-child > td:last-child { border-top-right-radius: 26px; }
+table.lista.operaty tbody.operat:last-child > tr:last-child > td:first-child { border-bottom-left-radius: 26px; }
+table.lista.operaty tbody.operat:last-child > tr:last-child > td:last-child { border-bottom-right-radius: 26px; }
+table.lista.operaty tbody.operat:hover > tr > td { background: var(--panel-niski); }
+/* Notatka („Opis”) pod danymi operatu — zaczyna się pod numerem operatu, w dymku.
+   `pre-wrap` zostawia łamanie wierszy tak, jak brat je wpisał — notatka bywa listą
+   rzeczy do zrobienia, a zlepiona w jeden akapit przestaje nią być.
    Uwaga przy sprawdzaniu takich zmian: adres arkusza znakuje `main.wersja_zasobow`,
    ale **serwer trzeba zrestartować** — inaczej ogląda się stary CSS i wygląda to jak
    niedziałająca poprawka (patrz historia tego pliku). */
@@ -264,25 +480,27 @@ table.lista tr.grupa:first-child th { padding-top: 8px; border-top: none; }
    selektor przebijał im kolor tekstu specyficznością i „Złóż PDF” wychodził niebieskim
    napisem na niebieskim tle. */
 .nr-operatu, .nr-operatu:visited { color: var(--akcent); }
+/* Numer jako kolorowa etykieta — łatwo przelecieć wzrokiem w dół listy. */
+.nr-operatu { display: inline-block; padding: 4px 12px; border-radius: 10px;
+              background: var(--akcent-kontener); text-decoration: none;
+              transition: border-radius .35s var(--sprezyna); }
+.nr-operatu:hover { border-radius: 18px; }
+.nr-operatu strong { font-weight: 700; font-size: 15px; letter-spacing: .01em; }
 table.lista tbody.operat > tr > td { border-bottom: none; }
-table.lista tbody.operat { border-bottom: 1px solid var(--linia); }
-table.lista tr.notatka td { padding: 0 10px 9px; }
-table.lista tr.notatka span { display: block; margin-left: 2px; padding-left: 10px;
-                              border-left: 2px solid var(--linia);
-                              font-size: 12.5px; line-height: 1.45; color: var(--szary);
+table.lista tr.notatka td { padding: 0 14px 14px; }
+table.lista tr.notatka span { display: inline-block; padding: 6px 12px;
+                              border-radius: 4px 14px 14px 14px;
+                              background: var(--drugi-kontener); color: var(--na-drugim);
+                              font-size: 13px; line-height: 1.45;
                               white-space: pre-wrap; tab-size: var(--tabulator); }
-/* Opis na stronie operatu — sekcja w tym samym stroju co „Wpisane dane”: nagłówek `h2`
-   nad białym panelem o tej samej ramce i zaokrągleniu co `table.lista`. Wcześniej miał
-   własny strój (kreska z lewej, mały nagłówek w środku) i to on robił bałagan w górnej
-   części strony — trzy różne pudełka jedno pod drugim. Etykietę niesie teraz nagłówek
-   sekcji, więc w środku został sam tekst. */
-/* Wewnątrz karty panel maluje sama karta — notatka jest tu zwykłym tekstem, bez
-   drugiej ramki dookoła (pudełko w pudełku). Selektor jest „gdziekolwiek w karcie”,
-   a nie „bezpośrednie dziecko”: notatka siedzi w komórce tabeli, żeby zaczynać się
-   w tej samej pionowej linii co wszystkie wartości niżej. */
+/* Opis na stronie operatu — sekcja w tym samym stroju co „Wpisane dane”. Wewnątrz
+   karty panel maluje sama karta — notatka jest tu zwykłym tekstem, bez drugiej ramki
+   dookoła (pudełko w pudełku). Selektor jest „gdziekolwiek w karcie”, a nie
+   „bezpośrednie dziecko”: notatka siedzi w komórce tabeli, żeby zaczynać się w tej
+   samej pionowej linii co wszystkie wartości niżej. */
 .karta-danych .opis-operatu { border: none; padding: 0; background: transparent;
                               margin: 0; }
-.opis-operatu { background: var(--panel); border: 1px solid var(--linia); border-radius: 8px;
+.opis-operatu { background: var(--panel); border-radius: 16px;
                 padding: 10px 14px; white-space: pre-wrap; tab-size: var(--tabulator); }
 /* Treść zapisanego opisu na liście w Ustawieniach. `pre-wrap` zostawia łamanie wierszy
    tak, jak brat je wpisał — opis bywa kilkoma akapitami, a zlepiony w jeden przestaje
@@ -296,32 +514,34 @@ td.opis-tresc { white-space: pre-wrap; tab-size: var(--tabulator); }
 /* Edytor z pogrubieniem, kursywą i podkreśleniem. Ma wyglądać jak zwykłe pole
    wielolinijkowe z paskiem nad spodem — brat nie ma powodu wiedzieć, że to nie textarea. */
 /* Bez `overflow: hidden` — ono przycinało uchwyt powiększania w prawym dolnym rogu.
-   Zaokrąglenie rogów biorą więc na siebie sam pasek (góra) i pole tekstu (dół). */
-.edytor { border: 1px solid var(--linia); border-radius: 8px; background: var(--panel); }
-.pasek-formatu { display: flex; gap: 4px; padding: 5px 6px; background: #f7f8fa;
-                 border-bottom: 1px solid var(--linia);
-                 border-radius: 8px 8px 0 0; }
-.pasek-formatu button { min-width: 30px; padding: 2px 8px; line-height: 1.5;
-                        font-size: 14px; }
+   Zaokrąglenie rogów bierze więc na siebie samo pole tekstu. */
+.edytor { border: 2px solid transparent; border-radius: 20px; background: var(--panel-sredni);
+          transition: background-color .2s, border-color .2s; }
+.pasek-formatu { display: flex; gap: 4px; padding: 8px 8px 4px; background: transparent; }
+.pasek-formatu button { width: 40px; height: 40px; padding: 0; font-size: 16px; line-height: 1;
+                        border-radius: 12px; background: var(--panel); color: var(--tekst); }
+.pasek-formatu button:hover { border-radius: 20px; background: var(--akcent-kontener);
+                              color: var(--na-akcent-kontenerze); }
 /* `resize: vertical` daje uchwyt w prawym dolnym rogu — opisy przebiegu prac bywają
    na pół strony i w polu na 120 px pisze się je przez okienko. */
-.edytor .tresc { min-height: 120px; padding: 10px 12px; font: inherit; overflow-y: auto;
+.edytor .tresc { min-height: 120px; padding: 6px 18px 16px; font: inherit; overflow-y: auto;
                  white-space: pre-wrap; outline: none; tab-size: var(--tabulator);
-                 resize: vertical; border-bottom-right-radius: 8px; }
-.edytor:focus-within { border-color: var(--akcent); box-shadow: 0 0 0 2px #bcd6fb; }
+                 resize: vertical; border-bottom-right-radius: 18px; }
+.edytor:focus-within { background: var(--panel); border-color: var(--akcent); }
 /* Wyszarzenie sekcji zależnej dotyczy też edytora — `disabled` na nim nie działa. */
-.pole.nieaktywne .edytor { background: #f4f6f8; }
+.pole.nieaktywne .edytor { background: var(--panel-niski); }
 /* Wybór gotowego opisu nad polem tekstowym: lista i „Załaduj” w jednej linii, nad
    polem, którego dotyczą. Lista dostaje całą wolną szerokość, bo nazwy opisów bywają
    długie, a ucięta nazwa nie mówi, co się wklei. */
-.biblioteka { display: flex; gap: 8px; align-items: center; margin-bottom: 6px; }
+.biblioteka { display: flex; gap: 8px; align-items: center; margin-bottom: 8px; }
 .biblioteka select { flex: 1; min-width: 0; }
-.biblioteka button { flex: none; }
+.biblioteka button { flex: none; height: 48px; }
 /* Kolumna z numerem wydania w historii — wąska i wyrównana do prawej, żeby
    „7." i „81." kończyły się w tym samym miejscu. */
 th.numer, td.numer { width: 44px; text-align: right; white-space: nowrap; }
-.spoza { font-size: 11px; color: var(--szary); border: 1px solid var(--linia);
-         border-radius: 999px; padding: 1px 8px; white-space: nowrap; cursor: help; }
+.spoza { display: inline-block; margin-top: 4px; font-size: 11px; font-weight: 700;
+         color: var(--na-trzecim); background: var(--trzeci-kontener);
+         border-radius: 999px; padding: 2px 10px; white-space: nowrap; cursor: help; }
 
 /* Podpowiedź z ewidencji: „uwaga” jest wyraźna, ale nie czerwona jak błąd —
    to sugestia sprawdzenia numeru, a nie stwierdzenie, że jest zły. */
@@ -330,13 +550,13 @@ th.numer, td.numer { width: 44px; text-align: right; white-space: nowrap; }
    w formularzu, która mówi coś o świecie poza programem, więc ma być widoczna
    bez szukania; rozmiar zostaje mały, żeby nie konkurowała z etykietami pól. */
 .uldk { font-weight: 600; }
-.uldk.dobrze { color: #1a7f4b; }
-.uldk.uwaga { color: #9a6700; }
+.uldk.dobrze { color: var(--ok); }
+.uldk.uwaga { color: var(--uwaga); }
 /* Kontrola sumy PPU pod polem użytków: zielono, gdy się zgadza, czerwono, gdy nie.
    Czerwień jest tu twarda (nie pomarańcz jak przy ULDK), bo to nie jest podpowiedź
    z niepewnego źródła — te dwie liczby po prostu muszą być sobie równe. */
 .suma { font-weight: 600; margin: 4px 0 0; }
-.suma.dobrze { color: #1a7f4b; }
+.suma.dobrze { color: var(--ok); }
 .suma.zle { color: var(--zle); }
 
 
@@ -345,132 +565,215 @@ th.numer, td.numer { width: 44px; text-align: right; white-space: nowrap; }
    wraca do innego miejsca w każdym wierszu. `last-child` w nagłówku to pusta komórka
    nad akcjami; bez niej kolumna nie ma czego wyrównać. */
 .lista.operaty td.akcje, .lista.operaty th:last-child { text-align: right; }
-/* Akcje jako przyciski — te same co na stronie operatu, tylko mniejsze: cała ich
-   wysokość musi zmieścić się w tym, co wiersz i tak zajmuje przez numer operatu
-   w pierwszej kolumnie (zmierzone: 38 px). Stąd mniejszy krój i ciaśniejsze wypełnienie
-   komórki niż w pozostałych kolumnach — inaczej lista rośnie o kilka pikseli na wiersz
-   i przy kilkunastu operatach robi się z tego pół ekranu.
-   Odstęp jest **między** akcjami, a nie za ostatnią, żeby „Usuń” dochodziło do krawędzi. */
-/* `table.lista td` narzuca 8 px z góry i z dołu i wygrywa specyficznością — stąd
-   selektor z nazwą tabeli, nie samo `.akcje`. Bez tego przyciski rozpychały wiersz. */
-.lista td.akcje { padding-top: 4px; padding-bottom: 4px; white-space: nowrap; }
+/* Akcje jako przyciski — te same co na stronie operatu, tylko mniejsze.
+   `table.lista td` narzuca swoje wypełnienie i wygrywa specyficznością — stąd
+   selektor z nazwą tabeli, nie samo `.akcje`. */
+.lista td.akcje { white-space: nowrap; }
+table.lista.operaty tbody.operat > tr > td.akcje { padding-top: 10px; padding-bottom: 10px; }
 /* Wygląd bierze się ze wspólnych klas przycisków (`glowny`, `wtorny`, `niebezpieczny`),
-   więc lista i strona operatu mają dokładnie ten sam strój. Tutaj zmieniamy **tylko
-   rozmiar**: cała wysokość przycisku musi zmieścić się w tym, co wiersz i tak zajmuje
-   przez numer operatu w pierwszej kolumnie (zmierzone: 38 px), inaczej lista rośnie
-   o kilka pikseli na wiersz i przy kilkunastu operatach robi się z tego pół ekranu. */
-.akcje .glowny, .akcje .wtorny, .akcje button { margin-left: 6px; padding: 3px 9px;
-                                                font-size: 12.5px; line-height: 1.4;
-                                                vertical-align: middle; }
-.akcje .niebezpieczny { margin-top: 0; }
+   więc lista i strona operatu mają ten sam strój. Tutaj zmieniamy rozmiar i kształt:
+   „Otwórz katalog”, „Popraw” i „Powiel” to jedna grupa — jeden kształt z trzech części,
+   zewnętrzne rogi pastylki, wewnętrzne lekko zaokrąglone. Między przyciskami zostaje
+   odstęp z białego znaku w HTML-u (ok. 4 px) — tyle, ile ma szczelina w grupie. */
+.akcje .glowny, .akcje .wtorny, .akcje button { margin-left: 0; padding: 7px 14px;
+                                                font-size: 13px; line-height: 20px;
+                                                vertical-align: middle; white-space: nowrap; }
+.akcje .glowny { margin-right: 6px; }
+.akcje .wtorny { background: var(--drugi-kontener); color: var(--na-drugim);
+                 border-color: transparent; border-radius: 6px; }
+.akcje .wtorny:hover { background: var(--panel-wysoki); color: var(--tekst); }
+/* Grupa jest spięta w `.grupa` (index.html) i nie łamie się w środku. Kształt liczymy
+   po dzieciach grupy: pierwszy przycisk zaokrąglony z lewej, ostatni z prawej, jedyny
+   jest pastylką — więc zgadza się też w wierszach bez któregoś przycisku (operat
+   w archiwum nie ma „Otwórz katalog”, a operat spoza historii ma tylko ten jeden). */
+.akcje .grupa { white-space: nowrap; }
+.akcje .grupa > .wtorny:first-child, .akcje .grupa > :first-child > .wtorny {
+  border-top-left-radius: 999px; border-bottom-left-radius: 999px; }
+.akcje .grupa > .wtorny:last-child, .akcje .grupa > :last-child > .wtorny {
+  border-top-right-radius: 999px; border-bottom-right-radius: 999px; }
+.akcje .niebezpieczny { margin: 0 0 0 8px; }
 .akcje form { display: inline; }
+/* Okno węższe niż pełna strona (np. na pół ekranu): przyciski mogą zejść do drugiej
+   linijki — lepsze to niż poziomy pasek przewijania całej strony głównej, który
+   wychodził przy oknie węższym niż ok. 1020 px. Sam przycisk nie łamie się nigdy
+   (`nowrap` wyżej), grupa też nie (`.grupa`), a godzina schodzi pod datę. Kolumna
+   akcji bierze całe wolne miejsce (`width: 100%`), a trzy pierwsze tylko tyle, ile
+   potrzebuje ich treść — inaczej tabela rozdzielała luz po równo i przyciski
+   rozsypywały się na trzy piętra, choć obok stało puste miejsce. Poniżej 860 px
+   grupa też może się złamać: w jednej linijce mieści się do ok. 830 px, a na
+   Windowsie pasek przewijania zabiera jeszcze 17 px. */
+@media (max-width: 1060px) {
+  .lista td.akcje { white-space: normal; }
+  table.lista.operaty tbody.operat > tr > td.akcje { width: 100%; }
+  .akcje .glowny, .akcje .wtorny, .akcje button { margin-top: 2px; margin-bottom: 2px; }
+  .lista.operaty td.data-utworzenia { white-space: normal; }
+}
+@media (max-width: 860px) { .akcje .grupa { white-space: normal; } }
+/* dzień i godzina łamią się tylko między sobą, nigdy na dywizie w dacie */
+.lista.operaty td.data-utworzenia span { white-space: nowrap; }
 .rzad-pliku { display: flex; gap: 8px; align-items: center; margin-bottom: 8px; }
 
 /* kafelki plików operatu — układanie kolejności myszą */
 .kafelki { display: grid; grid-template-columns: repeat(auto-fill, minmax(170px, 1fr));
            gap: 14px; margin: 18px 0; }
-.kafelek { background: var(--panel); border: 1px solid var(--linia); border-radius: 10px;
-           padding: 10px; cursor: grab; display: flex; flex-direction: column; gap: 6px; }
-.kafelek:hover { border-color: var(--akcent); }
-.kafelek.ciagniety { opacity: .4; border-style: dashed; }
-.kafelek.pominiety { opacity: .45; background: #f3f4f6; }
+/* Wszystkie kafelki mają tę samą wysokość, niezależnie od długości nazwy pliku:
+   podgląd ma stałą wysokość, nazwa zawsze zajmuje dokładnie dwie linijki (dłuższa
+   kończy się wielokropkiem, pełna jest w dymku po najechaniu — atrybut `title`),
+   a przyciski stoją przy dolnej krawędzi. Wcześniej kafelek z długą nazwą był
+   wyższy od sąsiadów i przyciski obrotu skakały z kafelka na kafelek. */
+.kafelek { background: var(--panel); border: none; border-radius: 26px; padding: 10px 10px 12px;
+           cursor: grab; display: flex; flex-direction: column; gap: 8px;
+           transition: transform .35s var(--sprezyna), box-shadow .25s,
+                       border-radius .35s var(--sprezyna); }
+.kafelek:hover { transform: translateY(-3px); box-shadow: 0 10px 24px rgba(20, 30, 60, .14);
+                 border-radius: 20px; }
+.kafelek.ciagniety { opacity: .5; transform: scale(.95) rotate(-1.5deg); }
+.kafelek.pominiety { opacity: .55; background: var(--panel-niski); }
 .kafelek.pominiety .kafelek-podglad { filter: grayscale(1); }
 .kafelek-podglad { height: 190px; display: flex; align-items: center; justify-content: center;
-                   background: #eceff3; border-radius: 6px; overflow: hidden; }
-.kafelek-podglad img { max-width: 100%; max-height: 100%; transition: transform .15s;
-                       box-shadow: 0 1px 4px rgba(0,0,0,.15); }
+                   background: var(--panel-sredni); border-radius: 18px; overflow: hidden; }
+.kafelek-podglad img { max-width: 100%; max-height: 100%; transition: transform .35s var(--sprezyna);
+                       box-shadow: 0 2px 6px rgba(0, 0, 0, .16); }
 /* po obrocie o 90° kadr jest wyższy niż szerszy — zmniejszamy, żeby się zmieścił */
 .kafelek-podglad.bokiem img { max-width: 190px; max-height: 150px; }
-.kafelek-nazwa { font-size: 12px; margin: 0; word-break: break-all; line-height: 1.3; }
-.kafelek-akcje { display: flex; gap: 4px; }
-.kafelek-akcje button { flex: 1; padding: 3px 0; font-size: 14px; line-height: 1.2; }
+.kafelek-nazwa { font-size: 12.5px; font-weight: 600; margin: 2px 4px 0; word-break: break-all;
+                 line-height: 1.3; min-height: 2.6em;
+                 display: -webkit-box; -webkit-box-orient: vertical;
+                 -webkit-line-clamp: 2; line-clamp: 2; overflow: hidden; }
+/* Obróć w lewo / w prawo / pomiń — połączona grupa, jak pasek narzędzi w Androidzie. */
+.kafelek-akcje { display: flex; gap: 3px; margin-top: auto; }
+.kafelek-akcje button { flex: 1; height: 38px; padding: 0; border-radius: 6px; }
+.kafelek-akcje button:first-child { border-radius: 999px 6px 6px 999px; }
+.kafelek-akcje button:last-child { border-radius: 6px 999px 999px 6px; }
+.kafelek-akcje button.pomin:hover { background: var(--zle-kontener); color: var(--na-zle); }
+.kafelek-akcje .ik { width: 18px; height: 18px; }
+/* Przycisk „pomiń” ma dwie ikony, a widać jedną — zależnie od tego, czy kafelek jest
+   wyłączony. Skrypt przełącza tylko klasę kafelka, rysunki zostają w HTML-u. */
+.kafelek .gdy-pominiety, .kafelek.pominiety .gdy-dolaczony { display: none; }
+.kafelek.pominiety .gdy-pominiety { display: inline-flex; }
+/* „Złóż PDF” pod kafelkami — duży i kwadratowy, jak główna akcja ekranu w Androidzie. */
+.kafelki + .pasek .glowny { height: 56px; padding: 0 28px 0 22px; font-size: 16px; border-radius: 18px; }
+.kafelki + .pasek .glowny:hover { border-radius: 28px; }
+.kafelki + .pasek .wtorny { height: 56px; padding: 0 24px; }
 
 /* pasek postępu pobierania obrębów */
-progress { width: 100%; height: 14px; margin-top: 4px;
-           border: 1px solid var(--linia); border-radius: 999px; overflow: hidden; }
-progress::-webkit-progress-bar { background: #eceff3; }
-progress::-webkit-progress-value { background: var(--akcent); }
+progress { width: 100%; height: 10px; margin-top: 6px;
+           border: none; border-radius: 999px; overflow: hidden; }
+progress::-webkit-progress-bar { background: var(--panel-wysoki); }
+progress::-webkit-progress-value { background: var(--akcent); border-radius: 999px; }
 progress::-moz-progress-bar { background: var(--akcent); }
 
 /* pole TERYT: cztery listy w jednym rzędzie */
-.teryt-siatka { display: grid; grid-template-columns: repeat(4, 1fr); gap: 10px; }
-.teryt-siatka label { font-size: 12px; font-weight: 400; color: var(--szary); }
+.teryt-siatka { display: grid; grid-template-columns: repeat(4, 1fr); gap: 12px; }
+.teryt-siatka label { font-size: 12px; font-weight: 500; color: var(--szary); }
 .teryt-komunikat { min-height: 16px; color: var(--zle); }
 @media (max-width: 720px) { .teryt-siatka { grid-template-columns: 1fr; } }
 
 /* przyciski */
+/* Tonalne pastylki: kolor tła z palety, bez ramki. Główny przycisk ekranu wypełniony
+   kolorem przewodnim; przy wciśnięciu każdy przycisk zmienia kształt z pastylki
+   w zaokrąglony kwadrat — ruch z Androida, który mówi „kliknięte”. */
 button, .glowny, .wtorny {
-  font: inherit; padding: 9px 16px; border-radius: 7px; cursor: pointer;
-  border: 1px solid var(--linia); background: #fff; color: var(--tekst); text-decoration: none;
-  display: inline-block;
+  font: inherit; font-size: 14px; font-weight: 600; line-height: 20px; padding: 10px 22px;
+  border-radius: 999px; cursor: pointer; border: 1px solid transparent;
+  background: var(--drugi-kontener); color: var(--na-drugim); text-decoration: none;
+  display: inline-flex; align-items: center; justify-content: center; gap: 8px;
+  vertical-align: middle;
+  transition: background-color .2s, color .2s, box-shadow .2s,
+              border-radius .35s var(--sprezyna), transform .35s var(--sprezyna);
 }
 /* Podświetlenie przy najechaniu dostają **wszystkie** przyciski, także te, które są
    linkami (`<a class="wtorny">`): „Otwórz katalog” to formularz, a „Popraw” i „Powiel”
    linki — bez tego wyglądały jak nieaktywne, choć robią to samo co sąsiad obok. */
-button:hover, .wtorny:hover { border-color: var(--akcent); color: var(--akcent); }
-.glowny { background: var(--akcent); border-color: var(--akcent); color: #fff; font-weight: 600; }
-.glowny:hover { background: var(--akcent-ciemny); color: #fff; }
-.wtorny { color: var(--szary); }
-.niebezpieczny { color: var(--zle); border-color: #f0c8c4; margin-top: 18px; }
+button:hover, .wtorny:hover { background: var(--panel-wysoki); color: var(--tekst); }
+button:active, .glowny:active, .wtorny:active { border-radius: 12px; transform: scale(.97); }
+.glowny { background: var(--akcent); color: #fff; }
+.glowny:hover { background: var(--akcent-ciemny); color: #fff;
+                box-shadow: 0 2px 6px rgba(20, 30, 60, .22); }
+.wtorny { color: var(--na-drugim); }
+.niebezpieczny { background: transparent; color: var(--zle); border-color: var(--linia);
+                 margin-top: 18px; }
 /* w pasku przycisków odstęp od góry rozjeżdża równanie z sąsiadami */
 .pasek .niebezpieczny { margin-top: 0; }
-.niebezpieczny:hover { background: var(--zle); color: #fff; border-color: var(--zle); }
-button.usun { padding: 2px 9px; line-height: 1.4; color: var(--szary); }
-button.usun:hover { color: var(--zle); border-color: var(--zle); }
-button.dodaj-wiersz, .wklej { margin-top: 8px; font-size: 13px; padding: 5px 12px; }
-.wklej { padding: 2px 8px; }
+.niebezpieczny:hover { background: var(--zle-kontener); color: var(--na-zle); border-color: transparent; }
+button.usun { padding: 2px 10px; line-height: 1.4; color: var(--szary); background: var(--panel-sredni); }
+button.usun:hover { color: var(--na-zle); background: var(--zle-kontener); }
+button.dodaj-wiersz, .wklej { margin-top: 8px; font-size: 13px; padding: 6px 16px; }
+.wklej { padding: 3px 12px; }
+button.dodaj-sekcje { padding: 10px 20px; }
 
 .pasek { display: flex; gap: 10px; align-items: center; margin: 18px 0; flex-wrap: wrap; }
+/* Przyciski na szczycie strony i w dolnym pasku formularza — większe, bo to główne
+   akcje ekranu; wszystkie tej samej wysokości, żeby „Usuń” nie odstawało od sąsiadów. */
+.szczyt .glowny, .szczyt .wtorny, .szczyt .niebezpieczny,
+.pasek.do-prawej .glowny, .pasek.do-prawej .wtorny, .pasek.do-prawej .niebezpieczny {
+  height: 48px; padding: 0 24px; font-size: 15px;
+}
+.szczyt .glowny, .pasek.do-prawej .glowny { padding-left: 20px; }
 
 @media (max-width: 720px) {
   .siatka { grid-template-columns: 1fr; }
   .pole.pelna, .pole.polowa, .pole.trzecia { grid-column: span 1; }
-  header { flex-wrap: wrap; gap: 12px; }
+  header { flex-wrap: wrap; gap: 12px; margin: 8px 8px 0; top: 8px; }
+  .konwerter { margin-left: 0; }
 }
 
 /* potwierdzenie po złożeniu PDF-a */
-.komunikat.gotowe { background: #e7f6ec; border-color: #b6e2c4; color: #14532d;
-                    display: flex; align-items: center; gap: 14px; flex-wrap: wrap; }
+.komunikat.gotowe { background: var(--ok-kontener); color: var(--na-ok); font-size: 15px;
+                    display: flex; align-items: center; gap: 12px; flex-wrap: wrap; }
 
-/* lista wielokrotnego wyboru (np. spis treści operatu) */
-.lista-wyboru { list-style: none; margin: 4px 0 0; padding: 0;
-                border: 1px solid var(--linia); border-radius: 8px; background: #fff; }
-.lista-wyboru li { border-bottom: 1px solid var(--linia); }
-.lista-wyboru li:last-child { border-bottom: none; }
-.lista-wyboru li.stale { background: #f4f6f8; }
-.lista-wyboru label { display: flex; align-items: baseline; gap: 8px; margin: 0;
-                      padding: 7px 12px; font-weight: 400; font-size: 14px; cursor: pointer; }
+/* Lista wielokrotnego wyboru (np. spis treści operatu) — z segmentów, jak ustawienia
+   w telefonie. Zaznaczona pozycja podświetla się kolorem przewodnim: od razu widać,
+   co wejdzie do operatu, bez szukania ptaszków wzrokiem. */
+.lista-wyboru { list-style: none; margin: 2px 0 0; padding: 0; border: none; background: transparent;
+                display: flex; flex-direction: column; gap: 3px; }
+.lista-wyboru li { background: var(--panel-niski); border-radius: 6px; transition: background-color .25s; }
+.lista-wyboru li:first-child { border-radius: 20px 20px 6px 6px; }
+.lista-wyboru li:last-child { border-radius: 6px 6px 20px 20px; }
+.lista-wyboru li:only-child { border-radius: 20px; }
+.lista-wyboru li:has(input:checked) { background: var(--akcent-kontener); }
+.lista-wyboru li:has(input:checked) label { color: var(--na-akcent-kontenerze); font-weight: 600; }
+/* pozycja stała (spis treści jest zawsze) — zaznaczona, ale szara: nie ma czego zmieniać */
+.lista-wyboru li.stale, .lista-wyboru li.stale:has(input:checked) { background: var(--panel-sredni); }
+.lista-wyboru li.stale:has(input:checked) label { color: var(--szary); }
+.lista-wyboru label { display: flex; align-items: center; gap: 14px; margin: 0;
+                      padding: 10px 16px; font-weight: 400; font-size: 14px; cursor: pointer; }
 .lista-wyboru li.stale label { cursor: default; }
 .lista-wyboru input { flex: none; margin: 0; }
 
 /* pole zależne od przełącznika, który jest odznaczony */
 .pole.nieaktywne { opacity: .45; }
 .pole.nieaktywne label { cursor: default; }
-input:disabled, textarea:disabled, select:disabled { background: #f3f4f6; cursor: default; }
+input:disabled, textarea:disabled, select:disabled { background: var(--panel-niski); cursor: default; }
 
 
 
 /* Powtarzalne sekcje (np. wykazy zmian danych budynku). Jedno powtórzenie to karta
    z kompletem pól, a nie wiersz — przy 15 atrybutach w dwóch stanach wiersz miałby
    30 kolumn i nie dałoby się go wypełnić. Karta jest lżejsza niż `fieldset` wokół całej
-   grupy, żeby na stronie nie zrobiła się ramka w ramce w ramce. */
-.sekcje-lista { display: flex; flex-direction: column; gap: 12px; margin-bottom: 10px; }
-.sekcja { background: #fbfcfd; border: 1px solid var(--linia); border-radius: 8px;
-          padding: 4px 14px 14px; margin: 0; }
-.sekcja > legend { display: flex; align-items: center; gap: 10px; padding: 0 6px;
-                   font-size: 13px; font-weight: 600; color: var(--szary); }
-.sekcja > legend .usun { padding: 0 7px; line-height: 1.5; color: var(--szary); }
-.sekcja > legend .usun:hover { color: var(--zle); border-color: var(--zle); }
+   grupy (tło o ton ciemniejsze zamiast bieli), żeby na stronie nie zrobiła się ramka
+   w ramce w ramce. */
+.sekcje-lista { display: flex; flex-direction: column; gap: 12px; margin-bottom: 12px; }
+.sekcja { background: var(--panel-niski); border: none; border-radius: 24px;
+          padding: 16px 20px 20px; margin: 0; }
+.sekcja > legend { float: left; width: 100%; display: flex; align-items: center; gap: 10px;
+                   padding: 0; margin: 0 0 12px; background: transparent; border-radius: 0;
+                   font-size: 15px; font-weight: 700; color: var(--szary); }
+.sekcja > legend .usun { width: 32px; height: 32px; padding: 0; border-radius: 50%;
+                         font-size: 16px; line-height: 1; color: var(--szary);
+                         background: var(--panel-wysoki); }
+.sekcja > legend .usun:hover { color: var(--na-zle); background: var(--zle-kontener); border-radius: 10px; }
 .sekcje > label { display: block; font-size: 13px; font-weight: 600; margin-bottom: 6px; }
 
 /* Sekcja w układzie takim jak tabela w dokumencie: nazwa atrybutu raz, obok pole na
    każdy stan. Nazwa powtarzana przy obu polach dawała przy piętnastu atrybutach ścianę
    tekstu — brat zgłosił to od razu po zobaczeniu formularza. */
-table.sekcja-siatka { margin-top: 4px; }
-table.sekcja-siatka th[scope="row"] { font-weight: 400; width: 42%; background: transparent; }
-table.sekcja-siatka thead th { font-size: 12px; }
+table.sekcja-siatka { margin-top: 4px; border-radius: 18px; }
+table.sekcja-siatka th[scope="row"] { font-weight: 500; width: 42%; background: transparent;
+                                      color: var(--tekst); }
+table.sekcja-siatka thead th { font-size: 12.5px; }
 table.sekcja-siatka td { width: 29%; }
-table.sekcja-siatka input { padding: 5px 8px; }
+table.sekcja-siatka input { padding: 7px 10px; border-radius: 10px; }
 
 /* Powtarzalne sekcje na liście „Wpisane dane”. Pokazujemy je tak jak w formularzu —
    atrybut i oba stany — bo samo „2 wierszy” nie pozwalało sprawdzić ani numeru działki,
@@ -492,24 +795,32 @@ table.sekcja-siatka input { padding: 5px 8px; }
    krawędzi tabeli, bo tam wzrok wraca po przejrzeniu listy. Kontener jest blokiem
    szerokim na całą treść, więc krawędź przycisku i tabeli to ta sama linia. */
 .naglowek-listy { display: flex; align-items: center; justify-content: space-between;
-                  gap: 12px; flex-wrap: wrap; margin: 24px 0 10px; }
+                  gap: 12px; flex-wrap: wrap; margin: 6px 0 18px; }
 .naglowek-listy h1 { margin: 0; }
 .naglowek-listy .przyciski { display: flex; gap: 10px; flex-wrap: wrap; }
+/* „Nowy operat” duży i kwadratowy jak przycisk akcji w Androidzie; pod kursorem
+   się zaokrągla. To jedyny tak duży przycisk na liście — zaczęcie roboty. */
+.naglowek-listy .glowny { height: 56px; padding: 0 26px 0 20px; gap: 10px; font-size: 16px;
+                          font-weight: 700; border-radius: 18px;
+                          box-shadow: 0 4px 12px rgba(20, 30, 60, .16); }
+.naglowek-listy .glowny .ik { width: 22px; height: 22px; stroke-width: 2.4; }
+.naglowek-listy .glowny:hover { border-radius: 28px; }
 
 /* Pola dotyczące całej pozycji wykazu (numer działki) — nad tabelą stanów, w jednej
    linii, bo zwykle jest ich jedno albo dwa. */
-.wspolne-sekcji { margin-bottom: 10px; }
-.wspolne-sekcji .podpowiedz { margin-top: 2px; }
+.wspolne-sekcji { margin-bottom: 12px; }
+.wspolne-sekcji .podpowiedz { margin-top: 4px; }
 /* Wielolinijkowe komórki wykazu: kilka użytków jeden pod drugim. Wysokość zostawiamy
    małą — pole rośnie, gdy brat je rozciągnie, a domyślnie nie rozpycha karty. */
-.sekcja-siatka textarea { width: 100%; min-height: 58px; resize: vertical; }
+.sekcja-siatka textarea { width: 100%; min-height: 58px; resize: vertical; padding: 6px 8px;
+                          border-radius: 10px; }
 
 /* Podkolumny stanu (OFU, OZU, OZK, PPU) — drobniejsze niż nagłówek stanu nad nimi,
    bo to podział wewnątrz kolumny, a nie osobna kolumna. */
 /* Oznaczenie podkolumny nad samym polem — drobne, bo to podpis wartości, a nie
    nagłówek kolumny (w nagłówku tabeli wisiałoby też nad wierszami bez podziału). */
-.podkolumna-etykieta { display: block; font-size: 11px; font-weight: 600;
-                       color: var(--szary); margin-bottom: 3px; }
+.podkolumna-etykieta { display: block; font-size: 11px; font-weight: 700;
+                       color: var(--akcent); margin-bottom: 3px; }
 .sekcja-siatka textarea, .sekcja-siatka input { min-width: 0; }
 
 /* Tabela z podkolumnami stanu rozdziela je **po równo**: bez tego przeglądarka daje
@@ -528,17 +839,17 @@ table.sekcja-siatka input { padding: 5px 8px; }
 .wiersze th.stan { text-align: center; }
 .wiersze td.wartosc { text-align: center; }
 .wiersze td.wartosc .wielolinijkowa { display: inline-block; text-align: left; }
-/* Delikatna kreska między „stanem dotychczasowym” a „nowym”: przy ośmiu kolumnach
-   obok siebie wzrok gubił, gdzie kończy się jeden stan, a zaczyna drugi. */
-.wiersze .granica-stanu { border-left: 1px solid var(--linia); }
+/* Kreska między „stanem dotychczasowym” a „nowym”: przy ośmiu kolumnach obok siebie
+   wzrok gubił, gdzie kończy się jeden stan, a zaczyna drugi. */
+.wiersze .granica-stanu { border-left: 2px solid var(--panel-sredni); }
 
 /* Karta danych na stronie operatu — to **ten sam** `fieldset` co w formularzu, więc
-   ramka i tytuł na jej krawędzi biorą się stąd, co tam. Własne odtwarzanie tego wyglądu
+   karta i jej etykieta biorą się stąd, co tam. Własne odtwarzanie tego wyglądu
    (sekcja plus nagłówek z ujemnym marginesem) trzy razy z rzędu wychodziło „prawie
    tak samo”, a różnicę widać było gołym okiem. Karta podglądu nie ma pól do wpisywania,
-   więc kasujemy tylko odstęp, który `fieldset` trzyma pod ostatnią kontrolką. */
-.karta-danych table.lista { background: transparent; }
-/* Nazwa pola bez szarego paska i przy górnej krawędzi: przy wykazie działek ta komórka
+   więc tabela w środku nie maluje drugiego tła. */
+.karta-danych table.lista { background: transparent; border-radius: 0; }
+/* Nazwa pola bez tła i przy górnej krawędzi: przy wykazie działek ta komórka
    jest wysoka na pół ekranu i wypełniony pasek wyglądał jak pusta kolumna. */
 /* Kolumna podpisów: 150 px. Szersza zabierała miejsce tabelom wykazów, które i tak
    mają go mało — a najdłuższy podpis („Wykazy zmian danych budynku”) i tak łamie się
@@ -546,3 +857,33 @@ table.sekcja-siatka input { padding: 5px 8px; }
 .karta-danych table.lista th.waski { background: transparent; vertical-align: top;
                                      font-weight: 600; width: 150px; }
 .karta-danych table.lista tr:last-child > * { border-bottom: none; }
+
+/* --- wybór koloru w Ustawieniach ------------------------------------------- */
+/* Każda próbka nosi klasę swojego motywu, więc jej zmienne kolorów to paleta tego
+   motywu — próbka pokazuje prawdziwe kolory, a nie ich opis. Zaznaczona ma ramkę
+   w swoim kolorze przewodnim. */
+/* Sześć próbek w jednym rzędzie, jak paleta kolorów w telefonie — ale tylko przy
+   pełnej szerokości strony. W oknie na pół ekranu „Pomarańczowy” (napis bez łamania)
+   wchodził pod sąsiednią próbkę, więc węższe okno dostaje trzy na dwa, a telefon
+   dwa na trzy. Reguły węższych okien stoją **po** bazowej: ta sama specyficzność,
+   więc wygrywa późniejsza — wpisane wyżej, w zbiorczym `@media`, nie działały wcale. */
+.motywy { display: grid; grid-template-columns: repeat(6, minmax(0, 1fr)); gap: 10px; }
+@media (max-width: 1060px) { .motywy { grid-template-columns: repeat(3, minmax(0, 1fr)); } }
+@media (max-width: 620px) { .motywy { grid-template-columns: repeat(2, minmax(0, 1fr)); } }
+.motyw-probka { display: flex; flex-direction: column; gap: 10px; padding: 10px 8px 12px;
+                border-radius: 22px; background: var(--tlo); border: 2px solid transparent;
+                cursor: pointer; transition: border-color .2s, border-radius .35s var(--sprezyna); }
+.motyw-probka:hover { border-color: var(--linia); }
+.motyw-probka:has(input:checked) { border-color: var(--akcent); border-radius: 18px; }
+.probka { display: flex; flex-direction: column; gap: 7px; height: 76px; padding: 12px;
+          border-radius: 14px; background: var(--panel); }
+.probka-pasek { width: 70%; height: 10px; border-radius: 999px; background: var(--panel-sredni); }
+.probka-przycisk { width: 56px; height: 18px; border-radius: 999px; background: var(--akcent); }
+.probka-kontener { width: 84px; max-width: 100%; height: 14px; border-radius: 6px; background: var(--akcent-kontener); }
+/* Odstępy w próbce są policzone pod „Pomarańczowy” — najdłuższą nazwę — przy sześciu
+   próbkach w rzędzie: przy 13,5 px i luźniejszym wypełnieniu napis nie mieścił się
+   o 6 px i wchodził pod sąsiednią próbkę. Dłuższą nazwę złapie
+   `test_probki_koloru_mieszcza_sie_w_swoich_kartach`. */
+.motyw-nazwa { display: flex; align-items: center; padding: 0;
+               font-size: 13px; font-weight: 600; color: var(--tekst); white-space: nowrap; }
+.motyw-nazwa input { flex: none; margin-right: 5px; }   /* długa nazwa nie ściska kółka */

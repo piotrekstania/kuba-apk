@@ -1,4 +1,5 @@
 {% extends "base.html" %}
+{% from "_ikony.html" import ikona %}
 {% block tresc %}
 
 {# Co nowego po aktualizacji: okno na środku, reszta strony przyciemniona i rozmyta.
@@ -68,7 +69,7 @@
   {% if szablony %}
   <div class="przyciski">
     {% for szablon in szablony %}
-    <a class="glowny" href="/nowy/{{ szablon.id }}">Nowy {{ szablon.nazwa | lower }}</a>
+    <a class="glowny" href="/nowy/{{ szablon.id }}">{{ ikona('plus') }}Nowy {{ szablon.nazwa | lower }}</a>
     {% endfor %}
   </div>
   {% endif %}
@@ -103,12 +104,19 @@
       {% endif %}
     </td>
     <td>{{ operat.nr_roboty or '—' }}</td>
-    <td class="szary">{{ operat.utworzono.replace('T', ' ') }}</td>
+    {# Dzień i godzina jako dwa kawałki, które same się nie łamią: w wąskim oknie
+       godzina schodzi pod datę, zamiast przełamać „2026-09-23” na dywizie. #}
+    {% set dzien, _, godzina = operat.utworzono.replace('T', ' ').partition(' ') %}
+    <td class="szary data-utworzenia"><span>{{ dzien }}</span> <span>{{ godzina }}</span></td>
     <td class="akcje">
       {# przy operacie w archiwum nie ma czego składać — przycisk, który po cichu
          odsyła z powrotem na listę, jest gorszy niż brak przycisku #}
       {% if operat.katalog and operat.na_dysku %}
       <a class="glowny" href="/scal/{{ operat.katalog | urlencode }}">Złóż PDF</a>{% endif %}
+      {# „Otwórz katalog”, „Popraw” i „Powiel” to jedna grupa przycisków, spięta w jedno:
+         w wąskim oknie (np. na pół ekranu) przyciski schodzą do drugiej linijki, a grupa
+         ma zejść w całości, zamiast rozpaść się w połowie. #}
+      <span class="grupa">
       {% if operat.na_dysku %}
       {# katalogu operatu przeniesionego do archiwum nie ma czego otwierać; operat
          spoza historii (bez wpisu w bazie) otwiera się trasą po nazwie katalogu.
@@ -123,6 +131,9 @@
          wchodzenia w dokument tylko po to, żeby kliknąć drugi raz #}
       <a class="wtorny" href="/nowy/{{ operat.szablon }}?edytuj={{ operat.id }}">Popraw</a>
       <a class="wtorny" href="/nowy/{{ operat.szablon }}?kopiuj={{ operat.id }}">Powiel</a>
+      {% endif %}
+      </span>
+      {% if operat.id %}
       {# Pytanie w atrybucie danych, nie w literale JS (apostrof w nazwie rozrywał
          literał i kasowało bez pytania — patrz dokument.html), i mówiące, co naprawdę
          zniknie: katalog z plikami brata albo — przy operacie w archiwum — sam wpis. #}

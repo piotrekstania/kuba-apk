@@ -1,4 +1,5 @@
 {% extends "base.html" %}
+{% from "_ikony.html" import ikona %}
 {# Nazwa karty przeglądarki: „Operat: 004/2026” — przy kilku otwartych kartach szuka się
    po numerze, a samo „004/2026” bez słowa nie mówiło, czego dotyczy. #}
 {% block tytul %}Operat: {{ dokument.nr_operatu or dokument.katalog or dokument.tytul }}{% endblock %}
@@ -12,7 +13,7 @@
 <div class="pasek do-prawej">
   {# „Złóż PDF” pierwszy: po to najczęściej wchodzi się na stronę gotowego operatu. #}
   {# tak samo jak na liście: operatu w archiwum nie ma czego składać #}
-  {% if dokument.katalog and na_dysku %}<a class="glowny" href="/scal/{{ dokument.katalog | urlencode }}">Złóż PDF</a>{% endif %}
+  {% if dokument.katalog and na_dysku %}<a class="glowny" href="/scal/{{ dokument.katalog | urlencode }}">{{ ikona('zloz') }}Złóż PDF</a>{% endif %}
   <form method="post" action="/dokument/{{ dokument.id }}/otworz-katalog">
     <button class="wtorny" type="submit">Otwórz katalog</button>
   </form>

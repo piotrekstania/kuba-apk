@@ -1,4 +1,5 @@
 {% extends "base.html" %}
+{% from "_ikony.html" import ikona %}
 {# Pole w karcie powtarzalnej sekcji. Jedno miejsce na cztery zastosowania (karta
    i wzorzec do klonowania, w układzie tabelarycznym i płaskim) — wcześniej ten sam
    `<input>` stał w czterech kopiach i przy każdej zmianie trzeba było trafić we wszystkie. #}
@@ -64,7 +65,7 @@
     {% endif %}
   </div>
   <div class="pasek">
-    <button type="submit" form="operat" class="glowny">Zapisz</button>
+    <button type="submit" form="operat" class="glowny">{{ ikona('zapisz') }}Zapisz</button>
     <a href="{{ '/dokument/' ~ edytuj if edytuj else '/' }}" class="wtorny">Anuluj</a>
   </div>
 </div>
@@ -520,7 +521,7 @@
   {# Ten sam komplet co na górze formularza i po tej samej stronie — wzrok wraca
      do zapisu w to samo miejsce, niezależnie od tego, czy formularz się przewinął. #}
   <div class="pasek do-prawej">
-    <button type="submit" class="glowny">Zapisz</button>
+    <button type="submit" class="glowny">{{ ikona('zapisz') }}Zapisz</button>
     <a href="{{ '/dokument/' ~ edytuj if edytuj else '/' }}" class="wtorny">Anuluj</a>
   </div>
 </form>

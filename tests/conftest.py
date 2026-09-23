@@ -89,6 +89,17 @@ def bez_prawdziwej_bazy(tmp_path, monkeypatch):
     monkeypatch.setattr(aktualizacja, "BAZA_DANYCH", plik)
 
 
+@pytest.fixture(autouse=True)
+def bez_prawdziwego_motywu(tmp_path, monkeypatch):
+    """Żaden test nie zapisuje koloru programu autora (`dane/motyw.txt`).
+
+    Autouse z tego samego powodu co `bez_prawdziwej_bazy`: trasa Ustawień zapisuje
+    wybór od razu na dysk, a test bez `srodowisko` pisałby do prawdziwego `dane/`.
+    """
+    from app import wyglad
+    monkeypatch.setattr(wyglad, "PLIK", tmp_path / "motyw.txt")
+
+
 @pytest.fixture
 def baza(bez_prawdziwej_bazy):
     """Pusta baza z kompletem tabel — dla testów bez `srodowisko`.
@@ -141,7 +152,7 @@ def srodowisko(tmp_path, monkeypatch):
     i przez cały czas oczekiwania ścieżki są jeszcze podmienione.
     """
     from app import (aktualizacja, config, db, generator, main, operaty, opisy, pdf,
-                     raport, szablony, warianty)
+                     raport, szablony, warianty, wyglad)
 
     watki_przed = set(threading.enumerate())
 
@@ -163,10 +174,14 @@ def srodowisko(tmp_path, monkeypatch):
     monkeypatch.setattr(szablony, "SZABLONY", szablony_kat)
     monkeypatch.setattr(opisy, "SZABLONY", szablony_kat)
     monkeypatch.setattr(warianty, "KATALOG", dane_kat / "szablony")
+    monkeypatch.setattr(wyglad, "PLIK", dane_kat / "motyw.txt")
     monkeypatch.setattr(operaty, "WYNIKI", wyniki_kat)
     monkeypatch.setattr(operaty, "DANE", dane_kat)
     monkeypatch.setattr(operaty, "PODGLADY", dane_kat / "podglad")
     monkeypatch.setattr(pdf, "KATALOG_ROBOCZY", dane_kat / "konwersja")
+    # Profil LibreOffice'a liczy się przy imporcie z prawdziwego `dane/`; test, który
+    # w tym środowisku puści prawdziwą konwersję, ma go mieć u siebie, a nie u autora.
+    monkeypatch.setattr(pdf, "PROFIL_LIBREOFFICE", (dane_kat / "konwersja" / "profil").as_uri())
     monkeypatch.setattr(main, "WYNIKI", wyniki_kat)
     monkeypatch.setattr(main, "DANE", dane_kat)
     monkeypatch.setattr(main, "DZIENNIK_BLEDOW", dane_kat / "bledy.log")
