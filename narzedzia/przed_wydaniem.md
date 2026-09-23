@@ -58,44 +58,30 @@ start.bat
 Wszystko od ostatniego wydania — numer i skrót commita znajdziesz w `ZMIANY.md`
 i `git log`. Dopisuj punkty przy każdej rundzie zmian, kasuj po wydaniu.
 
-**Nowy wygląd (wersja „B · Ekspresyjny”) i kolor programu** — sam wygląd okna, dokumenty
-nietknięte: `generator.py`, `pdf.py`, `operaty.py` i `szablony/` bez jednej zmiany, a ten sam
-operat wygenerowany starym i nowym kodem (Linux, LibreOffice) dał pliki Worda identyczne
-bajt w bajt i złożony PDF identyczny w tekście i obrazie każdej strony. Na Windowsie,
-w przeglądarce brata (Edge albo Chrome):
+*(pusto — wydanie 2026.09.23-113 poszło 23.09. Sprawdzone na Linuksie w Chrome: sześć
+kolorów, kafelki przy składaniu (obrót, pominięcie, przeciąganie, złożenie), lista operatów
+przy 1280, 1060, 1000, 900, 820, 760 i 640 px, fokus z klawiatury, komunikaty obrębów
+i pobierania dla całej Polski. Ten sam operat wygenerowany starym i nowym kodem: pliki
+Worda identyczne bajt w bajt, złożony PDF i podglądy piksel w piksel)*
+
+**Zostało do sprawdzenia na Windowsie** — tego na Linuksie nie widać:
 
 1. **Krój z pliku, nie z internetu.** Odłącz sieć i otwórz program: nagłówki mają mieć
-   zaokrąglone końcówki liter (Google Sans Flex). Kanciasty Segoe UI znaczy, że krój się
-   nie wczytał.
-2. **Pierwsza aktualizacja przywozi nowy katalog** `app/web/static/czcionki/` — sprawdź na
-   instalacji testowej (`narzedzia/instalacja_testowa.py --stara-wersja`), że dojechał.
-   Bez niego program działa, tylko krojem zapasowym.
-3. **Kolor programu:** Ustawienia → Kolor programu → inna próbka → Zapisz kolor. Zamknij
-   program i uruchom przez `start.bat` — kolor ma zostać.
-4. **Składanie PDF-a:** dołóż do katalogu operatu plik o bardzo długiej nazwie — kafelki
-   mają mieć równą wysokość, a pełna nazwa pokazać się w dymku. Obrót kliknięciem w samą
-   strzałkę, pominięcie i przywrócenie kafelka, przeciąganie.
-5. Rytuał A (Word) jak zwykle — ścieżka wordowa się nie zmieniła, ale to ona idzie do ośrodka.
-6. **Lista operatów w oknie na pół ekranu** (przyciąganie okna do krawędzi, Win+←): bez
-   poziomego paska przewijania, godzina pod datą, a „Otwórz katalog | Popraw | Powiel”
-   schodzi do drugiej linijki w całości. Testy mierzą to w Chrome bez paska przewijania —
-   na Windowsie pasek zabiera jeszcze ok. 17 px i tego testy nie widzą.
+   zaokrąglone końcówki liter (Google Sans Flex), a nie kanciasty Segoe UI.
+2. **Aktualizacja przywozi `app/web/static/czcionki/`** — na instalacji testowej
+   (`narzedzia/instalacja_testowa.py --stara-wersja`). Bez tego katalogu program działa,
+   tylko krojem zapasowym.
+3. **Kolor programu przeżywa zamknięcie** programu i start przez `start.bat`.
+4. **Lista operatów w oknie na pół ekranu** (Win+←) z paskiem przewijania Windowsa:
+   bez poziomego przewijania strony, grupa przycisków schodzi niżej w całości.
+5. **Pliki otwarte w innych programach** (na Linuksie udawane atrybutem „tylko do
+   odczytu”): „Popraw” przy dokumencie otwartym w Wordzie, „Złóż PDF” przy wyniku
+   otwartym w czytniku — komunikat mówi, co zamknąć. „Usuń” przy otwartym pliku:
+   „Nic nie zostało skasowane”, katalog i wpis zostają **całe**. Jeśli Windows mimo
+   to przemianuje katalog, poprawka nie działa i trzeba wrócić do tematu.
+6. Rytuał A (Word) — ścieżka wordowa się nie zmieniła, ale to ona idzie do ośrodka.
 
-**Pliki otwarte w innych programach** — na Linuksie udawane atrybutem „tylko do odczytu”,
-więc prawdziwą blokadę Windowsa trzeba zobaczyć raz na żywo:
-
-7. Otwórz `spis_tresci.docx` operatu w Wordzie i kliknij „Popraw” → „Zapisz”: komunikat
-   ma mówić, że dokument jest **otwarty w innym programie** (a nie o literówce w formatce),
-   i dane mają zostać w formularzu.
-8. Otwórz złożony PDF w czytniku (Acrobat albo Edge) i złóż jeszcze raz: komunikat
-   „poprzednia wersja jest otwarta w czytniku PDF”, a nie ogólna strona błędu.
-9. Przy otwartym w Wordzie dokumencie kliknij „Usuń” przy tym operacie: ma przyjść
-   „Nie usunąłem operatu… Nic nie zostało skasowane”, a katalog i wpis zostają **całe**.
-   To opiera się na tym, że Windows nie pozwala przemianować katalogu z otwartym plikiem
-   — jeśli usunie się mimo to, poprawka nie działa i trzeba wrócić do tematu.
-10. Dwuklik w „Zapisz” na nowym operacie: w historii ma przybyć **jeden** operat.
-
-**Zostało do obejrzenia okiem** — tego testy ani przeglądarka nie sprawdzą:
+**Zostało do obejrzenia okiem** (z wydania 112) — tego testy ani przeglądarka nie sprawdzą:
 otworzyć **złożony PDF w prawdziwym czytniku** i potwierdzić, że karta, panel stron
 i pole „Tytuł” we właściwościach pokazują numer roboty, a plik otwiera się normalnie.
 Metadane dopisujemy przy sklejaniu, więc gdyby coś poszło nie tak, ucierpiałby cały
@@ -105,9 +91,9 @@ operat, a `pypdf` w testach czyta tylko sam siebie.
 
 ## C. Zlecenie review (do wklejenia Fable)
 
-> Zrób przegląd kodu zmian z zakresu `23336b2..HEAD` w tym repozytorium
-> (`git log --oneline 23336b2..HEAD`, `git diff 23336b2..HEAD`) — to wszystko, co
-> przyszło po ostatnim wydaniu (`2026.08.25-112`). Kontekst projektu jest w `CLAUDE.md` —
+> Zrób przegląd kodu zmian z zakresu `61f12ed..HEAD` w tym repozytorium
+> (`git log --oneline 61f12ed..HEAD`, `git diff 61f12ed..HEAD`) — to wszystko, co
+> przyszło po ostatnim wydaniu (`2026.09.23-113`). Kontekst projektu jest w `CLAUDE.md` —
 > przeczytaj go najpierw, zwłaszcza listę pułapek i zasady pracy nad kodem.
 > Odpowiadaj po polsku.
 >
