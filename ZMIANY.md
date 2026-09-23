@@ -3,6 +3,24 @@
 Co doszło w kolejnych wersjach programu. Ten sam opis pokazuje się raz, na stronie
 głównej, zaraz po tym jak program sam się zaktualizuje.
 
+## 2026.09.23-114 — 2026-09-23
+
+Zmiany:
+- zmiana numeru operatu przy „Popraw” przenosi cały katalog pod nowy numer — razem z mapami, skanami i ułożeniem kafelków; dotąd powstawał drugi katalog obok
+- nowy operat dostaje numer o jeden wyższy niż najwyższy, jaki program zna — także wpisany z ręki i z operatów w archiwum; nie wejdzie już do katalogu innego operatu
+- numer wpisany z ręki dużo wyżej niż kolejny wolny (np. „0122” zamiast „012”) — program pyta, zanim zapisze
+- po zmianie numeru roboty stary złożony PDF znika, a program przypomina, żeby złożyć operat jeszcze raz
+- aktualizacja jest cała albo wcale: gdy któryś plik programu jest otwarty w Wordzie, program startuje po staremu i nic się nie psuje, a aktualizacja dojdzie przy następnym uruchomieniu
+- brak internetu przy doinstalowywaniu bibliotek nie zatrzymuje już startu programu
+- dane dokumentu odznaczonego w spisie treści (np. wykazu budynku) nie giną przy „Popraw” — wracają po ponownym zaznaczeniu
+- lista wyboru nie gubi zapisanej wartości, której nie ma już na liście
+- Word, który stanął na niewidocznym oknie, program zamyka po 3 minutach i mówi, co zrobić; reszta programu w tym czasie działa, a Twojego Worda nie rusza
+- „Zapisz” zaraz po poprzednim zapisie nie każe już zamykać Worda, gdy dokument trzymał podgląd robiony przez sam program — chwilę poczeka
+- przyciski nie migają ostrymi rogami przy najechaniu myszą
+
+Nowości:
+- gdy aktualizację wstrzyma plik otwarty w Wordzie, na liście operatów pojawi się czerwony pasek z nazwą tego pliku (zadziała od następnej aktualizacji)
+
 ## 2026.09.23-113 — 2026-09-23
 
 Zmiany:

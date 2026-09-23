@@ -1,18 +1,16 @@
-2026.09.23-113
+2026.09.23-114
 Zmiany:
-- nowy wygląd w stylu Androida — ten, który wybrałeś z trzech propozycji; wszystkie przyciski zostały na swoich miejscach
-- lista operatów z osobnych kafelków, numer operatu na kolorowym tle, a „Otwórz katalog”, „Popraw” i „Powiel” połączone w jedną grupę
-- zaznaczone pozycje spisu treści podświetlają się kolorem — od razu widać, co wejdzie do operatu
-- przy składaniu PDF-a wszystkie kafelki mają tę samą wysokość; długa nazwa pliku kończy się wielokropkiem, a całą widać po najechaniu myszą
-- w oknie na pół ekranu lista operatów się mieści — przyciski schodzą niżej, zamiast przesuwać stronę w bok
-- gdy dokument jest otwarty w Wordzie albo złożony PDF w czytniku, program mówi, co zamknąć, zamiast pokazywać błąd
-- „Usuń” przy otwartym pliku nie kasuje niczego — wcześniej potrafił zostawić pół katalogu
-- numer operatu wpisany ręcznie, który ma już inny operat, nie przejdzie — wcześniej nowy operat nadpisywał tamten; „Powiel” nie przenosi już ręcznie wpisanego numeru
-- podwójne kliknięcie „Zapisz” nie zakłada dwóch operatów
-- po komunikacie „Uzupełnij wymagane pola” wyjście z formularza pyta, czy porzucić wpisane dane
-- przy pobieraniu obrębów dla całej Polski program mówi, ilu jednostek nie udało się pobrać, zamiast ogłaszać „Gotowe”
+- zmiana numeru operatu przy „Popraw” przenosi cały katalog pod nowy numer — razem z mapami, skanami i ułożeniem kafelków; dotąd powstawał drugi katalog obok
+- nowy operat dostaje numer o jeden wyższy niż najwyższy, jaki program zna — także wpisany z ręki i z operatów w archiwum; nie wejdzie już do katalogu innego operatu
+- numer wpisany z ręki dużo wyżej niż kolejny wolny (np. „0122” zamiast „012”) — program pyta, zanim zapisze
+- po zmianie numeru roboty stary złożony PDF znika, a program przypomina, żeby złożyć operat jeszcze raz
+- aktualizacja jest cała albo wcale: gdy któryś plik programu jest otwarty w Wordzie, program startuje po staremu i nic się nie psuje, a aktualizacja dojdzie przy następnym uruchomieniu
+- brak internetu przy doinstalowywaniu bibliotek nie zatrzymuje już startu programu
+- dane dokumentu odznaczonego w spisie treści (np. wykazu budynku) nie giną przy „Popraw” — wracają po ponownym zaznaczeniu
+- lista wyboru nie gubi zapisanej wartości, której nie ma już na liście
+- Word, który stanął na niewidocznym oknie, program zamyka po 3 minutach i mówi, co zrobić; reszta programu w tym czasie działa, a Twojego Worda nie rusza
+- „Zapisz” zaraz po poprzednim zapisie nie każe już zamykać Worda, gdy dokument trzymał podgląd robiony przez sam program — chwilę poczeka
+- przyciski nie migają ostrymi rogami przy najechaniu myszą
 
 Nowości:
-- kolor programu do wyboru w Ustawieniach — sześć kolorów; dokumenty Worda i PDF-y wychodzą takie same jak dotąd
-- ikony w głównych przyciskach i podświetlona zakładka, na której jesteś
-- nowy krój pisma, zapisany w programie — działa bez internetu
+- gdy aktualizację wstrzyma plik otwarty w Wordzie, na liście operatów pojawi się czerwony pasek z nazwą tego pliku (zadziała od następnej aktualizacji)
