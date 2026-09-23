@@ -14,6 +14,7 @@ import os
 import re
 import shutil
 import subprocess
+from datetime import date
 
 import pytest
 
@@ -240,3 +241,73 @@ def test_ksztalt_grupy_przyciskow_zgadza_sie_w_kazdym_wierszu(klient, tmp_path):
     bez_katalogu = [["Popraw", "999px", "6px"], ["Powiel", "6px", "999px"]]
     sam_katalog = [["Otwórz katalog", "999px", "999px"]]
     assert sorted(grupy, key=len) == [sam_katalog, bez_katalogu, pelna], grupy
+
+
+WYSOKI_NUMER = """
+  const formularz = document.querySelector('form[action^="/generuj/"]');
+  const pole = document.getElementById('p_nr_operatu');
+  const pytania = [];
+  window.confirm = tekst => { pytania.push(tekst); return false; };     // brat klika „Anuluj”
+  const wyslij = () => {
+    const zdarzenie = new Event('submit', {cancelable: true});
+    formularz.dispatchEvent(zdarzenie);
+    return zdarzenie.defaultPrevented;
+  };
+  const rok = new Date().getFullYear();
+  pole.value = '0122/' + rok;                     // literówka zamiast 012
+  const wysoki = wyslij();
+  pole.value = '005/' + rok;                      // numer z ręki niedaleko kolejnego
+  const niedaleki = wyslij();
+  return {wysoki, niedaleki, pytan: pytania.length, kolejny: pole.dataset.kolejny,
+          tresc: pytania[0] || ''};
+"""
+
+
+def test_numer_z_reki_duzo_wyzszy_od_kolejnego_wymaga_potwierdzenia(klient, tmp_path):
+    """Licznik idzie od najwyższego znanego numeru, więc literówka „0122” zamiast „012”
+    przesunęłaby numerację na resztę roku. Przy dużym skoku formularz pyta; odmowa nie
+    wysyła formularza, ale też go nie blokuje (blokada podwójnego „Zapisz” nie może
+    uznać, że poszedł), a numer niedaleko kolejnego przechodzi bez pytania."""
+    _dodaj_operat(klient)
+
+    wynik = _zmierz(tmp_path, klient.get("/nowy/spis_tresci_wzor").text, WYSOKI_NUMER)
+
+    assert wynik["kolejny"] == f"001/{date.today().year}"
+    assert wynik["wysoki"] is True and wynik["pytan"] == 1 and "0122/" in wynik["tresc"]
+    assert wynik["niedaleki"] is False, "odmowa zablokowała formularz na dobre"
+
+
+NIEZMIENIONY_NUMER = """
+  const formularz = document.querySelector('form[action^="/generuj/"]');
+  const pole = document.getElementById('p_nr_operatu');
+  const pytania = [];
+  window.confirm = tekst => { pytania.push(tekst); return false; };
+  formularz.dispatchEvent(new Event('submit', {cancelable: true}));   // bez zmian w polu
+  const bezZmian = pytania.length;
+  pole.value = '0195/' + (new Date().getFullYear() - 1);                // zmieniony, zeszły rok
+  formularz.dispatchEvent(new Event('submit', {cancelable: true}));
+  const zeszlyRok = pytania.length;
+  pole.value = '0122/' + new Date().getFullYear();
+  formularz.dispatchEvent(new Event('submit', {cancelable: true}));
+  return {bezZmian, zeszlyRok, poZmianie: pytania.length, wartosc: pole.defaultValue};
+"""
+
+
+def test_pytanie_o_wysoki_numer_nie_dotyczy_zeszlego_roku_ani_niezmienionego_pola(klient,
+                                                                                 tmp_path):
+    """Poprawka operatu z ręcznym numerem z zeszłego roku pytała przy każdym zapisie
+    i twierdziła, że „następne operaty będą numerowane dalej od niego” — nieprawda,
+    licznik liczy w bieżącym roku. Niezmienione pole nie pyta w ogóle."""
+    from app import db
+
+    _dodaj_operat(klient)
+    rok = date.today().year
+    klient.post("/generuj/spis_tresci_wzor", follow_redirects=False,
+                data={**FORMULARZ, "pole__nr_operatu": f"090/{rok - 1}"})
+    wpis = db.dokumenty()[0]
+
+    wynik = _zmierz(tmp_path, klient.get(f"/nowy/spis_tresci_wzor?edytuj={wpis['id']}").text,
+                    NIEZMIENIONY_NUMER)
+
+    assert wynik["wartosc"] == f"090/{rok - 1}"
+    assert (wynik["bezZmian"], wynik["zeszlyRok"], wynik["poZmianie"]) == (0, 0, 1)

@@ -15,13 +15,17 @@ from __future__ import annotations
 import os
 import re
 import stat
+from datetime import date
 from pathlib import Path
 from urllib.parse import unquote
 
 import pytest
 
-from app import db, operaty
+from app import db, generator, operaty
 from test_trasy import FORMULARZ, OPIS_OPERATU, _dodaj_operat, _prawdziwy_pdf   # tests/ nie jest pakietem
+
+# licznik liczy w bieżącym roku — numer z licznika nie może być w teście wpisany na sztywno
+ROK = date.today().year
 
 # root zapisze także plik tylko do odczytu — wtedy nie ma czego sprawdzać
 BEZ_ROOTA = pytest.mark.skipif(hasattr(os, "geteuid") and os.geteuid() == 0,
@@ -139,8 +143,12 @@ def test_dokument_otwarty_w_wordzie_nie_udaje_literowki_w_formatce(klient):
                             data=FORMULARZ, follow_redirects=False)
 
     assert odpowiedz.status_code == 200
-    assert "spis_tresci.docx" in odpowiedz.text and "otwarty w innym programie" in odpowiedz.text
-    assert "literówka" not in odpowiedz.text
+    # sam komunikat, nie cała strona — słowo „literówka” pada też w skryptach formularza
+    komunikat = re.search(r'<div class="komunikat zle">(.*?)</div>', odpowiedz.text, re.DOTALL)
+    assert komunikat, "formularz wrócił bez komunikatu"
+    assert "spis_tresci.docx" in komunikat.group(1)
+    assert "otwarty w innym programie" in komunikat.group(1)
+    assert "literówka" not in komunikat.group(1)
     assert "5712345.12" in odpowiedz.text, "wpisane dane miały zostać w formularzu"
 
 
@@ -148,7 +156,7 @@ def test_dokument_otwarty_w_wordzie_nie_udaje_literowki_w_formatce(klient):
 def test_nowy_operat_przy_zablokowanym_pliku_nie_zjada_numeru(klient):
     """Nieudany zapis oddaje zarezerwowany numer — kolejna próba dostaje ten sam."""
     _dodaj_operat(klient)
-    katalog = klient.srodowisko.wyniki / "001.2026"
+    katalog = klient.srodowisko.wyniki / f"001.{ROK}"
     katalog.mkdir(parents=True)
     (katalog / "spis_tresci.docx").write_bytes(b"stara wersja otwarta w Wordzie")
     _jak_otwarty(katalog / "spis_tresci.docx")
@@ -156,9 +164,13 @@ def test_nowy_operat_przy_zablokowanym_pliku_nie_zjada_numeru(klient):
     odpowiedz = klient.post("/generuj/spis_tresci_wzor", data=FORMULARZ, follow_redirects=False)
     assert odpowiedz.status_code == 200 and "otwarty w innym programie" in odpowiedz.text
     assert db.dokumenty() == []
+    # po nieudanym nowym operacie nie zostaje katalog z samym opisem: na liście byłby
+    # operatem „spoza historii”, a dla licznika numerem zajętym
+    assert not (katalog / "operat.json").exists()
+    assert "spoza historii" not in klient.get("/").text
 
     (katalog / "spis_tresci.docx").chmod(stat.S_IREAD | stat.S_IWRITE)
-    assert _nowy_operat(klient)["nr_operatu"] == "001/2026"
+    assert _nowy_operat(klient)["nr_operatu"] == f"001/{ROK}"
 
 
 def _operat_ze_sprawozdaniem(klient) -> dict:
@@ -207,7 +219,114 @@ def test_zepsuta_formatka_dodatkowa_nie_wywraca_operatu(klient):
         assert odpowiedz.status_code == 303
         assert "sprawozdanie_wzor" in _adres(odpowiedz)
     assert (katalog / "sprawozdanie.docx").read_bytes() == przed
-    assert sorted(w["nr_operatu"] for w in db.dokumenty()) == ["001/2026", "002/2026"]
+    assert sorted(w["nr_operatu"] for w in db.dokumenty()) == [f"001/{ROK}", f"002/{ROK}"]
+
+
+# --- stary złożony PDF po zmianie numeru roboty ------------------------------
+
+def _zlozony_operat(klient, nr_roboty: str = "GK.1.2026"):
+    _dodaj_operat(klient)
+    wpis = _nowy_operat(klient, pole__nr_roboty=nr_roboty)
+    katalog = klient.srodowisko.wyniki / wpis["katalog"]
+    _prawdziwy_pdf(katalog / "mapa.pdf")
+    klient.post(f"/scal/{wpis['katalog']}", data={"plik": ["spis_tresci.docx", "mapa.pdf"]},
+                follow_redirects=False)
+    assert (katalog / f"{nr_roboty}.pdf").exists()
+    return wpis, katalog
+
+
+def _kafelki(klient, katalog: Path) -> list[str]:
+    strona = klient.get(f"/scal/{katalog.name}").text
+    return re.findall(r'<div class="kafelek"[^>]*data-nazwa="([^"]+)"', strona)
+
+
+def test_zmiana_numeru_roboty_usuwa_stary_zlozony_pdf(klient):
+    """Kafelkiem nie był tylko PDF nazwany **obecnym** numerem roboty. Po „Popraw”
+    z nowym numerem stary złożony operat stawał się zwykłym kafelkiem, włączonym jak
+    każdy — i cały wchodził do nowego PDF-a (na próbie 4 strony zamiast 2). Stary plik
+    i tak jest nieaktualny: ma w środku dawny numer roboty i dawne dokumenty."""
+    wpis, katalog = _zlozony_operat(klient)
+
+    odpowiedz = klient.post(f"/generuj/spis_tresci_wzor?edytuj={wpis['id']}",
+                            data={**FORMULARZ, "pole__nr_roboty": "GK.2.2026"},
+                            follow_redirects=False)
+
+    assert not (katalog / "GK.1.2026.pdf").exists()
+    adres = _adres(odpowiedz)
+    assert "GK.1.2026.pdf" in adres and "złóż operat jeszcze raz" in adres.lower()
+    assert _kafelki(klient, katalog) == ["spis_tresci.docx", "mapa.pdf"]
+
+
+def test_stary_zlozony_pdf_otwarty_w_czytniku_nie_wchodzi_do_nowego(klient, monkeypatch):
+    """Pliku otwartego w czytniku Windows nie skasuje. Zostaje wtedy w katalogu, ale
+    program pamięta, że to jego złożony PDF, i nie pokazuje go jako kafelka — ani zaraz
+    po poprawce, ani po złożeniu operatu pod nowym numerem roboty."""
+    from pypdf import PdfReader
+
+    wpis, katalog = _zlozony_operat(klient)
+    prawdziwe_usuwanie = Path.unlink
+
+    def jak_windows(sciezka, *args, **kwargs):
+        if sciezka.name == "GK.1.2026.pdf":
+            raise PermissionError(13, "Proces nie może uzyskać dostępu do pliku", str(sciezka))
+        return prawdziwe_usuwanie(sciezka, *args, **kwargs)
+
+    with monkeypatch.context() as podmiana:
+        podmiana.setattr(Path, "unlink", jak_windows)
+        odpowiedz = klient.post(f"/generuj/spis_tresci_wzor?edytuj={wpis['id']}",
+                                data={**FORMULARZ, "pole__nr_roboty": "GK.2.2026"},
+                                follow_redirects=False)
+
+    assert (katalog / "GK.1.2026.pdf").exists()
+    assert "otwarty" in _adres(odpowiedz) and "GK.1.2026.pdf" in _adres(odpowiedz)
+    assert "GK.1.2026.pdf" not in _kafelki(klient, katalog)
+
+    klient.post(f"/scal/{katalog.name}", data={"plik": _kafelki(klient, katalog)},
+                follow_redirects=False)
+
+    assert len(PdfReader(str(katalog / "GK.2.2026.pdf")).pages) == 2
+    assert "GK.1.2026.pdf" not in _kafelki(klient, katalog), \
+        "po złożeniu pod nowym numerem stary PDF wrócił jako kafelek"
+
+
+def test_stary_zlozony_pdf_zostaje_gdy_poprawka_sie_nie_uda(klient, monkeypatch):
+    """Stary PDF usuwamy dopiero po udanym zapisie dokumentu. Kasowany wcześniej znikał
+    także wtedy, gdy zapis padł (spis treści otwarty w Wordzie) — a komunikat o tym
+    przepadał razem z nieudaną próbą. Po zamknięciu Worda druga próba go usuwa
+    i dopiero wtedy mówi, że trzeba złożyć operat jeszcze raz."""
+    wpis, katalog = _zlozony_operat(klient)
+
+    def odmowa(self, plik, *args, **kwargs):
+        raise PermissionError(13, "Odmowa dostępu", str(plik))
+
+    with monkeypatch.context() as podmiana:
+        podmiana.setattr(generator.DocxTemplate, "save", odmowa)
+        nieudana = klient.post(f"/generuj/spis_tresci_wzor?edytuj={wpis['id']}",
+                               data={**FORMULARZ, "pole__nr_roboty": "GK.2.2026"},
+                               follow_redirects=False)
+
+    assert nieudana.status_code == 200
+    assert (katalog / "GK.1.2026.pdf").exists()
+
+    udana = klient.post(f"/generuj/spis_tresci_wzor?edytuj={wpis['id']}",
+                        data={**FORMULARZ, "pole__nr_roboty": "GK.2.2026"},
+                        follow_redirects=False)
+
+    assert not (katalog / "GK.1.2026.pdf").exists()
+    assert "GK.1.2026.pdf" in _adres(udana) and "złóż operat jeszcze raz" in _adres(udana).lower()
+
+
+def test_poprawka_bez_zmiany_numeru_roboty_nie_rusza_zlozonego_pdf(klient):
+    """Zwykła poprawka (literówka w danych) nie kasuje złożonego PDF-a — nadpisze go
+    dopiero następne „Złóż PDF”, jak dotąd."""
+    wpis, katalog = _zlozony_operat(klient)
+    przed = (katalog / "GK.1.2026.pdf").read_bytes()
+
+    klient.post(f"/generuj/spis_tresci_wzor?edytuj={wpis['id']}",
+                data={**FORMULARZ, "pole__nr_roboty": "GK.1.2026", "pole__uwagi": "literówka"},
+                follow_redirects=False)
+
+    assert (katalog / "GK.1.2026.pdf").read_bytes() == przed
 
 
 # --- usuwanie operatu --------------------------------------------------------

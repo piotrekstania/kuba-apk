@@ -90,6 +90,19 @@ def bez_prawdziwej_bazy(tmp_path, monkeypatch):
 
 
 @pytest.fixture(autouse=True)
+def bez_prawdziwych_wynikow(tmp_path, monkeypatch):
+    """Żaden test nie czyta (ani nie zapisuje) prawdziwego `wyniki/` autora.
+
+    Licznik numerów zagląda do katalogów w `wyniki/` (`generator.najwyzszy_znany_numer`),
+    więc test bez `srodowisko`, który rezerwuje numer — np. wydanych formatek, z samą
+    fixture `baza` — dostawałby numer zależny od operatów autora. Pusty, nieistniejący
+    katalog: `srodowisko` i tak podmienia go swoim (fixtury autouse idą pierwsze).
+    """
+    from app import operaty
+    monkeypatch.setattr(operaty, "WYNIKI", tmp_path / "straznik-wynikow")
+
+
+@pytest.fixture(autouse=True)
 def bez_prawdziwego_motywu(tmp_path, monkeypatch):
     """Żaden test nie zapisuje koloru programu autora (`dane/motyw.txt`).
 

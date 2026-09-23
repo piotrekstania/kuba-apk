@@ -9,7 +9,7 @@ import json
 import shutil
 import threading
 import traceback
-from collections import defaultdict
+from collections import Counter, defaultdict
 from contextlib import asynccontextmanager
 from datetime import date, datetime
 from pathlib import Path
@@ -367,7 +367,7 @@ def odczytaj_dane(formularz, szablon: szablony.Szablon) -> dict[str, Any]:
 # --- strony ------------------------------------------------------------------
 
 @app.get("/", response_class=HTMLResponse)
-def strona_glowna(request: Request, blad: str | None = None):
+def strona_glowna(request: Request, blad: str | None = None, komunikat: str | None = None):
     # Kafelki tylko dla szablonów oznaczonych jako główne: reszta (sprawozdanie,
     # protokoły) sama bez operatu nie istnieje, dokłada się ją checkboxem w formularzu.
     # Gdy nikt nie jest oznaczony, pokazujemy wszystkie — inaczej po dodaniu pierwszego
@@ -377,7 +377,7 @@ def strona_glowna(request: Request, blad: str | None = None):
     return _widok(request, "index.html",
                   szablony=glowne,
                   operaty=_lista_operatow(),
-                  blad=blad,
+                  blad=blad, komunikat=komunikat,
                   co_nowego=_co_nowego())   # wraca, dopóki brat nie kliknie „OK”
 
 
@@ -409,8 +409,13 @@ def _lista_operatow() -> list[dict[str, Any]]:
     """
     wiersze: list[dict[str, Any]] = []
     znane: set[str] = set()
+    historia = db.dokumenty(limit=LIMIT_LISTY)
+    # katalogi wskazywane przez kilka wpisów (ślad dawnego błędu numeracji) — „Usuń”
+    # zdejmuje wtedy sam wpis, a pytanie o potwierdzenie ma to powiedzieć
+    wspolne = {k for k, ile in Counter(w["katalog"] for w in historia if w["katalog"]).items()
+               if ile > 1}
 
-    for wpis in db.dokumenty(limit=LIMIT_LISTY):
+    for wpis in historia:
         katalog = wpis["katalog"] or ""
         if katalog:
             znane.add(katalog)
@@ -427,6 +432,7 @@ def _lista_operatow() -> list[dict[str, Any]]:
             # już nie ma — nie ma więc czego składać. Lista musi to pokazać, zamiast
             # oferować przycisk, który po cichu odsyła z powrotem na listę.
             "na_dysku": bool(katalog) and (WYNIKI / katalog).is_dir(),
+            "wspolny": katalog in wspolne,
         })
 
     for operat in operaty.lista():
@@ -550,17 +556,81 @@ def _szczyt_formularza(szablon: szablony.Szablon, poprawiany: Any) -> dict[str, 
     nagłówek przeskakiwał wtedy z „Operat: 001/2026” na „Nowy operat”, a brat miał
     prawo sądzić, że poprawka przepadła i zakłada nowy operat.
     """
+    # `kolejny_numer` — numer, który dostałby nowy operat. Przy poprawianiu też:
+    # formularz pyta po nim, czy numer wpisany z ręki nie jest literówką (dużo wyższy
+    # przesunąłby numerację na resztę roku).
+    kolejny = _kolejny_numer(szablon)
     if poprawiany:
         return {"podglad_numeru": (poprawiany["nr_operatu"] or poprawiany["katalog"]
                                    or poprawiany["tytul"]),
-                "utworzono": poprawiany["utworzono"] or ""}
-    podglad = None
+                "utworzono": poprawiany["utworzono"] or "", "kolejny_numer": kolejny}
+    return {"podglad_numeru": kolejny, "utworzono": "", "kolejny_numer": kolejny}
+
+
+def _kolejny_numer(szablon: szablony.Szablon,
+                   bez_istniejacego_katalogu: bool = False) -> str | None:
+    """Numer, który dostanie następny nowy operat — liczony tak samo jak przy nadawaniu,
+    żeby szary numer w polu mówił prawdę także wtedy, gdy licznik przeskakuje numery
+    wpisane z ręki.
+
+    `bez_istniejacego_katalogu` — do podpowiedzi w odmowie: licznik nie liczy folderów
+    bez `operat.json` (brat zakłada je z góry na następną robotę), a podpowiedź ma
+    wskazać numer, pod którym nowy katalog naprawdę powstanie, a nie jego folder."""
     for pole in szablon.pola:
         if pole.typ == "auto_numer":
-            numer = db.podglad_numeru(szablon.licznik or szablon.id, date.today().year)
             wzor = pole.domyslnie or "{numer}/{rok}"
-            podglad = wzor.format(numer=numer, numer3=f"{numer:03d}", rok=date.today().year)
-    return {"podglad_numeru": podglad, "utworzono": ""}
+            rok = date.today().year
+            numer = db.podglad_numeru(szablon.licznik or szablon.id, rok,
+                                      co_najmniej=generator.najwyzszy_znany_numer(wzor, rok))
+            for kolejny in range(numer, numer + 1000):
+                propozycja = wzor.format(numer=kolejny, numer3=f"{kolejny:03d}", rok=rok)
+                if not (bez_istniejacego_katalogu
+                        and operaty.katalog_operatu(propozycja).exists()):
+                    return propozycja
+            return None
+    return None
+
+
+def _wlasciciel_katalogu(katalog: Path, wpisy: list[Any]) -> int | None:
+    """Który z wpisów wskazujących ten sam katalog jest jego właścicielem.
+
+    Dwa wpisy z jednym katalogiem to ślad dawnego błędu numeracji: licznik wchodził do
+    cudzego katalogu, a numer wpisany z ręki mógł trafić w numer operatu z archiwum.
+    Katalog należy do tego, czyj numer roboty stoi w jego `operat.json`; przy remisie
+    do najnowszego wpisu, bo to on zapisywał go ostatni.
+    """
+    opis = operaty.opis(katalog)
+    # najpierw znacznik zapisany przy udanym zapisie (`operaty.oznacz_wpis`) — numer
+    # roboty zmienia się przy poprawianiu i sam nie jest pewnym śladem
+    if isinstance(opis.get("wpis"), int) and opis["wpis"] in {w["id"] for w in wpisy}:
+        return opis["wpis"]
+    nr_roboty = str(opis.get("nr_roboty") or "")
+    pasujace = [w["id"] for w in wpisy if (w["tytul"] or "") == nr_roboty]
+    return max(pasujace or [w["id"] for w in wpisy], default=None)
+
+
+def _konflikt_numeru(pole: Any, wpisany: str, poprawiany: Any,
+                     wlasny_katalog: str) -> str | None:
+    """Opis innego operatu, który ma już numer wpisany z ręki — albo None.
+
+    Zajęty jest numer z katalogiem w `wyniki/` albo z wpisem w historii (także operatu
+    przeniesionego do archiwum, którego katalogu tu już nie ma), porównany dosłownie
+    i po wartości — „1/2026” to ten sam numer co „001/2026”. Katalog bez `operat.json`
+    (założony ręcznie z plikami na nową robotę) nie jest cudzy. `wlasny_katalog` —
+    katalog, który naprawdę należy do poprawianego operatu (pusty dla nowego operatu
+    i dla wpisu, którego katalog należy do innego — patrz `_wlasciciel_katalogu`).
+    """
+    zajety = operaty.katalog_po_nazwie(operaty.nazwa_katalogu(wpisany))
+    if zajety is not None and zajety.name != wlasny_katalog:
+        return f"katalog wyniki\\{zajety.name}"
+    inny = db.dokument_z_numerem(wpisany, poza=poprawiany["id"] if poprawiany else None)
+    if inny is not None:
+        gdzie = ("" if operaty.katalog_po_nazwie(inny["katalog"] or "") else
+                 "; jego katalogu nie ma w wyniki — pewnie jest w archiwum")
+        return f"nr roboty {inny['tytul'] or '—'}{gdzie}"
+    return generator.zajety_numer(pole.domyslnie or "{numer}/{rok}", wpisany,
+                                  poza_id=poprawiany["id"] if poprawiany else None,
+                                  poza_katalogiem=wlasny_katalog)
 
 
 @app.get("/nowy/{identyfikator}", response_class=HTMLResponse)
@@ -669,25 +739,121 @@ async def generuj(request: Request, identyfikator: str, edytuj: int | None = Non
         return _widok(request, "formularz.html", **powrot,
                       blad="Uzupełnij wymagane pola: " + ", ".join(brakujace))
 
+    # --- numer operatu i katalog poprawianego operatu -------------------------------
+    pole_numeru = next((p for p in szablon.pola if p.typ == "auto_numer"), None)
+    nowy_numer = str(dane.get(pole_numeru.klucz) or "").strip() if pole_numeru else ""
+    stary_katalog = (operaty.katalog_po_nazwie(poprawiany["katalog"] or "")
+                     if poprawiany else None)
+
+    # Dane po dawnych błędach numeracji: ten sam katalog wskazuje w historii kilka wpisów,
+    # a należy do jednego (`_wlasciciel_katalogu`). Poprawka „nie swojego” wpisu kasowała
+    # tamtemu złożony PDF i nadpisywała opis, a z nowym numerem przenosiła jego katalog
+    # pod swój numer. Nie-właściciel dostaje teraz własny katalog pod nowym numerem —
+    # i tylko pod takim, którego katalogu jeszcze nie ma: literówka „001/2026.” to po
+    # zamianie na nazwę ten sam wspólny katalog, a folder założony przez brata z góry
+    # to mapy innej roboty.
+    #
+    # To samo, gdy znacznik właściciela w `operat.json` wskazuje **inny, istniejący** wpis:
+    # tak wygląda katalog skopiowany z innego komputera na miejsce operatu, który tu
+    # poszedł do archiwum — w historii jest jeden wpis, więc bez tego nikt by własności
+    # nie sprawdził, a „Popraw” nadpisałby opis i dokument tamtego operatu. Znacznik
+    # usuniętego wpisu nie wskazuje niczego i się nie liczy.
+    wspolni: list[Any] = []             # inne wpisy wskazujące ten sam katalog
+    cudzy_katalog = None
+    if stary_katalog is not None:
+        wpisy = db.wpisy_z_katalogiem(poprawiany["katalog"])
+        wspolni = [w for w in wpisy if w["id"] != poprawiany["id"]]
+        znacznik = operaty.opis(stary_katalog).get("wpis")
+        obcy_znacznik = (isinstance(znacznik, int) and znacznik != poprawiany["id"]
+                         and db.dokument(znacznik) is not None)
+        if ((wspolni and _wlasciciel_katalogu(stary_katalog, wpisy) != poprawiany["id"])
+                or (not wspolni and obcy_znacznik)):
+            cudzy_katalog, stary_katalog = stary_katalog, None
+            # numer roboty z samego katalogu — przy katalogu z innego komputera znacznik
+            # wskazuje tu zupełnie inny operat niż ten, który w katalogu naprawdę leży
+            nr_roboty_katalogu = str(operaty.opis(cudzy_katalog).get("nr_roboty") or "—")
+            istniejacy = (operaty.katalog_operatu(nowy_numer)
+                          if nowy_numer and operaty.katalog_operatu(nowy_numer).exists() else None)
+            if not nowy_numer or nowy_numer == (poprawiany["nr_operatu"] or "") or istniejacy:
+                propozycja = _kolejny_numer(szablon, bez_istniejacego_katalogu=True)
+                return _widok(request, "formularz.html", **powrot, blad=(
+                    f"Katalog wyniki\\{cudzy_katalog.name} należy do innego operatu z tym "
+                    f"samym numerem (nr roboty {nr_roboty_katalogu}) — to ślad dawnego błędu "
+                    "numeracji albo katalog skopiowany z innego komputera. "
+                    + (f"Katalog wyniki\\{istniejacy.name} też już istnieje. "
+                       if istniejacy is not None and istniejacy.name != cudzy_katalog.name else "")
+                    + "Wpisz temu operatowi nowy numer, którego katalogu jeszcze nie ma"
+                    + (f" (np. {propozycja})" if propozycja else "")
+                    + " — dostanie własny katalog, a tamten zostanie nietknięty. Jeśli ten numer "
+                    "należy się właśnie temu operatowi, popraw tamten operat i nadaj nowy "
+                    "numer jemu. Nic nie zostało zmienione; wpisane dane zostały tutaj."))
+    wlasny_katalog = stary_katalog.name if stary_katalog is not None else ""
+
     # Numer operatu wpisany ręcznie, który ma już **inny** operat: nowy wszedłby do jego
     # katalogu, przepisał mu `operat.json` i dokumenty, a jego mapy i skany wziął za
     # swoje (a „Usuń” jednego kasowało potem katalog obu). Numer z licznika jest zawsze
-    # świeży, więc pilnujemy tylko wpisanego. Katalog bez `operat.json` (założony ręcznie
-    # z plikami na nową robotę) nie jest cudzy — `katalog_po_nazwie` go nie widzi.
+    # świeży (`generator.najwyzszy_znany_numer`), więc pilnujemy tylko wpisanego.
+    # Zajęty jest numer z katalogiem w `wyniki/` **albo z wpisem w historii** — operat
+    # przeniesiony do archiwum nie ma już katalogu, ale numer nadal jest jego — porównany
+    # dosłownie i po wartości. Własny numer i własny katalog poprawianego operatu
+    # to nie zderzenie; wpis bez własnego katalogu (wyżej) żadnego katalogu nie ma.
     for pole in szablon.pola:
         wpisany = str(dane.get(pole.klucz) or "").strip() if pole.typ == "auto_numer" else ""
-        if not wpisany:
+        if not wpisany or (poprawiany and cudzy_katalog is None
+                           and wpisany == (poprawiany["nr_operatu"] or "")):
             continue
-        zajety = operaty.katalog_po_nazwie(operaty.nazwa_katalogu(wpisany))
-        if zajety is not None and (not poprawiany or zajety.name != poprawiany["katalog"]):
+        konflikt = _konflikt_numeru(pole, wpisany, poprawiany, wlasny_katalog)
+        if konflikt:
             return _widok(request, "formularz.html", **powrot, blad=(
-                f"Numer {wpisany} ma już inny operat (katalog wyniki\\{zajety.name}). "
+                f"Numer {wpisany} ma już inny operat ({konflikt}). "
                 f"Zostaw pole „{pole.etykieta}” puste — program nada kolejny wolny numer "
-                "— albo wpisz inny. Wpisane dane zostały tutaj."))
+                "— albo wpisz inny. Jeśli chcesz poprawić tamten operat, kliknij przy nim "
+                "„Popraw” na liście. Wpisane dane zostały tutaj."))
+
+    # Zmiana numeru przy poprawianiu. Katalog nazywa się numerem, więc przenosimy go
+    # w całości pod nowy — z mapami i skanami brata, ułożeniem kafelków, opisem
+    # i podglądami. Dotąd poprawka zakładała katalog obok: dokumenty szły do nowego,
+    # mapy zostawały w starym, a historia mówiła stary numer i wskazywała nowy katalog.
+    # Przenosimy **przed** wypełnianiem dokumentów: plik otwarty w Wordzie blokuje
+    # zmianę nazwy, a wtedy lepiej nie ruszyć niczego, niż zostawić operat w pół drogi.
+    przeniesiono = False
+    if (nowy_numer and stary_katalog is not None
+            and operaty.nazwa_katalogu(nowy_numer) != stary_katalog.name):
+        nowa_nazwa = operaty.nazwa_katalogu(nowy_numer)
+        try:
+            przeniesiony = operaty.przenies(stary_katalog, nowa_nazwa)
+        except FileExistsError:
+            # Taki katalog bez `operat.json` to zwykle folder brata z mapami na inną
+            # robotę — rada „usuń go” byłaby tu groźna.
+            return _widok(request, "formularz.html", **powrot, blad=(
+                f"Nie mogę zmienić numeru na {nowy_numer}: katalog wyniki\\{nowa_nazwa} już "
+                "istnieje — pewnie założyłeś go wcześniej na inną robotę. Wpisz inny numer "
+                "albo przenieś pliki z tamtego katalogu ręcznie. Nic nie zostało zmienione; "
+                "wpisane dane zostały tutaj."))
+        except OSError as blad:
+            zapisz_blad(request, blad)
+            return _widok(request, "formularz.html", **powrot, blad=(
+                f"Nie mogę zmienić numeru operatu: któryś plik z katalogu "
+                f"wyniki\\{stary_katalog.name} jest otwarty w innym programie (np. w Wordzie "
+                "albo w czytniku PDF) albo sam katalog jest otwarty. Zamknij go i kliknij "
+                "„Zapisz” jeszcze raz. Nic nie zostało zmienione; wpisane dane zostały tutaj."))
+        # Numer idzie za katalogiem od razu — do `operat.json`, historii i danych
+        # formularza. Gdyby wypełnianie niżej padło, następne zwykłe „Popraw” wzięłoby
+        # stary numer z `operat.json` (albo z pola) i rozbiło operat na dwa katalogi.
+        # Z tego samego powodu formularz po błędzie ma już pokazywać nowy numer.
+        try:
+            operaty.ustaw_numer(przeniesiony, nowy_numer, pole_numeru.klucz)
+        except OSError as blad:
+            zapisz_blad(request, blad)
+        db.przenies_operat(poprawiany["id"], nowy_numer, przeniesiony.name, pole_numeru.klucz)
+        poprawiany = db.dokument(poprawiany["id"])
+        powrot.update(_szczyt_formularza(szablon, poprawiany))
+        przeniesiono = True
 
     poprzedni_opis = None
     if poprawiany:
-        katalog_poprzedni = operaty.katalog_po_nazwie(poprawiany["katalog"] or "")
+        katalog_poprzedni = (None if cudzy_katalog is not None
+                             else operaty.katalog_po_nazwie(poprawiany["katalog"] or ""))
         poprzedni_opis = operaty.opis(katalog_poprzedni) if katalog_poprzedni else None
         if not (poprzedni_opis or {}).get("nr_operatu"):
             # Operat przeniesiony do archiwum: `operat.json` pojechał razem z folderem,
@@ -698,12 +864,24 @@ async def generuj(request: Request, identyfikator: str, edytuj: int | None = Non
                               "nr_roboty": poprawiany["tytul"] or ""}
         # Nazwa katalogu z historii — dla szablonów bez licznika to jedyny ślad, po którym
         # poprawka trafi tam, gdzie leżą poprzednie dokumenty (`operat.json` jej nie ma).
-        poprzedni_opis = {**poprzedni_opis, "katalog": poprawiany["katalog"] or ""}
+        # `wpis` — katalog zapamięta, do którego wpisu należy (`operaty.oznacz_wpis`)
+        poprzedni_opis = {**poprzedni_opis, "wpis": poprawiany["id"],
+                          "katalog": ("" if cudzy_katalog is not None
+                                      else poprawiany["katalog"] or "")}
 
     try:
         plik, kontekst, ostrzezenia = generator.generuj(
             warianty.z_wariantem(szablon, wybor_wariantow.get(szablon.id, "")),
             dane, db.wczytaj_ustawienia(), poprzedni_opis)
+    except operaty.KatalogZajety as blad:
+        # Ostatnia zapora (`operaty.zaloz`): nic nie zostało nadpisane, a numer z licznika
+        # wrócił do puli. Wyjściem jest numer wpisany z ręki — ten sprawdza strażnik wyżej.
+        etykieta = next((p.etykieta for p in szablon.pola if p.typ == "auto_numer"),
+                        "Nr operatu")
+        return _widok(request, "formularz.html", **powrot, blad=(
+            f"Katalog wyniki\\{blad.katalog.name} należy już do innego operatu — nic nie "
+            f"zostało nadpisane. Wpisz w polu „{etykieta}” inny, wolny numer i kliknij "
+            "„Zapisz” jeszcze raz. Wpisane dane zostały tutaj."))
     except PermissionError as blad:
         # Dokument otwarty w Wordzie (np. po „Popraw” prosto z otwartego pliku). Dotąd
         # szło to przez komunikat o literówce w formatce i brat szukał błędu w szablonie,
@@ -727,6 +905,27 @@ async def generuj(request: Request, identyfikator: str, edytuj: int | None = Non
     # Awaria któregoś nie może przekreślić dokumentu głównego, który już jest na dysku —
     # zgłaszamy ją jako ostrzeżenie na stronie operatu.
     katalog = plik.parent
+    if poprawiany:
+        # stary złożony PDF — liczony z numeru roboty, jaki **ten** wpis miał w historii
+        # przed poprawką, i dopiero teraz, po udanym zapisie dokumentu
+        ostrzezenia += operaty.usun_stary_wynik(katalog, poprawiany["tytul"] or "")
+    if przeniesiono and wspolni:
+        inne = ", ".join(f"{w['nr_operatu'] or '—'} (nr roboty {w['tytul'] or '—'})"
+                         for w in wspolni)
+        ostrzezenia.append(
+            f"Stary katalog tego operatu wskazywał w historii także operat {inne}. Jego pliki, "
+            "jeśli jakieś tam miał, przyjechały tu razem z katalogiem, a on sam stoi teraz "
+            "na liście jako „w archiwum”.")
+    if przeniesiono and (katalog / operaty.nazwa_wyniku(katalog)).is_file():
+        # złożony PDF przyjechał z katalogiem, ale w środku ma dawny numer operatu
+        ostrzezenia.append(
+            f"Numer operatu się zmienił, a złożony PDF „{operaty.nazwa_wyniku(katalog)}” "
+            "ma w środku dawny numer. Złóż operat jeszcze raz.")
+    if cudzy_katalog is not None:
+        ostrzezenia.append(
+            f"Ten operat dzielił katalog wyniki\\{cudzy_katalog.name} z innym operatem o tym "
+            f"samym numerze — dostał teraz własny katalog wyniki\\{katalog.name}. Mapy i skany "
+            f"zostały w {cudzy_katalog.name}; przenieś ręcznie te, które należą do tego operatu.")
     # zaznaczenia zbieramy ze wszystkich pól typu „dokumenty” — każdy dokument
     # ma swoją kartę, więc pól jest kilka
     # Co wygenerować: pozycje zaznaczone w spisie treści (mapowanie `dokumenty` w .json)
@@ -823,12 +1022,19 @@ async def generuj(request: Request, identyfikator: str, edytuj: int | None = Non
     tytul = kontekst.get("nr_roboty") or katalog.name
     if poprawiany:
         db.zaktualizuj_dokument(poprawiany["id"], str(tytul), dane,
-                                f"{katalog.name}/{plik.name}", katalog.name, notatka)
+                                f"{katalog.name}/{plik.name}", katalog.name, notatka,
+                                nr_operatu=str(kontekst.get("nr_operatu") or katalog.name))
         dokument_id = poprawiany["id"]
     else:
         dokument_id = db.zapisz_dokument(
             szablon.id, str(tytul), f"{katalog.name}/{plik.name}", dane, katalog.name,
             str(kontekst.get("nr_operatu") or katalog.name), notatka)
+        try:
+            operaty.oznacz_wpis(katalog, dokument_id)
+        except OSError as blad:
+            # znacznik nie jest krytyczny — operat już jest w historii, a strona błędu
+            # namawiałaby do drugiego „Zapisz”, czyli do drugiego operatu
+            zapisz_blad(request, blad)
     adres = f"/dokument/{dokument_id}"
     if ostrzezenia:
         adres += "?blad=" + quote(" ".join(ostrzezenia))
@@ -1083,6 +1289,15 @@ def usun(dokument_id: int):
     wiersz = db.dokument(dokument_id)
     if wiersz:
         katalog = operaty.katalog_po_nazwie(wiersz["katalog"] or "")
+        # Katalog wskazywany jeszcze przez inny wpis (ślad dawnego błędu numeracji) ma
+        # w środku pliki obu operatów. Dwa wiersze z jednym numerem aż proszą, żeby jeden
+        # usunąć — a kasowanie katalogu zabrałoby i tamten operat. Znika sam wpis.
+        if katalog is not None and len(db.wpisy_z_katalogiem(wiersz["katalog"])) > 1:
+            db.usun_dokument(dokument_id)
+            return RedirectResponse("/?komunikat=" + quote(
+                f"Usunąłem operat {wiersz['nr_operatu'] or katalog.name} z historii. Katalog "
+                f"wyniki\\{katalog.name} zostawiłem, bo wskazuje go też inny operat."),
+                status_code=303)
         # Podglądy kasujemy po nazwie, nie po katalogu: operat bywa usuwany z historii
         # wtedy, gdy jego folder brat już przeniósł do archiwum — a wtedy `katalog`
         # jest `None` i podglądy zostawałyby na zawsze.

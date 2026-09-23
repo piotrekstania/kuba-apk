@@ -2,6 +2,7 @@
 from __future__ import annotations
 
 import re
+import string
 import unicodedata
 from datetime import date, datetime
 from pathlib import Path
@@ -90,6 +91,95 @@ def pola_teryt(klucz: str, wybor: dict[str, str]) -> dict[str, str]:
     return wynik
 
 
+def _wzorzec_numeru(wzor: str) -> re.Pattern[str] | None:
+    """Wzorzec pola `auto_numer` (np. `{numer3}/{rok}`) jako wyrażenie z grupami `numer`
+    i `rok` — łapie „012/2026”, ale też „12/2026” wpisane z ręki bez zer. Więcej niż
+    sześć cyfr to literówka, a nie numer operatu: SQLite takiej liczby nawet nie zmieści,
+    a licznik ustawiony za nią padałby przy każdym następnym operacie."""
+    czesci: list[str] = []
+    jest_numer = jest_rok = False
+    try:
+        for tekst, pole, _, _ in string.Formatter().parse(wzor):
+            czesci.append(re.escape(tekst))
+            if pole in ("numer", "numer3"):
+                czesci.append(r"\d{1,6}" if jest_numer else r"(?P<numer>\d{1,6})")
+                jest_numer = True
+            elif pole == "rok":
+                czesci.append(r"\d{4}" if jest_rok else r"(?P<rok>\d{4})")
+                jest_rok = True
+            elif pole is not None:
+                czesci.append(".*?")
+    except ValueError:                  # zepsuty wzorzec w .json — licznik działa jak dotąd
+        return None
+    return re.compile("".join(czesci)) if jest_numer else None
+
+
+def klucz_numeru(wzor: str, tekst: Any) -> tuple[int, int | None] | None:
+    """(numer, rok) z numeru operatu — „012/2026” i „12/2026” dają to samo (12, 2026).
+    None, gdy tekst do wzorca nie pasuje (numer z ręki w zupełnie innym kształcie)."""
+    wzorzec = _wzorzec_numeru(wzor)
+    trafienie = wzorzec.fullmatch(tekst.strip()) if wzorzec and isinstance(tekst, str) else None
+    if trafienie is None:
+        return None
+    rok = trafienie.groupdict().get("rok")
+    return int(trafienie["numer"]), (int(rok) if rok else None)
+
+
+def _znane_numery(wzor: str) -> list[tuple[tuple[int, int | None], int | None, str, str | None]]:
+    """Każdy numer, jaki program zna: (klucz, id wpisu w historii albo None, katalog,
+    numer roboty z historii albo None). Z historii — także operaty w archiwum, których
+    katalogów już nie ma — i z nazw katalogów w `wyniki/` — także skopiowanych z innego
+    komputera, spoza historii. Bez sprawdzania dysku dla każdego wpisu: wołane przy
+    każdym otwarciu formularza, a opis dla brata liczy dopiero `zajety_numer`."""
+    znane = [(klucz, wpis["id"], wpis["katalog"] or "", wpis["tytul"])
+             for wpis in db.wpisy_z_numerami()
+             if (klucz := klucz_numeru(wzor, wpis["nr_operatu"]))]
+    katalogowy = wzor.replace("/", ".")                  # 012/2026 → katalog 012.2026
+    for nazwa in operaty.numery_katalogow():
+        klucz = klucz_numeru(katalogowy, nazwa)
+        if klucz is None:
+            # nazwa inna niż numer (przemianowany przy archiwizacji „005.2026 Kowalski”,
+            # kopia „- Kopia”) — wtedy numer jest już tylko w opisie
+            klucz = klucz_numeru(wzor, operaty.opis(operaty.WYNIKI / nazwa).get("nr_operatu"))
+        if klucz:
+            znane.append((klucz, None, nazwa, None))
+    return znane
+
+
+def najwyzszy_znany_numer(wzor: str, rok: int) -> int:
+    """Najwyższy numer z roku `rok`, jaki program zna **spoza licznika**.
+
+    Licznik wie tylko o numerach, które sam wydał. Wystarczyło raz wpisać numer z ręki
+    wyżej niż on — albo stracić bazę przy przenosinach na nowy komputer — a licznik
+    po dojściu do tego numeru wchodził do cudzego katalogu i nadpisywał mu opis
+    i dokumenty. `db.nastepny_numer` nie zejdzie poniżej tego, co zwraca ta funkcja.
+    """
+    return max((klucz[0] for klucz, *_ in _znane_numery(wzor) if klucz[1] in (None, rok)),
+               default=0)
+
+
+def zajety_numer(wzor: str, tekst: str, poza_id: int | None = None,
+                 poza_katalogiem: str = "") -> str | None:
+    """Opis operatu, który ma już ten numer — porównany **po wartości**, tak jak liczy
+    licznik: „1/2026” trafia na „001/2026”. Osobne katalogi nie chroniły tu niczego,
+    bo dla ośrodka to i tak dwa operaty z jednym numerem. Poprawiany operat (jego wpis
+    i jego katalog) się nie liczy."""
+    klucz = klucz_numeru(wzor, tekst)
+    if klucz is None:
+        return None
+    for znany, id_wpisu, katalog, nr_roboty in _znane_numery(wzor):
+        if znany != klucz or (id_wpisu is not None and id_wpisu == poza_id):
+            continue
+        if id_wpisu is None:
+            if poza_katalogiem and katalog == poza_katalogiem:
+                continue
+            return f"katalog wyniki\\{katalog}"
+        gdzie = ("" if katalog and operaty.katalog_po_nazwie(katalog) else
+                 "; jego katalogu nie ma w wyniki — pewnie jest w archiwum")
+        return f"nr roboty {nr_roboty or '—'}{gdzie}"
+    return None
+
+
 def przygotuj_kontekst(szablon: Szablon, dane: dict[str, Any], ustawienia: dict[str, str],
                        rezerwacje: list[tuple[str, int, int]] | None = None) -> dict[str, Any]:
     """Łączy dane z formularza, dane stałe i wartości wyliczane automatycznie.
@@ -104,10 +194,11 @@ def przygotuj_kontekst(szablon: Szablon, dane: dict[str, Any], ustawienia: dict[
     for pole in szablon.pola:
         if pole.typ == "auto_numer" and not kontekst.get(pole.klucz):
             nazwa_licznika = szablon.licznik or szablon.id
-            numer = db.nastepny_numer(nazwa_licznika, dzis.year)
+            wzor = pole.domyslnie or "{numer}/{rok}"
+            numer = db.nastepny_numer(nazwa_licznika, dzis.year,
+                                      co_najmniej=najwyzszy_znany_numer(wzor, dzis.year))
             if rezerwacje is not None:
                 rezerwacje.append((nazwa_licznika, dzis.year, numer))
-            wzor = pole.domyslnie or "{numer}/{rok}"
             kontekst[pole.klucz] = wzor.format(numer=numer, numer3=f"{numer:03d}", rok=dzis.year)
         elif pole.typ == "wybor_wielokrotny" and pole.wzor_wartosci:
             # Zaznaczone pozycje przepuszczone przez wzorzec, np. „{nr_roboty}-{opcja}.gml”
@@ -418,6 +509,7 @@ def generuj(szablon: Szablon, dane: dict[str, Any], ustawienia: dict[str, str],
             if pole.typ == "auto_numer" and not dane.get(pole.klucz):
                 dane[pole.klucz] = poprzedni["nr_operatu"]
     kontekst = przygotuj_kontekst(szablon, dane, ustawienia, rezerwacje)
+    katalog: Path | None = None
     try:
         dokument = DocxTemplate(szablon.plik)
         dokument.render(sformatuj_pod_znaczniki(dokument, kontekst), autoescape=True)
@@ -434,11 +526,15 @@ def generuj(szablon: Szablon, dane: dict[str, Any], ustawienia: dict[str, str],
         # bo zależało od tego, czy zegar tyknął między jednym żądaniem a drugim.
         numer = _numer_operatu(szablon, kontekst)
         znacznik = datetime.now().strftime("%Y%m%d-%H%M%S")
+        nazwa = (numer or str((poprzedni or {}).get("katalog") or "")
+                 or f"{nazwa_pliku(szablon, kontekst)}__{znacznik}")
+        katalog_istnial = operaty.katalog_operatu(nazwa).exists()
+        # `nowy`: nowy operat nie wejdzie do katalogu innego (patrz `operaty.zaloz`) —
+        # poprawiany wraca do swojego
         katalog, ostrzezenia = operaty.zaloz(
-            numer or str((poprzedni or {}).get("katalog") or "")
-            or f"{nazwa_pliku(szablon, kontekst)}__{znacznik}",
-            str(kontekst.get("nr_roboty", "")), szablon.id, dane,
-            poprzedni_numer_roboty=str((poprzedni or {}).get("nr_roboty", "")))
+            nazwa, str(kontekst.get("nr_roboty", "")), szablon.id, dane,
+            poprzedni_numer_roboty=str((poprzedni or {}).get("nr_roboty", "")),
+            nowy=poprzedni is None, wpis=(poprzedni or {}).get("wpis"))
 
         plik = katalog / operaty.nazwa_dokumentu(szablon.id)
         dokument.save(plik)
@@ -448,5 +544,10 @@ def generuj(szablon: Szablon, dane: dict[str, Any], ustawienia: dict[str, str],
         # zostawiałaby dziurę w numeracji operatów.
         for nazwa_licznika, rok, numer_licznika in rezerwacje:
             db.zwolnij_numer(nazwa_licznika, rok, numer_licznika)
+        # Nowy operat, którego dokument nie powstał (np. plik otwarty w Wordzie): bez
+        # sprzątania zostawał katalog z samym opisem — na liście jako operat „spoza
+        # historii”, a dla licznika jako numer zajęty, więc oddany numer i tak by przepadł.
+        if poprzedni is None and katalog is not None:
+            operaty.wycofaj_nowy(katalog, usun_katalog=not katalog_istnial)
         raise
     return plik, kontekst, ostrzezenia

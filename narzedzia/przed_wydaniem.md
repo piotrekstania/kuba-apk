@@ -81,6 +81,25 @@ Worda identyczne bajt w bajt, złożony PDF i podglądy piksel w piksel)*
    to przemianuje katalog, poprawka nie działa i trzeba wrócić do tematu.
 6. Rytuał A (Word) — ścieżka wordowa się nie zmieniła, ale to ona idzie do ośrodka.
 
+**Numeracja i stary złożony PDF** (runda po wydaniu 113) — na Linuksie blokadę plików
+udaje w testach atrybut „tylko do odczytu” i podmiana `rename`/`unlink`, więc prawdziwe
+zachowanie Windowsa trzeba zobaczyć raz na żywo:
+
+1. **„Popraw” z nowym numerem operatu** przy zamkniętych plikach: katalog w Eksploratorze
+   zmienia nazwę na nowy numer, mapy i skany są w środku, na liście stoi nowy numer,
+   a „Złóż PDF” pamięta ułożenie kafelków.
+2. To samo przy **dokumencie otwartym w Wordzie**: komunikat „Nie mogę zmienić numeru…
+   Nic nie zostało zmienione”, katalog i historia bez zmian. (Przy katalogu otwartym
+   tylko w Eksploratorze zmiana nazwy zwykle przechodzi — to też jest w porządku.)
+3. **„Popraw” z nowym numerem roboty** przy złożonym PDF-ie **zamkniętym**: stary PDF
+   znika, na stronie operatu zdanie, żeby złożyć operat jeszcze raz. Przy PDF-ie
+   **otwartym w czytniku**: komunikat, plik zostaje, ale na stronie składania go nie ma.
+4. **Numer z ręki wyżej niż licznik** (np. 050): szary numer w pustym polu nowego
+   operatu pokazuje 051, i taki operat dostaje.
+5. **Numer z ręki dużo wyżej niż kolejny** (np. 0122 przy kolejnym 013): okienko
+   z pytaniem w przeglądarce brata (Edge/Chrome); „Anuluj” zostawia formularz, a drugie
+   „Zapisz” po poprawieniu numeru normalnie działa.
+
 **Zostało do obejrzenia okiem** (z wydania 112) — tego testy ani przeglądarka nie sprawdzą:
 otworzyć **złożony PDF w prawdziwym czytniku** i potwierdzić, że karta, panel stron
 i pole „Tytuł” we właściwościach pokazują numer roboty, a plik otwiera się normalnie.

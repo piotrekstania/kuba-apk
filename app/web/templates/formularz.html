@@ -467,8 +467,15 @@
         <div class="pole {{ pole.szerokosc }}"{{ zaleznosc | safe }}>
           <label for="p_{{ pole.klucz }}">{{ pole.etykieta }}{% if pole.wymagane %} <span class="gwiazdka">*</span>{% endif %}</label>
           <input id="p_{{ pole.klucz }}" name="pole__{{ pole.klucz }}" value="{{ wartosc }}"
-                 placeholder="{{ podglad_numeru or 'nadany automatycznie' }}">
-          <p class="podpowiedz">Zostaw puste, żeby program nadał kolejny numer.</p>
+                 placeholder="{{ podglad_numeru or 'nadany automatycznie' }}"
+                 data-kolejny="{{ kolejny_numer or '' }}">
+          {# Przy poprawianiu puste pole zostawia operatowi jego numer, a wpisany inny
+             przenosi katalog pod nowy numer (razem z plikami brata) — dawna podpowiedź
+             „program nada kolejny numer” była wtedy nieprawdą. #}
+          <p class="podpowiedz">{% if edytuj -%}
+            Zostaw puste — operat zachowa numer {{ podglad_numeru }}. Wpisz inny, żeby go
+            zmienić: katalog przeniesie się razem z twoimi plikami.
+          {%- else %}Zostaw puste, żeby program nadał kolejny numer.{% endif %}</p>
         </div>
 
         {% else %}
@@ -996,6 +1003,38 @@ document.querySelectorAll('.edytor').forEach(edytor => {
     przepisz();
   });
 });
+
+// --- Numer z ręki dużo wyżej niż kolejny wolny ------------------------------
+// Licznik idzie od najwyższego numeru, jaki program zna, więc literówka w numerze
+// wpisanym z ręki („0122” zamiast „012”) przesunęłaby numerację na resztę roku.
+// Pytamy, zanim zapis to utrwali — tylko przy dużym skoku, żeby pytanie nie
+// spowszedniało (świadomy numer z ręki, np. ciąg dalszy numeracji sprzed programu,
+// kosztuje jedno kliknięcie). Stoi **przed** strażnikami niżej: odmowa zatrzymuje
+// wysyłkę w całości (`stopImmediatePropagation`), więc tamte nie mogą uznać, że
+// formularz poszedł — blokada podwójnego „Zapisz” zamknęłaby go na dobre.
+(function () {
+  const formularz = document.querySelector('form[action^="/generuj/"]');
+  const pole = document.querySelector('input[data-kolejny]');
+  if (!formularz || !pole || !pole.dataset.kolejny) return;
+  // „0122/2026” → numer „0122” i rok „2026” (pierwsza i ostatnia grupa cyfr)
+  const czesci = tekst => (tekst || '').match(/\d+/g) || [];
+  formularz.addEventListener('submit', z => {
+    const wpisany = pole.value.trim();
+    // Niezmienione pole nie pyta (poprawka operatu z numerem wpisanym kiedyś z ręki),
+    // a numer z innego roku albo z więcej niż sześcioma cyframi licznika nie przesuwa
+    // — pytanie z „następne będą numerowane dalej od niego” byłoby wtedy nieprawdą.
+    if (!wpisany || pole.value === pole.defaultValue) return;
+    const [numer, ...resztaW] = czesci(wpisany);
+    const [kolejny, ...resztaK] = czesci(pole.dataset.kolejny);
+    if (!numer || numer.length > 6 || resztaW.at(-1) !== resztaK.at(-1)) return;
+    if (!(parseInt(numer, 10) > parseInt(kolejny, 10) + 20)) return;
+    if (!confirm(`Numer ${wpisany} jest dużo wyższy niż kolejny wolny (${pole.dataset.kolejny}), `
+                 + 'a następne operaty będą numerowane dalej od niego. Zapisać z tym numerem?')) {
+      z.preventDefault();
+      z.stopImmediatePropagation();
+    }
+  });
+})();
 
 // --- Ostrzeżenie przed zgubieniem wpisanych danych --------------------------
 // Wypełnienie operatu to kilkanaście pól i kilka wykazów; przypadkowe „wstecz”,

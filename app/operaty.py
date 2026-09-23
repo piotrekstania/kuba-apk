@@ -19,8 +19,10 @@ W katalogu leżą dwa pliki opisujące robotę:
 """
 from __future__ import annotations
 
+import errno
 import json
 import os
+import shutil
 import threading
 from datetime import datetime
 from pathlib import Path
@@ -55,6 +57,14 @@ def nazwa_bezpieczna(tekst: str, zapas: str = "operat") -> tuple[str, bool]:
     return (oczyszczona or zapas), oczyszczona != tekst.strip()
 
 
+class KatalogZajety(Exception):
+    """Nowy operat miałby wejść do katalogu, w którym leży już inny operat."""
+
+    def __init__(self, katalog: Path):
+        super().__init__(f"Katalog {katalog.name} należy już do innego operatu")
+        self.katalog = katalog
+
+
 # --- zakładanie i opis -------------------------------------------------------
 
 def nazwa_katalogu(nr_operatu: str) -> str:
@@ -72,21 +82,36 @@ def katalog_operatu(nr_operatu: str) -> Path:
 
 
 def zaloz(nr_operatu: str, nr_roboty: str, szablon: str, dane: dict[str, Any],
-          poprzedni_numer_roboty: str = "") -> tuple[Path, list[str]]:
+          poprzedni_numer_roboty: str = "", nowy: bool = False,
+          wpis: int | None = None) -> tuple[Path, list[str]]:
     """Tworzy albo odświeża katalog operatu z opisem.
 
     Zwraca (katalog, ostrzeżenia dla użytkownika). Wołane też przy poprawianiu operatu —
     wtedy katalog już istnieje i tylko nadpisujemy `operat.json`.
+
+    `nowy=True` (nowy operat, nie poprawka) to ostatnia zapora: katalog, w którym leży
+    już `operat.json`, należy do innego operatu, więc zamiast wejść do niego i nadpisać
+    mu opis i dokumenty, rzucamy `KatalogZajety`. Licznik takich numerów nie wydaje
+    (`generator.najwyzszy_znany_numer`), a numer wpisany z ręki sprawdza strażnik
+    w `main.generuj` — zapora jest na to, czego żadne z nich nie przewidziało.
+    Katalog bez `operat.json` (założony przez brata z góry, z mapami na nową robotę)
+    operatem nie jest i nowy operat do niego wchodzi, jak dotąd.
+
+    `wpis` = numer wpisu w historii, do którego należy katalog (przy poprawianiu) — patrz
+    `oznacz_wpis`. Zapisujemy go już tutaj, przed dokumentem: własność sprawdza się przed
+    poprawką, więc nieudany zapis nie może jej przerzucić na inny wpis.
     """
     # Ukośnik w nazwie katalogu zamieniamy na kropkę po cichu — to norma, a nie usterka
     # warta straszenia użytkownika.
     ostrzezenia: list[str] = []
     nazwa = nazwa_katalogu(nr_operatu)
     katalog = WYNIKI / nazwa
+    if nowy and (katalog / PLIK_OPISU).exists():
+        raise KatalogZajety(katalog)
     katalog.mkdir(parents=True, exist_ok=True)
 
     poprzedni = opis(katalog)          # przy poprawianiu operatu plik już tu jest
-    nowy = {
+    nowy_opis = {
         "nr_operatu": nr_operatu,
         "nr_roboty": nr_roboty,
         "szablon": szablon,
@@ -97,13 +122,32 @@ def zaloz(nr_operatu: str, nr_roboty: str, szablon: str, dane: dict[str, Any],
     # ustawiał kolejność i obroty myszą — skasowanie tego przy literówce w formularzu
     # byłoby dla niego niezrozumiałe.
     if poprzedni.get("uklad"):
-        nowy["uklad"] = poprzedni["uklad"]
+        nowy_opis["uklad"] = poprzedni["uklad"]
     # Notatka („Opis” w interfejsie) z tego samego powodu. Wpisuje ją `zapisz_notatke`
     # zaraz po wygenerowaniu, więc świadomą zmianę i tak zobaczymy — przenosimy ją tutaj
     # po to, żeby żadne inne wywołanie `zaloz` nie skasowało jej po cichu.
     if poprzedni.get("notatka"):
-        nowy["notatka"] = poprzedni["notatka"]
-    (katalog / PLIK_OPISU).write_text(json.dumps(nowy, ensure_ascii=False, indent=2),
+        nowy_opis["notatka"] = poprzedni["notatka"]
+    if wpis is not None or poprzedni.get("wpis") is not None:
+        nowy_opis["wpis"] = wpis if wpis is not None else poprzedni["wpis"]
+    # Nazwy złożonych PDF-ów też: po nich `pliki()` poznaje, że to wynik składania,
+    # a nie plik brata — zgubione, zrobiłyby ze starego operatu kafelek.
+    zlozone = _zlozone(poprzedni)
+    # Przy poprawianiu numer roboty mógł się zmienić, a razem z nim nazwa złożonego
+    # PDF-a. Stary plik zostawał wtedy w katalogu jako zwykły kafelek, włączony jak każdy
+    # — i cały operat wchodził do nowego PDF-a. Tutaj tylko go zapisujemy w `zlozone`
+    # (to już wystarcza, żeby nie był kafelkiem); usuwa go `usun_stary_wynik` dopiero
+    # **po udanym** zapisie dokumentu — kasowany tu znikał także wtedy, gdy poprawka
+    # padła (spis treści otwarty w Wordzie), a wiadomość o tym przepadała razem z nią.
+    # `zlozone` tylko **ukrywa** kafelki; nic z tej listy nie jest kasowane.
+    stary_wynik = (_nazwa_wyniku(str(poprzedni.get("nr_roboty") or ""), katalog)
+                   if poprzedni else "")
+    if (stary_wynik and stary_wynik.lower() != _nazwa_wyniku(nr_roboty, katalog).lower()
+            and (katalog / stary_wynik).is_file() and stary_wynik not in zlozone):
+        zlozone.append(stary_wynik)
+    if zlozone:
+        nowy_opis["zlozone"] = zlozone
+    (katalog / PLIK_OPISU).write_text(json.dumps(nowy_opis, ensure_ascii=False, indent=2),
                                       encoding="utf-8")
 
     # Przy poprawianiu operatu numer roboty mógł się zmienić — stary pusty znacznik
@@ -128,6 +172,26 @@ def zaloz(nr_operatu: str, nr_roboty: str, szablon: str, dane: dict[str, Any],
     return katalog, ostrzezenia
 
 
+def wycofaj_nowy(katalog: Path, usun_katalog: bool) -> None:
+    """Sprząta po nowym operacie, którego dokument nie powstał.
+
+    Zdejmujemy wyłącznie to, co założył `zaloz`: `operat.json` i pusty znacznik
+    z numerem roboty, a sam katalog tylko wtedy, gdy to my go założyliśmy i został
+    pusty — pliki brata (np. w katalogu założonym przez niego z góry) zostają.
+    Niemo: wołane w trakcie obsługi błędu, więc nie może przykryć go własnym.
+    """
+    try:
+        nr_roboty = str(opis(katalog).get("nr_roboty") or "")
+        (katalog / PLIK_OPISU).unlink(missing_ok=True)
+        znacznik = katalog / nazwa_bezpieczna(nr_roboty, zapas="")[0] if nr_roboty else None
+        if znacznik and znacznik.is_file() and znacznik.stat().st_size == 0:
+            znacznik.unlink()
+        if usun_katalog and not any(katalog.iterdir()):
+            katalog.rmdir()
+    except OSError:
+        pass
+
+
 def nazwa_dokumentu(id_szablonu: str) -> str:
     """'spis_tresci_wzor' -> 'spis_tresci.docx'.
 
@@ -141,10 +205,86 @@ def nazwa_dokumentu(id_szablonu: str) -> str:
 
 
 def opis(katalog: Path) -> dict[str, Any]:
+    """Zawartość `operat.json`; pusty słownik, gdy pliku nie ma albo jest zepsuty.
+
+    Także gdy w środku jest poprawny JSON, ale nie słownik (`[]`, `null` — ręczna edycja,
+    przerwany zapis): każde wywołanie woła potem `.get`, a lista operatów, formularz
+    i licznik czytają opisy wszystkich katalogów naraz, więc jeden taki plik
+    wywracał całą stronę.
+    """
     try:
-        return json.loads((katalog / PLIK_OPISU).read_text(encoding="utf-8"))
+        dane = json.loads((katalog / PLIK_OPISU).read_text(encoding="utf-8"))
     except (OSError, ValueError):
         return {}
+    return dane if isinstance(dane, dict) else {}
+
+
+def usun_stary_wynik(katalog: Path, dawny_nr_roboty: str) -> list[str]:
+    """Usuwa złożony PDF z dawnym numerem roboty **poprawianego wpisu**. Zwraca zdania
+    dla brata.
+
+    Wołane **po udanym** zapisie dokumentu przy poprawianiu, z numerem roboty, jaki ten
+    wpis miał w historii przed poprawką. Stary złożony PDF jest nieaktualny (dawny numer
+    w nazwie i w środku) — zostawiony, wyglądałby na gotowy operat. Liczymy go z historii,
+    a nie z `operat.json`: tamten plik bywa cudzy (dwa wpisy z jednym katalogiem po
+    dawnych błędach), a wtedy kasowalibyśmy PDF innego operatu. Kasujemy raz — przy tej
+    poprawce, która zmienia numer roboty — więc plik, który brat odłoży potem pod tą
+    nazwą (wersja wysłana do ośrodka), zostaje. Obecnego wyniku nie ruszamy: nadpisze
+    go następne „Złóż PDF”. Plik, którego nie da się usunąć (otwarty w czytniku),
+    zostaje, ale trafia do `zlozone`, więc nie wejdzie do nowego PDF-a.
+    """
+    obecny = nazwa_wyniku(katalog)
+    dawny = _nazwa_wyniku(dawny_nr_roboty, katalog) if dawny_nr_roboty else ""
+    plik = katalog / dawny
+    if not dawny or dawny.lower() == obecny.lower() or not plik.is_file():
+        return []
+    try:
+        plik.unlink()
+    except OSError:
+        dane = opis(katalog)
+        if dane and dawny not in _zlozone(dane):
+            dane["zlozone"] = _zlozone(dane) + [dawny]
+            (katalog / PLIK_OPISU).write_text(json.dumps(dane, ensure_ascii=False, indent=2),
+                                              encoding="utf-8")
+        return [f"Numer roboty się zmienił, ale stary złożony PDF „{dawny}” jest otwarty "
+                "w innym programie (pewnie w czytniku PDF) i został w katalogu. Zamknij go "
+                "i usuń ręcznie — do nowego PDF-a i tak nie wejdzie."]
+    return [f"Numer roboty się zmienił, więc usunąłem stary złożony PDF „{dawny}” — miał "
+            f"w sobie dawny numer. Złóż operat jeszcze raz, żeby powstał „{obecny}”."]
+
+
+def oznacz_wpis(katalog: Path, dokument_id: int) -> None:
+    """Zapisuje w `operat.json`, do którego wpisu w historii należy katalog.
+
+    Dwa wpisy z jednym katalogiem zostawiały dawne błędy numeracji; do tej pory
+    własność poznawaliśmy tylko po numerze roboty, a ten zmienia się przy poprawianiu
+    — nieudana poprawka przerzucała ją na drugi wpis. Numer wpisu jest trwały
+    (`main._wlasciciel_katalogu` sprawdza go najpierw). Na innym komputerze wskazuje
+    obcą bazę, ale wtedy nie pasuje do żadnego z wpisów i po prostu się nie liczy.
+    """
+    dane = opis(katalog)
+    if not dane or dane.get("wpis") == dokument_id:
+        return
+    dane["wpis"] = dokument_id
+    (katalog / PLIK_OPISU).write_text(json.dumps(dane, ensure_ascii=False, indent=2),
+                                      encoding="utf-8")
+
+
+def ustaw_numer(katalog: Path, nr_operatu: str, klucz: str) -> None:
+    """Wpisuje nowy numer do `operat.json` katalogu przeniesionego pod nowy numer.
+
+    Zaraz po przeniesieniu, jeszcze przed wypełnianiem dokumentów: gdyby wypełnianie
+    padło, następne zwykłe „Popraw” wzięłoby stary numer z `operat.json` i założyło
+    katalog obok. Numer wpisany kiedyś z ręki siedzi też w danych formularza (`klucz`).
+    """
+    dane = opis(katalog)
+    if not dane:
+        return
+    dane["nr_operatu"] = nr_operatu
+    if isinstance(dane.get("dane"), dict) and dane["dane"].get(klucz):
+        dane["dane"][klucz] = nr_operatu
+    (katalog / PLIK_OPISU).write_text(json.dumps(dane, ensure_ascii=False, indent=2),
+                                      encoding="utf-8")
 
 
 def usun_dokumenty_programu(katalog: Path, nazwy: set[str]) -> list[str]:
@@ -214,6 +354,45 @@ def lista() -> list[dict[str, Any]]:
     return sorted(wynik, key=lambda o: o["utworzono"], reverse=True)
 
 
+def numery_katalogow() -> list[str]:
+    """Nazwy katalogów operatów w `wyniki/` — z nich licznik czyta zajęte numery.
+
+    Operaty skopiowane z innego komputera albo przywrócone po utracie bazy są tylko
+    tutaj, a ich numery też są zajęte. Katalog bez `operat.json` nie jest operatem
+    (brat zakłada czasem folder na nową robotę z góry) i się nie liczy. Same nazwy
+    (katalog nazywa się numerem), bez czytania opisów: wołane przy każdym otwarciu
+    formularza, a przy kilkuset operatach czytanie każdego `operat.json` było widać.
+    """
+    return [sciezka.name for sciezka in (WYNIKI.iterdir() if WYNIKI.is_dir() else [])
+            if sciezka.is_dir() and (sciezka / PLIK_OPISU).is_file()]
+
+
+def przenies(katalog: Path, nowa_nazwa: str) -> Path:
+    """Przenosi katalog operatu pod nową nazwę (nowy numer operatu) i zwraca nowy.
+
+    Jedzie wszystko: pliki brata, `operat.json` (układ kafelków, opis) i podglądy —
+    dotąd zmiana numeru przy poprawianiu zakładała katalog obok i rozbijała operat na dwa.
+    `FileExistsError`, gdy katalog o tej nazwie już jest (dwóch katalogów nie łączymy).
+    Inny `OSError`, gdy Windows nie pozwala, bo w środku jest plik otwarty w Wordzie albo
+    w czytniku — wtedy nic się nie zmienia. Pod `_BLOKADA_PODGLADU`, bo wątek podglądów
+    może akurat konwertować coś z tego katalogu.
+    """
+    cel = WYNIKI / nowa_nazwa
+    with _BLOKADA_PODGLADU:
+        if cel.exists():               # Linux przemianowałby na pusty katalog bez słowa
+            raise FileExistsError(errno.EEXIST, "Katalog już istnieje", str(cel))
+        katalog.rename(cel)
+        stare = PODGLADY / katalog.name
+        if stare.is_dir():
+            # resztki po operacie, który kiedyś miał ten numer, nie mogą udawać podglądów
+            shutil.rmtree(PODGLADY / nowa_nazwa, ignore_errors=True)
+            try:
+                stare.rename(PODGLADY / nowa_nazwa)
+            except OSError:
+                shutil.rmtree(stare, ignore_errors=True)       # odtworzą się same
+    return cel
+
+
 def katalog_po_nazwie(nazwa: str) -> Path | None:
     """Zamienia nazwę z adresu na katalog — z blokadą wyjścia poza `wyniki/`."""
     kandydat = (WYNIKI / nazwa).resolve()
@@ -224,27 +403,39 @@ def katalog_po_nazwie(nazwa: str) -> Path | None:
 
 # --- pliki w katalogu --------------------------------------------------------
 
+def _nazwa_wyniku(nr_roboty: str, katalog: Path) -> str:
+    return nazwa_bezpieczna(nr_roboty or katalog.name, zapas=katalog.name)[0] + ".pdf"
+
+
 def nazwa_wyniku(katalog: Path) -> str:
     """Nazwa scalonego PDF-a: dokładnie numer roboty (przepisy), z .pdf na końcu."""
-    numer = opis(katalog).get("nr_roboty") or katalog.name
-    return nazwa_bezpieczna(numer, zapas=katalog.name)[0] + ".pdf"
+    return _nazwa_wyniku(str(opis(katalog).get("nr_roboty") or ""), katalog)
+
+
+def _zlozone(dane: dict[str, Any]) -> list[str]:
+    """Nazwy PDF-ów złożonych przez program w tym katalogu (`operat.json` → `zlozone`)."""
+    zapisane = dane.get("zlozone")
+    return [n for n in zapisane if isinstance(n, str)] if isinstance(zapisane, list) else []
 
 
 def pliki(katalog: Path) -> list[Path]:
     """Co idzie do sklejenia: PDF-y i dokumenty Worda, spis treści zawsze pierwszy.
 
     Pomijamy opis operatu, pusty znacznik z numerem roboty (nie ma rozszerzenia)
-    i poprzedni wynik sklejania, żeby nie wpadł sam w siebie.
+    i wyniki sklejania — obecny i każdy wcześniejszy, który złożył program (`zlozone`),
+    żeby stary operat nie wpadł do nowego.
     """
     if not katalog.is_dir():
         return []
-    wynik_scalania = nazwa_wyniku(katalog).lower()
+    dane = opis(katalog)
+    wyniki_scalania = {_nazwa_wyniku(str(dane.get("nr_roboty") or ""), katalog).lower()}
+    wyniki_scalania |= {nazwa.lower() for nazwa in _zlozone(dane)}
     znalezione = [
         p for p in katalog.iterdir()
         if p.is_file()
         and p.suffix.lower() in ROZSZERZENIA_DO_SCALENIA
         and p.name != PLIK_OPISU
-        and p.name.lower() != wynik_scalania
+        and p.name.lower() not in wyniki_scalania
         and not p.name.startswith("~$")
     ]
     return sorted(znalezione, key=lambda p: (p.name != SPIS_TRESCI, p.name.lower()))

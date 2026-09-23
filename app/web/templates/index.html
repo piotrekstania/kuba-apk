@@ -139,7 +139,7 @@
          zniknie: katalog z plikami brata albo — przy operacie w archiwum — sam wpis. #}
       {% set nazwa_operatu = operat.nr_operatu or operat.katalog or operat.nr_roboty %}
       <form method="post" action="/dokument/{{ operat.id }}/usun"
-            data-pytanie="{% if operat.katalog and operat.na_dysku %}Usunąć operat {{ nazwa_operatu }} wraz z całym katalogiem {{ operat.katalog }} — także z plikami, które sam tam włożyłeś?{% elif operat.katalog %}Usunąć operat {{ nazwa_operatu }} z historii? Jego katalogu nie ma już w wyniki (archiwum), więc z dysku nic nie zniknie.{% else %}Usunąć operat {{ nazwa_operatu }} z historii razem z jego dokumentami w wyniki?{% endif %}"
+            data-pytanie="{% if operat.wspolny and operat.na_dysku %}Usunąć operat {{ nazwa_operatu }} z historii? Jego katalog {{ operat.katalog }} wskazuje też inny operat, więc zostanie na dysku.{% elif operat.katalog and operat.na_dysku %}Usunąć operat {{ nazwa_operatu }} wraz z całym katalogiem {{ operat.katalog }} — także z plikami, które sam tam włożyłeś?{% elif operat.katalog %}Usunąć operat {{ nazwa_operatu }} z historii? Jego katalogu nie ma już w wyniki (archiwum), więc z dysku nic nie zniknie.{% else %}Usunąć operat {{ nazwa_operatu }} z historii razem z jego dokumentami w wyniki?{% endif %}"
             onsubmit="return confirm(this.dataset.pytanie)">
         <button class="niebezpieczny" type="submit">Usuń</button>
       </form>

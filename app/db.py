@@ -204,22 +204,86 @@ def zapisz_dokument(szablon: str, tytul: str, plik_docx: str, dane: dict[str, An
 
 
 def zaktualizuj_dokument(dokument_id: int, tytul: str, dane: dict[str, Any],
-                         plik_docx: str, katalog: str, notatka: str) -> None:
+                         plik_docx: str, katalog: str, notatka: str,
+                         nr_operatu: str | None = None) -> None:
     """Poprawiony operat zostaje tym samym wpisem — nie zakładamy nowego.
 
     `notatka` celowo bez wartości domyślnej: UPDATE nadpisuje istniejący wpis, więc
     wywołanie bez niej kasowałoby notatkę brata po cichu. Przy INSERT (`zapisz_dokument`)
-    domyślne puste nic nie niszczy, tu by niszczyło.
+    domyślne puste nic nie niszczy, tu by niszczyło. `nr_operatu` odwrotnie: brak
+    znaczy „bez zmian”, więc pominięcie niczego nie kasuje.
 
     Ścieżki też odświeżamy: gdy ktoś skasuje katalog operatu z Eksploratora, poprawianie
-    zakłada go od nowa i wpis musi wskazywać to, co naprawdę leży na dysku.
+    zakłada go od nowa i wpis musi wskazywać to, co naprawdę leży na dysku. Numer
+    z tego samego powodu — zmieniony przy poprawianiu zostawał tu stary, a katalog
+    i dokumenty miały już nowy.
     """
     with polaczenie() as con:
         con.execute(
             "UPDATE dokumenty SET tytul = ?, dane_json = ?, plik_docx = ?, katalog = ?,"
-            " notatka = ? WHERE id = ?",
+            " notatka = ?, nr_operatu = COALESCE(?, nr_operatu) WHERE id = ?",
             (tytul, json.dumps(dane, ensure_ascii=False), plik_docx, katalog, notatka,
-             dokument_id))
+             nr_operatu, dokument_id))
+
+
+def przenies_operat(dokument_id: int, nr_operatu: str, katalog: str,
+                    klucz_numeru: str = "") -> None:
+    """Wpis w historii idzie za katalogiem przeniesionym pod nowy numer operatu.
+
+    Wołane zaraz po zmianie nazwy katalogu, jeszcze przed wypełnianiem dokumentów:
+    gdyby wypełnianie padło, historia i tak ma wskazywać katalog, który naprawdę jest
+    na dysku — inaczej operat wyglądałby na przeniesiony do archiwum. Numer wpisany
+    kiedyś z ręki siedzi też w danych formularza (`klucz_numeru`): zostawiony tam
+    stary, wracałby do pola przy następnym „Popraw” i przenosił katalog z powrotem.
+    """
+    with polaczenie() as con:
+        wiersz = con.execute("SELECT katalog, plik_docx, dane_json FROM dokumenty WHERE id = ?",
+                             (dokument_id,)).fetchone()
+        if wiersz is None:
+            return
+        plik_docx = wiersz["plik_docx"] or ""
+        stary = wiersz["katalog"] or ""
+        if stary and plik_docx.startswith(stary + "/"):
+            plik_docx = katalog + plik_docx[len(stary):]
+        dane_json = wiersz["dane_json"]
+        try:
+            dane = json.loads(dane_json or "{}")
+        except ValueError:
+            dane = None
+        if klucz_numeru and isinstance(dane, dict) and dane.get(klucz_numeru):
+            dane[klucz_numeru] = nr_operatu
+            dane_json = json.dumps(dane, ensure_ascii=False)
+        con.execute("UPDATE dokumenty SET nr_operatu = ?, katalog = ?, plik_docx = ?,"
+                    " dane_json = ? WHERE id = ?",
+                    (nr_operatu, katalog, plik_docx, dane_json, dokument_id))
+
+
+def dokument_z_numerem(nr_operatu: str, poza: int | None = None) -> sqlite3.Row | None:
+    """Inny operat z historii z tym numerem — także taki, którego katalog brat przeniósł
+    do archiwum (w `wyniki/` go nie ma, ale numer nadal jest jego)."""
+    with polaczenie() as con:
+        return con.execute(
+            "SELECT * FROM dokumenty WHERE nr_operatu = ? AND id != ? ORDER BY id LIMIT 1",
+            (nr_operatu, -1 if poza is None else poza)).fetchone()
+
+
+def wpisy_z_numerami() -> list[sqlite3.Row]:
+    """Numer, numer roboty i katalog każdego operatu z historii — licznik nie może wydać
+    żadnego z tych numerów, a strażnik numeru wpisanego z ręki porównuje z nimi."""
+    with polaczenie() as con:
+        return con.execute(
+            "SELECT id, nr_operatu, tytul, katalog FROM dokumenty"
+            " WHERE nr_operatu IS NOT NULL AND nr_operatu != ''").fetchall()
+
+
+def wpisy_z_katalogiem(katalog: str) -> list[sqlite3.Row]:
+    """Wpisy z historii wskazujące ten katalog. Więcej niż jeden to ślad dawnego błędu
+    numeracji — wtedy katalog należy tylko do jednego z nich (`main._wlasciciel_katalogu`)."""
+    if not katalog:
+        return []
+    with polaczenie() as con:
+        return con.execute("SELECT * FROM dokumenty WHERE katalog = ? ORDER BY id",
+                           (katalog,)).fetchall()
 
 
 def ustaw_pdf(dokument_id: int, plik_pdf: str) -> None:
@@ -298,13 +362,21 @@ def zapisz_ustawienia(wartosci: dict[str, str]) -> None:
 
 # --- numeracja ---------------------------------------------------------------
 
-def nastepny_numer(nazwa: str, rok: int) -> int:
-    """Zwiększa i zwraca licznik. Transakcja, więc bezpieczne przy kilku kartach."""
+def nastepny_numer(nazwa: str, rok: int, co_najmniej: int = 0) -> int:
+    """Zwiększa i zwraca licznik. Transakcja, więc bezpieczne przy kilku kartach.
+
+    `co_najmniej` to najwyższy numer, jaki program zna spoza licznika — wpisany kiedyś
+    z ręki, z historii albo z katalogu w `wyniki/` (`generator.najwyzszy_znany_numer`).
+    Licznik nigdy nie wyda numeru nie większego niż on: wystarczyło raz wpisać numer
+    z ręki wyżej niż licznik (albo stracić bazę), a licznik po dojściu do niego wchodził
+    do cudzego katalogu. Przeskok zostawia lukę w numeracji — ta nic nie psuje, a dwa
+    operaty z jednym numerem tak.
+    """
     with polaczenie() as con:
         con.execute(
-            "INSERT INTO liczniki (nazwa, rok, stan) VALUES (?, ?, 1)"
-            " ON CONFLICT(nazwa, rok) DO UPDATE SET stan = stan + 1",
-            (nazwa, rok),
+            "INSERT INTO liczniki (nazwa, rok, stan) VALUES (?, ?, ? + 1)"
+            " ON CONFLICT(nazwa, rok) DO UPDATE SET stan = MAX(stan, ?) + 1",
+            (nazwa, rok, co_najmniej, co_najmniej),
         )
         return int(con.execute(
             "SELECT stan FROM liczniki WHERE nazwa = ? AND rok = ?", (nazwa, rok)
@@ -326,10 +398,11 @@ def zwolnij_numer(nazwa: str, rok: int, stan: int) -> bool:
         return kursor.rowcount > 0
 
 
-def podglad_numeru(nazwa: str, rok: int) -> int:
-    """Jaki numer zostanie nadany następnym razem (bez zużywania go)."""
+def podglad_numeru(nazwa: str, rok: int, co_najmniej: int = 0) -> int:
+    """Jaki numer zostanie nadany następnym razem (bez zużywania go) — liczony tak samo
+    jak w `nastepny_numer`, żeby szary numer w formularzu mówił prawdę."""
     with polaczenie() as con:
         wiersz = con.execute(
             "SELECT stan FROM liczniki WHERE nazwa = ? AND rok = ?", (nazwa, rok)
         ).fetchone()
-        return (wiersz["stan"] if wiersz else 0) + 1
+        return max(wiersz["stan"] if wiersz else 0, co_najmniej) + 1
