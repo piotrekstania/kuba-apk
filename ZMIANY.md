@@ -3,6 +3,26 @@
 Co doszło w kolejnych wersjach programu. Ten sam opis pokazuje się raz, na stronie
 głównej, zaraz po tym jak program sam się zaktualizuje.
 
+## 2026.09.23-113 — 2026-09-23
+
+Zmiany:
+- nowy wygląd w stylu Androida — ten, który wybrałeś z trzech propozycji; wszystkie przyciski zostały na swoich miejscach
+- lista operatów z osobnych kafelków, numer operatu na kolorowym tle, a „Otwórz katalog”, „Popraw” i „Powiel” połączone w jedną grupę
+- zaznaczone pozycje spisu treści podświetlają się kolorem — od razu widać, co wejdzie do operatu
+- przy składaniu PDF-a wszystkie kafelki mają tę samą wysokość; długa nazwa pliku kończy się wielokropkiem, a całą widać po najechaniu myszą
+- w oknie na pół ekranu lista operatów się mieści — przyciski schodzą niżej, zamiast przesuwać stronę w bok
+- gdy dokument jest otwarty w Wordzie albo złożony PDF w czytniku, program mówi, co zamknąć, zamiast pokazywać błąd
+- „Usuń” przy otwartym pliku nie kasuje niczego — wcześniej potrafił zostawić pół katalogu
+- numer operatu wpisany ręcznie, który ma już inny operat, nie przejdzie — wcześniej nowy operat nadpisywał tamten; „Powiel” nie przenosi już ręcznie wpisanego numeru
+- podwójne kliknięcie „Zapisz” nie zakłada dwóch operatów
+- po komunikacie „Uzupełnij wymagane pola” wyjście z formularza pyta, czy porzucić wpisane dane
+- przy pobieraniu obrębów dla całej Polski program mówi, ilu jednostek nie udało się pobrać, zamiast ogłaszać „Gotowe”
+
+Nowości:
+- kolor programu do wyboru w Ustawieniach — sześć kolorów; dokumenty Worda i PDF-y wychodzą takie same jak dotąd
+- ikony w głównych przyciskach i podświetlona zakładka, na której jesteś
+- nowy krój pisma, zapisany w programie — działa bez internetu
+
 ## 2026.08.25-112 — 2026-08-25
 
 Zmiany:
