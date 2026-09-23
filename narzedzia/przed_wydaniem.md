@@ -58,126 +58,22 @@ start.bat
 Wszystko od ostatniego wydania — numer i skrót commita znajdziesz w `ZMIANY.md`
 i `git log`. Dopisuj punkty przy każdej rundzie zmian, kasuj po wydaniu.
 
-*(pusto — wydanie 2026.09.23-113 poszło 23.09. Sprawdzone na Linuksie w Chrome: sześć
-kolorów, kafelki przy składaniu (obrót, pominięcie, przeciąganie, złożenie), lista operatów
-przy 1280, 1060, 1000, 900, 820, 760 i 640 px, fokus z klawiatury, komunikaty obrębów
-i pobierania dla całej Polski. Ten sam operat wygenerowany starym i nowym kodem: pliki
-Worda identyczne bajt w bajt, złożony PDF i podglądy piksel w piksel)*
+*(pusto — wydanie 2026.09.23-114 poszło 23.09 z Windowsa. Sprawdzone tam na instalacjach
+„jak u brata” z commitów wydań 113 i 112, z prawdziwym Wordem i prawdziwymi blokadami
+plików: przejście ze starego `start.bat` na nowy (także podmiana pliku w trakcie pracy —
+nic nie doczytane), drugi i trzeci start, aktualizacja przy formatce otwartej w Wordzie,
+`pip` bez sieci, brakująca biblioteka, czcionki, kolor po restarcie, lista na pół ekranu,
+zmiana numeru operatu i numeru roboty przy plikach zamkniętych i otwartych, pytanie przy
+wysokim numerze, „Popraw”/„Usuń” przy otwartym pliku, zapis w trakcie podglądu na
+prawdziwym Wordzie, `pytest -m word` 11/11 i testy przeglądarkowe w Chrome na Windowsie)*
 
-**Zostało do sprawdzenia na Windowsie** — tego na Linuksie nie widać:
+**Do sprawdzenia przy następnym wydaniu** (działa dopiero od aktualizacji **po** 114 —
+pułapka 7b): na instalacji testowej z wersją 114 otwórz w Wordzie
+`szablony\spis_tresci_wzor.docx`, cofnij numer w `WERSJA` i uruchom `start.bat` — na liście
+operatów ma stać czerwony pasek z nazwą tego pliku. Po zamknięciu Worda i starcie
+aktualizacja przechodzi, a pasek znika.
 
-1. **Krój z pliku, nie z internetu.** Odłącz sieć i otwórz program: nagłówki mają mieć
-   zaokrąglone końcówki liter (Google Sans Flex), a nie kanciasty Segoe UI.
-2. **Aktualizacja przywozi `app/web/static/czcionki/`** — na instalacji testowej
-   (`narzedzia/instalacja_testowa.py --stara-wersja`). Bez tego katalogu program działa,
-   tylko krojem zapasowym.
-3. **Kolor programu przeżywa zamknięcie** programu i start przez `start.bat`.
-4. **Lista operatów w oknie na pół ekranu** (Win+←) z paskiem przewijania Windowsa:
-   bez poziomego przewijania strony, grupa przycisków schodzi niżej w całości.
-5. **Pliki otwarte w innych programach** (na Linuksie udawane atrybutem „tylko do
-   odczytu”): „Popraw” przy dokumencie otwartym w Wordzie, „Złóż PDF” przy wyniku
-   otwartym w czytniku — komunikat mówi, co zamknąć. „Usuń” przy otwartym pliku:
-   „Nic nie zostało skasowane”, katalog i wpis zostają **całe**. Jeśli Windows mimo
-   to przemianuje katalog, poprawka nie działa i trzeba wrócić do tematu.
-6. Rytuał A (Word) — ścieżka wordowa się nie zmieniła, ale to ona idzie do ośrodka.
-
-**Numeracja i stary złożony PDF** (runda po wydaniu 113) — na Linuksie blokadę plików
-udaje w testach atrybut „tylko do odczytu” i podmiana `rename`/`unlink`, więc prawdziwe
-zachowanie Windowsa trzeba zobaczyć raz na żywo:
-
-1. **„Popraw” z nowym numerem operatu** przy zamkniętych plikach: katalog w Eksploratorze
-   zmienia nazwę na nowy numer, mapy i skany są w środku, na liście stoi nowy numer,
-   a „Złóż PDF” pamięta ułożenie kafelków.
-2. To samo przy **dokumencie otwartym w Wordzie**: komunikat „Nie mogę zmienić numeru…
-   Nic nie zostało zmienione”, katalog i historia bez zmian. (Przy katalogu otwartym
-   tylko w Eksploratorze zmiana nazwy zwykle przechodzi — to też jest w porządku.)
-3. **„Popraw” z nowym numerem roboty** przy złożonym PDF-ie **zamkniętym**: stary PDF
-   znika, na stronie operatu zdanie, żeby złożyć operat jeszcze raz. Przy PDF-ie
-   **otwartym w czytniku**: komunikat, plik zostaje, ale na stronie składania go nie ma.
-4. **Numer z ręki wyżej niż licznik** (np. 050): szary numer w pustym polu nowego
-   operatu pokazuje 051, i taki operat dostaje.
-5. **Numer z ręki dużo wyżej niż kolejny** (np. 0122 przy kolejnym 013): okienko
-   z pytaniem w przeglądarce brata (Edge/Chrome); „Anuluj” zostawia formularz, a drugie
-   „Zapisz” po poprawieniu numeru normalnie działa.
-
-**Aktualizacja, `start.bat`, dane wyłączonych sekcji, zawieszony Word** (druga runda po
-wydaniu 113). Na Linuksie sprawdzone testami i w Chrome (odznaczony wykaz budynku wraca
-z danymi, wartość listy spoza opcji zostaje, składanie działa); ten sam operat co przy
-wydaniu 113: pliki Worda identyczne bajt w bajt, PDF-y w tekście i obrazie. Zostaje
-Windows — cmd i Worda tu nie ma:
-
-1. **`start.bat` podmieniany w trakcie** — przejście ze starego `start.bat` na nowy,
-   czyli dokładnie to, co zobaczy brat. Instalacja ze starego kodu (commit wydania 113),
-   z cofniętym numerem:
-
-   ```bat
-   .venv\Scripts\python narzedzia\instalacja_testowa.py E:\test-brata --z-commita c3b1c98
-   E:\test-brata\start.bat
-   ```
-
-   Stary `start.bat` i stary aktualizator ściągają nowy kod z `main`. Aktualizacja
-   przechodzi, program startuje normalnie, w oknie **żadnego** „nie jest rozpoznawane
-   jako polecenie wewnętrzne” ani drugiego startu. Po zamknięciu programu uruchom
-   `start.bat` jeszcze raz — teraz już cały nowy — i też ma wystartować normalnie.
-2. **Świeży `start.bat` od zera** (skasowany `.venv`): zakłada środowisko, instaluje
-   biblioteki, zakłada skrót i startuje — blok w nawiasach nie może się rozsypać.
-3. **Drugie uruchomienie w czasie pracy programu**, a potem zamknięcie pierwszego okna:
-   pierwsze okno kończy się po „Naciśnij dowolny klawisz”, bez wykonywania czegokolwiek
-   więcej. Sprawdzaj to **po** przejściu z punktu 1: okno ze starym `start.bat`, w którym
-   serwer skończy się inaczej niż zamknięciem okna (Ctrl+C i „N”, awaria), wykona jeszcze
-   kawałek nowego pliku — raz, przy tym jednym przejściu, i bez szkody (błąd „nie jest
-   rozpoznawane…” i ponowny start programu).
-4. **Aktualizacja przy szablonie otwartym w Wordzie** — działa dopiero od aktualizacji
-   **po** tej, która przywiozła nowy aktualizator (pułapka 7b), więc na instalacji
-   z punktu 1, już po przejściu: cofnij numer w pierwszej linii jej `WERSJA`, otwórz
-   w Wordzie jej `szablony\spis_tresci_wzor.docx` i uruchom `start.bat`. Okno mówi, który
-   plik zamknąć, program startuje w starej wersji, w `dane\kopie\` nie przybywa kopii.
-   Po zamknięciu Worda i ponownym starcie — aktualizacja przechodzi.
-5. **`pip` bez internetu**: dopisz coś do `requirements.txt` instalacji testowej, odłącz
-   sieć, uruchom — komunikat „Nie udalo sie doinstalowac bibliotek” i program **startuje**.
-   Z nieistniejącą biblioteką zaimportowaną w `app` — polski komunikat o brakującej
-   bibliotece zamiast śladu stosu.
-6. **Strażnik Worda**: `.venv\Scripts\pytest -m word -v` (w tym oba
-   `test_limit_czasu_*` — drugi przerywa trwający eksport długiego dokumentu), a potem
-   Menedżer zadań — żadnego zostawionego `WINWORD.EXE`. Z otwartym obok własnym
-   dokumentem Worda: zostaje otwarty.
-7. **Czas konwersji** po dołożeniu `tasklist`: podglądy po „Zapisz” mają się pojawiać
-   tak samo szybko jak dotąd (dwa wywołania `tasklist` na start Worda to ułamek sekundy).
-8. **Rogi w Edge/Chrome u brata**: najazd kursorem na zieloną plakietkę „PDF: Microsoft
-   Word”, przytrzymane kliknięcie przycisku i pozycji menu — kształt zmienia się płynnie,
-   bez mignięcia ostrych rogów; w grupie „Otwórz katalog | Popraw | Powiel” wszystkie
-   wewnętrzne rogi lekko zaokrąglone.
-
-**Sprawdzone na Windowsie 23.09.2026** (instalacja testowa `E:\test-brata` z commita
-c3b1c98 i druga z wydania 112, prawdziwy Word, prawdziwe blokady plików — uchwyt Worda
-przez COM i uchwyt „jak czytnik PDF” z `FILE_SHARE_READ`): wszystkie punkty trzech list
-wyżej. Przejście ze starego `start.bat` na nowy, drugi start, trzecie uruchomienie
-w trakcie, podmiana `start.bat` na śmieci w czasie pracy (nic nie doczytane), świeży
-`.venv`, aktualizacja przy formatce otwartej w Wordzie (stoi, bez kopii; po zamknięciu
-przechodzi), `pip` odcięty od sieci, brakująca biblioteka (polski komunikat, znacznik
-skasowany), czcionki z 112, kolor po restarcie, lista na 944 i 760 px, zmiana numeru
-(przy zamkniętych plikach i z dokumentem w Wordzie), zmiana numeru roboty (PDF zamknięty
-i otwarty), podpowiedź 051 po ręcznym 050, pytanie przy 0122, „Popraw”/„Usuń” przy
-otwartym pliku, `pytest -m word` (11/11, w tym oba limity czasu). Znaleziony błąd
-Windowsa tylko w teście przeglądarkowym (cp1250) — poprawiony.
-
-**Druga runda po wydaniu 113 — poprawki z przeglądu wieloagentowego** (na Windowsie):
-1. Word przy podglądzie trzyma dokument bez prawa zapisu (pułapka 40) — „Popraw” →
-   „Zapisz” tuż po zapisie czeka teraz na koniec podglądu zamiast mówić „zamknij Worda”.
-   Na Linuksie tego nie widać (LibreOffice nie blokuje).
-2. Strażnik Worda: zawieszenie przy zamykaniu jest pamiętane, ponowienia po nieudanym
-   wsadzie kończą się na pierwszym zawieszeniu, a start Worda, na który DCOM przestał
-   czekać (> 30 s), jest zapamiętany jako zawieszenie. Swój proces strażnik rozpoznaje
-   teraz także po **czasie utworzenia** (pułapka 42) — Word otwarty przez brata
-   w trakcie nie może zostać zamknięty. Na żywo tego nie wywołam — Word musiałby stanąć
-   na oknie; testy na atrapie, a `pytest -m word` (prawdziwy Word, oba limity czasu)
-   zielony po zmianie.
-3. Aktualizacja wstrzymana przez otwarty plik: czerwony pasek na stronie głównej.
-   **Zadziała od aktualizacji po tej, która go przywiezie** (pułapka 7b) — do sprawdzenia
-   przy następnym wydaniu: formatka otwarta w Wordzie na instalacji testowej, start,
-   pasek na liście operatów; po zamknięciu Worda i starcie — pasek znika.
-
-**Do rozważenia (znalezione w przeglądzie, świadomie niepoprawione na Windowsie):**
+**Do rozważenia (znalezione w przeglądzie, świadomie niepoprawione):**
 1. Sekcja wyczyszczona **i** odznaczona w tym samym zapisie wraca przy ponownym
    zaznaczeniu ze starą treścią (`_dane_wylaczonych` nie odróżni tego od samego
    odznaczenia — przeglądarka nie wysyła wyłączonych pól). Widać to w formularzu,
@@ -191,15 +87,16 @@ Windowsa tylko w teście przeglądarkowym (cp1250) — poprawiony.
 otworzyć **złożony PDF w prawdziwym czytniku** i potwierdzić, że karta, panel stron
 i pole „Tytuł” we właściwościach pokazują numer roboty, a plik otwiera się normalnie.
 Metadane dopisujemy przy sklejaniu, więc gdyby coś poszło nie tak, ucierpiałby cały
-operat, a `pypdf` w testach czyta tylko sam siebie.
+operat, a `pypdf` w testach czyta tylko sam siebie (sprawdzone pypdf-em na Windowsie:
+tytuł = numer roboty; panel przeglądarki Claude'a PDF-ów nie wyświetla).
 
 ---
 
 ## C. Zlecenie review (do wklejenia Fable)
 
-> Zrób przegląd kodu zmian z zakresu `61f12ed..HEAD` w tym repozytorium
-> (`git log --oneline 61f12ed..HEAD`, `git diff 61f12ed..HEAD`) — to wszystko, co
-> przyszło po ostatnim wydaniu (`2026.09.23-113`). Kontekst projektu jest w `CLAUDE.md` —
+> Zrób przegląd kodu zmian z zakresu `cd4b92d..HEAD` w tym repozytorium
+> (`git log --oneline cd4b92d..HEAD`, `git diff cd4b92d..HEAD`) — to wszystko, co
+> przyszło po ostatnim wydaniu (`2026.09.23-114`). Kontekst projektu jest w `CLAUDE.md` —
 > przeczytaj go najpierw, zwłaszcza listę pułapek i zasady pracy nad kodem.
 > Odpowiadaj po polsku.
 >
