@@ -317,6 +317,25 @@ def test_okno_z_nowosciami_wraca_dopoki_nie_klikniesz_ok(klient):
     assert "<dialog" not in klient.get("/").text, "po „OK” okno ma zniknąć na dobre"
 
 
+def test_wstrzymana_aktualizacja_widac_na_stronie_glownej(klient):
+    """Aktualizacja wstrzymana przez plik otwarty w Wordzie mówiła o tym tylko w czarnym
+    oknie, które program chowa chwilę po starcie. Pasek stoi na stronie głównej
+    — także przy kolejnych wejściach, bo gasi go aktualizator, a nie odczyt strony
+    (kontrola startu też ją pobiera, pułapka 30)."""
+    aktualizacja.ZNACZNIK_WSTRZYMANEJ.parent.mkdir(parents=True, exist_ok=True)
+    aktualizacja.ZNACZNIK_WSTRZYMANEJ.write_text(
+        "2026.09.24-114\nszablony\\spis_tresci_wzor.docx\n", encoding="utf-8")
+
+    for _ in range(2):
+        strona = klient.get("/").text
+        assert "2026.09.24-114" in strona and "spis_tresci_wzor.docx" in strona
+        assert "uruchom" in strona.lower()
+
+
+def test_bez_wstrzymanej_aktualizacji_nie_ma_paska(klient):
+    assert "aktualizacja-wstrzymana" not in klient.get("/").text
+
+
 def test_strona_historii_pokazuje_listy(klient, tmp_path, monkeypatch):
     """Punkty mają dojechać do brata jako lista, a nie jako ciąg myślników w akapicie."""
     plik = tmp_path / "ZMIANY.md"

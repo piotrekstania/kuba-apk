@@ -116,9 +116,14 @@ def _wzorzec_numeru(wzor: str) -> re.Pattern[str] | None:
 
 def klucz_numeru(wzor: str, tekst: Any) -> tuple[int, int | None] | None:
     """(numer, rok) z numeru operatu — „012/2026” i „12/2026” dają to samo (12, 2026).
-    None, gdy tekst do wzorca nie pasuje (numer z ręki w zupełnie innym kształcie)."""
+    None, gdy tekst do wzorca nie pasuje (numer z ręki w zupełnie innym kształcie).
+
+    Kropki i spacje na końcu zdejmujemy tak samo jak `operaty.nazwa_katalogu`: „001/2026.”
+    to po zamianie na nazwę ten sam katalog co „001/2026”, więc i ten sam numer. Czytany
+    dosłownie, przechodził obok strażnika, gdy oryginał leżał w archiwum."""
     wzorzec = _wzorzec_numeru(wzor)
-    trafienie = wzorzec.fullmatch(tekst.strip()) if wzorzec and isinstance(tekst, str) else None
+    trafienie = (wzorzec.fullmatch(tekst.strip().rstrip(". "))
+                 if wzorzec and isinstance(tekst, str) else None)
     if trafienie is None:
         return None
     rok = trafienie.groupdict().get("rok")
@@ -474,7 +479,7 @@ def dopisz_dokument(szablon: Szablon, kontekst: dict[str, Any], katalog: Path) -
     dokument.render(sformatuj_pod_znaczniki(dokument, kontekst), autoescape=True)
     wyrownaj_komorki_stanow(dokument.docx)
     plik = katalog / operaty.nazwa_dokumentu(szablon.id)
-    dokument.save(plik)
+    operaty.zapisz_dokument(dokument, plik)          # plik bywa w podglądzie — patrz tam
     return plik
 
 
@@ -541,7 +546,7 @@ def generuj(szablon: Szablon, dane: dict[str, Any], ustawienia: dict[str, str],
             nowy=poprzedni is None, wpis=(poprzedni or {}).get("wpis"))
 
         plik = katalog / operaty.nazwa_dokumentu(szablon.id)
-        dokument.save(plik)
+        operaty.zapisz_dokument(dokument, plik)      # plik bywa w podglądzie — patrz tam
     except Exception:
         # Numer musi być znany przed wypełnianiem, bo wchodzi do treści dokumentu.
         # Gdy generowanie padnie, oddajemy go — inaczej każda literówka w szablonie

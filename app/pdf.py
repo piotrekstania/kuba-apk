@@ -68,6 +68,17 @@ _WD_NIE_ZAPISUJ = 0               # wdDoNotSaveChanges
 # którego nikt nie widzi.
 LIMIT_WORDA = 180
 
+# Start Worda, który **padł** po tylu sekundach, to nie zwykły błąd, tylko zawieszenie:
+# DCOM przestaje czekać na serwer po ok. dwóch minutach — krócej niż `LIMIT_WORDA` —
+# i zostawia uruchomiony, wiszący na oknie `WINWORD.EXE`. Zwykły start trwa kilka sekund,
+# a błąd natychmiastowy (Word niezainstalowany, zepsuta rejestracja) nie jest powodem,
+# żeby cokolwiek zamykać: nowy proces na liście mógł właśnie otworzyć brat.
+START_PODEJRZANY = 30
+
+# Nasz Word powstaje w chwili `DispatchEx`. Proces Worda utworzony wyraźnie później to
+# nie nasz — najpewniej brat właśnie otworzył swojego (patrz `_Straznik._ustal_nasz`).
+OKNO_STARTU = 15
+
 # Okno, na którym stanął Word (aktywacja Office), zwykle pokazuje się przy każdym starcie.
 # Po zawieszeniu robota w tle — podglądy po „Zapisz” i miniatury na stronie składania —
 # przez tyle sekund Worda nie uruchamia: każda miniatura czekałaby pełny limit, a za nimi
@@ -164,6 +175,22 @@ def _procesy_worda() -> set[int]:
             if len(wiersz) > 1 and wiersz[0].lower() == "winword.exe" and wiersz[1].isdigit()}
 
 
+def _utworzony(pid: int) -> float | None:
+    """Kiedy proces powstał (w skali `time.time()`); None, gdy nie da się sprawdzić."""
+    if sys.platform != "win32":
+        return None
+    try:
+        import win32api
+        import win32process
+        uchwyt = win32api.OpenProcess(0x1000, False, pid)   # PROCESS_QUERY_LIMITED_INFORMATION
+        try:
+            return win32process.GetProcessTimes(uchwyt)["CreationTime"].timestamp()
+        finally:
+            win32api.CloseHandle(uchwyt)
+    except Exception:                     # proces zdążył zniknąć, brak uprawnień
+        return None
+
+
 def _nasz_proces(przed: set[int], po: set[int]) -> int | None:
     """Proces Worda uruchomiony przez nas — tylko gdy jest jedynym nowym.
 
@@ -193,13 +220,28 @@ class _Straznik:
 
     def __init__(self) -> None:
         self.przed = _procesy_worda()
+        self.start = time.time()          # tuż przed `DispatchEx` — patrz `_ustal_nasz`
         self.pid: int | None = None
         self.zadzialal = False
         self._koniec = False
         self._zegar: threading.Timer | None = None
 
     def zapamietaj_proces(self) -> None:
-        self.pid = _nasz_proces(self.przed, _procesy_worda())
+        self.pid = self._ustal_nasz()
+
+    def _ustal_nasz(self) -> int | None:
+        """Nasz proces Worda: nowy względem listy sprzed startu **i** utworzony tuż po
+        naszym `DispatchEx`. Sam „jedyny nowy” nie wystarczał: gdy nasz Word zdążył
+        zniknąć, a brat w tym czasie otworzył swojego, jedynym nowym był Word brata —
+        z niezapisanym dokumentem. Czas utworzenia rozstrzyga też dwa nowe procesy
+        naraz. Gdy czasu nie da się sprawdzić, zostaje samo „jedyny nowy”."""
+        po = _procesy_worda()
+        nowe = po - self.przed
+        czasy = {pid: _utworzony(pid) for pid in nowe}
+        if nowe and all(czas is not None for czas in czasy.values()):
+            po = self.przed | {pid for pid, czas in czasy.items()
+                               if czas <= self.start + OKNO_STARTU}
+        return _nasz_proces(self.przed, po)
 
     def odlicz(self) -> None:
         """Zaczyna odliczać limit od nowa — przed każdym krokiem konwersji."""
@@ -219,21 +261,34 @@ class _Straznik:
     def _zamknij(self) -> None:
         if self._koniec:
             return
-        # start Worda też potrafi stanąć — wtedy numeru procesu jeszcze nie znamy
-        pid = self.pid or _nasz_proces(self.przed, _procesy_worda())
-        if pid is None:
+        if not self.zamknij_nasz():
             # tuż po starcie procesu może jeszcze nie być na liście — spróbujemy za chwilę
             slad("Word nie odpowiada, ale nie wiem, który proces jest nasz — czekam dalej")
             self.odlicz()
-            return
-        slad(f"Word nie odpowiada od {LIMIT_WORDA} s — zamykam proces {pid}")
+
+    def zamknij_nasz(self) -> bool:
+        """Zamyka nasz proces Worda; False, gdy nie wiadomo, który jest nasz."""
+        # start Worda też potrafi stanąć — wtedy numeru procesu jeszcze nie znamy.
+        # Raz ustalony zapamiętujemy: liczony od nowa po zamknięciu naszego wskazałby
+        # jako „jedyny nowy” Worda, którego brat otworzył w międzyczasie.
+        pid = self.pid or self._ustal_nasz()
+        if pid is None:
+            return False
+        self.pid = pid
+        slad(f"Word nie odpowiada — zamykam proces {pid}")
         self.zadzialal = True
         _zamknij_proces(pid)
+        return True
 
 
 def _word_odpowiada() -> None:
     global _zawieszony_o
     _zawieszony_o = None
+
+
+def _word_stanal() -> None:
+    global _zawieszony_o
+    _zawieszony_o = time.monotonic()
 
 
 def _bez_zawieszonego_worda(konwerter: str) -> str:
@@ -265,7 +320,19 @@ def _wordem_wsad(pary: list[tuple[Path, Path]]) -> None:
             # w której użytkownik ma właśnie otwarte swoje pliki.
             slad(f"otwieram Worda ({len(pary)} dok.)")
             straznik.odlicz()
-            word = win32com.client.DispatchEx("Word.Application")
+            start = time.monotonic()
+            try:
+                word = win32com.client.DispatchEx("Word.Application")
+            except Exception:
+                # DCOM przestał czekać na Worda, który stanął na oknie, zanim zgłosił się
+                # do COM-u (`START_PODEJRZANY`): proces zostaje w tle, a każdy następny
+                # podgląd dokładał kolejny. To zawieszenie — zapamiętane zawsze, a proces
+                # zamykamy tylko wtedy, gdy wiadomo, że jest nasz, i jeszcze go nie
+                # zamknął strażnik (drugi raz liczony „jedyny nowy” to mógłby być Word brata).
+                if time.monotonic() - start >= START_PODEJRZANY and not straznik.zadzialal:
+                    straznik.zamknij_nasz()
+                    _word_stanal()
+                raise
             straznik.zapamietaj_proces()
             word.Visible = False
             word.DisplayAlerts = 0                       # wdAlertsNone
@@ -310,8 +377,7 @@ def _wordem_wsad(pary: list[tuple[Path, Path]]) -> None:
             _word_odpowiada()
         except Exception as blad:
             if straznik.zadzialal:
-                global _zawieszony_o
-                _zawieszony_o = time.monotonic()
+                _word_stanal()
                 raise WordZawieszony(
                     f"Microsoft Word nie skończył w ciągu {max(1, round(LIMIT_WORDA / 60))} "
                     "min — pewnie czeka z oknem, którego nie widać (aktywacja Office, "
@@ -326,6 +392,11 @@ def _wordem_wsad(pary: list[tuple[Path, Path]]) -> None:
                     word.Quit(_WD_NIE_ZAPISUJ)
                 except Exception:
                     pass
+                # PDF-y już są, ale Word stanął przy zamykaniu i strażnik go zamknął. Bez
+                # zapamiętania tego (udana konwersja przed chwilą pamięć skasowała) każdy
+                # następny podgląd startował Worda i znowu czekał pełny limit.
+                if straznik.zadzialal:
+                    _word_stanal()
             straznik.stop()
             # Wskaźniki COM muszą zniknąć, **zanim** wyjdziemy z `_com()`. Zwykłe
             # wyjście z funkcji zwolniłoby je dopiero po `CoUninitialize`, a zwalnianie
@@ -471,6 +542,13 @@ def docx_na_pdf_wsad(pary: list[tuple[Path, Path]]) -> list[Path]:
                 konwerter = "libreoffice"
             slad(f"wsad nie wyszedł ({blad}) — próbuję pojedynczo")
             for zrodlo, cel in pary:
+                # Każde ponowienie Wordem to nowy start Worda. Gdy któreś stanęło na oknie
+                # (albo wsad zawiesił się dopiero przy zamykaniu), następne stanęłyby na
+                # tym samym — każde na pełny limit, pod blokadą, na której czeka składanie.
+                if konwerter == "word" and word_niedawno_stanal():
+                    if not sciezka_libreoffice():
+                        break
+                    konwerter = "libreoffice"
                 try:
                     _konwertuj(zrodlo, cel, konwerter)
                 except Exception:

@@ -262,3 +262,130 @@ def test_usuniecie_operatu_bez_katalogu_tez_kasuje_podglady(klient):
     klient.post(f"/dokument/{identyfikator}/usun", follow_redirects=False)
 
     assert not (operaty.PODGLADY / "001.2026").exists()
+
+
+# --- zapis dokumentu, który trzyma nasz własny podgląd -------------------------
+#
+# Word robiący podgląd w tle otwiera dokument „tylko do odczytu”, ale **bez prawa
+# zapisu dla innych** (sprawdzone na prawdziwym Wordzie: `Documents.Open(ReadOnly=True)`
+# i zapis python-docx w tym czasie → `PermissionError`). Szybkie „Popraw” → „Zapisz”
+# dostawało wtedy „zamknij Worda”, choć brat żadnego nie miał otwartego.
+
+class _DokumentBlokowany:
+    """Dokument, którego zapis odmawia, dopóki `trzymany` jest ustawione."""
+
+    def __init__(self, trzymany):
+        self.trzymany = trzymany
+        self.proby = 0
+
+    def save(self, sciezka):
+        self.proby += 1
+        if self.trzymany.is_set():
+            raise PermissionError(13, "Proces nie może uzyskać dostępu do pliku", str(sciezka))
+        with open(sciezka, "wb") as plik:
+            plik.write(b"docx")
+
+
+def _podglad_trzyma(trzymany, sekund: float):
+    """Wątek podglądu: trzyma blokadę podglądów i plik, potem puszcza oba. Zwraca wątek
+    — test ma go dołączyć, bo blokada przeżywająca test zawiesza następny."""
+    import threading
+    import time
+
+    zajete = threading.Event()
+
+    def podglad():
+        with operaty._BLOKADA_PODGLADU:
+            zajete.set()
+            time.sleep(sekund)
+            trzymany.clear()
+
+    watek = threading.Thread(target=podglad, daemon=True)
+    watek.start()
+    assert zajete.wait(2)
+    return watek
+
+
+def test_zapis_pliku_trzymanego_przez_nasz_podglad_czeka_na_koniec_podgladu(tmp_path):
+    import threading
+
+    trzymany = threading.Event()
+    trzymany.set()
+    watek = _podglad_trzyma(trzymany, 0.3)
+    dokument = _DokumentBlokowany(trzymany)
+
+    try:
+        operaty.zapisz_dokument(dokument, tmp_path / "spis_tresci.docx")
+    finally:
+        watek.join(3)
+
+    assert (tmp_path / "spis_tresci.docx").read_bytes() == b"docx"
+    assert dokument.proby == 2
+
+
+def test_plik_otwarty_przez_brata_od_razu_konczy_sie_bledem(tmp_path):
+    """Bez podglądu w toku odmowa to naprawdę jego Word — bez czekania i bez zmiany
+    komunikatu („zamknij go i kliknij Zapisz jeszcze raz”)."""
+    import threading
+    import time
+
+    trzymany = threading.Event()
+    trzymany.set()
+    start = time.monotonic()
+
+    with pytest.raises(PermissionError) as blad:
+        operaty.zapisz_dokument(_DokumentBlokowany(trzymany), tmp_path / "spis_tresci.docx")
+
+    assert not isinstance(blad.value, operaty.PlikWPodgladzie)
+    assert time.monotonic() - start < 1
+
+
+def test_podglad_na_zawieszonym_wordzie_nie_trzyma_zapisu_bez_konca(tmp_path, monkeypatch):
+    """Word, który stanął przy podglądzie, trzyma plik do limitu strażnika (minuty).
+    Zapis nie czeka tyle — kończy się własnym komunikatem, a nie „zamknij Worda”."""
+    import threading
+    import time
+
+    monkeypatch.setattr(operaty, "CZEKAJ_NA_PODGLAD", 0.2)
+    trzymany = threading.Event()
+    trzymany.set()
+    watek = _podglad_trzyma(trzymany, 1.5)
+    start = time.monotonic()
+
+    try:
+        with pytest.raises(operaty.PlikWPodgladzie):
+            operaty.zapisz_dokument(_DokumentBlokowany(trzymany), tmp_path / "spis_tresci.docx")
+        czas = time.monotonic() - start
+    finally:
+        watek.join(3)
+
+    assert czas < 1
+
+
+def test_sprzatanie_i_zmiana_numeru_nie_czekaja_bez_konca_na_podglad(srodowisko, monkeypatch):
+    """Podgląd na zawieszonym Wordzie trzyma blokadę minutami — a sprzątanie odznaczonych
+    dokumentów i zmiana numeru czekały na nią bez limitu, pod blokadą zapisów, więc stało
+    też każde następne „Zapisz”. Po limicie: plik zostaje (wołający o nim mówi), a zmiana
+    numeru kończy się tym samym „nic nie zostało zmienione” co przy pliku w Wordzie."""
+    import threading
+    import time
+
+    monkeypatch.setattr(operaty, "CZEKAJ_NA_PODGLAD", 0.2)
+    katalog, _ = operaty.zaloz("001/2026", "GK.1", "spis_tresci_wzor", {})
+    (katalog / "sprawozdanie.docx").write_bytes(b"docx")
+    trzymany = threading.Event()
+    trzymany.set()
+    watek = _podglad_trzyma(trzymany, 1.5)
+    try:
+        start = time.monotonic()
+        zostawione = operaty.usun_dokumenty_programu(katalog, {"sprawozdanie.docx", "brak.docx"})
+        with pytest.raises(OSError):
+            operaty.przenies(katalog, "005.2026")
+        czas = time.monotonic() - start
+    finally:
+        watek.join(3)
+
+    assert zostawione == ["sprawozdanie.docx"]
+    assert (katalog / "sprawozdanie.docx").exists() and katalog.exists()
+    assert not (operaty.WYNIKI / "005.2026").exists()
+    assert czas < 1.2

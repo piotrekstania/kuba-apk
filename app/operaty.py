@@ -49,6 +49,15 @@ PODGLADY = DANE / "podglad"
 # Pilnuje, żeby ten sam plik nie był konwertowany kilka razy naraz.
 _BLOKADA_PODGLADU = threading.Lock()
 
+# Tyle zapis dokumentu czeka na podgląd, który trzyma jego plik (`zapisz_dokument`).
+# Zwykły podgląd kompletu to kilka–kilkanaście sekund; dłużej trzyma tylko Word
+# zawieszony na oknie — a na niego czekać do limitu strażnika (minuty) nie ma sensu.
+CZEKAJ_NA_PODGLAD = 60
+
+
+class PlikWPodgladzie(PermissionError):
+    """Dokumentu nie da się zapisać, bo trzyma go podgląd robiony w tle — nie Word brata."""
+
 
 def nazwa_bezpieczna(tekst: str, zapas: str = "operat") -> tuple[str, bool]:
     """Zwraca (nazwa, czy_podmieniono). Zostawia polskie znaki — zmienia tylko zakazane."""
@@ -300,10 +309,22 @@ def usun_dokumenty_programu(katalog: Path, nazwy: set[str]) -> list[str]:
     Pod `_BLOKADA_PODGLADU`, bo konwersja podglądów chodzi w tle: bez blokady
     kasowalibyśmy plik, który Word ma właśnie otwarty (na Windowsie `PermissionError`
     w środku trasy), a wątek podglądów odtwarzałby PDF skasowanego dokumentu.
+    Blokadę bierzemy **tylko wtedy, gdy jest co kasować**: nazwy to wszystkie formatki
+    spoza tej rundy, zwykle nieistniejące, a każde „Zapisz” przy poprawianiu stało
+    dotąd za całą konwersją podglądów z poprzedniego zapisu — przy zawieszonym Wordzie
+    do limitu strażnika. Pod blokadą sprawdzamy jeszcze raz, jak `przygotuj_podglady`.
     """
+    istniejace = [nazwa for nazwa in sorted(nazwy) if (katalog / nazwa).is_file()]
+    if not istniejace:
+        return []
+    # Podgląd na zawieszonym Wordzie trzyma blokadę minutami, a my siedzimy pod blokadą
+    # zapisów — bez limitu stało każde następne „Zapisz”. Po limicie pliki zostają,
+    # a wołający mówi o nich tak samo jak o pliku otwartym w Wordzie.
+    if not _BLOKADA_PODGLADU.acquire(timeout=CZEKAJ_NA_PODGLAD):
+        return istniejace
     zostawione: list[str] = []
-    with _BLOKADA_PODGLADU:
-        for nazwa in sorted(nazwy):
+    try:
+        for nazwa in istniejace:
             plik = katalog / nazwa
             if not plik.is_file():
                 continue
@@ -313,7 +334,38 @@ def usun_dokumenty_programu(katalog: Path, nazwy: set[str]) -> list[str]:
                 zostawione.append(nazwa)          # zostaje jak przed poprawką — bez awarii
                 continue
             (PODGLADY / katalog.name / (plik.stem + ".pdf")).unlink(missing_ok=True)
+    finally:
+        _BLOKADA_PODGLADU.release()
     return zostawione
+
+
+def zapisz_dokument(dokument: Any, plik: Path) -> None:
+    """Zapisuje wypełniony dokument Worda (`dokument.save`) w katalogu operatu.
+
+    Plik bywa trzymany przez **nasz własny** podgląd: wątek w tle konwertuje dokumenty
+    zaraz po „Zapisz”, a Word otwiera je „tylko do odczytu”, ale bez prawa zapisu dla
+    innych (sprawdzone na prawdziwym Wordzie). Szybkie „Popraw” → „Zapisz” trafiało
+    wtedy na `PermissionError`, a brat czytał „zamknij Worda”, choć żadnego nie miał
+    otwartego. Przy odmowie czekamy więc na koniec podglądu i próbujemy jeszcze raz,
+    już pod blokadą, żeby następny podgląd nie wszedł w pół zapisu. Druga odmowa to
+    naprawdę Word brata — idzie dalej zwykłym `PermissionError`. Gdy podgląd nie kończy
+    się w `CZEKAJ_NA_PODGLAD` (Word stanął na oknie), `PlikWPodgladzie` — z własnym
+    komunikatem, bo „zamknij Worda” byłoby tu nieprawdą.
+
+    Bez blokady przy zwykłym zapisie: brana zawsze, kazałaby każdemu „Zapisz” czekać
+    na cały komplet podglądów, także gdy żaden nie dotyczy tego pliku.
+    """
+    try:
+        dokument.save(plik)
+        return
+    except PermissionError:
+        if not _BLOKADA_PODGLADU.acquire(timeout=CZEKAJ_NA_PODGLAD):
+            raise PlikWPodgladzie(
+                errno.EACCES, "Dokument trzyma podgląd robiony w tle", str(plik)) from None
+    try:
+        dokument.save(plik)
+    finally:
+        _BLOKADA_PODGLADU.release()
 
 
 def zapisz_notatke(katalog: Path, tekst: str) -> None:
@@ -378,7 +430,12 @@ def przenies(katalog: Path, nowa_nazwa: str) -> Path:
     może akurat konwertować coś z tego katalogu.
     """
     cel = WYNIKI / nowa_nazwa
-    with _BLOKADA_PODGLADU:
+    # bez limitu podgląd na zawieszonym Wordzie trzymałby tu zapis minutami (albo bez
+    # końca); `PlikWPodgladzie` to `OSError`, więc wołający mówi „plik otwarty, nic nie
+    # zostało zmienione” — i tak właśnie jest
+    if not _BLOKADA_PODGLADU.acquire(timeout=CZEKAJ_NA_PODGLAD):
+        raise PlikWPodgladzie(errno.EACCES, "Katalog trzyma podgląd robiony w tle", str(katalog))
+    try:
         if cel.exists():               # Linux przemianowałby na pusty katalog bez słowa
             raise FileExistsError(errno.EEXIST, "Katalog już istnieje", str(cel))
         katalog.rename(cel)
@@ -390,6 +447,8 @@ def przenies(katalog: Path, nowa_nazwa: str) -> Path:
                 stare.rename(PODGLADY / nowa_nazwa)
             except OSError:
                 shutil.rmtree(stare, ignore_errors=True)       # odtworzą się same
+    finally:
+        _BLOKADA_PODGLADU.release()
     return cel
 
 

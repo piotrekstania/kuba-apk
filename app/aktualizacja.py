@@ -48,6 +48,9 @@ ZNACZNIK_NOWOSCI = DANE / "co_nowego.txt"   # czyta go strona główna, żeby po
 # a program uruchamia raz na kilka dni), więc pokazanie samego ostatniego gubiło
 # wszystko, co doszło po drodze.
 ZNACZNIK_PRZECZYTANE = DANE / "wersja_przeczytana.txt"
+# Aktualizacja wstrzymana przez plik otwarty w innym programie: numer wersji, która
+# czeka, i nazwa pliku. Czyta go strona główna, gasi wyłącznie aktualizator.
+ZNACZNIK_WSTRZYMANEJ = DANE / "aktualizacja_wstrzymana.txt"
 
 # Co podmieniamy przy aktualizacji: kod i szablony. `szablony` są na tej liście
 # celowo — jeden katalog, zawsze taki jak w repozytorium. Ta sama lista służy do
@@ -364,6 +367,42 @@ def nowosci_przeczytane(wersja: str = "") -> None:
             pass          # brak miejsca na dysku nie może zablokować zamknięcia okna
 
 
+def aktualizacja_wstrzymana() -> tuple[str, str] | None:
+    """(wersja, plik), gdy ostatnią aktualizację zatrzymał plik otwarty w innym programie.
+
+    Komunikat w czarnym oknie nie wystarczał: `uruchom.py` chowa je na pasek zadań
+    chwilę po starcie, więc brat pracował na starej wersji i nie wiedział, że nowa
+    czeka. Pasek na stronie głównej czyta ten znacznik; gasi go **wyłącznie aktualizator**
+    (udana aktualizacja albo wersja już aktualna) — nie pokazanie strony, bo tę pobiera
+    też kontrola startu (pułapka 30). Brak internetu niczego nie gasi: nie wiadomo wtedy,
+    czy aktualizacja dalej czeka.
+    """
+    try:
+        linie = ZNACZNIK_WSTRZYMANEJ.read_text(encoding="utf-8").splitlines()
+    except OSError:
+        return None
+    # wersja, która już jest zainstalowana, na nic nie czeka (znacznik mógł przeżyć
+    # aktualizację, której zapis komunikatu „co nowego” padł, zanim zdążyła go zgasić)
+    if not linie or not linie[0].strip() or linie[0].strip() == wersja_lokalna()[0]:
+        return None
+    return linie[0].strip(), (linie[1].strip() if len(linie) > 1 else "")
+
+
+def _wstrzymaj(wersja: str, plik: str) -> None:
+    try:
+        ZNACZNIK_WSTRZYMANEJ.parent.mkdir(parents=True, exist_ok=True)
+        ZNACZNIK_WSTRZYMANEJ.write_text(f"{wersja}\n{plik}\n", encoding="utf-8")
+    except OSError:
+        pass          # pasek to podpowiedź; brak miejsca na dysku nie może zatrzymać startu
+
+
+def _wznow() -> None:
+    try:
+        ZNACZNIK_WSTRZYMANEJ.unlink(missing_ok=True)
+    except OSError:
+        pass
+
+
 def kopia_robocza_gita() -> bool:
     """Czy siedzimy w katalogu, w którym ktoś programuje, a nie u użytkownika."""
     return (BAZA / ".git").exists()
@@ -390,6 +429,7 @@ def sprawdz_i_zaktualizuj() -> bool:
     numer, opis = zdalna
     if numer == lokalna:
         print(f"Wersja {lokalna} jest aktualna.")
+        _wznow()
         return False
 
     print(f"Jest nowsza wersja programu: {numer} (masz {lokalna}). Pobieram...")
@@ -407,6 +447,7 @@ def sprawdz_i_zaktualizuj() -> bool:
                 print(f"Zamknij go i uruchom program jeszcze raz — aktualizacja do {numer} "
                       "dojdzie wtedy sama. Na razie nic nie zostało zmienione, program działa "
                       f"w wersji {lokalna}.")
+                _wstrzymaj(numer, zablokowane[0])     # to okno zaraz zniknie z ekranu
                 return False
             kopia = _kopia_zapasowa(lokalna)
             zaczete = True
@@ -420,6 +461,9 @@ def sprawdz_i_zaktualizuj() -> bool:
             print(f"(Nie udało się posprzątać plików tymczasowych — nic groźnego: {blad})")
         else:
             print("Aktualizacja się nie udała:", blad)
+            # tym razem nie przez otwarty plik — pasek z nazwą pliku sprzed kilku startów
+            # kazałby zamykać coś, co jest już zamknięte
+            _wznow()
             if not zaczete:
                 print("Program działa dalej w starej wersji, nic nie zostało zmienione.")
                 return False
@@ -439,6 +483,7 @@ def sprawdz_i_zaktualizuj() -> bool:
     # raw.githubusercontent potrafi być kilka minut do tyłu i ogłosić starszą wersję,
     # niż zawiera pobrany .zip. Użytkownik ma zobaczyć numer, który faktycznie ma.
     zainstalowany, opis_zainstalowany = wersja_lokalna()
+    _wznow()
     ZNACZNIK_NOWOSCI.write_text(f"{zainstalowany}\n{opis_zainstalowany}", encoding="utf-8")
     print(f"Zaktualizowano do wersji {zainstalowany}. {opis_zainstalowany}")
     print(f"Kopia poprzedniej wersji i bazy: {kopia}")

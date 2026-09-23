@@ -50,6 +50,20 @@
 <script>document.getElementById('co-nowego').showModal();</script>
 {% endif %}
 
+{# Aktualizacja zatrzymana przez plik otwarty w innym programie. Mówiło o tym tylko czarne
+   okno, które program chowa na pasek zadań chwilę po starcie — brat pracował na starej
+   wersji i nie wiedział, że nowa czeka. Znacznik gasi aktualizator przy następnym
+   starcie (udana aktualizacja), a nie samo pokazanie tej strony (pułapka 30). #}
+{% if wstrzymana %}
+<div class="komunikat zle aktualizacja-wstrzymana">
+  Nowa wersja programu ({{ wstrzymana[0] }}) czeka na zainstalowanie: przy starcie
+  {% if wstrzymana[1] %}plik <code>{{ wstrzymana[1] }}</code> był{% else %}któryś plik
+  programu był{% endif %} otwarty w innym programie (pewnie w Wordzie). Zamknij go, zamknij
+  program (czarne okno na pasku zadań) i uruchom go jeszcze raz — aktualizacja dojdzie sama.
+  Twoje operaty są całe.
+</div>
+{% endif %}
+
 {% if not szablony %}
 <div class="komunikat zle">
   Katalog <code>szablony/</code> jest pusty. Wrzuć tam plik .docx z tagami

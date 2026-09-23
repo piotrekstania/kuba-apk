@@ -148,6 +148,45 @@ Windows — cmd i Worda tu nie ma:
    bez mignięcia ostrych rogów; w grupie „Otwórz katalog | Popraw | Powiel” wszystkie
    wewnętrzne rogi lekko zaokrąglone.
 
+**Sprawdzone na Windowsie 23.09.2026** (instalacja testowa `E:\test-brata` z commita
+c3b1c98 i druga z wydania 112, prawdziwy Word, prawdziwe blokady plików — uchwyt Worda
+przez COM i uchwyt „jak czytnik PDF” z `FILE_SHARE_READ`): wszystkie punkty trzech list
+wyżej. Przejście ze starego `start.bat` na nowy, drugi start, trzecie uruchomienie
+w trakcie, podmiana `start.bat` na śmieci w czasie pracy (nic nie doczytane), świeży
+`.venv`, aktualizacja przy formatce otwartej w Wordzie (stoi, bez kopii; po zamknięciu
+przechodzi), `pip` odcięty od sieci, brakująca biblioteka (polski komunikat, znacznik
+skasowany), czcionki z 112, kolor po restarcie, lista na 944 i 760 px, zmiana numeru
+(przy zamkniętych plikach i z dokumentem w Wordzie), zmiana numeru roboty (PDF zamknięty
+i otwarty), podpowiedź 051 po ręcznym 050, pytanie przy 0122, „Popraw”/„Usuń” przy
+otwartym pliku, `pytest -m word` (11/11, w tym oba limity czasu). Znaleziony błąd
+Windowsa tylko w teście przeglądarkowym (cp1250) — poprawiony.
+
+**Druga runda po wydaniu 113 — poprawki z przeglądu wieloagentowego** (na Windowsie):
+1. Word przy podglądzie trzyma dokument bez prawa zapisu (pułapka 40) — „Popraw” →
+   „Zapisz” tuż po zapisie czeka teraz na koniec podglądu zamiast mówić „zamknij Worda”.
+   Na Linuksie tego nie widać (LibreOffice nie blokuje).
+2. Strażnik Worda: zawieszenie przy zamykaniu jest pamiętane, ponowienia po nieudanym
+   wsadzie kończą się na pierwszym zawieszeniu, a start Worda, na który DCOM przestał
+   czekać (> 30 s), jest zapamiętany jako zawieszenie. Swój proces strażnik rozpoznaje
+   teraz także po **czasie utworzenia** (pułapka 42) — Word otwarty przez brata
+   w trakcie nie może zostać zamknięty. Na żywo tego nie wywołam — Word musiałby stanąć
+   na oknie; testy na atrapie, a `pytest -m word` (prawdziwy Word, oba limity czasu)
+   zielony po zmianie.
+3. Aktualizacja wstrzymana przez otwarty plik: czerwony pasek na stronie głównej.
+   **Zadziała od aktualizacji po tej, która go przywiezie** (pułapka 7b) — do sprawdzenia
+   przy następnym wydaniu: formatka otwarta w Wordzie na instalacji testowej, start,
+   pasek na liście operatów; po zamknięciu Worda i starcie — pasek znika.
+
+**Do rozważenia (znalezione w przeglądzie, świadomie niepoprawione na Windowsie):**
+1. Sekcja wyczyszczona **i** odznaczona w tym samym zapisie wraca przy ponownym
+   zaznaczeniu ze starą treścią (`_dane_wylaczonych` nie odróżni tego od samego
+   odznaczenia — przeglądarka nie wysyła wyłączonych pól). Widać to w formularzu,
+   więc waga niska; naprawa wymagałaby znacznika z JS przy zmianie wyłączonej sekcji.
+2. `wybor_wielokrotny` nie zachowuje zapisanej wartości spoza dzisiejszych opcji
+   (filtr jest też w `odczytaj_dane`). Dziś nieosiągalne — wróci przy pierwszej zmianie
+   nazwy pozycji spisu treści w `.json`.
+3. Jednorazowa luka przy przejściu ze starego `start.bat` (dopisek do pułapki 37).
+
 **Zostało do obejrzenia okiem** (z wydania 112) — tego testy ani przeglądarka nie sprawdzą:
 otworzyć **złożony PDF w prawdziwym czytniku** i potwierdzić, że karta, panel stron
 i pole „Tytuł” we właściwościach pokazują numer roboty, a plik otwiera się normalnie.

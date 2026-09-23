@@ -181,6 +181,9 @@ def _podstaw_worda(monkeypatch, zawies: bool, procesy: list[set[int]],
     monkeypatch.setattr(pdf, "_zamknij_proces", lambda pid: (zabite.append(pid), zamkniety.set()))
     monkeypatch.setattr(pdf, "LIMIT_WORDA", 0.3)
     monkeypatch.setattr(pdf, "_zawieszony_o", None)        # pamięć zawieszenia z innych testów
+    # Czas utworzenia procesu nieznany (jak poza Windowsem): zmyślone numery procesów
+    # trafiałyby na Windowsie w prawdziwe procesy tego komputera. Testy czasu podają go same.
+    monkeypatch.setattr(pdf, "_utworzony", lambda pid: None)
     return zabite
 
 
@@ -395,6 +398,168 @@ def test_nie_zamykamy_worda_gdy_nie_wiadomo_ktory_jest_nasz():
     assert pdf._nasz_proces(set(), set()) is None
 
 
+def test_zawieszenie_przy_zamykaniu_worda_jest_pamietane(tmp_path, monkeypatch):
+    """PDF-y już są, ale Word stanął przy zamykaniu i strażnik go zamknął. Pamięć
+    zawieszenia tego nie widziała (kasowała ją udana konwersja), więc każdy następny
+    podgląd uruchamiał Worda i znowu czekał pełny limit — pod blokadą podglądów,
+    na której stoją „Zapisz” przy poprawianiu i „Złóż PDF”."""
+    zabite = _podstaw_worda(monkeypatch, zawies=False, procesy=[{100}, {100, 4242}],
+                            zawies_zamykanie=True)
+    zrodlo, cel = _docx(tmp_path)
+
+    pdf._wordem_wsad([(zrodlo, cel)])
+
+    assert cel.exists() and zabite == [4242]
+    assert pdf.word_niedawno_stanal()
+
+
+def _wsad_pada_a_ponowienie_stoi(monkeypatch, tmp_path, dokumentow: int = 4):
+    """Wsad pada zwykłym błędem (Word wywrócił się na jednym pliku), a każde pojedyncze
+    ponowienie staje na oknie. Zwraca listę: ile dokumentów dostało każde uruchomienie."""
+    monkeypatch.setattr(pdf, "_zawieszony_o", None)
+    monkeypatch.setattr(pdf, "dostepny_konwerter", lambda: "word")
+    wywolania: list[int] = []
+
+    def wsad(pary):
+        wywolania.append(len(pary))
+        if len(wywolania) == 1:
+            raise RuntimeError("RPC_S_CALL_FAILED")
+        monkeypatch.setattr(pdf, "_zawieszony_o", time.monotonic())
+        raise pdf.WordZawieszony("stanął na oknie")
+
+    monkeypatch.setattr(pdf, "_wordem_wsad", wsad)
+    pary = []
+    for numer in range(dokumentow):
+        (tmp_path / f"{numer}.docx").write_bytes(b"docx")
+        pary.append((tmp_path / f"{numer}.docx", tmp_path / f"{numer}.pdf"))
+    return wywolania, pary
+
+
+def test_pojedyncze_ponowienia_koncza_sie_na_pierwszym_zawieszeniu(tmp_path, monkeypatch):
+    """Po nieudanym wsadzie każde ponowienie to nowy start Worda. Gdy pierwszy z nich
+    stanął na oknie, kolejne stawały na tym samym oknie, każde na pełny limit — przy
+    czterech dokumentach kwadrans, zanim „Złóż PDF” dostało swoją kolej."""
+    monkeypatch.setattr(pdf, "sciezka_libreoffice", lambda: None)
+    wywolania, pary = _wsad_pada_a_ponowienie_stoi(monkeypatch, tmp_path)
+
+    assert pdf.docx_na_pdf_wsad(pary) == []
+    assert wywolania == [4, 1], "po zawieszeniu Word ruszał dla każdego dokumentu z osobna"
+
+
+def test_po_zawieszeniu_w_ponowieniach_reszta_idzie_libreofficeem(tmp_path, monkeypatch):
+    monkeypatch.setattr(pdf, "sciezka_libreoffice", lambda: "/usr/bin/soffice")
+    libreoffice: list[str] = []
+    monkeypatch.setattr(pdf, "_konwersja_libreoffice",
+                        lambda z, c: (libreoffice.append(Path(z).name), Path(c).write_bytes(b"%PDF")))
+    wywolania, pary = _wsad_pada_a_ponowienie_stoi(monkeypatch, tmp_path)
+
+    assert len(pdf.docx_na_pdf_wsad(pary)) == 4
+    assert wywolania == [4, 1]
+    assert libreoffice == ["0.docx", "1.docx", "2.docx", "3.docx"]
+
+
+def test_word_ktory_nie_wystartowal_w_czasie_jest_zamykany_i_pamietany(tmp_path, monkeypatch):
+    """DCOM przestaje czekać na start Worda po ok. dwóch minutach — krócej niż nasz
+    limit. Word, który stanął na oknie, zanim zgłosił się do COM-u, zostawał wtedy
+    w tle, pamięć zawieszenia o nim nie wiedziała, a każdy następny podgląd dokładał
+    kolejny wiszący `WINWORD.EXE`."""
+    zabite = _podstaw_worda(monkeypatch, zawies=False, procesy=[{100}, {100, 4242}])
+    monkeypatch.setattr(pdf, "LIMIT_WORDA", 30)                # strażnik sam by nie zdążył
+    monkeypatch.setattr(pdf, "START_PODEJRZANY", 0.05)
+
+    def dcom_przestal_czekac(nazwa):
+        time.sleep(0.1)
+        raise OSError("(-2146959355, 'Wykonanie serwera nie powiodło się.')")
+
+    monkeypatch.setattr(sys.modules["win32com.client"], "DispatchEx", dcom_przestal_czekac)
+    zrodlo, cel = _docx(tmp_path)
+
+    with pytest.raises(pdf.WordZawieszony):
+        pdf._wordem_wsad([(zrodlo, cel)])
+
+    assert zabite == [4242], "zamknięty nie ten Word (100 to okno brata)"
+    assert pdf.word_niedawno_stanal()
+
+
+def test_word_otwarty_przez_brata_w_trakcie_startu_nie_jest_zamykany(tmp_path, monkeypatch):
+    """Nasz Word zdążył zniknąć, a brat w tym czasie otworzył swojego — na liście jest
+    jeden nowy proces, tyle że jego, z niezapisanym dokumentem. Po czasie utworzenia
+    widać, że powstał długo po naszym starcie: nie zamykamy go, a zawieszenie i tak
+    zapamiętujemy, żeby podglądy nie startowały Worda raz za razem."""
+    zabite = _podstaw_worda(monkeypatch, zawies=False, procesy=[{100}, {100, 5555}])
+    monkeypatch.setattr(pdf, "LIMIT_WORDA", 30)
+    monkeypatch.setattr(pdf, "START_PODEJRZANY", 0.05)
+    monkeypatch.setattr(pdf, "_utworzony", lambda pid: time.time() + 60)   # dużo później
+
+    def dcom_przestal_czekac(nazwa):
+        time.sleep(0.1)
+        raise OSError("(-2146959355, 'Wykonanie serwera nie powiodło się.')")
+
+    monkeypatch.setattr(sys.modules["win32com.client"], "DispatchEx", dcom_przestal_czekac)
+    zrodlo, cel = _docx(tmp_path)
+
+    with pytest.raises(OSError):
+        pdf._wordem_wsad([(zrodlo, cel)])
+
+    assert zabite == [], "zamknięty Word brata"
+    assert pdf.word_niedawno_stanal()
+
+
+def test_raz_zamkniety_word_nie_jest_szukany_drugi_raz(tmp_path, monkeypatch):
+    """Strażnik zamknął naszego Worda w trakcie startu, a zaraz potem start wraca
+    z błędem po długim czekaniu. Liczony drugi raz „jedyny nowy” proces to już Word,
+    którego brat otworzył w międzyczasie."""
+    zabite = _podstaw_worda(monkeypatch, zawies=False,
+                            procesy=[{100}, {100, 4242}, {100, 5555}])
+    monkeypatch.setattr(pdf, "LIMIT_WORDA", 0.1)
+    monkeypatch.setattr(pdf, "START_PODEJRZANY", 0.05)
+
+    def stoi_az_zamkniety(nazwa):
+        time.sleep(0.6)                        # strażnik zamyka nasz proces po 0,1 s
+        raise OSError("(-2147023170, 'Wywołanie procedury zdalnej nie powiodło się.')")
+
+    monkeypatch.setattr(sys.modules["win32com.client"], "DispatchEx", stoi_az_zamkniety)
+    zrodlo, cel = _docx(tmp_path)
+
+    with pytest.raises(pdf.WordZawieszony):
+        pdf._wordem_wsad([(zrodlo, cel)])
+
+    assert zabite == [4242], "drugi raz zamknięty „jedyny nowy” — Word brata"
+
+
+def test_dwa_nowe_procesy_rozstrzyga_czas_utworzenia(monkeypatch):
+    """Brat otworzył Worda w tej samej chwili co nasz start: dwa nowe procesy. Dotąd
+    strażnik nie wiedział, który zamknąć, i czekał bez końca, trzymając blokadę
+    konwersji. Nasz powstał tuż po `DispatchEx`, jego — wyraźnie później."""
+    monkeypatch.setattr(pdf, "_procesy_worda", iter([{100}, {100, 4242, 5555}]).__next__)
+    straznik = pdf._Straznik()
+    utworzone = {4242: straznik.start + 0.5, 5555: straznik.start + 40}
+    monkeypatch.setattr(pdf, "_utworzony", utworzone.get)
+
+    straznik.zapamietaj_proces()
+
+    assert straznik.pid == 4242
+
+
+def test_szybko_odrzucony_start_worda_niczego_nie_zamyka(tmp_path, monkeypatch):
+    """Błąd od razu przy starcie (Word niezainstalowany, zepsuta rejestracja) to nie
+    zawieszenie — a nowy proces na liście mógł właśnie otworzyć brat."""
+    zabite = _podstaw_worda(monkeypatch, zawies=False, procesy=[{100}, {100, 4242}])
+    monkeypatch.setattr(pdf, "START_PODEJRZANY", 30)
+
+    def brak_klasy(nazwa):
+        raise OSError("(-2147221005, 'Nieprawidłowy ciąg klasy')")
+
+    monkeypatch.setattr(sys.modules["win32com.client"], "DispatchEx", brak_klasy)
+    zrodlo, cel = _docx(tmp_path)
+
+    with pytest.raises(OSError) as blad:
+        pdf._wordem_wsad([(zrodlo, cel)])
+
+    assert not isinstance(blad.value, pdf.WordZawieszony)
+    assert zabite == [] and not pdf.word_niedawno_stanal()
+
+
 def test_skladanie_nie_zamraza_reszty_programu(srodowisko, bez_konwertera, monkeypatch):
     """Składanie wołało konwersję wprost w pętli zdarzeń serwera: dopóki Word myślał —
     a przy oknie dialogowym w nieskończoność — program nie odpowiadał na nic, nawet
@@ -452,6 +617,13 @@ def test_zapis_poprawki_nie_zamraza_reszty_programu(klient, monkeypatch):
     _dodaj_operat(klient)
     klient.post("/generuj/spis_tresci_wzor", data=FORMULARZ, follow_redirects=False)
     wpis = db.dokumenty()[0]
+    # Dokument z poprzedniej rundy, w tej odznaczony: sprzątanie go musi poczekać na
+    # podglądy. Bez niczego do sprzątania zapis na blokadę już nie czeka
+    # (`test_poprawka_bez_niczego_do_sprzatania_nie_czeka_na_podglady`), a ten test
+    # pilnuje przypadku, w którym czekać musi.
+    klient.srodowisko.dodaj_szablon("sprawozdanie_wzor", ["{{ nr_roboty }}"],
+                                    opis={"nazwa": "Sprawozdanie techniczne", "pola": []})
+    (klient.srodowisko.wyniki / wpis["katalog"] / "sprawozdanie.docx").write_bytes(b"docx")
     zajete = threading.Event()
 
     def podglad_na_zawieszonym_wordzie():
@@ -485,6 +657,41 @@ def test_zapis_poprawki_nie_zamraza_reszty_programu(klient, monkeypatch):
 
     assert czasy["zapis"] > 1.0, "zapis nie czekał na blokadę — test niczego nie sprawdza"
     assert czasy["pomoc"] < 1.0, f"Pomoc czekała {czasy['pomoc']:.1f} s na zapis"
+
+
+def test_poprawka_bez_niczego_do_sprzatania_nie_czeka_na_podglady(klient):
+    """Sprzątanie odznaczonych dokumentów brało blokadę podglądów zawsze — także wtedy,
+    gdy nie miało czego kasować, czyli prawie zawsze (to nazwy wszystkich formatek
+    spoza tej rundy, zwykle nieistniejące). Każde „Popraw” → „Zapisz” stało wtedy za
+    całą konwersją podglądów z poprzedniego zapisu, przy zawieszonym Wordzie do limitu."""
+    from app import db, operaty
+    from test_trasy import FORMULARZ, _dodaj_operat
+
+    _dodaj_operat(klient)
+    klient.srodowisko.dodaj_szablon("sprawozdanie_wzor", ["{{ nr_roboty }}"],
+                                    opis={"nazwa": "Sprawozdanie techniczne", "pola": []})
+    klient.post("/generuj/spis_tresci_wzor", data=FORMULARZ, follow_redirects=False)
+    wpis = db.dokumenty()[0]
+    zajete, puszczone = threading.Event(), threading.Event()
+
+    def podglad_na_zawieszonym_wordzie():
+        with operaty._BLOKADA_PODGLADU:
+            zajete.set()
+            puszczone.wait(10)
+
+    threading.Thread(target=podglad_na_zawieszonym_wordzie, daemon=True).start()
+    assert zajete.wait(2)
+    try:
+        start = time.monotonic()
+        odpowiedz = klient.post(f"/generuj/spis_tresci_wzor?edytuj={wpis['id']}",
+                                data={**FORMULARZ, "pole__uwagi": "literówka"},
+                                follow_redirects=False)
+        czas = time.monotonic() - start
+    finally:
+        puszczone.set()
+
+    assert odpowiedz.status_code == 303, odpowiedz.text[-600:]
+    assert czas < 1.0, f"zapis poprawki czekał {czas:.1f} s na podglądy, choć nie miał czego sprzątać"
 
 
 def test_zapisy_operatow_ida_po_kolei(klient, monkeypatch):

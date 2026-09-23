@@ -30,6 +30,7 @@ zainstalowania/uruchomienia, bez instalowania Pythona.
 | **Nie** konwersja przez API w chmurze | dane osobowe + wymaga internetu |
 | SQLite | historia, numeracja, dane TERYT — zero konfiguracji |
 | Aktualizacje: program sam pobiera `.zip` z GitHuba przy starcie | brat nie jest programistą; nie ma mowy o `git pull` ani o ręcznym rozpakowywaniu paczek na wierzch, bo prędzej czy później nadpisałby sobie szablony |
+| Aktualizacja wstrzymana przez otwarty plik to **pasek na stronie głównej**, nie tylko zdanie w czarnym oknie (`dane/aktualizacja_wstrzymana.txt`) | czarne okno program chowa na pasek zadań chwilę po starcie (pułapka 20), więc brat pracował na starej wersji i nie wiedział, że nowa czeka. Znacznik gasi **aktualizator** (udana aktualizacja, wersja już aktualna, próba nieudana z innego powodu — wtedy nazwa pliku byłaby już nieprawdą), nigdy pokazanie strony — tę pobiera też kontrola startu (pułapka 30); brak internetu go nie rusza, bo nie wiadomo wtedy nic nowego. Znacznik wersji, która już jest zainstalowana, strona pomija. Pułapka 7b: znacznik pisze nowy aktualizator, więc pasek działa od aktualizacji **po** wydaniu, które go przywiozło — tak samo jak samo wstrzymywanie |
 | `szablony/` jest **lustrzane**: plik usunięty z repozytorium znika też u brata (`LUSTRZANE` w `aktualizacja.py`) | bez tego szablon po zmianie nazwy zostawał u niego na zawsze i straszył na liście jako pozycja, której nikt już nie utrzymuje — dokładnie to się stało przy `operat_wzor` → `spis_tresci_wzor`. `app/` celowo nie jest lustrzane: kasowanie plików działającego procesu to proszenie się o kłopoty |
 | **Jeden katalog `szablony/`**, wersjonowany w repo i nadpisywany przy aktualizacji | decyzja z 31.07.2026, zmiana wcześniejszej: formatki Worda utrzymuje autor, nie brat, więc podział na „wzorcowe” i „jego” tylko przeszkadzał — poprawka szablonu nie docierała do brata, dopóki nie skasował pliku ręcznie. Stara zawartość i tak ląduje w `dane/kopie/` przed każdą aktualizacją |
 | Historia zmian jako **plik w repozytorium**, generowany z historii `WERSJA` w gicie | u brata nie ma `.git`, więc commity nie są dla niego żadnym źródłem. Opis dla użytkownika i tak powstaje przy każdym wydaniu w pliku `WERSJA` — `zbuduj_zmiany.py` tylko go zbiera, żeby nikt nie przepisywał tego ręcznie i nie pomylił numeru. **Opis ma stały kształt** (decyzja z 24.08.2026): **same punkty** w dwóch listach — `Zmiany:` i `Nowości:`, każdy punkt od myślnika, bez zdań wstępu. Wydanie to kilkanaście commitów, więc jeden akapit robił się ścianą tekstu, w której nie dało się znaleźć konkretnej zmiany. Rozbiera to `zmiany.rozbierz_opis` — jedno miejsce na obie strony (historia wersji i komunikat po aktualizacji), a opisy sprzed tej zmiany czytają się dalej jako sam wstęp. Okno po aktualizacji pokazuje **wszystkie wydania od ostatniego „OK”** (`dane/wersja_przeczytana.txt`), bo brat uruchamia program co kilka dni i potrafi przeskoczyć kilka wersji naraz — zakres bierzemy z **kolejności wpisów w `ZMIANY.md`**, nigdy z porównywania numerów (pułapka 7c) |
@@ -572,6 +573,15 @@ też brat. Interfejs w całości po polsku.
    podmiana `start.bat` przez drugie uruchomienie w czasie pracy programu. W bloku nie ma
    komentarzy ani nawiasów w tekstach `echo` (jedno i drugie potrafi rozbić blok),
    a zmienne `%…%` rozwinęłyby się raz, przy wczytaniu całego bloku.
+   Sprawdzone na Windowsie (23.09.2026) przejściem ze `start.bat` z wydania 113:
+   aktualizacja, nowy blok, drugi start i podmiana pliku na śmieci w trakcie pracy
+   programu — okno nie doczytało ani linijki. **Jedna luka zostaje, jednorazowo:** okno
+   ze **starym** `start.bat`, w którym serwer działa od wcześniej, stoi za wierszem
+   `uruchom.py` (bajt 2384 starego pliku, a w nowym to środek komentarza). Jeśli w tym
+   czasie drugie uruchomienie przyniesie nowy plik, a pierwszy serwer skończy się inaczej
+   niż zamknięciem okna (Ctrl+C i „N”, awaria), cmd wypisze „'chamiany' is not
+   recognized…” i uruchomi program jeszcze raz. Bez szkody i tylko przy tym przejściu —
+   od nowego pliku chroni blok z `exit /b` — więc świadomie tego nie łatamy.
 
 38. **Sprawdzając, czy test łapie błąd, pilnuj plików `.pyc`.** Python uznaje
    skompilowany `.pyc` za aktualny, gdy zgadza się **czas modyfikacji źródła co do
@@ -598,6 +608,46 @@ też brat. Interfejs w całości po polsku.
    przewija animację klatka po klatce (`getAnimations()` + `currentTime`) i liczy rogi
    tak, jak rysuje je przeglądarka — `getComputedStyle` pokazuje wartości sprzed
    skalowania.
+
+40. **Word robiący podgląd trzyma dokument bez prawa zapisu dla innych.**
+   `Documents.Open(..., ReadOnly=True)` brzmi niewinnie, ale sprawdzone na prawdziwym
+   Wordzie: zapis python-docx do tego pliku w tym czasie to `PermissionError`, a eksport
+   i tak daje starą treść. Podgląd rusza w tle zaraz po „Zapisz”, więc szybkie „Popraw”
+   → „Zapisz” dostawało „dokument otwarty w Wordzie — zamknij go”, choć brat żadnego
+   nie miał otwartego; trzymał go program. Dlatego dokumenty zapisuje
+   `operaty.zapisz_dokument`: przy odmowie czeka na koniec podglądu (`_BLOKADA_PODGLADU`,
+   najwyżej `CZEKAJ_NA_PODGLAD`) i próbuje jeszcze raz, a gdy podgląd stoi na zawieszonym
+   Wordzie — `PlikWPodgladzie` z własnym komunikatem. Blokady **nie** bierzemy przy
+   każdym zapisie: kazałaby każdemu „Zapisz” czekać na komplet podglądów. Z tego samego
+   powodu `usun_dokumenty_programu` bierze ją tylko wtedy, gdy ma co kasować. Wszystko,
+   co czeka na tę blokadę w trasie zapisu (zapis dokumentu, sprzątanie, `przenies`),
+   czeka **z limitem**: siedzi pod `_BLOKADA_ZAPISU`, więc bez limitu podgląd na
+   zawieszonym Wordzie wstrzymywał każde następne „Zapisz”. Komunikaty mówią o obu
+   możliwościach (nasz podgląd albo Word brata), bo po samej odmowie ich nie odróżnimy.
+   Na Linuksie (LibreOffice) tego nie widać — LO nie blokuje pliku.
+
+42. **„Jedyny nowy `WINWORD.EXE`” to za mało, żeby zamknąć proces.** Strażnik ustalał
+   swój proces jako jedyny nowy względem listy sprzed startu. Gdy nasz Word zdążył
+   zniknąć, a brat w tym czasie otworzył swojego, jedynym nowym był **Word brata**
+   z niezapisanym dokumentem — a policzony drugi raz po zamknięciu naszego, wskazywał
+   go na pewno. Dlatego `_Straznik._ustal_nasz` sprawdza też **czas utworzenia**
+   procesu (`_utworzony`, pywin32): nasz powstaje w chwili `DispatchEx`, proces
+   utworzony później niż `OKNO_STARTU` to nie nasz. Raz ustalony numer jest
+   zapamiętywany, a zamknięty proces nie jest szukany drugi raz. Przy okazji rozstrzyga
+   to dwa nowe procesy naraz, na których strażnik dotąd czekał bez końca. W testach
+   atrapa zwraca „czas nieznany” — zmyślone numery procesów trafiałyby na Windowsie
+   w prawdziwe procesy komputera.
+
+41. **Testy chodzące na Windowsie autora sprawdzają czasem co innego niż w CI.** Trzy
+   przypadki z jednej rundy (23.09.2026): `subprocess.run(text=True)` bez `encoding`
+   dekoduje stroną kodową systemu (na polskim Windowsie cp1250), więc UTF-8 z Chrome'a
+   wracało jako „OtwĂłrz” — test przeglądarkowy czerwony tylko na Windowsie. Atrybut
+   „tylko do odczytu” (`chmod`) **nie** udaje pliku otwartego w Wordzie: `os.access`
+   widzi atrybut, a uchwytu Worda nie, więc test na atrybucie przepuściłby sprawdzanie,
+   które u brata nie zauważy otwartej formatki — na Windowsie blokadę robi prawdziwy
+   uchwyt z `FILE_SHARE_READ` (`_OtwartyWWordzie` w `test_aktualizacja.py`). A Chrome
+   i Edge nie leżą w `PATH`, więc testy przeglądarkowe pomijały się po cichu — szukamy
+   ich też w standardowych katalogach instalacji.
 
 ## Stan na teraz — przetestowane end-to-end
 

@@ -17,7 +17,8 @@ from datetime import date
 from pathlib import Path
 
 from app import db, generator, operaty
-from test_trasy import FORMULARZ, _dodaj_operat, _prawdziwy_pdf   # tests/ nie jest pakietem
+from test_trasy import (FORMULARZ, OPIS_OPERATU, _dodaj_operat,   # tests/ nie jest pakietem
+                        _prawdziwy_pdf)
 
 ROK = date.today().year          # licznik liczy w bieżącym roku — test nie może się starzeć
 
@@ -645,6 +646,198 @@ def test_numer_operatu_z_archiwum_jest_zajety(klient):
     assert len(db.dokumenty()) == 2
     assert db.dokument(drugi["id"])["nr_operatu"] == drugi["nr_operatu"]
     assert (klient.srodowisko.wyniki / drugi["katalog"]).exists()
+
+
+def test_numer_z_kropka_na_koncu_to_ten_sam_numer(klient):
+    """„001/2026.” dostaje po zamianie na nazwę katalogu ten sam folder co „001/2026”
+    (Windows nie przyjmuje kropki na końcu nazwy), więc dla strażnika to ten sam numer.
+    Porównywany dosłownie przechodził, gdy oryginał leżał w archiwum: w historii stawały
+    dwa operaty z jednym numerem dla ośrodka, a po przywróceniu folderu — jeden katalog."""
+    _dodaj_operat(klient)
+    archiwalny = _nowy(klient, pole__nr_roboty="ARCH.1")                       # 001
+    shutil.rmtree(klient.srodowisko.wyniki / archiwalny["katalog"])
+
+    for literowka in (archiwalny["nr_operatu"] + ".", archiwalny["nr_operatu"] + " ."):
+        odpowiedz = klient.post("/generuj/spis_tresci_wzor", follow_redirects=False,
+                                data={**FORMULARZ, "pole__nr_operatu": literowka,
+                                      "pole__nr_roboty": "GK.3"})
+
+        assert odpowiedz.status_code == 200, literowka
+        assert "ma już inny operat" in odpowiedz.text and "ARCH.1" in odpowiedz.text
+    assert len(db.dokumenty()) == 1
+    assert not (klient.srodowisko.wyniki / archiwalny["katalog"]).exists()
+
+
+def test_zmiana_numeru_operatu_z_archiwum_mowi_gdzie_zostaly_mapy(klient):
+    """Katalog przenosi się pod nowy numer tylko wtedy, gdy leży w `wyniki/`. Operat
+    z archiwum dostawał po cichu nowy, pusty katalog z samymi dokumentami — a mapy
+    zostawały w archiwum pod numerem, którego historia już nie zna, i po przywróceniu
+    wracałyby jako osobny operat „spoza historii”."""
+    _dodaj_operat(klient)
+    wpis = _nowy(klient)
+    stary = klient.srodowisko.wyniki / wpis["katalog"]
+    _prawdziwy_pdf(stary / "mapa.pdf")
+    archiwum = klient.srodowisko.wyniki.parent / "archiwum"
+    archiwum.mkdir()
+    shutil.move(str(stary), str(archiwum / stary.name))
+
+    odpowiedz = _popraw(klient, wpis, pole__nr_operatu=nr(5))
+
+    assert odpowiedz.status_code == 303, odpowiedz.text[-600:]
+    adres = _adres_przekierowania(odpowiedz)
+    assert "archiwum" in adres and kat(1) in adres and kat(5) in adres, adres
+    assert "przenieś" in adres
+    assert (archiwum / kat(1) / "mapa.pdf").exists()        # niczego nie ruszamy w archiwum
+
+
+def test_zwykla_poprawka_operatu_z_archiwum_nie_straszy_mapami(klient):
+    """Bez zmiany numeru katalog i tak wraca pod tym samym numerem — to stare, świadome
+    zachowanie i nie ma o czym ostrzegać."""
+    _dodaj_operat(klient)
+    wpis = _nowy(klient)
+    shutil.rmtree(klient.srodowisko.wyniki / wpis["katalog"])
+
+    odpowiedz = _popraw(klient, wpis, pole__uwagi="literówka")
+
+    assert odpowiedz.status_code == 303
+    assert "archiwum" not in _adres_przekierowania(odpowiedz)
+
+
+def test_stary_adres_skladania_po_zmianie_numeru_nie_odsyla_tylko_do_archiwum(klient):
+    """Karta ze stroną składania otwarta przed zmianą numeru (albo „wstecz”) prowadzi
+    pod adres katalogu, którego już nie ma. Komunikat kazał wtedy kopiować folder
+    z archiwum, w którym nic nie było — operat stał na liście pod nowym numerem.
+    „Złóż PDF” z takiej karty odsyłał na listę bez słowa."""
+    _dodaj_operat(klient)
+    wpis = _nowy(klient)
+    _popraw(klient, wpis, pole__nr_operatu=nr(5))
+
+    ogladanie = klient.get(f"/scal/{kat(1)}", follow_redirects=False)
+    skladanie = klient.post(f"/scal/{kat(1)}", data={"plik": ["spis_tresci.docx"]},
+                            follow_redirects=False)
+
+    otwieranie = klient.post(f"/scal/{kat(1)}/otworz-katalog", follow_redirects=False)
+    wynik = klient.get(f"/scal/{kat(1)}/wynik", follow_redirects=False)     # „Otwórz PDF”
+
+    for odpowiedz in (ogladanie, skladanie, otwieranie, wynik):
+        assert odpowiedz.status_code == 303
+        adres = _adres_przekierowania(odpowiedz)
+        assert "numer" in adres and "archiwum" in adres, adres
+    assert len({_adres_przekierowania(o) for o in (ogladanie, skladanie, otwieranie, wynik)}) == 1
+
+
+def test_usun_na_stronie_operatu_przy_wspolnym_katalogu_mowi_ze_katalog_zostanie(klient):
+    """Na liście pytanie przy „Usuń” zna wspólny katalog, a strona operatu dalej
+    straszyła skasowaniem całego katalogu z plikami — choć trasa zdejmuje wtedy sam
+    wpis. Jedna czynność opisana na dwóch stronach na dwa sprzeczne sposoby."""
+    a, b, wspolny = _dawny_dubel(klient)
+
+    for wpis in (a, b):
+        strona = klient.get(f"/dokument/{wpis['id']}").text
+        pytania = re.findall(r'data-pytanie="([^"]*)"', strona)
+
+        assert pytania and all("zostanie na dysku" in p for p in pytania), pytania
+        assert not any("wraz z całym katalogiem" in p for p in pytania)
+
+
+def test_usun_przy_wspolnym_katalogu_bez_opisu_niczego_z_niego_nie_kasuje(klient):
+    """Wspólny katalog bez `operat.json` (skasowany ręcznie) — program go nie rozpoznaje
+    jako operatu, więc trasa szła dalej do kasowania dokumentów wpisu, a te należą też
+    do drugiego operatu. Pytanie przed „Usuń” obiecywało, że nic nie zniknie."""
+    a, b, wspolny = _dawny_dubel(klient)
+    (wspolny / operaty.PLIK_OPISU).unlink()
+    przed = _zawartosc(wspolny)
+
+    klient.post(f"/dokument/{a['id']}/usun", follow_redirects=False)
+
+    assert db.dokument(a["id"]) is None and db.dokument(b["id"]) is not None
+    assert _zawartosc(wspolny) == przed, "z katalogu drugiego operatu zniknęły pliki"
+
+
+def test_zapis_zablokowany_przez_nasz_podglad_nie_kaze_zamykac_worda(klient, monkeypatch):
+    """Podgląd na zawieszonym Wordzie trzyma dokument dłużej, niż zapis na niego czeka
+    (`operaty.zapisz_dokument`). „Zamknij go, pewnie w Wordzie” było wtedy nieprawdą
+    — brat żadnego Worda nie ma otwartego, trzyma go program."""
+    from app import main
+
+    _dodaj_operat(klient)
+    wpis = _nowy(klient)
+    plik = klient.srodowisko.wyniki / wpis["katalog"] / "spis_tresci.docx"
+
+    def trzymany_przez_podglad(*args, **kwargs):
+        raise operaty.PlikWPodgladzie(13, "Plik trzyma podgląd", str(plik))
+
+    monkeypatch.setattr(main.generator, "generuj", trzymany_przez_podglad)
+    odpowiedz = _popraw(klient, wpis, pole__uwagi="literówka")
+
+    assert odpowiedz.status_code == 200
+    komunikat = _komunikat_bledu(odpowiedz.text)
+    assert "podgląd" in komunikat and "spis_tresci.docx" in komunikat, komunikat
+    assert "pewnie w Wordzie" not in komunikat
+    assert "literówka" in odpowiedz.text
+
+
+def _podglad_trzyma_blokade(sekund: float):
+    """Wątek „podglądu na zawieszonym Wordzie”: trzyma blokadę podglądów. Zwraca wątek
+    do dołączenia — blokada nie może przeżyć testu (następny zastałby ją zajętą)."""
+    import threading
+    import time
+
+    zajete = threading.Event()
+
+    def podglad():
+        with operaty._BLOKADA_PODGLADU:
+            zajete.set()
+            time.sleep(sekund)
+
+    watek = threading.Thread(target=podglad, daemon=True)
+    watek.start()
+    assert zajete.wait(2)
+    return watek
+
+
+def test_generator_zapisuje_dokumenty_z_czekaniem_na_podglad(klient, monkeypatch):
+    """Podpięcie `operaty.zapisz_dokument` w samym generatorze — dokument główny
+    i dodatkowy. Test komunikatu wyżej podmienia cały generator, więc powrót do gołego
+    `dokument.save` przeszedłby niezauważony: ten sam `PermissionError`, tylko zawsze
+    z radą „zamknij Worda”, także gdy plik trzyma program."""
+    from app import generator
+
+    klient.srodowisko.dodaj_szablon(
+        "spis_tresci_wzor", ["{{ nr_roboty }} {{ nr_operatu }}"],
+        opis={**OPIS_OPERATU,
+              "pola": OPIS_OPERATU["pola"] + [{"klucz": "dokumenty", "typ": "dokumenty"}]})
+    klient.srodowisko.dodaj_szablon("sprawozdanie_wzor", ["Operat {{ nr_operatu }}"],
+                                    opis={"nazwa": "Sprawozdanie", "pola": []})
+    wpis = _nowy(klient, pole__dokumenty="sprawozdanie_wzor")
+    monkeypatch.setattr(operaty, "CZEKAJ_NA_PODGLAD", 0.2)
+    zablokowany = {"spis_tresci.docx"}
+    prawdziwy_zapis = generator.DocxTemplate.save
+
+    def jak_w_podgladzie(dokument, plik, *args, **kwargs):
+        if Path(plik).name in zablokowany:
+            raise PermissionError(13, "Proces nie może uzyskać dostępu do pliku", str(plik))
+        return prawdziwy_zapis(dokument, plik, *args, **kwargs)
+
+    monkeypatch.setattr(generator.DocxTemplate, "save", jak_w_podgladzie)
+
+    watek = _podglad_trzyma_blokade(1.0)
+    try:
+        glowny = _popraw(klient, wpis, pole__dokumenty="sprawozdanie_wzor")
+    finally:
+        watek.join(3)
+    zablokowany = {"sprawozdanie.docx"}
+    watek = _podglad_trzyma_blokade(1.0)
+    try:
+        dodatkowy = _popraw(klient, wpis, pole__dokumenty="sprawozdanie_wzor")
+    finally:
+        watek.join(3)
+
+    assert glowny.status_code == 200
+    assert "podgląd" in _komunikat_bledu(glowny.text), _komunikat_bledu(glowny.text)
+    assert dodatkowy.status_code == 303
+    adres = _adres_przekierowania(dodatkowy)
+    assert "Sprawozdanie" in adres and "podgląd" in adres, adres
 
 
 def test_podpowiedz_przy_poprawianiu_mowi_ze_numer_zostaje(klient):

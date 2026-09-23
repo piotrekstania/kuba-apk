@@ -1024,6 +1024,10 @@ document.querySelectorAll('.edytor').forEach(edytor => {
   // „0122/2026” → numer „0122” i rok „2026” (pierwsza i ostatnia grupa cyfr)
   const czesci = tekst => (tekst || '').match(/\d+/g) || [];
   formularz.addEventListener('submit', z => {
+    // Formularz już poszedł (flagę stawia blokada podwójnego „Zapisz” niżej) — drugie
+    // kliknięcie w trakcie ładowania pytało jeszcze raz, a „Anuluj” przy tym pytaniu
+    // niczego nie anulowało: zapis z pierwszego kliknięcia i tak szedł dalej.
+    if (formularz.dataset.wysylany) return;
     const wpisany = pole.value.trim();
     // Niezmienione pole nie pyta (poprawka operatu z numerem wpisanym kiedyś z ręki),
     // a numer z innego roku albo z więcej niż sześcioma cyframi licznika nie przesuwa
@@ -1096,11 +1100,16 @@ document.querySelectorAll('.edytor').forEach(edytor => {
   const formularz = document.querySelector('form[action^="/generuj/"]');
   if (!formularz) return;
   let wysylany = false;
+  // ta sama flaga także na formularzu — czyta ją pytanie o wysoki numer, które stoi
+  // wyżej i nie może pytać o formularz, który już poszedł
   formularz.addEventListener('submit', z => {
     if (wysylany) { z.preventDefault(); return; }
     wysylany = true;
+    formularz.dataset.wysylany = '1';
   });
-  window.addEventListener('pageshow', z => { if (z.persisted) wysylany = false; });
+  window.addEventListener('pageshow', z => {
+    if (z.persisted) { wysylany = false; delete formularz.dataset.wysylany; }
+  });
 })();
 </script>
 

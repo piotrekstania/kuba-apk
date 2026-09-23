@@ -27,10 +27,11 @@
      na `&#39;`, a parser HTML odkodowuje go z powrotem **przed** uruchomieniem JS —
      apostrof w numerze roboty rozrywał literał i „Usuń” kasowało bez pytania.
      Pytanie mówi, co naprawdę zniknie: katalog z plikami brata, sam wpis (gdy folder
-     jest już w archiwum) albo wpis z dokumentami sprzed podziału na katalogi. #}
+     jest już w archiwum albo wskazuje go jeszcze inny operat — tak jak na liście)
+     albo wpis z dokumentami sprzed podziału na katalogi. #}
   {% set nazwa_operatu = dokument.nr_operatu or dokument.katalog or dokument.tytul %}
   <form method="post" action="/dokument/{{ dokument.id }}/usun"
-        data-pytanie="{% if dokument.katalog and na_dysku %}Usunąć operat {{ nazwa_operatu }} wraz z całym katalogiem {{ dokument.katalog }} — także z plikami, które sam tam włożyłeś?{% elif dokument.katalog %}Usunąć operat {{ nazwa_operatu }} z historii? Jego katalogu nie ma już w wyniki (archiwum), więc z dysku nic nie zniknie.{% else %}Usunąć operat {{ nazwa_operatu }} z historii razem z jego dokumentami w wyniki?{% endif %}"
+        data-pytanie="{% if wspolny and na_dysku %}Usunąć operat {{ nazwa_operatu }} z historii? Jego katalog {{ dokument.katalog }} wskazuje też inny operat, więc zostanie na dysku.{% elif dokument.katalog and na_dysku %}Usunąć operat {{ nazwa_operatu }} wraz z całym katalogiem {{ dokument.katalog }} — także z plikami, które sam tam włożyłeś?{% elif dokument.katalog %}Usunąć operat {{ nazwa_operatu }} z historii? Jego katalogu nie ma już w wyniki (archiwum), więc z dysku nic nie zniknie.{% else %}Usunąć operat {{ nazwa_operatu }} z historii razem z jego dokumentami w wyniki?{% endif %}"
         onsubmit="return confirm(this.dataset.pytanie)">
     <button class="niebezpieczny" type="submit">Usuń</button>
   </form>

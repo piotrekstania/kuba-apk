@@ -449,7 +449,9 @@ def strona_glowna(request: Request, blad: str | None = None, komunikat: str | No
                   szablony=glowne,
                   operaty=_lista_operatow(),
                   blad=blad, komunikat=komunikat,
-                  co_nowego=_co_nowego())   # wraca, dopóki brat nie kliknie „OK”
+                  co_nowego=_co_nowego(),   # wraca, dopóki brat nie kliknie „OK”
+                  # gasi go aktualizator przy następnym starcie, nie pokazanie strony
+                  wstrzymana=aktualizacja.aktualizacja_wstrzymana())
 
 
 @app.post("/nowosci/przeczytane")
@@ -944,6 +946,13 @@ def _generuj(request: Request, identyfikator: str, edytuj: int | None, formularz
         powrot.update(_szczyt_formularza(szablon, poprawiany))
         przeniesiono = True
 
+    # Katalog poprawianego operatu leży w archiwum: przenosić nie było czego, a dokumenty
+    # z nowym numerem trafią do nowego katalogu — mapy zostają w archiwum pod starym
+    # numerem, którego historia już nie zna (ostrzeżenie niżej, po udanym zapisie).
+    katalog_w_archiwum = (poprawiany["katalog"] or ""
+                          if poprawiany and stary_katalog is None and cudzy_katalog is None
+                          else "")
+
     poprzedni_opis = None
     if poprawiany:
         katalog_poprzedni = (None if cudzy_katalog is not None
@@ -976,6 +985,16 @@ def _generuj(request: Request, identyfikator: str, edytuj: int | None, formularz
             f"Katalog wyniki\\{blad.katalog.name} należy już do innego operatu — nic nie "
             f"zostało nadpisane. Wpisz w polu „{etykieta}” inny, wolny numer i kliknij "
             "„Zapisz” jeszcze raz. Wpisane dane zostały tutaj."))
+    except operaty.PlikWPodgladzie as blad:
+        # Podgląd robiony w tle nie skończył się w `CZEKAJ_NA_PODGLAD` — Word pewnie
+        # stanął (`operaty.zapisz_dokument`). Samo „zamknij Worda” byłoby zwykle nieprawdą,
+        # ale plik mógł też mieć otwarty brat, a tego po odmowie nie odróżnimy — stąd oba.
+        zapisz_blad(request, blad)
+        return _widok(request, "formularz.html", **powrot, blad=(
+            f"Nie udało się zapisać dokumentu „{Path(blad.filename or '').name or 'operatu'}” "
+            "— program robi jeszcze podglądy stron, a Microsoft Word nie odpowiada. Jeśli masz "
+            "ten dokument otwarty w Wordzie, zamknij go; potem kliknij „Zapisz” jeszcze raz "
+            "za kilka minut. Wpisane dane zostały tutaj."))
     except PermissionError as blad:
         # Dokument otwarty w Wordzie (np. po „Popraw” prosto z otwartego pliku). Dotąd
         # szło to przez komunikat o literówce w formatce i brat szukał błędu w szablonie,
@@ -1020,6 +1039,13 @@ def _generuj(request: Request, identyfikator: str, edytuj: int | None, formularz
             f"Ten operat dzielił katalog wyniki\\{cudzy_katalog.name} z innym operatem o tym "
             f"samym numerze — dostał teraz własny katalog wyniki\\{katalog.name}. Mapy i skany "
             f"zostały w {cudzy_katalog.name}; przenieś ręcznie te, które należą do tego operatu.")
+    if katalog_w_archiwum and katalog.name != katalog_w_archiwum:
+        ostrzezenia.append(
+            f"Katalogu wyniki\\{katalog_w_archiwum} nie ma w wyniki — pewnie jest w archiwum, "
+            "więc nie było czego przenieść pod nowy numer. Dokumenty powstały w nowym katalogu "
+            f"wyniki\\{katalog.name}, a mapy i skany zostały w archiwum w {katalog_w_archiwum}: "
+            "przenieś je tutaj ręcznie. Starego folderu nie przywracaj do wyniki obok — "
+            "wróciłby na listę jako osobny operat.")
     # zaznaczenia zbieramy ze wszystkich pól typu „dokumenty” — każdy dokument
     # ma swoją kartę, więc pól jest kilka
     # Co wygenerować: pozycje zaznaczone w spisie treści (mapowanie `dokumenty` w .json)
@@ -1068,7 +1094,13 @@ def _generuj(request: Request, identyfikator: str, edytuj: int | None, formularz
             aktualne.add(operaty.nazwa_dokumentu(dodatkowy.id))
         except Exception as blad:
             zapisz_blad(request, blad)
-            if isinstance(blad, PermissionError):
+            if isinstance(blad, operaty.PlikWPodgladzie):
+                ostrzezenia.append(
+                    f"Nie udało się zapisać dokumentu „{dodatkowy.nazwa}” — program robi jeszcze "
+                    "podglądy stron, a Microsoft Word nie odpowiada. Jeśli masz ten dokument "
+                    "otwarty w Wordzie, zamknij go; potem popraw operat jeszcze raz za kilka "
+                    "minut. Do tego czasu w katalogu zostaje jego poprzednia wersja.")
+            elif isinstance(blad, PermissionError):
                 ostrzezenia.append(
                     f"Nie udało się zapisać dokumentu „{dodatkowy.nazwa}” — jest otwarty "
                     "w innym programie, pewnie w Wordzie. Zamknij go i popraw operat jeszcze "
@@ -1089,10 +1121,13 @@ def _generuj(request: Request, identyfikator: str, edytuj: int | None, formularz
     if poprawiany:
         programowe = {operaty.nazwa_dokumentu(s["id"]) for s in szablony.lista_skrocona()}
         for nazwa in operaty.usun_dokumenty_programu(katalog, programowe - aktualne):
+            # albo otwarty w Wordzie brata, albo trzymany przez podgląd na Wordzie, który
+            # stanął — po czasie oczekiwania tego nie odróżnimy
             ostrzezenia.append(
-                f"Nie udało się usunąć nieaktualnego pliku „{nazwa}” — pewnie jest "
-                "otwarty w Wordzie. Zamknij go i usuń z katalogu operatu ręcznie, "
-                "inaczej wejdzie do złożonego PDF-a.")
+                f"Nie udało się usunąć nieaktualnego pliku „{nazwa}” — jest otwarty w Wordzie "
+                "albo program robi jeszcze jego podgląd. Zamknij go i usuń z katalogu operatu "
+                "ręcznie (albo popraw operat jeszcze raz za kilka minut), inaczej wejdzie "
+                "do złożonego PDF-a.")
 
     # Wybrane formatki zostają domyślne na **następny** operat. Wybór dla tego operatu
     # siedzi w jego `operat.json` (razem z danymi formularza), więc „Popraw” wróci
@@ -1196,8 +1231,13 @@ def dokument(request: Request, dokument_id: int, blad: str | None = None):
 
     # Czy katalog jest na dysku — liczone tak samo jak na liście: operat przeniesiony
     # do archiwum zostaje w historii, ale nie ma czego składać ani kasować z dysku.
+    # `wspolny` — ten sam warunek co w trasie `usun`: katalog wskazywany jeszcze przez
+    # inny wpis zostaje na dysku, więc pytanie przy „Usuń” nie może straszyć jego
+    # skasowaniem (na liście mówiło już prawdę, tutaj jeszcze nie).
     return _widok(request, "dokument.html", dokument=wiersz, blad=blad, grupy=grupy,
-                  na_dysku=bool(wiersz["katalog"]) and (WYNIKI / wiersz["katalog"]).is_dir())
+                  na_dysku=bool(wiersz["katalog"]) and (WYNIKI / wiersz["katalog"]).is_dir(),
+                  wspolny=(bool(wiersz["katalog"])
+                           and len(db.wpisy_z_katalogiem(wiersz["katalog"])) > 1))
 
 
 def _uzyte_formatki(wybor: dict[str, str],
@@ -1358,9 +1398,7 @@ def otworz_katalog_operatu(request: Request, nazwa: str, powrot: str | None = No
     # więc trasa po identyfikatorze nie ma jak go znaleźć); wraca na listę jak reszta.
     katalog = operaty.katalog_po_nazwie(nazwa)
     if katalog is None:
-        return RedirectResponse("/?blad=" + quote(
-            f"Katalogu operatu „{nazwa}” nie ma już w wyniki — pewnie przeniesiony "
-            "do archiwum."), status_code=303)
+        return _brak_katalogu(nazwa)     # archiwum albo nowy numer — ta sama rada co przy składaniu
     return _otworz(request, katalog, "/" if powrot == "lista" else f"/scal/{quote(nazwa)}")
 
 
@@ -1391,11 +1429,14 @@ def usun(dokument_id: int):
         # Katalog wskazywany jeszcze przez inny wpis (ślad dawnego błędu numeracji) ma
         # w środku pliki obu operatów. Dwa wiersze z jednym numerem aż proszą, żeby jeden
         # usunąć — a kasowanie katalogu zabrałoby i tamten operat. Znika sam wpis.
-        if katalog is not None and len(db.wpisy_z_katalogiem(wiersz["katalog"])) > 1:
+        # Wspólny liczymy z historii, a nie z `katalog_po_nazwie`: w folderze bez
+        # `operat.json` szło to dalej do kasowania dokumentów wpisu — należących też
+        # do tamtego operatu — choć pytanie przed „Usuń” obiecywało, że nic nie zniknie.
+        if wiersz["katalog"] and len(db.wpisy_z_katalogiem(wiersz["katalog"])) > 1:
             db.usun_dokument(dokument_id)
             return RedirectResponse("/?komunikat=" + quote(
-                f"Usunąłem operat {wiersz['nr_operatu'] or katalog.name} z historii. Katalog "
-                f"wyniki\\{katalog.name} zostawiłem, bo wskazuje go też inny operat."),
+                f"Usunąłem operat {wiersz['nr_operatu'] or wiersz['katalog']} z historii. "
+                f"Katalog wyniki\\{wiersz['katalog']} zostawiłem, bo wskazuje go też inny operat."),
                 status_code=303)
         # Podglądy kasujemy po nazwie, nie po katalogu: operat bywa usuwany z historii
         # wtedy, gdy jego folder brat już przeniósł do archiwum — a wtedy `katalog`
@@ -1442,17 +1483,26 @@ def scal_lista(blad: str | None = None):
     return RedirectResponse("/?blad=" + quote(blad) if blad else "/", status_code=303)
 
 
+def _brak_katalogu(nazwa: str) -> RedirectResponse:
+    """Adres katalogu, którego w `wyniki/` nie ma — zakładka, karta otwarta obok, „wstecz”.
+
+    Odesłanie bez słowa wygląda jak zepsuty program. Przyczyny są dwie i po samym adresie
+    nie odróżnimy jednej od drugiej: operat przeniesiony do archiwum albo przeniesiony pod
+    nowy numer przy „Popraw” (katalog nazywa się numerem). Sama rada o archiwum odsyłała
+    w drugim przypadku tam, gdzie nic nie ma.
+    """
+    return RedirectResponse("/?blad=" + quote(
+        f"Operatu „{nazwa}” nie ma w katalogu wyniki pod tą nazwą. Jeśli zmieniałeś mu "
+        "numer, jest na liście pod nowym numerem. Jeśli przeniosłeś go do archiwum, skopiuj "
+        "folder z powrotem, żeby złożyć z niego PDF."), status_code=303)
+
+
 @app.get("/scal/{nazwa}", response_class=HTMLResponse)
 def scal_katalog(request: Request, nazwa: str, blad: str | None = None,
                  zlozono: bool = False):
     katalog = operaty.katalog_po_nazwie(nazwa)
     if katalog is None:
-        # Zwykle: operat przeniesiony do archiwum, a brat wszedł tu z zakładki albo
-        # ze starego adresu. Odesłanie bez słowa wygląda jak zepsuty program.
-        return RedirectResponse("/?blad=" + quote(
-            f"Operatu „{nazwa}” nie ma już w katalogu wyniki — pewnie przeniesiony "
-            "do archiwum. Żeby złożyć z niego PDF, skopiuj folder z powrotem."),
-            status_code=303)
+        return _brak_katalogu(nazwa)
     # liczby stron nie liczymy: dla plików Worda wymagałaby konwersji całej listy,
     # a miniatury i tak dociągają się leniwie, dopiero gdy przeglądarka o nie poprosi
     # Kolejność i obroty zapamiętane przy poprzednim składaniu; nowe pliki na końcu.
@@ -1490,7 +1540,9 @@ def scal_wynik(nazwa: str):
     """Złożony PDF pod stałym adresem — stąd otwiera go nowa karta."""
     katalog = operaty.katalog_po_nazwie(nazwa)
     if katalog is None:
-        return RedirectResponse("/scal", status_code=303)
+        # link „Otwórz PDF” ze starej karty otwiera nową — goła lista w niej to „nic się
+        # nie stało”
+        return _brak_katalogu(nazwa)
     plik = katalog / operaty.nazwa_wyniku(katalog)
     if not plik.exists():
         return RedirectResponse(f"/scal/{quote(nazwa)}", status_code=303)
@@ -1502,7 +1554,9 @@ def scal_wynik(nazwa: str):
 async def scal_wykonaj(request: Request, nazwa: str):
     katalog = operaty.katalog_po_nazwie(nazwa)
     if katalog is None:
-        return RedirectResponse("/scal", status_code=303)
+        # „Złóż PDF” ze starej karty — dotąd ciche odesłanie na listę, czyli „nic się
+        # nie stało”
+        return _brak_katalogu(nazwa)
 
     formularz_danych = await request.form()
     # Konwersja i sklejanie idą w puli wątków. Wołane wprost w trasie `async` zatrzymywały

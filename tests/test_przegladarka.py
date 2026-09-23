@@ -34,6 +34,16 @@ def _przegladarka() -> str | None:
         # zmierzyła”, zamiast się pominąć
         if sciezka and "/snap/" not in sciezka and not os.path.realpath(sciezka).endswith("/snap"):
             return sciezka
+    # Na Windowsie ani Chrome, ani Edge nie leżą w PATH — bez tego cały plik pomijał się
+    # po cichu na maszynie, na której program naprawdę chodzi (a `-q` powodu nie pokazuje)
+    for zmienna, podkatalog in (("ProgramFiles", r"Google\Chrome\Application\chrome.exe"),
+                                ("ProgramFiles(x86)", r"Google\Chrome\Application\chrome.exe"),
+                                ("LocalAppData", r"Google\Chrome\Application\chrome.exe"),
+                                ("ProgramFiles(x86)", r"Microsoft\Edge\Application\msedge.exe"),
+                                ("ProgramFiles", r"Microsoft\Edge\Application\msedge.exe")):
+        katalog = os.environ.get(zmienna)
+        if katalog and os.path.isfile(os.path.join(katalog, podkatalog)):
+            return os.path.join(katalog, podkatalog)
     return None
 
 
@@ -63,7 +73,9 @@ def _zmierz(tmp_path, strona: str, skrypt: str, szerokosc: int = 1280):
          f"--user-data-dir={tmp_path / 'profil'}", "--allow-file-access-from-files",
          "--hide-scrollbars", f"--window-size={szerokosc},1600", "--virtual-time-budget=5000",
          "--dump-dom", plik.as_uri()],
-        capture_output=True, text=True, timeout=120)
+        # Chrome pisze drzewo w UTF-8, a `text=True` bez kodowania dekoduje stroną kodową
+        # systemu — na polskim Windowsie cp1250, i „Otwórz” wracało jako „OtwĂłrz”
+        capture_output=True, text=True, encoding="utf-8", errors="replace", timeout=120)
     znalezione = re.search(r'data-pomiar="([^"]*)"', wynik.stdout)
     assert znalezione, f"przeglądarka nic nie zmierzyła: {wynik.stderr[-800:]}"
     return json.loads(html.unescape(znalezione.group(1)))
@@ -279,16 +291,53 @@ def test_numer_z_reki_duzo_wyzszy_od_kolejnego_wymaga_potwierdzenia(klient, tmp_
     assert wynik["niedaleki"] is False, "odmowa zablokowała formularz na dobre"
 
 
+DWA_KLIKNIECIA = """
+  const formularz = document.querySelector('form[action^="/generuj/"]');
+  const pole = document.getElementById('p_nr_operatu');
+  const pytania = [], odpowiedzi = [true, false];    // „OK”, a przy drugim pytaniu „Anuluj”
+  window.confirm = tekst => { pytania.push(tekst); return odpowiedzi.shift(); };
+  const wyslij = () => {
+    const zdarzenie = new Event('submit', {cancelable: true});
+    formularz.dispatchEvent(zdarzenie);
+    return zdarzenie.defaultPrevented;
+  };
+  pole.value = '0122/' + new Date().getFullYear();
+  const pierwsze = wyslij();                         // potwierdzone, idzie do serwera
+  const drugie = wyslij();                           // drugie kliknięcie w trakcie ładowania
+  return {pierwsze, drugie, pytan: pytania.length};
+"""
+
+
+def test_drugie_klikniecie_w_trakcie_wysylki_nie_pyta_drugi_raz(klient, tmp_path):
+    """Pytanie o wysoki numer stoi przed blokadą podwójnego „Zapisz”, więc pytało przy
+    każdym kliknięciu — także wtedy, gdy zatwierdzony formularz był już w drodze.
+    „Anuluj” przy drugim pytaniu niczego wtedy nie anulował: operat zapisywał się
+    z numerem, z którego brat właśnie zrezygnował."""
+    _dodaj_operat(klient)
+
+    wynik = _zmierz(tmp_path, klient.get("/nowy/spis_tresci_wzor").text, DWA_KLIKNIECIA)
+
+    assert wynik["pierwsze"] is False, "potwierdzony formularz nie poszedł"
+    assert wynik["drugie"] is True, "drugie kliknięcie wysłało formularz drugi raz"
+    assert wynik["pytan"] == 1, "pytanie wróciło przy formularzu, który już poszedł"
+
+
 NIEZMIENIONY_NUMER = """
   const formularz = document.querySelector('form[action^="/generuj/"]');
   const pole = document.getElementById('p_nr_operatu');
   const pytania = [];
   window.confirm = tekst => { pytania.push(tekst); return false; };
+  // wysłany formularz w prawdziwej przeglądarce przechodzi na następną stronę; tu wraca
+  // do życia tak jak po „wstecz” — inaczej blokada podwójnego „Zapisz” słusznie uznaje,
+  // że już poszedł, i o nic nie pyta
+  const odNowa = () => window.dispatchEvent(new PageTransitionEvent('pageshow', {persisted: true}));
   formularz.dispatchEvent(new Event('submit', {cancelable: true}));   // bez zmian w polu
   const bezZmian = pytania.length;
+  odNowa();
   pole.value = '0195/' + (new Date().getFullYear() - 1);                // zmieniony, zeszły rok
   formularz.dispatchEvent(new Event('submit', {cancelable: true}));
   const zeszlyRok = pytania.length;
+  odNowa();
   pole.value = '0122/' + new Date().getFullYear();
   formularz.dispatchEvent(new Event('submit', {cancelable: true}));
   return {bezZmian, zeszlyRok, poZmianie: pytania.length, wartosc: pole.defaultValue};

@@ -162,6 +162,36 @@ def test_bez_pliku_wersji_kopia_ma_nazwe_do_przyjecia_na_windowsie(srodowisko, m
     assert (srodowisko.katalog / "app" / "main.py").read_text() == "# nowy kod"
 
 
+class _OtwartyWWordzie:
+    """Plik trzymany tak, jak trzyma go Word: na Windowsie prawdziwy uchwyt, który
+    pozwala innym tylko czytać (`FILE_SHARE_READ`). Sam atrybut „tylko do odczytu”
+    tego nie udaje — `os.access` widzi atrybut, a pliku otwartego w Wordzie nie, więc
+    test na atrybucie przepuściłby sprawdzanie przez `os.access`, które u brata nie
+    zauważyłoby otwartej formatki. Poza Windowsem (CI) zostaje atrybut: innego sposobu
+    na odmowę zapisu nie ma."""
+
+    def __init__(self, plik: Path):
+        self.plik = plik
+        self.uchwyt = None
+
+    def __enter__(self):
+        if os.name == "nt":
+            import win32con
+            import win32file
+            self.uchwyt = win32file.CreateFile(
+                str(self.plik), win32con.GENERIC_READ, win32con.FILE_SHARE_READ,
+                None, win32con.OPEN_EXISTING, 0, None)
+        else:
+            self.plik.chmod(stat.S_IREAD)
+        return self
+
+    def __exit__(self, *_):
+        if self.uchwyt is not None:
+            self.uchwyt.Close()
+        else:
+            self.plik.chmod(stat.S_IREAD | stat.S_IWRITE)
+
+
 @pytest.mark.skipif(hasattr(os, "geteuid") and os.geteuid() == 0,
                     reason="root pisze także do plików tylko do odczytu")
 def test_plik_otwarty_w_innym_programie_nie_zostawia_polowicznej_aktualizacji(
@@ -170,9 +200,7 @@ def test_plik_otwarty_w_innym_programie_nie_zostawia_polowicznej_aktualizacji(
     po kolei: `app/` już nowe, na formatce wywrotka, `WERSJA` i `requirements.txt` stare
     — program startował z nowym kodem bez nowych bibliotek, a komunikat twierdził „nic
     nie zostało zepsute”. Teraz zablokowany plik wykrywamy **przed** kopiowaniem: nic
-    się nie zmienia, komunikat mówi, co zamknąć, a następne uruchomienie dokańcza.
-    (Plik otwarty w Wordzie udaje tu atrybut „tylko do odczytu” — zapis kończy się tym
-    samym `PermissionError`.)"""
+    się nie zmienia, komunikat mówi, co zamknąć, a następne uruchomienie dokańcza."""
     _instalacja(srodowisko, "2026.01.01.1")
     paczka = _paczka(tmp_path, "2026.09.09.9\nNowości.", {
         "app/main.py": "# nowy kod",
@@ -180,18 +208,103 @@ def test_plik_otwarty_w_innym_programie_nie_zostawia_polowicznej_aktualizacji(
     })
     _podstaw_github(monkeypatch, tmp_path, "2026.09.09.9\nNowości.", paczka)
     formatka = srodowisko.szablony / "stary_wzor.docx"
-    formatka.chmod(stat.S_IREAD)
 
+    with _OtwartyWWordzie(formatka):
+        assert aktualizacja.sprawdz_i_zaktualizuj() is False
+
+        assert (srodowisko.katalog / "app" / "main.py").read_text() == "# stary kod"
+        assert aktualizacja.wersja_lokalna()[0] == "2026.01.01.1"
+        wyjscie = capsys.readouterr().out
+        # całe zdanie, a nie samo „otwarty” — to słowo jest też w nazwie katalogu
+        # tymczasowego tego testu, a ścieżki wypisuje komunikat o nieudanym kopiowaniu
+        assert "stary_wzor.docx" in wyjscie and "otwarty w innym programie" in wyjscie
+        # blokada wykryta **przed** kopiowaniem: bez kopii zapasowej i bez wycofywania.
+        # Wykryta dopiero przy kopiowaniu (np. przez `os.access`, który uchwytu Worda nie
+        # widzi) kończy się tym samym stanem plików — różni się właśnie tym
+        assert _kopie_aktualizacji(srodowisko) == [], "blokadę wykryło dopiero kopiowanie"
+        assert "nie udała" not in wyjscie
+
+    assert aktualizacja.sprawdz_i_zaktualizuj() is True           # Word zamknięty
+    assert (srodowisko.katalog / "app" / "main.py").read_text() == "# nowy kod"
+
+
+@pytest.mark.skipif(hasattr(os, "geteuid") and os.geteuid() == 0,
+                    reason="root pisze także do plików tylko do odczytu")
+def test_wstrzymana_aktualizacja_zostawia_znacznik_do_konca_udanej(srodowisko, monkeypatch,
+                                                                    tmp_path):
+    """Komunikat „zamknij plik” szedł tylko do czarnego okna, które program chowa na
+    pasek zadań chwilę po starcie — brat pracował na starej wersji i nie wiedział,
+    że aktualizacja czeka. Znacznik czyta strona główna; gasi go dopiero aktualizator
+    (udana aktualizacja albo wersja już aktualna), nigdy samo pokazanie strony."""
+    _instalacja(srodowisko, "2026.01.01.1")
+    paczka = _paczka(tmp_path, "2026.09.09.9\nNowości.", {
+        "app/main.py": "# nowy kod",
+        "szablony/stary_wzor.docx": "nowa formatka",
+    })
+    _podstaw_github(monkeypatch, tmp_path, "2026.09.09.9\nNowości.", paczka)
+
+    with _OtwartyWWordzie(srodowisko.szablony / "stary_wzor.docx"):
+        aktualizacja.sprawdz_i_zaktualizuj()
+    numer, plik = aktualizacja.aktualizacja_wstrzymana()
+    assert numer == "2026.09.09.9" and "stary_wzor.docx" in plik
+
+    def bez_sieci(*args, **kwargs):
+        raise urllib.error.URLError("brak internetu")
+
+    with monkeypatch.context() as m:              # bez internetu nie wiadomo nic nowego
+        m.setattr(aktualizacja.urllib.request, "urlopen", bez_sieci)
+        aktualizacja.sprawdz_i_zaktualizuj()
+    assert aktualizacja.aktualizacja_wstrzymana() is not None
+
+    assert aktualizacja.sprawdz_i_zaktualizuj() is True
+    assert aktualizacja.aktualizacja_wstrzymana() is None
+
+
+@pytest.mark.skipif(hasattr(os, "geteuid") and os.geteuid() == 0,
+                    reason="root pisze także do plików tylko do odczytu")
+def test_nieudana_proba_z_innego_powodu_gasi_znacznik(srodowisko, monkeypatch, tmp_path):
+    """Start 1: formatka otwarta w Wordzie — znacznik. Brat zamyka Worda, start 2 pada na
+    pobieraniu (zerwane łącze). Pasek dalej kazałby zamknąć plik, który jest zamknięty,
+    a prawdziwej przyczyny nie podawał."""
+    _instalacja(srodowisko, "2026.01.01.1")
+    paczka = _paczka(tmp_path, "2026.09.09.9\nNowości.", {
+        "app/main.py": "# nowy kod",
+        "szablony/stary_wzor.docx": "nowa formatka",
+    })
+    _podstaw_github(monkeypatch, tmp_path, "2026.09.09.9\nNowości.", paczka)
+    with _OtwartyWWordzie(srodowisko.szablony / "stary_wzor.docx"):
+        aktualizacja.sprawdz_i_zaktualizuj()
+    assert aktualizacja.aktualizacja_wstrzymana() is not None
+
+    def zerwane_lacze(*args, **kwargs):
+        raise OSError("zerwane łącze")
+
+    monkeypatch.setattr(aktualizacja, "_pobierz_paczke", zerwane_lacze)
     assert aktualizacja.sprawdz_i_zaktualizuj() is False
 
-    assert (srodowisko.katalog / "app" / "main.py").read_text() == "# stary kod"
-    assert aktualizacja.wersja_lokalna()[0] == "2026.01.01.1"
-    wyjscie = capsys.readouterr().out
-    assert "stary_wzor.docx" in wyjscie and "otwarty" in wyjscie
+    assert aktualizacja.aktualizacja_wstrzymana() is None
 
-    formatka.chmod(stat.S_IREAD | stat.S_IWRITE)            # Word zamknięty
-    assert aktualizacja.sprawdz_i_zaktualizuj() is True
-    assert (srodowisko.katalog / "app" / "main.py").read_text() == "# nowy kod"
+
+def test_znacznik_zainstalowanej_juz_wersji_niczego_nie_pokazuje(srodowisko):
+    _instalacja(srodowisko, "2026.09.09.9")
+    aktualizacja.ZNACZNIK_WSTRZYMANEJ.parent.mkdir(parents=True, exist_ok=True)
+    aktualizacja.ZNACZNIK_WSTRZYMANEJ.write_text("2026.09.09.9\nszablony\\a.docx\n",
+                                                 encoding="utf-8")
+
+    assert aktualizacja.aktualizacja_wstrzymana() is None
+
+
+def test_aktualna_wersja_gasi_znacznik_wstrzymanej(srodowisko, monkeypatch, tmp_path):
+    """Brat mógł zaktualizować program inaczej (nowa instalacja) — znacznik po wersji,
+    która już jest, nie może wisieć na stronie w nieskończoność."""
+    _instalacja(srodowisko, "2026.08.01.1")
+    aktualizacja.ZNACZNIK_WSTRZYMANEJ.parent.mkdir(parents=True, exist_ok=True)
+    aktualizacja.ZNACZNIK_WSTRZYMANEJ.write_text("2026.08.01.1\nszablony\\a.docx\n",
+                                                 encoding="utf-8")
+    _podstaw_github(monkeypatch, tmp_path, "2026.08.01.1", None)
+
+    assert aktualizacja.sprawdz_i_zaktualizuj() is False
+    assert aktualizacja.aktualizacja_wstrzymana() is None
 
 
 def test_awaria_w_polowie_aktualizacji_przywraca_poprzednia_wersje(

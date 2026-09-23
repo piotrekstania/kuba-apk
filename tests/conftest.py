@@ -210,6 +210,8 @@ def srodowisko(tmp_path, monkeypatch):
     monkeypatch.setattr(aktualizacja, "ZNACZNIK_NOWOSCI", dane_kat / "co_nowego.txt")
     monkeypatch.setattr(aktualizacja, "ZNACZNIK_PRZECZYTANE",
                         dane_kat / "wersja_przeczytana.txt")
+    monkeypatch.setattr(aktualizacja, "ZNACZNIK_WSTRZYMANEJ",
+                        dane_kat / "aktualizacja_wstrzymana.txt")
 
     db.init()
 
