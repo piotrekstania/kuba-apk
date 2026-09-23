@@ -9,6 +9,7 @@ from __future__ import annotations
 import os
 import shutil
 import stat
+import tempfile
 import urllib.error
 import zipfile
 from pathlib import Path
@@ -222,6 +223,27 @@ def test_awaria_w_polowie_aktualizacji_przywraca_poprzednia_wersje(
     assert not (srodowisko.szablony / "nowy_wzor.docx").exists()
     assert aktualizacja.wersja_lokalna()[0] == "2026.01.01.1"
     assert "poprzednią wersję" in capsys.readouterr().out
+
+
+def test_nieudane_sprzatanie_po_udanej_aktualizacji_jej_nie_cofa(srodowisko, monkeypatch,
+                                                                tmp_path):
+    """Antywirus potrafi przytrzymać plik w katalogu tymczasowym. Wyjątek z jego sprzątania
+    przychodzi już po skopiowaniu całej nowej wersji — i cofał ją z kopii, więc przy każdym
+    starcie program ściągał, instalował i wycofywał to samo."""
+    _instalacja(srodowisko, "2026.01.01.1")
+    paczka = _paczka(tmp_path, "2026.09.09.9\nNowości.", {"app/main.py": "# nowy kod"})
+    _podstaw_github(monkeypatch, tmp_path, "2026.09.09.9\nNowości.", paczka)
+
+    class ZablokowaneSprzatanie(tempfile.TemporaryDirectory):
+        def __exit__(self, *wyjatek):
+            super().__exit__(*wyjatek)
+            raise PermissionError("antywirus trzyma plik w katalogu tymczasowym")
+
+    monkeypatch.setattr(aktualizacja.tempfile, "TemporaryDirectory", ZablokowaneSprzatanie)
+
+    assert aktualizacja.sprawdz_i_zaktualizuj() is True
+    assert (srodowisko.katalog / "app" / "main.py").read_text() == "# nowy kod"
+    assert aktualizacja.wersja_lokalna()[0] == "2026.09.09.9"
 
 
 def test_przerwana_aktualizacja_zostawia_stary_numer_wersji(srodowisko, monkeypatch, tmp_path):

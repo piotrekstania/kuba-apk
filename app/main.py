@@ -365,9 +365,14 @@ def odczytaj_dane(formularz, szablon: szablony.Szablon) -> dict[str, Any]:
     return proste
 
 
-# Typy pól, które formularz rysuje jako pola wyboru `pole__<klucz>` — tylko takie mogą
-# włączać inne pola (skrypt formularza szuka przełącznika wśród pól wyboru).
-PRZELACZNIKI = ("checkbox", "wybor_wielokrotny", "dokumenty")
+# Typy pól, które mogą włączać inne pola: skrypt formularza szuka przełącznika wśród pól
+# wyboru `pole__<klucz>`. Listy „dokumenty” tu nie ma, choć też rysuje pola wyboru — to,
+# które pozycje formularz pokazuje, zależy od szablonów, więc serwer nie zgaduje i takie
+# pole uznaje za włączone (dane nie są wtedy zachowywane, jak dawniej).
+PRZELACZNIKI = ("checkbox", "wybor_wielokrotny")
+# Pola, których formularz w ogóle nie wyszarza (nie dostają `data-aktywne-gdy`) —
+# przeglądarka wysyła je zawsze.
+NIEWYSZARZANE = ("tabela", "teryt")
 
 
 def _pole_aktywne(szablon: szablony.Szablon, pole: szablony.Pole, dane: dict[str, Any],
@@ -378,9 +383,9 @@ def _pole_aktywne(szablon: szablony.Szablon, pole: szablony.Pole, dane: dict[str
 
     Przełącznik musi być zaznaczony **i sam włączony** (łańcuch zależności), pozycja
     „zawsze” jest zaznaczona na stałe, ale wyłączona, więc skrypt liczy ją jak odznaczoną,
-    a przełącznik, którego w formularzu nie ma, niczego nie wyłącza.
+    a przełącznik, którego skrypt nie znajdzie, niczego nie wyłącza.
     """
-    if not pole.aktywne_gdy or pole.klucz in _odwiedzone:
+    if not pole.aktywne_gdy or pole.typ in NIEWYSZARZANE or pole.klucz in _odwiedzone:
         return True
     klucz, *reszta = pole.aktywne_gdy.split(":")
     wartosc = reszta[0] if reszta else ""       # jak `const [klucz, wartosc] = ...split(':')`
@@ -388,20 +393,20 @@ def _pole_aktywne(szablon: szablony.Szablon, pole: szablony.Pole, dane: dict[str
     if przelacznik is None or przelacznik.typ not in PRZELACZNIKI:
         return True
     if przelacznik.typ == "checkbox":
-        if wartosc and wartosc != "on":         # takiego pola wyboru w formularzu nie ma
+        if wartosc:                 # pole wyboru bez `value` nie pasuje nawet do `[value="on"]`
             return True
         zaznaczone = bool(dane.get(klucz))
     else:
-        if przelacznik.typ == "wybor_wielokrotny":
-            if wartosc and wartosc not in przelacznik.opcje:
-                return True
-            # bez wartości skrypt bierze pierwsze pole wyboru z listy
-            wartosc = wartosc or (przelacznik.opcje[0] if przelacznik.opcje else "")
-            if wartosc in przelacznik.zawsze:
-                return False
+        if wartosc and wartosc not in przelacznik.opcje:
+            return True
+        # bez wartości skrypt bierze pierwsze pole wyboru z listy
+        wartosc = wartosc or (przelacznik.opcje[0] if przelacznik.opcje else "")
+        if not wartosc:
+            return True
+        if wartosc in przelacznik.zawsze:
+            return False
         wybrane = dane.get(klucz)
-        zaznaczone = (wartosc in wybrane if wartosc else bool(wybrane)) \
-            if isinstance(wybrane, list) else False
+        zaznaczone = isinstance(wybrane, list) and wartosc in wybrane
     return zaznaczone and _pole_aktywne(szablon, przelacznik, dane,
                                         _odwiedzone | {pole.klucz})
 
@@ -757,13 +762,33 @@ def formularz(request: Request, identyfikator: str, kopiuj: int | None = None,
                   notatka=(zrodlo["notatka"] or "") if zrodlo else "")
 
 
+# Zapisy operatów idą po kolei — tak jak wtedy, gdy trasa chodziła w pętli zdarzeń
+# i dwa zapisy z natury nie mogły się przepleść. Numeracja, zakładanie i przenoszenie
+# katalogów zakładają, że nikt nie pisze obok.
+_BLOKADA_ZAPISU = threading.Lock()
+
+
 @app.post("/generuj/{identyfikator}")
 async def generuj(request: Request, identyfikator: str, edytuj: int | None = None):
+    formularz_danych = await request.form()
+    # Zapis w puli wątków: wołany wprost w trasie `async` czekał w pętli zdarzeń na
+    # blokadę podglądów, a gdy podgląd w tle stał na zawieszonym Wordzie, cały program
+    # przestawał odpowiadać aż do limitu czasu (tak samo składanie PDF-a, patrz `_scal`).
+    return await run_in_threadpool(_generuj_po_kolei, request, identyfikator, edytuj,
+                                   formularz_danych)
+
+
+def _generuj_po_kolei(request: Request, identyfikator: str, edytuj: int | None,
+                      formularz_danych: Any):
+    with _BLOKADA_ZAPISU:
+        return _generuj(request, identyfikator, edytuj, formularz_danych)
+
+
+def _generuj(request: Request, identyfikator: str, edytuj: int | None, formularz_danych: Any):
     szablon, odpowiedz = _szablon_albo_blad(request, identyfikator)
     if odpowiedz is not None:
         return odpowiedz
 
-    formularz_danych = await request.form()
     dane = odczytaj_dane(formularz_danych, szablon)
     wybor_wariantow = dane.get("warianty") or {}
     # Notatka stoi poza `pole__`, więc nie miesza się z danymi szablonu i nie może
@@ -1450,7 +1475,7 @@ def miniatura(request: Request, nazwa: str, plik: str, obrot: int = 0):
     if not zrodlo.is_file():
         return RedirectResponse("/scal", status_code=303)
     try:
-        obrazek = miniatury.miniatura(operaty.jako_pdf(zrodlo), obrot)
+        obrazek = miniatury.miniatura(operaty.jako_pdf(zrodlo, w_tle=True), obrot)
     except pdf.BrakKonwertera:
         return Response(status_code=204)          # brak konwertera: strona pokaże zastępnik
     except Exception as blad:

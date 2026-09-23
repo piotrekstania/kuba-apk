@@ -20,6 +20,7 @@ import subprocess
 import sys
 import tempfile
 import threading
+import time
 from contextlib import contextmanager
 from pathlib import Path
 
@@ -62,9 +63,23 @@ _WD_ZAKLADKI_NAGLOWKI = 1         # wdExportCreateHeadingBookmarks
 _WD_NIE_ZAPISUJ = 0               # wdDoNotSaveChanges
 
 # Tyle może trwać jeden krok konwersji Wordem (start Worda razem z pierwszym dokumentem,
-# potem każdy kolejny dokument). Zwykle to półtorej sekundy, więc limit jest z ogromnym
-# zapasem — ma łapać wyłącznie Worda, który stanął na oknie, którego nikt nie widzi.
+# potem każdy kolejny dokument, na końcu zamknięcie). Zwykle to półtorej sekundy, więc
+# limit jest z ogromnym zapasem — ma łapać wyłącznie Worda, który stanął na oknie,
+# którego nikt nie widzi.
 LIMIT_WORDA = 180
+
+# Okno, na którym stanął Word (aktywacja Office), zwykle pokazuje się przy każdym starcie.
+# Po zawieszeniu robota w tle — podglądy po „Zapisz” i miniatury na stronie składania —
+# przez tyle sekund Worda nie uruchamia: każda miniatura czekałaby pełny limit, a za nimi
+# „Złóż PDF”. Składanie, o które brat prosi wprost, próbuje zawsze, a udana konwersja
+# pamięć zawieszenia kasuje.
+PRZERWA_PO_ZAWIESZENIU = 600
+_zawieszony_o: float | None = None       # time.monotonic() ostatniego zawieszenia
+
+
+def word_niedawno_stanal() -> bool:
+    return (_zawieszony_o is not None
+            and time.monotonic() - _zawieszony_o < PRZERWA_PO_ZAWIESZENIU)
 
 
 class BrakKonwertera(RuntimeError):
@@ -180,6 +195,7 @@ class _Straznik:
         self.przed = _procesy_worda()
         self.pid: int | None = None
         self.zadzialal = False
+        self._koniec = False
         self._zegar: threading.Timer | None = None
 
     def zapamietaj_proces(self) -> None:
@@ -187,24 +203,50 @@ class _Straznik:
 
     def odlicz(self) -> None:
         """Zaczyna odliczać limit od nowa — przed każdym krokiem konwersji."""
-        self.stop()
+        if self._zegar is not None:
+            self._zegar.cancel()
         self._zegar = threading.Timer(LIMIT_WORDA, self._zamknij)
         self._zegar.daemon = True
         self._zegar.start()
 
     def stop(self) -> None:
+        """Koniec konwersji: zegar, który zdążył już wystartować, niczego nie zamknie —
+        numer procesu mógłby wtedy wskazać Worda następnej konwersji."""
+        self._koniec = True
         if self._zegar is not None:
             self._zegar.cancel()
 
     def _zamknij(self) -> None:
+        if self._koniec:
+            return
         # start Worda też potrafi stanąć — wtedy numeru procesu jeszcze nie znamy
         pid = self.pid or _nasz_proces(self.przed, _procesy_worda())
         if pid is None:
-            slad("Word nie odpowiada, ale nie wiem, który proces jest nasz — nie zamykam")
+            # tuż po starcie procesu może jeszcze nie być na liście — spróbujemy za chwilę
+            slad("Word nie odpowiada, ale nie wiem, który proces jest nasz — czekam dalej")
+            self.odlicz()
             return
         slad(f"Word nie odpowiada od {LIMIT_WORDA} s — zamykam proces {pid}")
         self.zadzialal = True
         _zamknij_proces(pid)
+
+
+def _word_odpowiada() -> None:
+    global _zawieszony_o
+    _zawieszony_o = None
+
+
+def _bez_zawieszonego_worda(konwerter: str) -> str:
+    """Konwerter do roboty w tle: po niedawnym zawieszeniu Worda LibreOffice, jeśli jest,
+    a bez niego od razu `WordZawieszony` — zamiast czekać pełny limit na tym samym oknie."""
+    if konwerter != "word" or not word_niedawno_stanal():
+        return konwerter
+    if sciezka_libreoffice():
+        return "libreoffice"
+    raise WordZawieszony(
+        "Microsoft Word niedawno się zawiesił (pewnie czeka z oknem, którego nie widać), "
+        "więc podglądy poczekają. Otwórz Worda ręcznie, zamknij to okno i złóż PDF — "
+        "po udanym złożeniu podglądy wrócą.")
 
 
 def _wordem_wsad(pary: list[tuple[Path, Path]]) -> None:
@@ -265,8 +307,11 @@ def _wordem_wsad(pary: list[tuple[Path, Path]]) -> None:
                             pass
                     dokument = None
                     roboczy.unlink(missing_ok=True)   # po nieudanym eksporcie
+            _word_odpowiada()
         except Exception as blad:
             if straznik.zadzialal:
+                global _zawieszony_o
+                _zawieszony_o = time.monotonic()
                 raise WordZawieszony(
                     f"Microsoft Word nie skończył w ciągu {max(1, round(LIMIT_WORDA / 60))} "
                     "min — pewnie czeka z oknem, którego nie widać (aktywacja Office, "
@@ -274,12 +319,14 @@ def _wordem_wsad(pary: list[tuple[Path, Path]]) -> None:
                     "to okno i spróbuj jeszcze raz.") from blad
             raise
         finally:
-            straznik.stop()
             if word is not None:
+                # zamykanie też bywa oknem, którego nikt nie widzi — pod tym samym limitem
+                straznik.odlicz()
                 try:
                     word.Quit(_WD_NIE_ZAPISUJ)
                 except Exception:
                     pass
+            straznik.stop()
             # Wskaźniki COM muszą zniknąć, **zanim** wyjdziemy z `_com()`. Zwykłe
             # wyjście z funkcji zwolniłoby je dopiero po `CoUninitialize`, a zwalnianie
             # interfejsu w wątku odłączonym już od COM-u potrafi wywalić cały proces
@@ -368,7 +415,8 @@ def _konwersja_libreoffice(zrodlo: Path, cel: Path) -> None:
         slad(f"LibreOffice skończył: {cel.name}")
 
 
-def docx_na_pdf(zrodlo: Path, cel: Path | None = None) -> Path:
+def docx_na_pdf(zrodlo: Path, cel: Path | None = None, w_tle: bool = False) -> Path:
+    """`w_tle` — podgląd albo miniatura, a nie składanie, o które brat prosi wprost."""
     cel = cel or zrodlo.with_suffix(".pdf")
     konwerter = dostepny_konwerter()
     slad(f"{zrodlo.name} -> {cel.name}, konwerter: {konwerter}")
@@ -378,6 +426,8 @@ def docx_na_pdf(zrodlo: Path, cel: Path | None = None) -> Path:
             "Nie znaleziono ani Microsoft Word, ani LibreOffice. "
             "Zainstaluj jeden z nich, żeby generować PDF-y."
         )
+    if w_tle:
+        konwerter = _bez_zawieszonego_worda(konwerter)
 
     with _BLOKADA_KONWERSJI:
         _konwertuj(zrodlo, cel, konwerter)
@@ -400,6 +450,10 @@ def docx_na_pdf_wsad(pary: list[tuple[Path, Path]]) -> list[Path]:
     slad(f"wsad: {len(pary)} dok., konwerter: {konwerter}")
     if konwerter == "brak":
         raise BrakKonwertera("Nie znaleziono ani Microsoft Word, ani LibreOffice.")
+    try:
+        konwerter = _bez_zawieszonego_worda(konwerter)       # wsad to zawsze robota w tle
+    except WordZawieszony:
+        return [c for _, c in pary if c.exists()]
 
     with _BLOKADA_KONWERSJI:
         try:

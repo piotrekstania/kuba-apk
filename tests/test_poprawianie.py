@@ -189,6 +189,29 @@ def test_pole_aktywne_czyta_przelaczniki_jak_przegladarka():
     assert main._pole_aktywne(szablon, obcy, {})
 
 
+def test_pole_aktywne_nie_zgaduje_tego_czego_przegladarka_nie_wylacza():
+    """Gdzie skrypt formularza pola nie wyszarza, serwer nie może uznać go za wyłączone —
+    inaczej przywróciłby dane, które brat świadomie wyczyścił, a strona operatu ukryłaby
+    dane, które weszły do dokumentu. Tak jest z tabelą i polem TERYT (formularz nie daje
+    im `data-aktywne-gdy`), z `klucz:on` (pole wyboru bez `value` nie pasuje do
+    `[value="on"]`) i z pozycją listy „dokumenty” (czy formularz ją pokazuje, zależy od
+    szablonów — tego serwer tu nie zgaduje)."""
+    from app import szablony
+
+    przelacznik = szablony.Pole(klucz="spr", etykieta="spr", typ="checkbox")
+    dokumenty = szablony.Pole(klucz="dok", etykieta="dok", typ="dokumenty")
+    szablon = szablony.Szablon(id="x", plik=None, nazwa="x", pola=[przelacznik, dokumenty])
+    aktywne = lambda **pole: main._pole_aktywne(  # noqa: E731
+        szablon, szablony.Pole(klucz="p", etykieta="p", **pole), {"spr": False, "dok": []})
+
+    assert not aktywne(aktywne_gdy="spr")                        # zwykłe pole: wyłączone
+    assert aktywne(typ="tabela", aktywne_gdy="spr")
+    assert aktywne(typ="teryt", aktywne_gdy="spr")
+    assert aktywne(aktywne_gdy="spr:on")
+    assert aktywne(aktywne_gdy="dok:sprawozdanie_techniczne_wzor")
+    assert aktywne(aktywne_gdy="dok")
+
+
 def test_poprawka_przy_danych_niebedacych_slownikiem(klient):
     """Pułapka 36: poprawny JSON to nie zawsze słownik. Wpis z `null` w danych (ręczna
     edycja bazy, przerwany zapis) nie może wywracać poprawki — zachowywać nie ma czego."""

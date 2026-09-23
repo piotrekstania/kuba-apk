@@ -9,6 +9,7 @@ import threading
 import time
 import urllib.request
 import webbrowser
+from pathlib import Path
 
 try:
     import uvicorn
@@ -19,6 +20,9 @@ from app.config import HOST, PORT
 
 
 ZNACZNIK = "Generator operatów"      # jest w <title> każdej strony programu
+# `start.bat` zapisuje tu `requirements.txt` po udanej instalacji bibliotek; inny plik
+# (albo żaden) = przy następnym starcie instalacja jeszcze raz
+ZNACZNIK_INSTALACJI = Path(__file__).resolve().parent / ".venv" / "zainstalowane.txt"
 
 
 def serwer_odpowiada(sekundy: float = 15.0) -> bool:
@@ -93,7 +97,12 @@ def _brakuje_bibliotek() -> str | None:
         return "uvicorn"
     try:
         importlib.import_module("app.main")
-    except ModuleNotFoundError as blad:
+    except ImportError as blad:
+        # także „cannot import name …”: po nieudanym `pip` częściej niż brak biblioteki
+        # zdarza się jej stara wersja przy nowym kodzie. Błąd w module samego programu
+        # to usterka programu, nie biblioteki — „podłącz internet” posłałoby w złą stronę.
+        if (blad.name or "").split(".")[0] == "app":
+            raise
         return blad.name or str(blad)
     return None
 
@@ -116,8 +125,13 @@ def glowna() -> None:
         return
     brakuje = _brakuje_bibliotek()
     if brakuje:
-        print(f"Brakuje biblioteki {brakuje}, której potrzebuje nowa wersja programu —")
-        print("nie udało się jej doinstalować, pewnie nie było internetu.")
+        # bez znacznika `start.bat` przy następnym starcie zainstaluje biblioteki na pewno
+        try:
+            ZNACZNIK_INSTALACJI.unlink(missing_ok=True)
+        except OSError:
+            pass
+        print(f"Nowa wersja programu potrzebuje biblioteki {brakuje} (albo jej nowszej")
+        print("wersji), a nie udało się jej doinstalować — pewnie nie było internetu.")
         print("Podłącz komputer do internetu i uruchom program jeszcze raz: biblioteka")
         print("doinstaluje się sama. Twoje operaty i dane są całe.")
         return

@@ -491,11 +491,12 @@ def _aktualny(cel: Path, zrodlo: Path) -> bool:
     return cel.exists() and cel.stat().st_mtime >= zrodlo.stat().st_mtime
 
 
-def jako_pdf(plik: Path) -> Path:
+def jako_pdf(plik: Path, w_tle: bool = False) -> Path:
     """PDF danego pliku — sam siebie dla .pdf, a dla Worda konwersja z pamięcią podręczną.
 
     Wynik konwersji leży poza katalogiem operatu, żeby brat nie musiał patrzeć
     na duplikaty i żeby sklejanie nie policzyło tego samego dokumentu dwa razy.
+    `w_tle` — miniatura, a nie składanie (patrz `pdf.PRZERWA_PO_ZAWIESZENIU`).
     """
     if plik.suffix.lower() in ROZSZERZENIA_PDF:
         return plik
@@ -512,7 +513,7 @@ def jako_pdf(plik: Path) -> Path:
         if _aktualny(cel, plik):
             return cel
         cel.parent.mkdir(parents=True, exist_ok=True)
-        return pdf.docx_na_pdf(plik, cel)
+        return pdf.docx_na_pdf(plik, cel, w_tle=w_tle)
 
 
 def przygotuj_podglady(katalog: Path) -> int:

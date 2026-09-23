@@ -18,6 +18,14 @@ import uruchom
 KORZEN = Path(__file__).resolve().parent.parent
 
 
+@pytest.fixture(autouse=True)
+def bez_prawdziwego_znacznika_instalacji(monkeypatch, tmp_path):
+    """Przy braku biblioteki `uruchom.py` kasuje `.venv/zainstalowane.txt` — w teście
+    ma to być plik tymczasowy, a nie znacznik kopii roboczej autora (`start.sh` używa
+    tego samego pliku)."""
+    monkeypatch.setattr(uruchom, "ZNACZNIK_INSTALACJI", tmp_path / "zainstalowane.txt")
+
+
 def _mikroserwer(tresc: str):
     """Serwer HTTP na losowym wolnym porcie, oddający zadaną treść."""
     class Uchwyt(http.server.BaseHTTPRequestHandler):
@@ -267,3 +275,39 @@ def test_brak_uvicorna_tez_konczy_sie_polskim_komunikatem(monkeypatch, capsys):
     uruchom.glowna()
 
     assert "uvicorn" in capsys.readouterr().out
+
+
+def test_za_stara_biblioteka_tez_konczy_sie_polskim_komunikatem(monkeypatch, capsys, tmp_path):
+    """Po nieudanym `pip` częściej niż brak biblioteki zdarza się jej **stara** wersja przy
+    nowym kodzie — a to `ImportError: cannot import name …`, nie `ModuleNotFoundError`.
+    Znacznik instalacji znika, żeby następny start z internetem na pewno doinstalował
+    biblioteki: bez tego `start.bat` uznałby je za aktualne i komunikat by kłamał."""
+    znacznik = tmp_path / "zainstalowane.txt"
+    znacznik.write_text("stare wymagania", encoding="utf-8")
+
+    def za_stara(nazwa, *args, **kwargs):
+        raise ImportError("cannot import name 'NowaRzecz' from 'docxtpl'", name="docxtpl")
+
+    monkeypatch.setattr(uruchom, "ZNACZNIK_INSTALACJI", znacznik)
+    monkeypatch.setattr(uruchom, "serwer_odpowiada", lambda *_, **__: False)
+    monkeypatch.setattr(uruchom.importlib, "import_module", za_stara)
+    monkeypatch.setattr(uruchom.uvicorn, "run", lambda *_, **__: pytest.fail("serwer bez bibliotek"))
+
+    uruchom.glowna()
+
+    komunikat = capsys.readouterr().out
+    assert "docxtpl" in komunikat and "internet" in komunikat
+    assert not znacznik.exists()
+
+
+def test_blad_importu_w_samym_programie_nie_udaje_braku_biblioteki(monkeypatch):
+    """Błąd importu w module programu to usterka programu, a nie brak biblioteki —
+    komunikat „podłącz internet” posłałby brata w złą stronę."""
+    def blad_programu(nazwa, *args, **kwargs):
+        raise ImportError("cannot import name 'x' from partially initialized module",
+                          name="app.operaty")
+
+    monkeypatch.setattr(uruchom.importlib, "import_module", blad_programu)
+
+    with pytest.raises(ImportError):
+        uruchom._brakuje_bibliotek()

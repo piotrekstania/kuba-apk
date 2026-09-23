@@ -173,9 +173,12 @@ body::before { content: ""; position: fixed; top: 0; left: 0; right: 0; height: 
 /* Menu jako połączona grupa przycisków; strona, na której jesteś, świeci kolorem. */
 nav { display: flex; gap: 2px; align-items: center; padding: 4px; border-radius: 999px;
       background: var(--panel-sredni); }
+/* Pastylki, które zmieniają kształt, mają promień z własnej wysokości (tu 37,7 px), a nie
+   999 px: sprężyna przestrzela o ok. 10% drogi, a z 999 px do 12 px to wartość ujemna —
+   przeglądarka przycina ją do zera i rogi na chwilę robią się ostre. */
 nav a, .rozwijane > summary {
   display: block; color: var(--szary); text-decoration: none; font-weight: 600; font-size: 14px;
-  padding: 8px 18px; border-radius: 999px;
+  padding: 8px 18px; border-radius: 20px;
   transition: background-color .25s, color .25s, border-radius .35s var(--sprezyna);
 }
 nav a:hover, .rozwijane > summary:hover, .rozwijane[open] > summary {
@@ -207,7 +210,7 @@ nav a:active { border-radius: 12px; }
 .konwerter { margin-left: auto; display: inline-flex; align-items: center; gap: 8px;
              height: 36px; padding: 0 16px 0 11px; font-size: 13px; font-weight: 600;
              text-decoration: none; color: var(--na-ok); background: var(--ok-kontener);
-             border-radius: 999px; transition: border-radius .35s var(--sprezyna); }
+             border-radius: 18px; transition: border-radius .35s var(--sprezyna); }
 .konwerter .ik { width: 18px; height: 18px; }
 .konwerter.zle { color: var(--na-zle); background: var(--zle-kontener); }
 .konwerter:hover { border-radius: 12px; }
@@ -535,7 +538,7 @@ td.opis-tresc { white-space: pre-wrap; tab-size: var(--tabulator); }
    długie, a ucięta nazwa nie mówi, co się wklei. */
 .biblioteka { display: flex; gap: 8px; align-items: center; margin-bottom: 8px; }
 .biblioteka select { flex: 1; min-width: 0; }
-.biblioteka button { flex: none; height: 48px; }
+.biblioteka button { flex: none; height: 48px; --pastylka: 24px; }
 /* Kolumna z numerem wydania w historii — wąska i wyrównana do prawej, żeby
    „7." i „81." kończyły się w tym samym miejscu. */
 th.numer, td.numer { width: 44px; text-align: right; white-space: nowrap; }
@@ -588,9 +591,9 @@ table.lista.operaty tbody.operat > tr > td.akcje { padding-top: 10px; padding-bo
    w archiwum nie ma „Otwórz katalog”, a operat spoza historii ma tylko ten jeden). */
 .akcje .grupa { white-space: nowrap; }
 .akcje .grupa > .wtorny:first-child, .akcje .grupa > :first-child > .wtorny {
-  border-top-left-radius: 999px; border-bottom-left-radius: 999px; }
+  border-top-left-radius: 18px; border-bottom-left-radius: 18px; }
 .akcje .grupa > .wtorny:last-child, .akcje .grupa > :last-child > .wtorny {
-  border-top-right-radius: 999px; border-bottom-right-radius: 999px; }
+  border-top-right-radius: 18px; border-bottom-right-radius: 18px; }
 .akcje .niebezpieczny { margin: 0 0 0 8px; }
 .akcje form { display: inline; }
 /* Okno węższe niż pełna strona (np. na pół ekranu): przyciski mogą zejść do drugiej
@@ -643,8 +646,8 @@ table.lista.operaty tbody.operat > tr > td.akcje { padding-top: 10px; padding-bo
 /* Obróć w lewo / w prawo / pomiń — połączona grupa, jak pasek narzędzi w Androidzie. */
 .kafelek-akcje { display: flex; gap: 3px; margin-top: auto; }
 .kafelek-akcje button { flex: 1; height: 38px; padding: 0; border-radius: 6px; }
-.kafelek-akcje button:first-child { border-radius: 999px 6px 6px 999px; }
-.kafelek-akcje button:last-child { border-radius: 6px 999px 999px 6px; }
+.kafelek-akcje button:first-child { border-radius: 19px 6px 6px 19px; }
+.kafelek-akcje button:last-child { border-radius: 6px 19px 19px 6px; }
 .kafelek-akcje button.pomin:hover { background: var(--zle-kontener); color: var(--na-zle); }
 .kafelek-akcje .ik { width: 18px; height: 18px; }
 /* Przycisk „pomiń” ma dwie ikony, a widać jedną — zależnie od tego, czy kafelek jest
@@ -654,7 +657,7 @@ table.lista.operaty tbody.operat > tr > td.akcje { padding-top: 10px; padding-bo
 /* „Złóż PDF” pod kafelkami — duży i kwadratowy, jak główna akcja ekranu w Androidzie. */
 .kafelki + .pasek .glowny { height: 56px; padding: 0 28px 0 22px; font-size: 16px; border-radius: 18px; }
 .kafelki + .pasek .glowny:hover { border-radius: 28px; }
-.kafelki + .pasek .wtorny { height: 56px; padding: 0 24px; }
+.kafelki + .pasek .wtorny { height: 56px; padding: 0 24px; --pastylka: 28px; }
 
 /* pasek postępu pobierania obrębów */
 progress { width: 100%; height: 10px; margin-top: 6px;
@@ -672,10 +675,13 @@ progress::-moz-progress-bar { background: var(--akcent); }
 /* przyciski */
 /* Tonalne pastylki: kolor tła z palety, bez ramki. Główny przycisk ekranu wypełniony
    kolorem przewodnim; przy wciśnięciu każdy przycisk zmienia kształt z pastylki
-   w zaokrąglony kwadrat — ruch z Androida, który mówi „kliknięte”. */
+   w zaokrąglony kwadrat — ruch z Androida, który mówi „kliknięte”.
+   Promień pastylki to połowa wysokości (42 px), a nie 999 px — patrz `nav a` wyżej.
+   Wyższe przyciski podają swój przez `--pastylka`: ustawiony wprost `border-radius`
+   z mocniejszym selektorem przebiłby `:active` i przycisk przestałby reagować kształtem. */
 button, .glowny, .wtorny {
   font: inherit; font-size: 14px; font-weight: 600; line-height: 20px; padding: 10px 22px;
-  border-radius: 999px; cursor: pointer; border: 1px solid transparent;
+  border-radius: var(--pastylka, 21px); cursor: pointer; border: 1px solid transparent;
   background: var(--drugi-kontener); color: var(--na-drugim); text-decoration: none;
   display: inline-flex; align-items: center; justify-content: center; gap: 8px;
   vertical-align: middle;
@@ -707,7 +713,7 @@ button.dodaj-sekcje { padding: 10px 20px; }
    akcje ekranu; wszystkie tej samej wysokości, żeby „Usuń” nie odstawało od sąsiadów. */
 .szczyt .glowny, .szczyt .wtorny, .szczyt .niebezpieczny,
 .pasek.do-prawej .glowny, .pasek.do-prawej .wtorny, .pasek.do-prawej .niebezpieczny {
-  height: 48px; padding: 0 24px; font-size: 15px;
+  height: 48px; padding: 0 24px; font-size: 15px; --pastylka: 24px;
 }
 .szczyt .glowny, .pasek.do-prawej .glowny { padding-left: 20px; }
 

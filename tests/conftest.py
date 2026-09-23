@@ -242,7 +242,7 @@ def bez_konwertera(monkeypatch):
     """Podmienia konwersję DOCX→PDF na atrapę: testy mają chodzić bez Worda i LibreOffice."""
     from app import operaty, pdf
 
-    def atrapa(zrodlo, cel=None):
+    def atrapa(zrodlo, cel=None, w_tle=False):
         """Udaje konwersję, ale oddaje **prawdziwy** jednostronicowy PDF.
 
         Zaślepka w rodzaju `b"%PDF-1.4"` przechodzi przez `exists()`, ale wykłada się

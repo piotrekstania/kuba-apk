@@ -394,7 +394,7 @@ def sprawdz_i_zaktualizuj() -> bool:
 
     print(f"Jest nowsza wersja programu: {numer} (masz {lokalna}). Pobieram...")
     KOPIE.mkdir(parents=True, exist_ok=True)
-    zaczete = False
+    zaczete = zastosowane = False
     try:
         with tempfile.TemporaryDirectory(dir=DANE) as tymczasowy:
             nowy_kod = _pobierz_paczke(Path(tymczasowy))
@@ -411,22 +411,29 @@ def sprawdz_i_zaktualizuj() -> bool:
             kopia = _kopia_zapasowa(lokalna)
             zaczete = True
             zastosuj(nowy_kod)
+            zastosowane = True
     except Exception as blad:
-        print("Aktualizacja się nie udała:", blad)
-        if not zaczete:
-            print("Program działa dalej w starej wersji, nic nie zostało zmienione.")
-            return False
-        # Przerwana w połowie: część plików jest już nowa. Wracamy do kopii zrobionej
-        # przed chwilą — mieszanka starego i nowego kodu to najgorsze, co może zostać.
-        nieprzywrocone = _przywroc(kopia)
-        if nieprzywrocone:
-            print("Przywróciłem poprzednią wersję poza: " + ", ".join(nieprzywrocone)
-                  + f". Uruchom program jeszcze raz — aktualizacja spróbuje dokończyć "
-                  f"(kopia poprzedniej wersji: {kopia}).")
+        if zastosowane:
+            # Nowa wersja jest już cała na miejscu, padło dopiero sprzątanie katalogu
+            # tymczasowego (antywirus trzyma plik). Cofanie jej byłoby gorsze: przy każdym
+            # starcie program ściągałby, instalował i wycofywał to samo.
+            print(f"(Nie udało się posprzątać plików tymczasowych — nic groźnego: {blad})")
         else:
-            print("Przywróciłem poprzednią wersję — program działa dalej po staremu, "
-                  "a aktualizacja spróbuje jeszcze raz przy następnym uruchomieniu.")
-        return False
+            print("Aktualizacja się nie udała:", blad)
+            if not zaczete:
+                print("Program działa dalej w starej wersji, nic nie zostało zmienione.")
+                return False
+            # Przerwana w połowie: część plików jest już nowa. Wracamy do kopii zrobionej
+            # przed chwilą — mieszanka starego i nowego kodu to najgorsze, co może zostać.
+            nieprzywrocone = _przywroc(kopia)
+            if nieprzywrocone:
+                print("Przywróciłem poprzednią wersję poza: " + ", ".join(nieprzywrocone)
+                      + f". Uruchom program jeszcze raz — aktualizacja spróbuje dokończyć "
+                      f"(kopia poprzedniej wersji: {kopia}).")
+            else:
+                print("Przywróciłem poprzednią wersję — program działa dalej po staremu, "
+                      "a aktualizacja spróbuje jeszcze raz przy następnym uruchomieniu.")
+            return False
 
     # Numer bierzemy z tego, co naprawdę przyszło w paczce, a nie z zapowiedzi:
     # raw.githubusercontent potrafi być kilka minut do tyłu i ogłosić starszą wersję,

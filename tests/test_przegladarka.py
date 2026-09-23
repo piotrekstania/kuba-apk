@@ -150,7 +150,7 @@ def test_lista_operatow_nie_wystaje_poza_strone(klient, tmp_path, szerokosc, gru
     grupa = wymiary["grupa"]
     assert len(grupa) == 3, grupa
     assert [(g["lewy"], g["prawy"]) for g in grupa] == \
-        [("999px", "6px"), ("6px", "6px"), ("6px", "999px")], grupa
+        [("18px", "6px"), ("6px", "6px"), ("6px", "18px")], grupa    # pół wysokości, nie 999 px
     if grupa_w_calosci:
         assert len({g["gora"] for g in grupa}) == 1, f"grupa przycisków rozpadła się: {grupa}"
 
@@ -236,10 +236,12 @@ def test_ksztalt_grupy_przyciskow_zgadza_sie_w_kazdym_wierszu(klient, tmp_path):
 
     grupy = _zmierz(tmp_path, klient.get("/").text, KSZTALTY_GRUP)
 
-    pelna = [["Otwórz katalog", "999px", "6px"], ["Popraw", "6px", "6px"],
-             ["Powiel", "6px", "999px"]]
-    bez_katalogu = [["Popraw", "999px", "6px"], ["Powiel", "6px", "999px"]]
-    sam_katalog = [["Otwórz katalog", "999px", "999px"]]
+    # koniec pastylki to pół wysokości przycisku (36 px), a nie 999 px — patrz
+    # `test_rogi_nie_ostrzeja_w_trakcie_zmiany_ksztaltu`
+    pelna = [["Otwórz katalog", "18px", "6px"], ["Popraw", "6px", "6px"],
+             ["Powiel", "6px", "18px"]]
+    bez_katalogu = [["Popraw", "18px", "6px"], ["Powiel", "6px", "18px"]]
+    sam_katalog = [["Otwórz katalog", "18px", "18px"]]
     assert sorted(grupy, key=len) == [sam_katalog, bez_katalogu, pelna], grupy
 
 
@@ -311,3 +313,91 @@ def test_pytanie_o_wysoki_numer_nie_dotyczy_zeszlego_roku_ani_niezmienionego_pol
 
     assert wynik["wartosc"] == f"090/{rok - 1}"
     assert (wynik["bezZmian"], wynik["zeszlyRok"], wynik["poZmianie"]) == (0, 0, 1)
+
+
+ROGI = """
+  // Promienie tak, jak rysuje je przeglądarka: gdy suma promieni na boku przekracza jego
+  // długość, wszystkie cztery są skalowane w dół tym samym współczynnikiem (CSS Backgrounds,
+  // „overlapping curves”). `getComputedStyle` pokazuje wartości sprzed skalowania.
+  const KLUCZE = ['borderTopLeftRadius', 'borderTopRightRadius',
+                  'borderBottomRightRadius', 'borderBottomLeftRadius'];
+  const rysowane = el => {
+    const styl = getComputedStyle(el), prostokat = el.getBoundingClientRect();
+    const [lg, pg, pd, ld] = KLUCZE.map(k => parseFloat(styl[k]));
+    const f = Math.min(1, prostokat.height / (lg + ld || 1), prostokat.height / (pg + pd || 1),
+                       prostokat.width / (lg + pg || 1), prostokat.width / (ld + pd || 1));
+    return {lg: lg * f, pg: pg * f, pd: pd * f, ld: ld * f, h: prostokat.height};
+  };
+  const najmniejszy = el => { const r = rysowane(el); return Math.min(r.lg, r.pg, r.pd, r.ld); };
+  const nazwa = el => `${el.tagName.toLowerCase()}.${[...el.classList].join('.')} „${
+    el.textContent.trim().slice(0, 20)}”`;
+
+  // Pastylka w spoczynku: rogi co najmniej na pół wysokości (grupa — tylko rogi zewnętrzne,
+  // a wewnętrzne lekko zaokrąglone, nie ostre).
+  const pastylki = [];
+  const pastylka = (el, rogi) => rogi.every(k => rysowane(el)[k] >= rysowane(el).h / 2 - 0.5);
+  // w menu tylko pozycje główne — linki z rozwijanej „Pomocy” mają celowo 16 px
+  document.querySelectorAll('.konwerter, nav > a, nav > .rozwijane > summary, '
+                            + '.akcje .glowny, .akcje .niebezpieczny, '
+                            + '.kafelki + .pasek .wtorny, .szczyt .glowny, .szczyt .wtorny, '
+                            + '.pasek.do-prawej .glowny, .pasek.do-prawej .wtorny').forEach(el => {
+    if (el.getClientRects().length) pastylki.push([nazwa(el), pastylka(el, ['lg', 'pg', 'pd', 'ld'])]);
+  });
+  document.querySelectorAll('.akcje .grupa, .kafelek-akcje').forEach(grupa => {
+    const przyciski = [...grupa.querySelectorAll('.wtorny, button')];
+    if (przyciski.length < 2) return;
+    const [pierwszy, ostatni] = [przyciski[0], przyciski[przyciski.length - 1]];
+    pastylki.push([nazwa(pierwszy), pastylka(pierwszy, ['lg', 'ld'])
+                   && rysowane(pierwszy).pg >= 4 && rysowane(pierwszy).pd >= 4]);
+    pastylki.push([nazwa(ostatni), pastylka(ostatni, ['pg', 'pd'])
+                   && rysowane(ostatni).lg >= 4 && rysowane(ostatni).ld >= 4]);
+  });
+
+  // Zmiana kształtu pod kursorem i przy wciśnięciu (do 12 px) — przewijamy animację
+  // klatka po klatce i pilnujemy najmniejszego rogu.
+  const animacje = [];
+  document.querySelectorAll('button, .glowny, .wtorny, nav a, .konwerter').forEach(el => {
+    if (!el.getClientRects().length) return;
+    if (!getComputedStyle(el).transitionProperty.includes('border-radius')) return;
+    const naStart = najmniejszy(el);
+    el.style.borderRadius = '12px';
+    const przejscia = el.getAnimations();
+    przejscia.forEach(a => a.pause());
+    const koniec = Math.max(0, ...przejscia.map(a => a.effect.getComputedTiming().endTime));
+    let wTrakcie = naStart;
+    for (let t = 0; t <= koniec; t += 5) {
+      przejscia.forEach(a => { a.currentTime = t; });
+      wTrakcie = Math.min(wTrakcie, najmniejszy(el));
+    }
+    przejscia.forEach(a => a.cancel());
+    el.style.borderRadius = '';
+    animacje.push([nazwa(el), Math.round(naStart * 10) / 10, Math.round(wTrakcie * 10) / 10,
+                   przejscia.length]);
+  });
+  return {pastylki, animacje};
+"""
+
+
+def test_rogi_nie_ostrzeja_w_trakcie_zmiany_ksztaltu(klient, tmp_path):
+    """Pastylka przechodzi pod kursorem (albo przy wciśnięciu) w zaokrąglony prostokąt
+    ze sprężystym „przestrzeleniem”. Z promienia 999 px nawet kilka procent przestrzelenia
+    to wartość ujemna, którą przeglądarka przycina do zera — rogi robiły się na chwilę
+    ostre, zanim się zaokrągliły (brat zauważył to na zielonej plakietce „PDF: …”).
+    Pastylka ma więc promień z własnej wysokości, a nie 999 px — w spoczynku wygląda tak
+    samo, a w trakcie ruchu żaden róg nie spada poniżej połowy tego, co było i co będzie.
+    Przy okazji: z 999 px przeglądarka skalowała w dół **wszystkie** rogi, więc wewnętrzne
+    rogi skrajnych przycisków w grupie wychodziły ostre zamiast lekko zaokrąglonych."""
+    _dodaj_operat(klient)
+    klient.post("/generuj/spis_tresci_wzor", data=FORMULARZ, follow_redirects=False)
+    wpis = db.dokumenty()[0]
+    _prawdziwy_pdf(klient.srodowisko.wyniki / wpis["katalog"] / "mapa.pdf")
+
+    for adres in ("/", "/nowy/spis_tresci_wzor", f"/dokument/{wpis['id']}",
+                  f"/scal/{wpis['katalog']}"):
+        wynik = _zmierz(tmp_path, klient.get(adres).text, ROGI)
+
+        assert wynik["animacje"], f"{adres}: nie znaleziono niczego, co zmienia kształt"
+        ostre = [a for a in wynik["animacje"] if a[2] < 0.5 * min(a[1], 12)]
+        assert not ostre, f"{adres}: rogi ostrzeją w trakcie animacji: {ostre}"
+        nie_pastylki = [nazwa for nazwa, jest in wynik["pastylki"] if not jest]
+        assert not nie_pastylki, f"{adres}: przestały być pastylkami: {nie_pastylki}"

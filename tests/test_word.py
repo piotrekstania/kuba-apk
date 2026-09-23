@@ -206,11 +206,13 @@ def test_limit_czasu_zamyka_tylko_naszego_worda(tmp_path, monkeypatch):
     a Word otwarty obok zostaje i dalej odpowiada. Zawieszenia nie da się wywołać na
     zawołanie, więc strażnik „odpala” zaraz po starcie naszego Worda — jakby minął limit.
     Sprawdza to, czego atrapy w `test_pdf.py` nie sprawdzą: że numer procesu z `tasklist`
-    jest prawdziwy, że zamknięcie procesu przerywa wywołanie COM zamiast je zawiesić
-    i że po wszystkim nie zostaje żaden `WINWORD.EXE`."""
+    jest prawdziwy, że następne wywołanie COM kończy się błędem, a nie wisi, i że po
+    wszystkim nie zostaje żaden `WINWORD.EXE`. Przerwanie wywołania, które **trwa**,
+    sprawdza test niżej."""
     import pythoncom
     import win32com.client
 
+    monkeypatch.setattr(pdf, "_zawieszony_o", None)     # pamięć zawieszenia nie przecieka dalej
     pythoncom.CoInitialize()
     obcy = win32com.client.DispatchEx("Word.Application")      # „Word brata”
     try:
@@ -239,6 +241,34 @@ def test_limit_czasu_zamyka_tylko_naszego_worda(tmp_path, monkeypatch):
         obcy = None
         gc.collect()
         pythoncom.CoUninitialize()
+
+
+def test_limit_czasu_przerywa_trwajace_wywolanie_worda(tmp_path, monkeypatch):
+    """Zamknięcie procesu w **trakcie** wywołania COM (eksport długiego dokumentu przy
+    limicie skróconym tuż po starcie Worda): wywołanie wraca z błędem zamiast wisieć,
+    konwersja kończy się komunikatem, nie zostaje ani PDF, ani `WINWORD.EXE`."""
+    monkeypatch.setattr(pdf, "_zawieszony_o", None)     # pamięć zawieszenia nie przecieka dalej
+    przed = liczba_wordow()
+    zapamietaj = pdf._Straznik.zapamietaj_proces
+
+    def krotki_limit_po_starcie(straznik):
+        zapamietaj(straznik)
+        monkeypatch.setattr(pdf, "LIMIT_WORDA", 0.5)
+        straznik.odlicz()
+
+    monkeypatch.setattr(pdf._Straznik, "zapamietaj_proces", krotki_limit_po_starcie)
+    monkeypatch.setattr(pdf, "sciezka_libreoffice", lambda: None)
+    zrodlo = dokument(tmp_path / "dlugi.docx", tekst="Operat techniczny 001/2026. " * 5000)
+
+    with pytest.raises(pdf.BrakKonwertera, match="nie skończył"):
+        pdf.docx_na_pdf(zrodlo, tmp_path / "dlugi.pdf")
+
+    koniec = time.monotonic() + 20
+    while liczba_wordow() > przed and time.monotonic() < koniec:
+        time.sleep(0.5)
+    assert liczba_wordow() == przed, "został WINWORD.EXE"
+    assert not (tmp_path / "dlugi.pdf").exists()
+    assert list(tmp_path.glob("*.czesciowy")) == []
 
 
 # --- cała ścieżka przez HTTP -------------------------------------------------

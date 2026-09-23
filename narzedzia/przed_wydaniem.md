@@ -123,7 +123,10 @@ Windows — cmd i Worda tu nie ma:
    biblioteki, zakłada skrót i startuje — blok w nawiasach nie może się rozsypać.
 3. **Drugie uruchomienie w czasie pracy programu**, a potem zamknięcie pierwszego okna:
    pierwsze okno kończy się po „Naciśnij dowolny klawisz”, bez wykonywania czegokolwiek
-   więcej.
+   więcej. Sprawdzaj to **po** przejściu z punktu 1: okno ze starym `start.bat`, w którym
+   serwer skończy się inaczej niż zamknięciem okna (Ctrl+C i „N”, awaria), wykona jeszcze
+   kawałek nowego pliku — raz, przy tym jednym przejściu, i bez szkody (błąd „nie jest
+   rozpoznawane…” i ponowny start programu).
 4. **Aktualizacja przy szablonie otwartym w Wordzie** — działa dopiero od aktualizacji
    **po** tej, która przywiozła nowy aktualizator (pułapka 7b), więc na instalacji
    z punktu 1, już po przejściu: cofnij numer w pierwszej linii jej `WERSJA`, otwórz
@@ -134,11 +137,16 @@ Windows — cmd i Worda tu nie ma:
    sieć, uruchom — komunikat „Nie udalo sie doinstalowac bibliotek” i program **startuje**.
    Z nieistniejącą biblioteką zaimportowaną w `app` — polski komunikat o brakującej
    bibliotece zamiast śladu stosu.
-6. **Strażnik Worda**: `.venv\Scripts\pytest -m word -v` (w tym
-   `test_limit_czasu_zamyka_tylko_naszego_worda`), a potem Menedżer zadań — żadnego
-   zostawionego `WINWORD.EXE`. Z otwartym obok własnym dokumentem Worda: zostaje otwarty.
+6. **Strażnik Worda**: `.venv\Scripts\pytest -m word -v` (w tym oba
+   `test_limit_czasu_*` — drugi przerywa trwający eksport długiego dokumentu), a potem
+   Menedżer zadań — żadnego zostawionego `WINWORD.EXE`. Z otwartym obok własnym
+   dokumentem Worda: zostaje otwarty.
 7. **Czas konwersji** po dołożeniu `tasklist`: podglądy po „Zapisz” mają się pojawiać
    tak samo szybko jak dotąd (dwa wywołania `tasklist` na start Worda to ułamek sekundy).
+8. **Rogi w Edge/Chrome u brata**: najazd kursorem na zieloną plakietkę „PDF: Microsoft
+   Word”, przytrzymane kliknięcie przycisku i pozycji menu — kształt zmienia się płynnie,
+   bez mignięcia ostrych rogów; w grupie „Otwórz katalog | Popraw | Powiel” wszystkie
+   wewnętrzne rogi lekko zaokrąglone.
 
 **Zostało do obejrzenia okiem** (z wydania 112) — tego testy ani przeglądarka nie sprawdzą:
 otworzyć **złożony PDF w prawdziwym czytniku** i potwierdzić, że karta, panel stron

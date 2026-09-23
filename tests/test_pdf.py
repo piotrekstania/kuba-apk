@@ -151,19 +151,24 @@ class _AtrapaWorda:
     Visible = True
     DisplayAlerts = 1
 
-    def __init__(self, zawies: bool, zamkniety: threading.Event):
+    def __init__(self, zawies: bool, zamkniety: threading.Event, zawies_zamykanie: bool = False):
         self.Documents = types.SimpleNamespace(
             Open=lambda *a, **k: _AtrapaDokumentu(zawies, zamkniety))
+        self.zawies_zamykanie, self.zamkniety = zawies_zamykanie, zamkniety
 
     def Quit(self, *_):                                             # noqa: N802
-        pass
+        if self.zawies_zamykanie:          # okno przy zamykaniu, którego nikt nie widzi
+            if not self.zamkniety.wait(10):
+                raise AssertionError("strażnik nie zamknął Worda wiszącego przy zamykaniu")
+            raise OSError("(-2147023170, 'Wywołanie procedury zdalnej nie powiodło się.')")
 
 
-def _podstaw_worda(monkeypatch, zawies: bool, procesy: list[set[int]]):
+def _podstaw_worda(monkeypatch, zawies: bool, procesy: list[set[int]],
+                   zawies_zamykanie: bool = False):
     zamkniety = threading.Event()
     zabite: list[int] = []
     klient = types.ModuleType("win32com.client")
-    klient.DispatchEx = lambda nazwa: _AtrapaWorda(zawies, zamkniety)
+    klient.DispatchEx = lambda nazwa: _AtrapaWorda(zawies, zamkniety, zawies_zamykanie)
     win32com = types.ModuleType("win32com")
     win32com.client = klient
     pythoncom = types.ModuleType("pythoncom")
@@ -175,7 +180,23 @@ def _podstaw_worda(monkeypatch, zawies: bool, procesy: list[set[int]]):
     monkeypatch.setattr(pdf, "_procesy_worda", lambda: next(kolejne, procesy[-1]))
     monkeypatch.setattr(pdf, "_zamknij_proces", lambda pid: (zabite.append(pid), zamkniety.set()))
     monkeypatch.setattr(pdf, "LIMIT_WORDA", 0.3)
+    monkeypatch.setattr(pdf, "_zawieszony_o", None)        # pamięć zawieszenia z innych testów
     return zabite
+
+
+def _licz_starty(monkeypatch) -> list[str]:
+    """Ile razy program uruchomił Worda (po `_podstaw_worda`)."""
+    klient = sys.modules["win32com.client"]
+    starty: list[str] = []
+    uruchom = klient.DispatchEx
+    monkeypatch.setattr(klient, "DispatchEx", lambda nazwa: (starty.append(nazwa), uruchom(nazwa))[1])
+    return starty
+
+
+def _docx(tmp_path, nazwa: str = "spis") -> tuple[Path, Path]:
+    zrodlo = tmp_path / f"{nazwa}.docx"
+    zrodlo.write_bytes(b"docx")
+    return zrodlo, tmp_path / f"{nazwa}.pdf"
 
 
 def test_zawieszony_word_jest_zamykany_po_limicie_czasu(tmp_path, monkeypatch):
@@ -241,6 +262,131 @@ def test_zawieszony_word_przy_skladaniu_mowi_co_zrobic(tmp_path, monkeypatch):
     assert "-2147023170" not in str(blad.value)
 
 
+def test_po_zawieszeniu_robota_w_tle_nie_uruchamia_worda(tmp_path, monkeypatch):
+    """Po zawieszeniu każda miniatura na stronie składania uruchamiała własnego Worda
+    i czekała na nim pełny limit — przy czterech dokumentach kwadrans, zanim „Złóż PDF”
+    w ogóle dostało swoją kolej. Przez chwilę po zawieszeniu podglądy i miniatury Worda
+    nie ruszają (strona pokaże zastępnik), a składanie, o które brat prosi wprost —
+    zwykle właśnie po zamknięciu okna Worda — próbuje od nowa."""
+    _podstaw_worda(monkeypatch, zawies=True, procesy=[{100}, {100, 4242}])
+    starty = _licz_starty(monkeypatch)
+    monkeypatch.setattr(pdf, "dostepny_konwerter", lambda: "word")
+    monkeypatch.setattr(pdf, "sciezka_libreoffice", lambda: None)
+    zrodlo, cel = _docx(tmp_path)
+
+    assert pdf.docx_na_pdf_wsad([(zrodlo, cel)]) == []            # zawieszenie
+    assert len(starty) == 1
+    poczatek = time.monotonic()
+    with pytest.raises(pdf.WordZawieszony):
+        pdf.docx_na_pdf(zrodlo, cel, w_tle=True)                     # miniatura
+    assert pdf.docx_na_pdf_wsad([(zrodlo, cel)]) == []               # podglądy po „Zapisz”
+    assert time.monotonic() - poczatek < 0.2 and len(starty) == 1
+
+    with pytest.raises(pdf.BrakKonwertera):
+        pdf.docx_na_pdf(zrodlo, cel)                                 # „Złóż PDF”
+    assert len(starty) == 2
+
+
+def test_udana_konwersja_zdejmuje_pamiec_zawieszenia(tmp_path, monkeypatch):
+    _podstaw_worda(monkeypatch, zawies=False, procesy=[set(), {4242}])
+    starty = _licz_starty(monkeypatch)
+    monkeypatch.setattr(pdf, "dostepny_konwerter", lambda: "word")
+    monkeypatch.setattr(pdf, "_zawieszony_o", time.monotonic())     # przed chwilą stanął
+    zrodlo, cel = _docx(tmp_path)
+
+    pdf.docx_na_pdf(zrodlo, cel)            # brat zamknął okno Worda i złożył operat
+    pdf.docx_na_pdf(zrodlo, tmp_path / "podglad.pdf", w_tle=True)
+
+    assert len(starty) == 2 and (tmp_path / "podglad.pdf").exists()
+
+
+def test_pamiec_zawieszenia_wygasa_i_nie_blokuje_libreoffice(tmp_path, monkeypatch):
+    """Okno Worda bywa zamknięte przez brata bez składania operatu — po przerwie podglądy
+    próbują znowu. A gdy obok jest LibreOffice, podglądy robi on, zamiast czekać."""
+    _podstaw_worda(monkeypatch, zawies=False, procesy=[set(), {4242}])
+    starty = _licz_starty(monkeypatch)
+    monkeypatch.setattr(pdf, "dostepny_konwerter", lambda: "word")
+    zrodlo, cel = _docx(tmp_path)
+    libreoffice: list[Path] = []
+    monkeypatch.setattr(pdf, "sciezka_libreoffice", lambda: "/usr/bin/soffice")
+    monkeypatch.setattr(pdf, "_konwersja_libreoffice",
+                        lambda z, c: (libreoffice.append(c), Path(c).write_bytes(b"%PDF")))
+
+    monkeypatch.setattr(pdf, "_zawieszony_o", time.monotonic())
+    pdf.docx_na_pdf(zrodlo, cel, w_tle=True)
+    assert libreoffice == [cel] and starty == []
+
+    monkeypatch.setattr(pdf, "_zawieszony_o", time.monotonic() - pdf.PRZERWA_PO_ZAWIESZENIU - 1)
+    pdf.docx_na_pdf(zrodlo, tmp_path / "drugi.pdf", w_tle=True)
+    assert len(starty) == 1
+
+
+def test_miniatura_po_zawieszeniu_worda_nie_czeka(srodowisko, monkeypatch):
+    """Strona składania prosi o miniaturę każdego dokumentu naraz. Po zawieszeniu Worda
+    każda czekała pełny limit na nowym Wordzie — teraz od razu dostaje zastępnik."""
+    from fastapi.testclient import TestClient
+
+    from app import main, operaty, teryt
+
+    monkeypatch.setattr(teryt, "pusto", lambda: False)
+    monkeypatch.setattr(main.teryt, "pusto", lambda: False)
+    _podstaw_worda(monkeypatch, zawies=True, procesy=[{100}, {100, 4242}])
+    starty = _licz_starty(monkeypatch)
+    monkeypatch.setattr(pdf, "dostepny_konwerter", lambda: "word")
+    monkeypatch.setattr(pdf, "sciezka_libreoffice", lambda: None)
+    monkeypatch.setattr(pdf, "_zawieszony_o", time.monotonic())
+    katalog, _ = operaty.zaloz("001/2026", "GK.1", "spis_tresci_wzor", {})
+    (katalog / "spis_tresci.docx").write_bytes(b"docx")
+
+    with TestClient(main.app, raise_server_exceptions=False) as klient:
+        poczatek = time.monotonic()
+        odpowiedz = klient.get(f"/miniatura/{katalog.name}/spis_tresci.docx")
+
+    assert odpowiedz.status_code == 204
+    assert starty == [] and time.monotonic() - poczatek < 1
+
+
+def test_word_wiszacy_przy_zamykaniu_nie_trzyma_blokady(tmp_path, monkeypatch):
+    """Okno przy zamykaniu Worda (np. pytanie o szablon Normal) — PDF-y już są, ale
+    `Quit()` nie wraca, a blokada konwersji zostawała zajęta na zawsze."""
+    zabite = _podstaw_worda(monkeypatch, zawies=False, procesy=[{100}, {100, 4242}],
+                            zawies_zamykanie=True)
+    zrodlo, cel = _docx(tmp_path)
+    poczatek = time.monotonic()
+
+    pdf._wordem_wsad([(zrodlo, cel)])
+
+    assert cel.exists() and zabite == [4242]
+    assert time.monotonic() - poczatek < 5
+
+
+def test_straznik_szuka_procesu_jeszcze_raz_gdy_przy_starcie_nie_wiedzial(tmp_path, monkeypatch):
+    """Tuż po starcie nowego procesu Worda może jeszcze nie być na liście. Strażnik,
+    który nie wiedział, co zamknąć, odpuszczał na zawsze — konwersja wisiała dalej."""
+    zabite = _podstaw_worda(monkeypatch, zawies=True, procesy=[{100}, {100}, {100}, {100, 4242}])
+    zrodlo, cel = _docx(tmp_path)
+
+    with pytest.raises(pdf.WordZawieszony):
+        pdf._wordem_wsad([(zrodlo, cel)])
+
+    assert zabite == [4242]
+
+
+def test_zatrzymany_straznik_niczego_nie_zamyka(monkeypatch):
+    """Zegar, który wystartował tuż przed końcem konwersji, nie może zamknąć Worda
+    następnej konwersji."""
+    zabite: list[int] = []
+    monkeypatch.setattr(pdf, "_procesy_worda", lambda: {100})
+    monkeypatch.setattr(pdf, "_zamknij_proces", zabite.append)
+    straznik = pdf._Straznik()
+    straznik.pid = 4242
+
+    straznik.stop()
+    straznik._zamknij()
+
+    assert zabite == []
+
+
 def test_nie_zamykamy_worda_gdy_nie_wiadomo_ktory_jest_nasz():
     """Dwa nowe procesy naraz (brat właśnie otworzył Worda) — lepiej nie zamknąć
     niczego niż zamknąć mu okno z niezapisanym dokumentem."""
@@ -291,3 +437,90 @@ def test_skladanie_nie_zamraza_reszty_programu(srodowisko, bez_konwertera, monke
     anyio.run(scenariusz)
 
     assert czasy["pomoc"] < 1.0, f"Pomoc czekała {czasy['pomoc']:.1f} s na składanie"
+
+
+def test_zapis_poprawki_nie_zamraza_reszty_programu(klient, monkeypatch):
+    """Poprawka operatu czekała na blokadę podglądów wprost w pętli zdarzeń serwera.
+    Gdy podgląd w tle stał na zawieszonym Wordzie, „Zapisz” zamrażało cały program
+    aż do limitu czasu — nie otwierała się nawet Pomoc w drugiej karcie."""
+    import anyio
+    import httpx
+
+    from app import db, main, operaty
+    from test_trasy import FORMULARZ, _dodaj_operat
+
+    _dodaj_operat(klient)
+    klient.post("/generuj/spis_tresci_wzor", data=FORMULARZ, follow_redirects=False)
+    wpis = db.dokumenty()[0]
+    zajete = threading.Event()
+
+    def podglad_na_zawieszonym_wordzie():
+        with operaty._BLOKADA_PODGLADU:
+            zajete.set()
+            time.sleep(1.5)
+
+    czasy: dict[str, float] = {}
+
+    async def scenariusz():
+        transport = httpx.ASGITransport(app=main.app)
+        async with httpx.AsyncClient(transport=transport, base_url="http://test") as k:
+            threading.Thread(target=podglad_na_zawieszonym_wordzie, daemon=True).start()
+            zajete.wait(2)
+            start = time.monotonic()
+
+            async def zapisz():
+                await k.post(f"/generuj/spis_tresci_wzor?edytuj={wpis['id']}", data=FORMULARZ)
+                czasy["zapis"] = time.monotonic() - start
+
+            async def pomoc():
+                await anyio.sleep(0.2)
+                await k.get("/pomoc")
+                czasy["pomoc"] = time.monotonic() - start
+
+            async with anyio.create_task_group() as grupa:
+                grupa.start_soon(zapisz)
+                grupa.start_soon(pomoc)
+
+    anyio.run(scenariusz)
+
+    assert czasy["zapis"] > 1.0, "zapis nie czekał na blokadę — test niczego nie sprawdza"
+    assert czasy["pomoc"] < 1.0, f"Pomoc czekała {czasy['pomoc']:.1f} s na zapis"
+
+
+def test_zapisy_operatow_ida_po_kolei(klient, monkeypatch):
+    """Zapis chodzi w puli wątków, ale dwa naraz (druga karta, podwójne kliknięcie
+    mimo blokady w przeglądarce) dalej idą po kolei — tak jak wcześniej w pętli
+    zdarzeń. Numeracja i zakładanie katalogów zakładają, że nikt nie pisze obok."""
+    import anyio
+    import httpx
+
+    from app import db, main
+    from test_trasy import FORMULARZ, _dodaj_operat
+
+    _dodaj_operat(klient)
+    prawdziwy = main.generator.generuj
+    przedzialy: list[tuple[float, float]] = []
+
+    def wolny(*args, **kwargs):
+        poczatek = time.monotonic()
+        time.sleep(0.4)
+        try:
+            return prawdziwy(*args, **kwargs)
+        finally:
+            przedzialy.append((poczatek, time.monotonic()))
+
+    monkeypatch.setattr(main.generator, "generuj", wolny)
+
+    async def scenariusz():
+        transport = httpx.ASGITransport(app=main.app)
+        async with httpx.AsyncClient(transport=transport, base_url="http://test") as k:
+            async with anyio.create_task_group() as grupa:
+                for nr in ("GK.1.2026", "GK.2.2026"):
+                    grupa.start_soon(lambda nr=nr: k.post(
+                        "/generuj/spis_tresci_wzor", data={**FORMULARZ, "pole__nr_roboty": nr}))
+
+    anyio.run(scenariusz)
+
+    assert len(przedzialy) == 2 and len(db.dokumenty()) == 2
+    pierwszy, drugi = sorted(przedzialy)
+    assert pierwszy[1] <= drugi[0], f"dwa zapisy szły naraz: {przedzialy}"
