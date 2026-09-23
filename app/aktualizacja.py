@@ -16,6 +16,7 @@ from __future__ import annotations
 
 import ast
 import os
+import re
 import shutil
 import sys
 import tempfile
@@ -133,7 +134,12 @@ def sprzataj_kopie() -> None:
 
 def _kopia_zapasowa(wersja: str) -> Path:
     """Baza + obecny kod lądują w dane/kopie/ — jest z czego wrócić, gdy coś padnie."""
-    katalog = KOPIE / f"{datetime.now():%Y%m%d-%H%M%S}-przed-{wersja}"
+    # Numer wersji idzie do nazwy katalogu, więc tylko znaki bezpieczne na Windowsie:
+    # bez pliku `WERSJA` numer to „?”, a `?` w nazwie katalogu Windows odrzuca — kopia
+    # padała przed `try`, więc program przestawał się aktualizować na zawsze, i to
+    # dokładnie wtedy, gdy instalacja wymagała naprawy.
+    bezpieczna = re.sub(r"[^0-9A-Za-z.\-]+", "_", wersja).strip("._") or "nieznana"
+    katalog = KOPIE / f"{datetime.now():%Y%m%d-%H%M%S}-przed-{bezpieczna}"
     katalog.mkdir(parents=True, exist_ok=True)
     if BAZA_DANYCH.exists():
         shutil.copy2(BAZA_DANYCH, katalog / BAZA_DANYCH.name)

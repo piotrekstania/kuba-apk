@@ -81,6 +81,20 @@ w przeglądarce brata (Edge albo Chrome):
    schodzi do drugiej linijki w całości. Testy mierzą to w Chrome bez paska przewijania —
    na Windowsie pasek zabiera jeszcze ok. 17 px i tego testy nie widzą.
 
+**Pliki otwarte w innych programach** — na Linuksie udawane atrybutem „tylko do odczytu”,
+więc prawdziwą blokadę Windowsa trzeba zobaczyć raz na żywo:
+
+7. Otwórz `spis_tresci.docx` operatu w Wordzie i kliknij „Popraw” → „Zapisz”: komunikat
+   ma mówić, że dokument jest **otwarty w innym programie** (a nie o literówce w formatce),
+   i dane mają zostać w formularzu.
+8. Otwórz złożony PDF w czytniku (Acrobat albo Edge) i złóż jeszcze raz: komunikat
+   „poprzednia wersja jest otwarta w czytniku PDF”, a nie ogólna strona błędu.
+9. Przy otwartym w Wordzie dokumencie kliknij „Usuń” przy tym operacie: ma przyjść
+   „Nie usunąłem operatu… Nic nie zostało skasowane”, a katalog i wpis zostają **całe**.
+   To opiera się na tym, że Windows nie pozwala przemianować katalogu z otwartym plikiem
+   — jeśli usunie się mimo to, poprawka nie działa i trzeba wrócić do tematu.
+10. Dwuklik w „Zapisz” na nowym operacie: w historii ma przybyć **jeden** operat.
+
 **Zostało do obejrzenia okiem** — tego testy ani przeglądarka nie sprawdzą:
 otworzyć **złożony PDF w prawdziwym czytniku** i potwierdzić, że karta, panel stron
 i pole „Tytuł” we właściwościach pokazują numer roboty, a plik otwiera się normalnie.

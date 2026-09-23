@@ -244,6 +244,17 @@ function pokaz(p) {
   } else if (p.przerwane) {
     opis.textContent = `Przerwano po ${p.zrobione} jednostkach. `
                      + `Kliknij „Pobierz brakujące”, żeby dokończyć.`;
+  } else if (p.koniec && p.pusta_lista) {
+    // przy pustej liście przycisk wyżej nazywa się „Pobierz listę” (nie „Odśwież…”)
+    opis.textContent = 'Nie ma czego pobierać — lista jednostek z GUS-u jest pusta. '
+                     + 'Najpierw kliknij wyżej „Pobierz listę”.';
+  } else if (p.koniec && !p.wszystkich) {
+    opis.textContent = 'Wszystkie jednostki mają już zapisane obręby — nie było czego pobierać.';
+  } else if (p.koniec && p.nieudane) {
+    // Nieudane zapytania to nie sukces: w terenie te gminy miałyby pustą listę obrębów.
+    opis.textContent = `Pobrano ${p.pobranych} obrębów, ale ${p.nieudane} z ${p.wszystkich} `
+                     + `jednostek się nie udało (brak internetu albo GUGiK nie odpowiadał). `
+                     + `Kliknij „Pobierz brakujące”, żeby dociągnąć resztę.`;
   } else if (p.koniec) {
     opis.textContent = `Gotowe: ${p.zrobione} jednostek, ${p.pobranych} obrębów. `
                      + `Obręby są teraz dostępne bez internetu.`;

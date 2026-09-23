@@ -104,7 +104,6 @@ widoki.env.globals["POLA_DZIALKI"] = szablony.POLA_DZIALKI
 # wywraca mu każdą stronę. Pomocnicze rzeczy dla szablonów są makrami w szablonach
 # (np. ikony w `_ikony.html`). Pilnuje tego test w `tests/test_wyglad.py`.
 
-
 DZIENNIK_BLEDOW = DANE / "bledy.log"
 
 
@@ -594,6 +593,14 @@ def formularz(request: Request, identyfikator: str, kopiuj: int | None = None,
             "usunięty. Jeśli to nowa robota, zacznij od „Nowy operat”."), status_code=303)
     if zrodlo:
         wartosci.update(json.loads(zrodlo["dane_json"]))
+    if kopiuj and zrodlo:
+        # „Powiel” to **nowy** operat, więc numeru operatu nie przenosimy nigdy. Numer
+        # nadany z licznika w danych i tak nie siedzi, ale wpisany kiedyś ręcznie —
+        # siedzi, przychodził tu razem z resztą i szedł drugi raz: nowy operat wchodził
+        # wtedy do katalogu starego i nadpisywał mu dokumenty.
+        for pole in szablon.pola:
+            if pole.typ == "auto_numer":
+                wartosci.pop(pole.klucz, None)
 
     # Wybór formatek: przy poprawianiu i powielaniu bierzemy ten zapisany przy operacie
     # (siedzi w `dane_json`), a przy nowym — ostatnio używany z ustawień.
@@ -662,6 +669,22 @@ async def generuj(request: Request, identyfikator: str, edytuj: int | None = Non
         return _widok(request, "formularz.html", **powrot,
                       blad="Uzupełnij wymagane pola: " + ", ".join(brakujace))
 
+    # Numer operatu wpisany ręcznie, który ma już **inny** operat: nowy wszedłby do jego
+    # katalogu, przepisał mu `operat.json` i dokumenty, a jego mapy i skany wziął za
+    # swoje (a „Usuń” jednego kasowało potem katalog obu). Numer z licznika jest zawsze
+    # świeży, więc pilnujemy tylko wpisanego. Katalog bez `operat.json` (założony ręcznie
+    # z plikami na nową robotę) nie jest cudzy — `katalog_po_nazwie` go nie widzi.
+    for pole in szablon.pola:
+        wpisany = str(dane.get(pole.klucz) or "").strip() if pole.typ == "auto_numer" else ""
+        if not wpisany:
+            continue
+        zajety = operaty.katalog_po_nazwie(operaty.nazwa_katalogu(wpisany))
+        if zajety is not None and (not poprawiany or zajety.name != poprawiany["katalog"]):
+            return _widok(request, "formularz.html", **powrot, blad=(
+                f"Numer {wpisany} ma już inny operat (katalog wyniki\\{zajety.name}). "
+                f"Zostaw pole „{pole.etykieta}” puste — program nada kolejny wolny numer "
+                "— albo wpisz inny. Wpisane dane zostały tutaj."))
+
     poprzedni_opis = None
     if poprawiany:
         katalog_poprzedni = operaty.katalog_po_nazwie(poprawiany["katalog"] or "")
@@ -681,6 +704,15 @@ async def generuj(request: Request, identyfikator: str, edytuj: int | None = Non
         plik, kontekst, ostrzezenia = generator.generuj(
             warianty.z_wariantem(szablon, wybor_wariantow.get(szablon.id, "")),
             dane, db.wczytaj_ustawienia(), poprzedni_opis)
+    except PermissionError as blad:
+        # Dokument otwarty w Wordzie (np. po „Popraw” prosto z otwartego pliku). Dotąd
+        # szło to przez komunikat o literówce w formatce i brat szukał błędu w szablonie,
+        # zamiast zamknąć Worda.
+        zapisz_blad(request, blad)
+        return _widok(request, "formularz.html", **powrot, blad=(
+            f"Nie udało się zapisać dokumentu „{Path(blad.filename or '').name or 'operatu'}” "
+            "— jest otwarty w innym programie, pewnie w Wordzie. Zamknij go i kliknij "
+            "„Zapisz” jeszcze raz. Wpisane dane zostały tutaj."))
     except Exception as blad:
         # Wracamy na formularz z kompletem wpisanych danych — utrata wykazu współrzędnych
         # przez literówkę w szablonie byłaby gorsza niż sam błąd.
@@ -710,7 +742,21 @@ async def generuj(request: Request, identyfikator: str, edytuj: int | None = Non
     wypelnionych = 1                      # dokument główny już powstał
     aktualne = {plik.name}                # dokumenty tej rundy — reszta programowych to starocie
     for identyfikator_dodatkowego in wybrane_szablony:
-        dodatkowy = szablony.szablon_po_id(str(identyfikator_dodatkowego))
+        # Formatka dodatkowa, która się nie wczytuje (niedokończony `.docx`, błąd w `.json`),
+        # to ostrzeżenie — jak każda inna awaria dokumentu dodatkowego. Czytana poza `try`
+        # wywracała całą trasę **po** wygenerowaniu spisu treści: operat bez wpisu
+        # w historii, zużyty numer, a każda kolejna próba zjadała następny.
+        try:
+            dodatkowy = szablony.szablon_po_id(str(identyfikator_dodatkowego))
+        except Exception as blad:
+            zapisz_blad(request, blad)
+            ostrzezenia.append(
+                f"Nie udało się wczytać formatki „{identyfikator_dodatkowego}” — dokument "
+                "nie powstał. Sprawdź ten plik w katalogu szablony. Reszta operatu jest gotowa.")
+            # jak przy każdej awarii: stary plik z poprzedniej rundy zostaje (niżej
+            # sprzątanie odznaczonych wzięłoby go za odznaczony i skasowało)
+            aktualne.add(operaty.nazwa_dokumentu(str(identyfikator_dodatkowego)))
+            continue
         if dodatkowy is None or dodatkowy.id == szablon.id:
             continue
         # Dokument, który jest samą pętlą po pustej liście, wyszedłby jako plik bez
@@ -729,9 +775,15 @@ async def generuj(request: Request, identyfikator: str, edytuj: int | None = Non
             aktualne.add(operaty.nazwa_dokumentu(dodatkowy.id))
         except Exception as blad:
             zapisz_blad(request, blad)
-            ostrzezenia.append(
-                f"Nie udało się wygenerować dokumentu „{dodatkowy.nazwa}” — sprawdź "
-                f"znaczniki w pliku {dodatkowy.plik.name}. Reszta operatu jest gotowa.")
+            if isinstance(blad, PermissionError):
+                ostrzezenia.append(
+                    f"Nie udało się zapisać dokumentu „{dodatkowy.nazwa}” — jest otwarty "
+                    "w innym programie, pewnie w Wordzie. Zamknij go i popraw operat jeszcze "
+                    "raz; do tego czasu w katalogu zostaje jego poprzednia wersja.")
+            else:
+                ostrzezenia.append(
+                    f"Nie udało się wygenerować dokumentu „{dodatkowy.nazwa}” — sprawdź "
+                    f"znaczniki w pliku {dodatkowy.plik.name}. Reszta operatu jest gotowa.")
             # awaria to nie odznaczenie — stary plik zostaje, bo jest lepszy niż dziura
             aktualne.add(operaty.nazwa_dokumentu(dodatkowy.id))
 
@@ -1034,10 +1086,24 @@ def usun(dokument_id: int):
         # Podglądy kasujemy po nazwie, nie po katalogu: operat bywa usuwany z historii
         # wtedy, gdy jego folder brat już przeniósł do archiwum — a wtedy `katalog`
         # jest `None` i podglądy zostawałyby na zawsze.
-        operaty.usun_podglady(wiersz["katalog"] or "")
         if katalog is not None:
-            shutil.rmtree(katalog, ignore_errors=True)
-        else:
+            # Plik otwarty w Wordzie albo w czytniku PDF nie daje się na Windowsie skasować,
+            # a `rmtree(ignore_errors=True)` zostawiał wtedy pół katalogu — często już bez
+            # `operat.json`, więc niewidocznego dla programu — i kasował wpis z historii.
+            # Dlatego najpierw zmieniamy nazwę całego katalogu: Windows odmawia, gdy w środku
+            # coś jest otwarte, a wtedy jeszcze nic nie zniknęło.
+            do_usuniecia = katalog.with_name(f"{katalog.name}.usuwany-{datetime.now():%H%M%S}")
+            try:
+                katalog.rename(do_usuniecia)
+            except OSError:
+                return RedirectResponse("/?blad=" + quote(
+                    f"Nie usunąłem operatu {wiersz['nr_operatu'] or katalog.name} — któryś plik "
+                    f"z katalogu {katalog.name} jest otwarty w innym programie (np. w Wordzie "
+                    "albo w czytniku PDF) albo sam katalog jest otwarty. Zamknij go i kliknij "
+                    "„Usuń” jeszcze raz. Nic nie zostało skasowane."), status_code=303)
+            shutil.rmtree(do_usuniecia, ignore_errors=True)
+        operaty.usun_podglady(wiersz["katalog"] or "")
+        if katalog is None:
             for nazwa in (wiersz["plik_docx"], wiersz["plik_pdf"]):
                 if nazwa:
                     (WYNIKI / nazwa).unlink(missing_ok=True)
@@ -1136,9 +1202,14 @@ async def scal_wykonaj(request: Request, nazwa: str):
     etykiety: dict[Path, str] = {}
     uklad_kolejnosc: list[str] = []          # do zapamiętania w operat.json
     uklad_obroty: dict[str, int] = {}
+    zniknely: list[str] = []                 # kafelki, których plików już nie ma
     for pozycja in kolejnosc:
         zrodlo = dostepne.get(pozycja)
         if zrodlo is None:
+            # Plik przemianowany albo przeniesiony Eksploratorem, zanim strona się
+            # odświeżyła. Składamy bez niego, ale nie po cichu — inaczej „Złożone.”
+            # wyglądało na komplet, a po przeładowaniu plik stał na liście jak dołączony.
+            zniknely.append(str(pozycja))
             continue
         try:
             gotowy = operaty.jako_pdf(zrodlo)
@@ -1167,6 +1238,12 @@ async def scal_wykonaj(request: Request, nazwa: str):
         pdf.polacz_pdf(wybrane, wynik, etykiety, obroty, tytul=wynik.stem)
     except pdf.BladPliku as blad:
         return niepowodzenie(str(blad))
+    except PermissionError:
+        # Poprzedni wynik otwarty w czytniku PDF (Windows blokuje wtedy zapis). Dotąd
+        # kończyło się to ogólną stroną błędu, a ponowienie niczego nie zmieniało.
+        return niepowodzenie(
+            f"Nie udało się zapisać „{wynik.name}” — poprzednia wersja jest otwarta w czytniku "
+            "PDF albo w innym programie. Zamknij ją i kliknij „Złóż PDF” jeszcze raz.")
     statystyki.zlicz(statystyki.PDF)      # dopiero tutaj: PDF naprawdę leży na dysku
     # Układ zapamiętujemy po udanym złożeniu — nieudana próba nie ma prawa nadpisać
     # tego, co brat ustawił poprzednio.
@@ -1175,7 +1252,13 @@ async def scal_wykonaj(request: Request, nazwa: str):
     # blokowany i wtedy kliknięcie „Złóż PDF” nie robi *nic*, co dla brata wygląda jak
     # zepsuty program. Wracamy więc na stronę układania z potwierdzeniem, a gotowy PDF
     # otwiera się w nowej karcie zwykłym linkiem — tego żadna przeglądarka nie blokuje.
-    return RedirectResponse(f"/scal/{quote(nazwa)}?zlozono=1", status_code=303)
+    adres = f"/scal/{quote(nazwa)}?zlozono=1"
+    if zniknely:
+        adres += "&blad=" + quote(
+            "Bez plików, których nie ma już w katalogu (pewnie zmieniona nazwa): "
+            + ", ".join(zniknely) + ". Sprawdź kafelki po odświeżeniu strony i złóż jeszcze raz, "
+            "jeśli miały wejść.")
+    return RedirectResponse(adres, status_code=303)
 
 
 # --- ustawienia --------------------------------------------------------------

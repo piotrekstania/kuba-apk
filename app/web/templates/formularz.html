@@ -665,9 +665,14 @@ document.querySelectorAll('.teryt').forEach(blok => {
   async function zaladujObreby(gmina, wybrany) {
     if (!gmina) return wyczysc('obreb');
     komunikat.textContent = 'Pobieram obręby…';
-    wypelnij('obreb', await pobierz(`/teryt/obreby?gmina=${encodeURIComponent(gmina)}`), wybrany);
-    if (!komunikat.textContent.startsWith('Nie')) komunikat.textContent = '';
-    if (listy.obreb.options.length === 1) {
+    const pozycje = await pobierz(`/teryt/obreby?gmina=${encodeURIComponent(gmina)}`);
+    // `pobierz` czyści komunikat na starcie i wpisuje go wyłącznie przy błędzie. Błąd
+    // (brak internetu, GUGiK nie odpowiada) to co innego niż gmina bez obrębów, więc
+    // nie wolno go nadpisać zdaniem „nie podaje obrębów” — tak było dotąd i w terenie
+    // brat nie wiedział, że wystarczy połączenie, żeby lista się pojawiła.
+    const bladPobrania = komunikat.textContent;
+    wypelnij('obreb', pozycje, wybrany);
+    if (!bladPobrania && pozycje.length === 0) {
       komunikat.textContent = 'Dla tej jednostki ewidencyjnej serwis GUGiK nie podaje obrębów.';
     }
   }
@@ -1008,7 +1013,11 @@ document.querySelectorAll('.edytor').forEach(edytor => {
   const formularz = document.querySelector('form[action^="/generuj/"]');
   if (!formularz) return;
 
-  let zmienione = false;
+  // Formularz odesłany przez serwer z komunikatem (brak wymaganego pola, błąd formatki)
+  // niesie dane, których jeszcze nigdzie nie zapisano — ostrzeżenie ma działać od razu,
+  // a nie dopiero po kolejnym dotknięciu pola. Dotąd klik w „Dokumenty” po komunikacie
+  // „Uzupełnij wymagane pola” wyrzucał cały wpisany operat bez pytania.
+  let zmienione = {{ 'true' if blad else 'false' }};
   const oznacz = () => { zmienione = true; };
 
   // `input` łapie też edytor z formatowaniem (`contenteditable` bąbelkuje), a `change`
@@ -1030,6 +1039,24 @@ document.querySelectorAll('.edytor').forEach(edytor => {
     zdarzenie.preventDefault();
     zdarzenie.returnValue = '';       // wymagane przez starsze przeglądarki
   });
+})();
+
+// --- Jedno „Zapisz” = jeden operat -------------------------------------------
+// Wygenerowanie operatu trwa ułamek sekundy, więc podwójne kliknięcie „Zapisz”
+// (sprawdzone w Chrome: 120 i 250 ms między kliknięciami) wysyłało formularz dwa razy
+// i zakładało dwa operaty z tymi samymi danymi — duplikat w historii, a po jego
+// skasowaniu dziura w numeracji. Drugie wysłanie odrzucamy, dopóki strona nie zmieni
+// się na następną. `pageshow` z pamięci podręcznej („wstecz”) zdejmuje blokadę, inaczej
+// formularz po powrocie nie dałby się już wysłać.
+(function () {
+  const formularz = document.querySelector('form[action^="/generuj/"]');
+  if (!formularz) return;
+  let wysylany = false;
+  formularz.addEventListener('submit', z => {
+    if (wysylany) { z.preventDefault(); return; }
+    wysylany = true;
+  });
+  window.addEventListener('pageshow', z => { if (z.persisted) wysylany = false; });
 })();
 </script>
 

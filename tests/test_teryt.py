@@ -343,10 +343,11 @@ def test_wznowienie_bierze_tylko_brakujace(polska, monkeypatch):
 
 
 def test_gmina_bez_obrebow_nie_zatrzymuje_reszty(polska, monkeypatch):
-    """ULDK nie zna 13 jednostek w Polsce — to normalne, a nie powód do przerwania."""
+    """ULDK nie zna 13 jednostek w Polsce („-1 brak wyników”, czyli pusta lista) — to
+    normalne, a nie powód do przerwania ani do ostrzegania o nieudanych zapytaniach."""
     def zadanie(gmina: str):
         if gmina == polska[5]:
-            raise teryt.BladPobierania("ULDK nie odpowiedział")
+            return []
         return [(f"{gmina}.0001", "Baczków")]
 
     monkeypatch.setattr(teryt, "_pobierz_obreby", zadanie)
@@ -355,7 +356,55 @@ def test_gmina_bez_obrebow_nie_zatrzymuje_reszty(polska, monkeypatch):
 
     postep = teryt.postep()
     assert postep["zrobione"] == 20 and postep["pobranych"] == 19
-    assert postep["blad"] == ""
+    assert postep["nieudane"] == 0 and postep["blad"] == ""
+
+
+def test_nieudane_zapytania_nie_udaja_kompletu(polska, monkeypatch):
+    """Sieć padnięta w połowie to co innego niż gmina bez obrębów. Dotąd obie rzeczy
+    wyglądały tak samo i program ogłaszał „Gotowe… obręby są dostępne bez internetu”,
+    a w terenie część gmin miała pustą listę. Nieudane liczą się osobno, pobieranie
+    idzie dalej, a „Pobierz brakujące” weźmie dokładnie te, których się nie udało."""
+    zle = set(polska[3:6])
+
+    def zadanie(gmina: str):
+        if gmina in zle:
+            raise teryt.BladPobierania("Sprawdź, czy jest internet.")
+        return [(f"{gmina}.0001", "Baczków")]
+
+    monkeypatch.setattr(teryt, "_pobierz_obreby", zadanie)
+
+    teryt.pobierz_wszystkie_obreby()
+
+    postep = teryt.postep()
+    assert postep["nieudane"] == 3
+    assert postep["zrobione"] == 20 and postep["pobranych"] == 17
+    assert postep["blad"] == "" and postep["przerwane"] is False
+    assert teryt._gminy_do_pobrania(od_nowa=False) == sorted(zle)
+
+
+def test_pusta_lista_jednostek_nie_wyglada_jak_komplet(srodowisko):
+    """Bez listy jednostek z GUS-u nie ma czego pobierać — i komunikat ma to powiedzieć,
+    zamiast „wszystkie jednostki mają już obręby”, które przy pustej bazie jest
+    nieprawdą (a w terenie wyszłoby dopiero przy pustej liście obrębów)."""
+    teryt.pobierz_wszystkie_obreby()
+
+    postep = teryt.postep()
+    assert postep["wszystkich"] == 0 and postep["pusta_lista"] is True
+
+
+def test_komplet_obrebow_to_nie_pusta_lista(polska):
+    """Druga strona tego samego: wszystko już pobrane to „nie było czego pobierać”,
+    a nie prośba o odświeżenie listy z GUS-u."""
+    with db.polaczenie() as con:
+        con.execute("INSERT INTO teryt_jednostki (id, poziom, rodzic, nazwa, rodzaj)"
+                    " VALUES ('12', 'wojewodztwo', '', 'MAŁOPOLSKIE', '')")
+        con.executemany("INSERT INTO teryt_obreby (id, gmina, nazwa) VALUES (?, ?, 'Baczków')",
+                        [(f"{gmina}.0001", gmina) for gmina in polska])
+
+    teryt.pobierz_wszystkie_obreby()
+
+    postep = teryt.postep()
+    assert postep["wszystkich"] == 0 and postep["pusta_lista"] is False
 
 
 def test_drugie_kliknieie_nie_startuje_drugiego_pobierania(polska, monkeypatch):

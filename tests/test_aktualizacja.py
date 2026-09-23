@@ -138,6 +138,27 @@ def test_aktualizacja_podmienia_kod_i_szanuje_dane(srodowisko, monkeypatch, tmp_
     assert aktualizacja.co_nowego() is None
 
 
+def test_bez_pliku_wersji_kopia_ma_nazwe_do_przyjecia_na_windowsie(srodowisko, monkeypatch,
+                                                                    tmp_path):
+    """Bez pliku `WERSJA` (skasowany, uszkodzona instalacja) numer lokalny to „?”,
+    a `?` w nazwie katalogu Windows odrzuca. Kopia padała wtedy, zanim aktualizacja
+    w ogóle ruszyła — program przestawał się aktualizować na zawsze, i to akurat
+    wtedy, gdy instalacja wymagała naprawy. Na Linuksie `?` w nazwie przejdzie,
+    więc sprawdzamy samą nazwę, a nie to, czy katalog powstał."""
+    _instalacja(srodowisko)
+    (srodowisko.katalog / "WERSJA").unlink()
+    paczka = _paczka(tmp_path, "2026.09.01-1\nNaprawa.", {"app/main.py": "# nowy kod"})
+    _podstaw_github(monkeypatch, tmp_path, "2026.09.01-1\nNaprawa.", paczka)
+
+    assert aktualizacja.sprawdz_i_zaktualizuj() is True
+
+    kopie = _kopie_aktualizacji(srodowisko)
+    assert len(kopie) == 1
+    assert not set('<>:"/\\|?*') & set(kopie[0].name), kopie[0].name
+    assert kopie[0].name.endswith("-przed-nieznana")
+    assert (srodowisko.katalog / "app" / "main.py").read_text() == "# nowy kod"
+
+
 def test_zmiana_formatu_numeru_wyzwala_aktualizacje(srodowisko, monkeypatch, tmp_path):
     """Brat siedzi na starym formacie (`2026.08.06.3`), a wychodzi nowy (`2026.08.06-82`).
 

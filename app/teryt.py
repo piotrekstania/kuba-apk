@@ -371,8 +371,8 @@ def pusto() -> bool:
 
 ROWNOLEGLE = 4                 # tyle zapytań naraz; więcej nie przyspiesza, a obciąża GUGiK
 
-_postep = {"trwa": False, "zrobione": 0, "wszystkich": 0, "pobranych": 0,
-           "gmina": "", "blad": "", "przerwane": False, "koniec": ""}
+_postep = {"trwa": False, "zrobione": 0, "wszystkich": 0, "pobranych": 0, "nieudane": 0,
+           "pusta_lista": False, "gmina": "", "blad": "", "przerwane": False, "koniec": ""}
 _zamek = threading.Lock()
 _stop = threading.Event()
 
@@ -404,7 +404,13 @@ def pobierz_wszystkie_obreby(od_nowa: bool = False) -> None:
     _stop.clear()
     gminy = _gminy_do_pobrania(od_nowa)
     with _zamek:
-        _postep.update({"trwa": True, "wszystkich": len(gminy)})
+        _postep.update({"trwa": True, "wszystkich": len(gminy),
+                        "pusta_lista": not gminy and pusto()})
+
+    # Nieudane zapytanie oddaje `NIEUDANE`, a nie `None` jak gmina bez obrębów: dotąd obie
+    # rzeczy wyglądały tak samo, więc przy padniętej w połowie sieci program ogłaszał
+    # „Gotowe… obręby są dostępne bez internetu”, a w terenie część gmin miała pustą listę.
+    NIEUDANE = object()
 
     def zadanie(gmina: str):
         if _stop.is_set():
@@ -412,7 +418,7 @@ def pobierz_wszystkie_obreby(od_nowa: bool = False) -> None:
         try:
             return gmina, _pobierz_obreby(gmina)
         except BladPobierania:
-            return gmina, None
+            return gmina, NIEUDANE
 
     przerwane = False
     try:
@@ -423,6 +429,12 @@ def pobierz_wszystkie_obreby(od_nowa: bool = False) -> None:
                 if _stop.is_set():
                     przerwane = True
                     break
+                if obreby is NIEUDANE:
+                    with _zamek:
+                        _postep["zrobione"] += 1
+                        _postep["nieudane"] += 1
+                        _postep["gmina"] = gmina
+                    continue
                 if obreby:
                     with db.polacz() as con:
                         con.execute("DELETE FROM teryt_obreby WHERE gmina = ?", (gmina,))
@@ -457,6 +469,7 @@ def uruchom_pobieranie_obrebow(od_nowa: bool = False) -> bool:
         if _postep["trwa"]:
             return False
         _postep.update({"trwa": True, "zrobione": 0, "wszystkich": 0, "pobranych": 0,
+                        "nieudane": 0, "pusta_lista": False,
                         "gmina": "", "blad": "", "przerwane": False, "koniec": ""})
     threading.Thread(target=pobierz_wszystkie_obreby, args=(od_nowa,), daemon=True).start()
     return True

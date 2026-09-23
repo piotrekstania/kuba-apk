@@ -179,6 +179,32 @@ def test_probki_koloru_mieszcza_sie_w_swoich_kartach(klient, tmp_path, szerokosc
     assert all(p["miesci"] and p["napis"] for p in probki), f"coś wystaje z próbki: {probki}"
 
 
+PODWOJNE = """
+  const formularz = document.querySelector('form[action^="/generuj/"]');
+  // zdarzenie z ręki uruchamia skrypty strony, ale niczego nie wysyła — i o to chodzi
+  const wyslij = () => {
+    const zdarzenie = new Event('submit', {cancelable: true});
+    formularz.dispatchEvent(zdarzenie);
+    return zdarzenie.defaultPrevented;
+  };
+  const pierwsze = wyslij();
+  const drugie = wyslij();
+  window.dispatchEvent(new PageTransitionEvent('pageshow', {persisted: true}));
+  return {pierwsze, drugie, po_powrocie: wyslij()};
+"""
+
+
+def test_drugie_klikniecie_zapisz_nie_wysyla_formularza_drugi_raz(klient, tmp_path):
+    """Podwójne kliknięcie „Zapisz” (w Chrome 120–250 ms między kliknięciami) wysyłało
+    formularz dwa razy i zakładało dwa operaty z tymi samymi danymi. Drugie wysłanie
+    jest odrzucane — ale po powrocie przyciskiem „wstecz” formularz znów ma działać."""
+    _dodaj_operat(klient)
+
+    wynik = _zmierz(tmp_path, klient.get("/nowy/spis_tresci_wzor").text, PODWOJNE)
+
+    assert wynik == {"pierwsze": False, "drugie": True, "po_powrocie": False}
+
+
 KSZTALTY_GRUP = """
   return [...document.querySelectorAll('.akcje .grupa')].map(grupa =>
     [...grupa.querySelectorAll('.wtorny')].map(el => {
